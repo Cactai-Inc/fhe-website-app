@@ -30,7 +30,8 @@ import Gift from './pages/Gift';
 import Redeem from './pages/Redeem';
 import Release from './pages/Release';
 import DocsParticipantFlow from './pages/DocsParticipantFlow';
-import BookRider from './pages/BookRider';
+/* BookRider import removed with the CLOSEOUT §3.6 redirect below; the file
+   stays in the repo (redirect, do not delete). */
 import BookHorse from './pages/BookHorse';
 import BookSupport from './pages/BookSupport';
 import Checkout from './pages/Checkout';
@@ -190,7 +191,12 @@ export function AppRoutes() {
               {/* Gifting (purchase-as-gift keeps marketing chrome) */}
               <Route path="/gift" element={<Gift />} />
               {/* Legacy paths still resolve */}
-              <Route path="/book/rider" element={<BookRider />} />
+              {/* CLOSEOUT §3.6: /book/rider is RETIRED behind a redirect (not
+                  deleted — old links and search results keep landing somewhere
+                  real). It was orphaned — nothing on the site links to it — and
+                  its question-page shape contradicts the no-questions-page
+                  ruling; /lessons is the live rider funnel. */}
+              <Route path="/book/rider" element={<Navigate to="/lessons" replace />} />
               <Route path="/book/horse" element={<BookHorse />} />
               <Route path="/book/support" element={<BookSupport />} />
               {/* ASKRIGHT §A0 — page 2 for a cart whose visitor did not come

@@ -208,14 +208,23 @@ export interface InvitationReplacementNotice {
   expires_at: string;
 }
 
-/** Null when the token is unknown, still live, or has no current replacement. */
+/** The link was already redeemed and the account exists: the right advice is
+ *  "sign in", not "check your inbox for a newer one" (CLOSEOUT §1.3). */
+export interface InvitationAlreadyActivated {
+  already_activated: true;
+}
+
+export type RetiredLinkNotice = InvitationReplacementNotice | InvitationAlreadyActivated;
+
+/** Null when the token is unknown, still live, or has no current replacement
+ *  and was never redeemed. */
 export async function invitationReplacementNotice(
   token: string,
-): Promise<InvitationReplacementNotice | null> {
+): Promise<RetiredLinkNotice | null> {
   const { data, error } = await supabase.rpc('invitation_replacement_notice', { p_token: token });
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
-  return (row as InvitationReplacementNotice | null) ?? null;
+  return (row as RetiredLinkNotice | null) ?? null;
 }
 
 /** "Send it to me again" from the retired-link page. Rate limited server-side,

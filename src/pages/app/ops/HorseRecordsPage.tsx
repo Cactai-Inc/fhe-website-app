@@ -200,10 +200,17 @@ function EditableRecord({
                 {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}{c.email ? ` · ${c.email}` : ''}</option>)}
               </select>
               {lesseeId && (
-                <div className="flex gap-2">
-                  <input type="date" className={input} value={leaseStart} onChange={(e) => setLeaseStart(e.target.value)} />
-                  <input type="date" className={input} value={leaseEnd} onChange={(e) => setLeaseEnd(e.target.value)} />
-                </div>
+                <>
+                  <div className="flex gap-2">
+                    <input type="date" className={input} value={leaseStart} onChange={(e) => setLeaseStart(e.target.value)} />
+                    <input type="date" className={input} value={leaseEnd} onChange={(e) => setLeaseEnd(e.target.value)} />
+                  </div>
+                  {/* CLOSEOUT §1.4 (owner-ruled): an empty end date is a legitimate
+                      permanent state, so the editor says what leaving it empty means. */}
+                  <p className="text-[11px] text-muted">
+                    Leave the end date empty for an evergreen lease — it runs until terminated.
+                  </p>
+                </>
               )}
             </div>
           ) : (
@@ -214,7 +221,12 @@ function EditableRecord({
                   {r.lessee_name || r.lessee_name_text || '— not leased'}
                 </button>
               ) : (r.lessee_name || r.lessee_name_text || '— not leased')}
-              {r.lease_end && <span className="text-muted text-xs"> · through {r.lease_end}</span>}
+              {/* CLOSEOUT §1.4: staff must see that an empty end date is deliberate */}
+              {(r.lessee_name || r.lessee_name_text || r.lessee_contact_id) && (
+                <span className="text-muted text-xs">
+                  {r.lease_end ? ` · through ${r.lease_end}` : ' · evergreen — until terminated'}
+                </span>
+              )}
             </p>
           )}
         </div>
@@ -314,7 +326,7 @@ export default function HorseRecordsPage({ onOpenContact }: { onOpenContact?: (c
                   <p className="text-[11.5px] text-green-900">{r.owner_name || r.owner_name_text || 'Unassigned owner'}</p>
                   <p className="text-[10.5px] text-muted">
                     {r.lessee_name || r.lessee_name_text
-                      ? `Leased${r.lease_end ? ` → ${r.lease_end}` : ''}` : 'Not leased'}
+                      ? `Leased${r.lease_end ? ` → ${r.lease_end}` : ' → until terminated'}` : 'Not leased'}
                     {' · '}{r.document_count} docs
                   </p>
                 </div>

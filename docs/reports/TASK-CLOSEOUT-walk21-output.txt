@@ -1,0 +1,75 @@
+Pager usage is off.
+Timing is off.
+--- the generator TODAY reads the plural days (live body):
+ reads_recurring_days 
+----------------------
+ t
+(1 row)
+
+BEGIN
+CREATE FUNCTION
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+psql:docs/reports/TASK-CLOSEOUT-walk21.sql:44: NOTICE:  table "_wanted" does not exist, skipping
+INSERT 0 1
+SELECT 1
+
+=== STEP 1 — choose THREE days on a 2x SKU (surfaced, never blocked):
+                                                                                                                                      set_days_result                                                                                                                                       
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"quantity": 3, "indefinite": true, "plan_weeks": null, "plan_ends_on": null, "recurring_days": ["Tue", "Thu", "Sat"], "catalog_default": 2, "quantity_locked": false, "purchase_item_id": "11aff4f6-150c-414a-8d86-78deed31a2ed", "entitled_this_month": 5, "differs_from_catalog": true}
+(1 row)
+
+
+=== STEP 2 — THE ENTITLEMENT: what the credits line says this month holds:
+ credits_total | credits_remaining | period_start 
+---------------+-------------------+--------------
+             5 |                 5 | 2026-08-01
+(1 row)
+
+--- and the independent day-count over the same window (today → month end):
+ independent_day_count 
+-----------------------
+                     5
+(1 row)
+
+
+=== STEP 3 — GENERATE the month:
+                                                                                              generate_result                                                                                               
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"kind": "lesson", "created": 5, "series_id": "cc944a17-a425-40fb-9355-8fd2be2e414d", "recurring_day": "Tue", "recurring_days": ["Tue", "Thu", "Sat"], "skipped_existing": 0, "skipped_no_entitlement": 0}
+(1 row)
+
+
+=== STEP 4 — THE AGREEMENT, both numbers side by side:
+ entitlement_counted | bookings_generated | credits_left_after 
+---------------------+--------------------+--------------------
+                   5 |                  5 |                  0
+(1 row)
+
+--- the generated sessions land ONLY on the chosen days:
+ day | count 
+-----+-------
+ Sat |     2
+ Thu |     2
+ Tue |     1
+(3 rows)
+
+--- every booking carries the credit it spent (one line funds it):
+ bookings | with_credit 
+----------+-------------
+        5 |           5
+(1 row)
+
+ROLLBACK
+ leftover_probe_rows 
+---------------------
+                   0
+(1 row)
+

@@ -23,7 +23,7 @@
  * the booking. Overwriting the ask with the agreement is the one thing that
  * would make the conversation unauditable afterwards.
  */
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CalendarClock } from 'lucide-react';
 import {
   parseProposedTimes,
@@ -33,10 +33,13 @@ import {
 } from '../../lib/availability';
 import {
   SessionFields,
+  emptySessionFields,
   sessionFieldsStart,
   sessionFieldsWindow,
   type SessionFieldsValue,
 } from './SessionFields';
+import { listScheduleHorses } from '../../lib/ops/api-lessons';
+import { useAuth } from '../../contexts/AuthContext';
 import type { ProposedTime } from '../../lib/types';
 import type { ScheduleHorseOption } from '../../lib/ops/api-lessons';
 
@@ -196,6 +199,52 @@ export function AgreedLessonPanel({
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * CLOSEOUT §3.5 (LESSONREQUEST G4) — the agreed-time panel existed on the lead
+ * path only, so a lesson agreed on a phone call that never produced a website
+ * inquiry could not be folded into the one provisioning act; staff had to book
+ * it afterwards as a second action the invitation email knew nothing about.
+ *
+ * This wrapper owns everything the lead drawer holds for the panel — the
+ * SessionFields state, the horse roster, the acting instructor fallback — so
+ * any provisioning surface can mount it as a child of ProvisionClientForm and
+ * feed the derived AgreedLesson back with one state hook. With no request
+ * behind it there are no offered ranges, and the panel already renders that
+ * honestly (no ranges block, still optional).
+ */
+export function AgreedLessonSection({
+  proposedTimes, onAgreedChange,
+}: {
+  proposedTimes?: ProposedTime[] | null;
+  onAgreedChange: (agreed: AgreedLesson | null) => void;
+}) {
+  const [fields, setFields] = useState<SessionFieldsValue>(emptySessionFields);
+  const [horses, setHorses] = useState<ScheduleHorseOption[]>([]);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    let active = true;
+    listScheduleHorses()
+      .then((h) => { if (active) setHorses(h); })
+      .catch(() => { if (active) setHorses([]); });
+    return () => { active = false; };
+  }, []);
+
+  function handleChange(next: SessionFieldsValue) {
+    setFields(next);
+    onAgreedChange(agreedLessonFrom(next, user?.id ?? null));
+  }
+
+  return (
+    <AgreedLessonPanel
+      proposedTimes={proposedTimes ?? null}
+      value={fields}
+      onChange={handleChange}
+      horses={horses}
+    />
   );
 }
 

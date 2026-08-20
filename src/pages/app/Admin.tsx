@@ -23,6 +23,7 @@ import { InvitationHistoryPanel } from '../../components/app/InvitationHistoryPa
 import {
   AssignDocumentsModal, ClientHorseRecordsCard, AttachOfferingPanel, PaperworkEditor,
 } from '../../components/app/ClientRecordActions';
+import { AgreedLessonSection, type AgreedLesson } from '../../components/app/AgreedLessonPanel';
 import {
   RosterCard, rowKeyOf, memberName, EMPTY_SUPPLEMENT, type RosterSupplement,
 } from '../../components/app/RosterCard';
@@ -343,6 +344,8 @@ function LoginTab({ ov }: { ov: Overview }) {
 // invited → resend / expire / delete controls.
 function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => void }) {
   const [result, setResult] = useState<{ url: string; emailed: boolean; emailError?: string } | null>(null);
+  // CLOSEOUT §3.5: the agreed-time panel's derived slot, fed into provisioning.
+  const [agreedLesson, setAgreedLesson] = useState<AgreedLesson | null>(null);
   const [resendNote, setResendNote] = useState<string | null>(null);
   const [confirmRegen, setConfirmRegen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -373,7 +376,11 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
           Assign their category, paperwork, and any offerings, then send the activation invite.
         </p>
         <ProvisionClientForm source="contact" contactId={row.contact_id} email={row.email ?? undefined}
-          onProvisioned={onSent} />
+          agreedLesson={agreedLesson} onProvisioned={onSent}>
+          {/* CLOSEOUT §3.5: a lesson agreed on the phone folds into the same
+              provisioning act here too, not just on the lead path. */}
+          <AgreedLessonSection onAgreedChange={setAgreedLesson} />
+        </ProvisionClientForm>
       </section>
     );
   }

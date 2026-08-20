@@ -1529,3 +1529,31 @@ export async function contractEventLog(documentId: string): Promise<ContractEven
   if (error) throw error;
   return (data ?? []) as ContractEventLogRow[];
 }
+
+/** One resolved notification from the permanent notification log (CLOSEOUT
+ *  §1.8, owner ruling 2026-08-18: "the log is our source of truth"). A row is
+ *  written the moment a notification is resolved — before its delete, in the
+ *  same transaction — and is never swept. Staff-only read. */
+export interface ContractNotificationLogRow {
+  kind: string;
+  category: string | null;
+  title: string | null;
+  author: string;
+  reason: string | null;
+  recipient: string | null;
+  raised_at: string;
+  emailed_at: string | null;
+  locations: string[];
+  outcome: string;
+  outcome_at: string;
+}
+
+export async function contractNotificationLog(
+  documentId: string,
+): Promise<ContractNotificationLogRow[]> {
+  const { data, error } = await supabase.rpc('contract_notification_log', {
+    p_document_id: documentId,
+  });
+  if (error) throw error;
+  return (data ?? []) as ContractNotificationLogRow[];
+}

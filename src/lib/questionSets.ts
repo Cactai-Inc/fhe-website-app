@@ -557,14 +557,21 @@ export interface AssembledSection {
 /** The heading the visitor sees for a service's section: the live catalog's own
  *  display name, so renaming a service in the DB renames the section.
  *
- *  §C1c EXCEPTION: an offering-scoped set cannot take that name — every turnout
- *  SKU's service_type display_name is "Horse Exercise", so reading it would
- *  print two identical headings for two different services. Those sets carry
- *  their own `fallbackTitle`. ⚠️ That heading is therefore CODE, not catalog
- *  (D13): renaming "Turnout" needs a one-line edit here until `CAREPLANS`
- *  restructures these SKUs. Reported, not hidden. */
+ *  §C1c EXCEPTION: an offering-scoped set cannot take the service_type name —
+ *  every turnout SKU's service_type display_name is "Horse Exercise", so
+ *  reading it would print two identical headings for two different services.
+ *  CLOSEOUT §3.2 (D13): those sets now take the OFFERING's own catalog name
+ *  from the cart item instead (display only — the slug stays the identifier,
+ *  per cart.ts's never-parse-names rule), so renaming a turnout SKU in the
+ *  catalog editor renames this heading with no developer. `fallbackTitle` is
+ *  the last resort for a cart persisted before names were carried. */
 function titleFor(items: CartItem[], set: QuestionSet): string {
-  if (set.offeringSlugPrefix) return set.fallbackTitle;
+  if (set.offeringSlugPrefix) {
+    const prefix = set.offeringSlugPrefix;
+    const named = items.find(
+      (i) => (i.offeringSlug ?? '').startsWith(prefix) && i.offeringName);
+    return named?.offeringName ?? set.fallbackTitle;
+  }
   const named = items.find((i) => i.serviceType === set.serviceType && i.serviceTypeName);
   return named ? serviceDisplayName(named) : set.fallbackTitle;
 }

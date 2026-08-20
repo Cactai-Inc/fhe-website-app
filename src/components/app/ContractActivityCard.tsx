@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { History, ChevronDown, ChevronUp } from 'lucide-react';
-import { contractEventLog, type ContractEventLogRow } from '../../lib/contracts';
+import {
+  contractEventLog, contractNotificationLog,
+  type ContractEventLogRow, type ContractNotificationLogRow,
+} from '../../lib/contracts';
 
 /**
  * A14 — staff-only unified activity feed for a document: status changes, sends,
@@ -37,6 +40,9 @@ function when(iso: string): string {
 
 export function ContractActivityCard({ documentId }: { documentId: string }) {
   const [rows, setRows] = useState<ContractEventLogRow[] | null>(null);
+  // CLOSEOUT §1.8: the permanent notification log, read back as part of the
+  // contract's document set (owner: "the log is our source of truth").
+  const [nlog, setNlog] = useState<ContractNotificationLogRow[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +53,9 @@ export function ContractActivityCard({ documentId }: { documentId: string }) {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load activity');
     }
+    try {
+      setNlog(await contractNotificationLog(documentId));
+    } catch { /* log stays empty; the activity feed still renders */ }
   }, [documentId]);
 
   useEffect(() => { void load(); }, [load]);
@@ -94,6 +103,35 @@ export function ContractActivityCard({ documentId }: { documentId: string }) {
               </span>
             </div>
           ))}
+
+          {/* CLOSEOUT §1.8: resolved notifications are DELETED as delivery
+              artifacts, but their log is permanent and reads back here — who was
+              told what, where it surfaced, and what resolved it. */}
+          {nlog.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-green-800/15">
+              <p className="text-[11px] uppercase tracking-wide text-muted mb-2">
+                Notification log · {nlog.length} resolved
+              </p>
+              {nlog.map((n, i) => (
+                <div key={`${n.kind}-${n.raised_at}-${i}`} className="flex items-start gap-2.5 py-1.5 border-t border-green-800/8 first:border-t-0 first:pt-0">
+                  <span className="shrink-0 mt-0.5 text-[11px] text-muted tabular-nums w-[108px]">{when(n.raised_at)}</span>
+                  <span className="shrink-0 mt-0.5 text-[11px] font-medium rounded border px-1.5 py-0.5 bg-cream-100 text-secondary border-green-800/20">
+                    {n.category ?? 'general'}
+                  </span>
+                  <span className="min-w-0 flex-1 text-[13px] text-green-950 leading-snug">
+                    <span className="font-medium">{n.title ?? n.kind}</span>
+                    <span className="text-secondary">
+                      {n.recipient ? ` — to ${n.recipient}` : ''}
+                      {` · ${n.locations.join(' + ')}`}
+                      {n.reason ? ` · raised because: ${n.reason}` : ''}
+                      {` · raised by ${n.author}`}
+                      {` · ${n.outcome === 'dismissed_by_recipient' ? 'dismissed' : 'resolved'} ${when(n.outcome_at)}`}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

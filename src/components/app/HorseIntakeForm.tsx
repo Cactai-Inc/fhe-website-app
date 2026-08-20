@@ -690,9 +690,11 @@ export function HorseIntakeForm({
   const alwaysKeys: (keyof HorseIntakePayload)[] = HORSE_DOC_REQUIRED_KEYS;
   // Medications & supplements are repeatable and OPTIONAL (a horse may have none);
   // they're not part of the answer-or-N/A completeness gate.
-  // When leased (off-system), the lessee name + lease dates are required.
+  // When leased (off-system), the lessee name + lease start are required.
+  // CLOSEOUT §1.4 (owner-ruled): the end date is NOT — an empty end date is an
+  // evergreen lease that runs until terminated, a legitimate permanent state.
   const condKeys: (keyof HorseIntakePayload)[] = [
-    ...(leased ? (['lessee_name_text', 'lease_start', 'lease_end'] as (keyof HorseIntakePayload)[]) : []),
+    ...(leased ? (['lessee_name_text', 'lease_start'] as (keyof HorseIntakePayload)[]) : []),
   ];
   const hasRealName = filled(f.registered_name) || filled(f.nickname);
   const nameAnswered = answered(f.registered_name) && answered(f.nickname);
@@ -937,7 +939,7 @@ export function HorseIntakeForm({
                 second={{ label: 'Lessee email', kind: 'email', value: f.lessee_email, onChange: set('lessee_email'), placeholder: 'name@example.com' }} />
               <div className="grid grid-cols-2 gap-2 self-start">
                 <Field label="Lease start" type="date" value={f.lease_start} onChange={set('lease_start')} showError={showError} required />
-                <Field label="Lease end" type="date" value={f.lease_end} onChange={set('lease_end')} showError={showError} required />
+                <Field label="Lease end (empty = evergreen)" type="date" value={f.lease_end} onChange={set('lease_end')} showError={showError} />
               </div>
             </div>
             {/* The lease location IS the horse's current location during the term. From

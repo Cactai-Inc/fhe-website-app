@@ -1,0 +1,374 @@
+Pager usage is off.
+Timing is off.
+--- before: no skip column live:
+ skip_columns 
+--------------
+            0
+(1 row)
+
+BEGIN
+ALTER TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+REVOKE
+GRANT
+REVOKE
+GRANT
+REVOKE
+GRANT
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+                 put                  |                 put                  |                 put                  |                 put                  |             put             |             put             |             put              
+--------------------------------------+--------------------------------------+--------------------------------------+--------------------------------------+-----------------------------+-----------------------------+------------------------------
+ e656f20b-ef43-4725-9029-19e7f0190d9c | b45a5503-89bc-489a-b012-c7fbf5c09632 | cccc0000-0000-4000-8000-000000001601 | cccc0000-0000-4000-8000-000000001602 | co16-lessee@example.invalid | co16-lessor@example.invalid | co16-removed@example.invalid
+(1 row)
+
+INSERT 0 2
+
+################ E1 — REMOVE AT PROVISIONING ################
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+--- the Horse owner category default (what the admin sees suggested):
+    template_key     
+---------------------
+ COMPANY_POLICIES
+ FACILITY_RULES
+ HORSE_EMERGENCY_VET
+ RELEASE_HORSE_CARE
+ RELEASE_PARTICIPANT
+(5 rows)
+
+--- provision a Lessor with the two horse documents UNCHECKED:
+           removed_contact            
+--------------------------------------
+ 26553bca-0c3e-4775-bdf2-ec724e85d402
+(1 row)
+
+--- their requirement rows (horse docs must be ABSENT — never created):
+    template_key     
+---------------------
+ COMPANY_POLICIES
+ FACILITY_RULES
+ RELEASE_PARTICIPANT
+(3 rows)
+
+
+################ E2 SETUP — LESSOR WITH THE FULL HORSE-OWNER SET ################
+psql:docs/reports/TASK-CLOSEOUT-walk16.sql:64: NOTICE:  table "_wanted" does not exist, skipping
+ lessee_provisioned 
+--------------------
+ t
+(1 row)
+
+                 put                  |                               put                                
+--------------------------------------+------------------------------------------------------------------
+ 5e0243ef-06dc-4e94-b1db-835da25e7b69 | 7199881695ef40a79a162e9b1f0a1eb0a502aa1615994d40b36dd67c1b4475bd
+(1 row)
+
+ lessor_provisioned 
+--------------------
+ t
+(1 row)
+
+                 put                  |                               put                                
+--------------------------------------+------------------------------------------------------------------
+ 7cf5632e-b077-41c8-80f6-e09c78b4e363 | 857b103bba5d40cd8c47d4673f449c19fbea75e2fd754f768b79d10399c397c2
+(1 row)
+
+--- the Lessor owes the full default:
+    template_key     | skipped 
+---------------------+---------
+ COMPANY_POLICIES    | f
+ FACILITY_RULES      | f
+ HORSE_EMERGENCY_VET | f
+ RELEASE_HORSE_CARE  | f
+ RELEASE_PARTICIPANT | f
+(5 rows)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-000000001601", "role" : "authenticated"}
+(1 row)
+
+ lessee_redeemed 
+-----------------
+ t
+(1 row)
+
+UPDATE 1
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-000000001602", "role" : "authenticated"}
+(1 row)
+
+ lessor_redeemed 
+-----------------
+ t
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+INSERT 0 1
+                 put                  
+--------------------------------------
+ d4707857-77e8-427c-84b0-c96c356e9c42
+(1 row)
+
+ lease_started 
+---------------
+ t
+(1 row)
+
+                 put                  
+--------------------------------------
+ 1e3f6476-5782-4dfd-8d93-d3e82c00ecd0
+(1 row)
+
+UPDATE 2
+UPDATE 1
+UPDATE 2
+UPDATE 1
+UPDATE 1
+UPDATE 7
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-000000001602", "role" : "authenticated"}
+(1 row)
+
+ horse_confirmed 
+-----------------
+ t
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-000000001601", "role" : "authenticated"}
+(1 row)
+
+ lessee_wall_generated 
+-----------------------
+ t
+(1 row)
+
+UPDATE 3
+ lessee_wall_signed 
+--------------------
+                  3
+(1 row)
+
+
+################ E2 — THE LOCK GATE NAMES THE OVER-ASSIGNED LESSOR ################
+                      lessor_wall_before                      
+--------------------------------------------------------------
+ {                                                           +
+     "gating": 5,                                            +
+     "titles": [                                             +
+         "Company Policies",                                 +
+         "Facility Rules and Safety Acknowledgment",         +
+         "Horse Emergency Veterinary Authorization",         +
+         "Horse Handling and Routine Care Liability Release",+
+         "Participant Liability Release"                     +
+     ],                                                      +
+     "pending": 5                                            +
+ }
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+--- the lock attempt (must refuse, naming the Lessor):
+psql:docs/reports/TASK-CLOSEOUT-walk16.sql:127: ERROR:  cannot lock: Onboarding documents must be completed first by: Sixteen Lessor
+CONTEXT:  PL/pgSQL function advance_document_workflow(uuid,text) line 98 at RAISE
+
+################ E2 — SKIP: THE FALLBACK WHEN REMOVAL WAS OVERLOOKED ################
+    template_key     | skipped 
+---------------------+---------
+ COMPANY_POLICIES    | t
+ FACILITY_RULES      | t
+ HORSE_EMERGENCY_VET | t
+ RELEASE_HORSE_CARE  | t
+ RELEASE_PARTICIPANT | t
+(5 rows)
+
+--- the wall is CLEAR:
+ lessor_wall_after_skip 
+------------------------
+ {                     +
+     "gating": 0,      +
+     "titles": [       +
+     ],                +
+     "pending": 0      +
+ }
+(1 row)
+
+--- the LOCK GATE is clear (blockers on the lease):
+ lease_blockers_after_skip 
+---------------------------
+ [                        +
+ ]
+(1 row)
+
+--- lock now succeeds:
+ locked 
+--------
+ locked
+(1 row)
+
+
+################ E2 — A SKIP NEVER READS AS SIGNED ################
+--- satisfied stays FALSE for every skipped key:
+    template_key     | satisfied | skipped | has_reason 
+---------------------+-----------+---------+------------
+ COMPANY_POLICIES    | f         | t       | t
+ FACILITY_RULES      | f         | t       | t
+ HORSE_EMERGENCY_VET | f         | t       | t
+ RELEASE_HORSE_CARE  | f         | t       | t
+ RELEASE_PARTICIPANT | f         | t       | t
+(5 rows)
+
+--- no document rows were created or executed by skipping:
+ lessor_docs 
+-------------
+           0
+(1 row)
+
+--- the member-side ask is empty (my_onboarding_state as the Lessor):
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-000000001602", "role" : "authenticated"}
+(1 row)
+
+ docs_needed | documents_listed 
+-------------+------------------
+ f           |                0
+(1 row)
+
+--- generate_my_onboarding_documents generates NOTHING for skipped reqs:
+ generated 
+-----------
+ [        +
+ ]
+(1 row)
+
+--- the audit trail (who skipped, when, why):
+ skip_audit_rows |                                  reason                                  | by_staff 
+-----------------+--------------------------------------------------------------------------+----------
+               5 | over-assigned at provisioning — lease counterparty, not a service client | t
+(1 row)
+
+
+################ E2 — THE LEASE EXECUTES ################
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+UPDATE 1
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-000000001601", "role" : "authenticated"}
+(1 row)
+
+    after_lessee    
+--------------------
+ AWAITING_SIGNATURE
+(1 row)
+
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "cccc0000-0000-4000-8000-000000001602", "role" : "authenticated"}
+(1 row)
+
+ after_lessor 
+--------------
+ EXECUTED
+(1 row)
+
+
+################ GUARDS AND RESTORES ################
+--- an EXECUTED requirement can never be skipped (lessee signed RELEASE_GENERAL):
+                                     be                                     
+----------------------------------------------------------------------------
+ {"sub" : "b45a5503-89bc-489a-b012-c7fbf5c09632", "role" : "authenticated"}
+(1 row)
+
+psql:docs/reports/TASK-CLOSEOUT-walk16.sql:178: ERROR:  this requirement is satisfied by an executed document and cannot be skipped
+CONTEXT:  PL/pgSQL function skip_required_document(uuid,text,text) line 25 at RAISE
+--- restore one (unskip) — the wall comes back:
+      restored      
+--------------------
+ {"restored": true}
+(1 row)
+
+ gating_after_restore 
+----------------------
+                    1
+(1 row)
+
+--- a deliberate staff re-assign CLEARS the skip:
+ reassigned 
+------------
+ t
+(1 row)
+
+    template_key     | still_skipped 
+---------------------+---------------
+ COMPANY_POLICIES    | f
+ FACILITY_RULES      | f
+ HORSE_EMERGENCY_VET | t
+ RELEASE_HORSE_CARE  | t
+ RELEASE_PARTICIPANT | t
+(5 rows)
+
+--- the editor save PRESERVES surviving skip marks (same set re-saved):
+ row_count 
+-----------
+         5
+(1 row)
+
+ skips_preserved | total_rows 
+-----------------+------------
+               3 |          5
+(1 row)
+
+--- what the editor renders (contact_required_documents_state):
+    template_key     | skipped | skipped_by_name | has_reason | satisfied 
+---------------------+---------+-----------------+------------+-----------
+ COMPANY_POLICIES    | f       |                 | f          | f
+ FACILITY_RULES      | f       |                 | f          | f
+ HORSE_EMERGENCY_VET | t       | CJ Z            | t          | f
+ RELEASE_HORSE_CARE  | t       | CJ Z            | t          | f
+ RELEASE_PARTICIPANT | t       | CJ Z            | t          | f
+(5 rows)
+
+ROLLBACK
+
+################ ROLLBACK PROVEN ################
+ skip_columns 
+--------------
+            0
+(1 row)
+
+ skip_rpc 
+----------
+        0
+(1 row)
+

@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import {
-  categoryDocumentDefaults, getContactRequiredDocuments, setContactRequiredDocuments,
+  categoryDocumentDefaults, setContactRequiredDocuments,
+  getContactRequiredDocumentsState, skipRequiredDocument, unskipRequiredDocument,
   onboardingTemplateOptions,
   adminAttachOfferings, staffAssignableTemplates, staffAssignDocuments,
   type CategoryDocDefault, type AssignableTemplate, type AssignDocumentsResult,
+  type RequiredDocumentState,
 } from '../../lib/admin';
 import {
   contactHorseRecords, horseRecordCompleteness, requestHorseRecordCompletion,
@@ -366,13 +368,38 @@ export function PaperworkEditor({ contactId }: { contactId: string }) {
   const [defaults, setDefaults] = useState<CategoryDocDefault[]>([]);
   const [allTemplates, setAllTemplates] = useState<{ template_key: string; title: string }[]>([]);
   const [checked, setChecked] = useState<Set<string>>(new Set());
+  // CLOSEOUT §1.6: skip state per assigned key — a skipped requirement stays
+  // on the record (who/when/why) but stops blocking and is never asked.
+  const [skipInfo, setSkipInfo] = useState<Map<string, RequiredDocumentState>>(new Map());
   const [saved, setSaved] = useState(true);
+
+  const loadState = useCallback(() => {
+    getContactRequiredDocumentsState(contactId).then((rows) => {
+      setChecked(new Set(rows.map((r) => r.template_key)));
+      setSkipInfo(new Map(rows.map((r) => [r.template_key, r])));
+    }).catch(() => {});
+  }, [contactId]);
 
   useEffect(() => {
     categoryDocumentDefaults().then(setDefaults).catch(() => setDefaults([]));
     onboardingTemplateOptions().then(setAllTemplates).catch(() => setAllTemplates([]));
-    getContactRequiredDocuments(contactId).then((keys) => setChecked(new Set(keys))).catch(() => {});
-  }, [contactId]);
+    loadState();
+  }, [contactId, loadState]);
+
+  async function skip(key: string) {
+    // D19: a value-moving action states itself and captures a reason.
+    const reason = window.prompt(
+      'Skip this document? It will stop blocking their access and the contract '
+      + 'lock gate, but is NOT signed and stays on the record as skipped.\n\nReason:');
+    if (reason === null) return;
+    try { await skipRequiredDocument(contactId, key, reason.trim()); loadState(); }
+    catch { /* row stays as it was */ }
+  }
+
+  async function unskip(key: string) {
+    try { await unskipRequiredDocument(contactId, key); loadState(); }
+    catch { /* row stays as it was */ }
+  }
 
   // ⚠️ PARTYROLE §4c — the list is EVERY onboarding document, and the categories
   // are a note on the row rather than the source of the row. Built from the
@@ -405,6 +432,7 @@ export function PaperworkEditor({ contactId }: { contactId: string }) {
     try {
       await setContactRequiredDocuments(contactId, Array.from(next));
       setSaved(true);
+      loadState();
     } catch { /* row stays visibly unsaved */ }
   }
 
@@ -425,11 +453,41 @@ export function PaperworkEditor({ contactId }: { contactId: string }) {
             }`}>
             <input type="checkbox" className="accent-green-700 w-[18px] h-[18px] mt-0.5"
               checked={checked.has(t.key)} onChange={() => void toggle(t.key)} />
-            <span className="min-w-0">
+            <span className="min-w-0 flex-1">
               <span className={`block text-[14px] leading-snug ${checked.has(t.key) ? 'text-green-900 font-medium' : 'text-secondary'}`}>{t.title}</span>
               <span className="block text-[11.5px] text-muted mt-0.5">
                 {t.categories.length > 0 ? `Suggested for ${t.categories.join(', ')}` : 'Not suggested by any category — apply when the situation calls for it'}
               </span>
+              {/* CLOSEOUT §1.6: skip / restore on an assigned, unsigned requirement.
+                  Skipping is not signing — the row says so, with who and why. */}
+              {(() => {
+                const s = skipInfo.get(t.key);
+                if (!s) return null;
+                if (s.skipped_at) {
+                  return (
+                    <span className="block text-[11.5px] text-gold-800 mt-1">
+                      Skipped {new Date(s.skipped_at).toLocaleDateString()}
+                      {s.skipped_by_name ? ` by ${s.skipped_by_name}` : ''}
+                      {s.skip_reason ? ` — ${s.skip_reason}` : ''} · not signed, no longer blocking{' '}
+                      <button type="button" className="underline underline-offset-2 hover:text-green-700"
+                        onClick={(e) => { e.preventDefault(); void unskip(t.key); }}>
+                        Restore
+                      </button>
+                    </span>
+                  );
+                }
+                if (!s.satisfied) {
+                  return (
+                    <span className="block text-[11.5px] mt-1">
+                      <button type="button" className="text-muted underline underline-offset-2 hover:text-green-700"
+                        onClick={(e) => { e.preventDefault(); void skip(t.key); }}>
+                        Skip — stop this from blocking, without signing it
+                      </button>
+                    </span>
+                  );
+                }
+                return null;
+              })()}
             </span>
           </label>
         ))}

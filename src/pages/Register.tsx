@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import {
   validateInvitation, redeemInvitation, myOnboardingState,
   invitationReplacementNotice, requestInvitationResend,
-  type InvitationReplacementNotice,
+  type RetiredLinkNotice,
 } from '../lib/api';
 import { redeemContractInvitation } from '../lib/contracts';
 import { signInWithGoogle } from '../lib/auth';
@@ -45,7 +45,7 @@ export default function Register() {
   const [state, setState] = useState<State>('checking');
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   // Where the CURRENT invitation went, for someone holding a retired link.
-  const [notice, setNotice] = useState<InvitationReplacementNotice | null>(null);
+  const [notice, setNotice] = useState<RetiredLinkNotice | null>(null);
   const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
   // Gmail invites lead with Google only — the password form stays one click
   // away for the rare Gmail user who wants a password anyway.
@@ -208,7 +208,15 @@ export default function Register() {
               A masked address and a date are not a credential, so we can name
               where the current invitation went — but never link or redirect to
               it, and never reveal the new token. */}
-          {notice ? (
+          {notice && 'already_activated' in notice ? (
+            /* CLOSEOUT §1.3: the link was redeemed and the account exists — the
+               only useful advice is the sign-in button below, not an inbox hunt
+               for a newer email that was never sent. */
+            <p className="body-text mb-8">
+              You've already activated this account — this link has done its job.
+              Sign in below and you'll land right where you left off.
+            </p>
+          ) : notice ? (
             <>
               <p className="body-text mb-3">
                 Your current invitation went to{' '}

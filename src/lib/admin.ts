@@ -855,11 +855,54 @@ export async function setContactRequiredDocuments(contactId: string, templateKey
   if (error) throw error;
 }
 
-/** What's currently assigned to a contact. */
-export async function getContactRequiredDocuments(contactId: string): Promise<string[]> {
-  const { data, error } = await supabase.rpc('required_templates_for_contact', { p_contact_id: contactId });
+/* getContactRequiredDocuments (active-only keys) was replaced by the state
+ * call below: after CLOSEOUT §1.6 the active view excludes skipped rows, which
+ * is correct for the wall and the member ask but would hide a skip from the
+ * one surface that manages it. */
+
+/** One assigned requirement with its skip state (CLOSEOUT §1.6). A skipped
+ *  requirement stays on the record — who, when, why — but stops blocking the
+ *  wall and the lock gate, and is never asked of the member. */
+export interface RequiredDocumentState {
+  template_key: string;
+  skipped_at: string | null;
+  skipped_by_name: string | null;
+  skip_reason: string | null;
+  satisfied: boolean;
+}
+
+/** What's currently assigned to a contact, INCLUDING skipped rows — the
+ *  active-only view (required_templates_for_contact) would hide a skip from
+ *  the one surface that manages it. */
+export async function getContactRequiredDocumentsState(
+  contactId: string,
+): Promise<RequiredDocumentState[]> {
+  const { data, error } = await supabase.rpc('contact_required_documents_state', {
+    p_contact_id: contactId,
+  });
   if (error) throw error;
-  return ((data ?? []) as { template_key: string }[]).map((r) => r.template_key);
+  return (data ?? []) as RequiredDocumentState[];
+}
+
+/** Skip a requirement: it stops blocking, is never asked, and never reads as
+ *  signed. Refused when an executed document already satisfies it. */
+export async function skipRequiredDocument(
+  contactId: string, templateKey: string, reason: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('skip_required_document', {
+    p_contact_id: contactId, p_template_key: templateKey, p_reason: reason || null,
+  });
+  if (error) throw error;
+}
+
+/** Restore a skipped requirement to blocking. */
+export async function unskipRequiredDocument(
+  contactId: string, templateKey: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('unskip_required_document', {
+    p_contact_id: contactId, p_template_key: templateKey,
+  });
+  if (error) throw error;
 }
 
 // ─── Intake form required-field control ──────────────────────────────────────
