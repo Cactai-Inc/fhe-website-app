@@ -46,9 +46,22 @@ third-party personal data before committing a shot.**
 
 # 3. RULES OF ENGAGEMENT — production safety
 
-1. **One unique test identity**, created by you, in this exact shape so it is purgeable later:
-   email `walk1+<yyyymmdd>@cactai.io`, last name **`WALKTEST`**. **Every row you create must be
-   traceable to it.** Record the identity in the report's first line.
+1. **One unique test identity per run, on the OWNER'S OWN INBOX so he can confirm receipt.**
+   Owner, 2026-08-20: *"i can [confirm emails], I suggest you use cjzigs@icloud.com or some
+   variation of that the way you did before so i get the emails but they are all unique individual
+   test accounts."*
+   **Use `cjzigs+walk1-<yyyymmddHHMM>@icloud.com`** — plus-addressing delivers to the owner's real
+   inbox while giving every run a distinct address, so no two walks collide on one account.
+   **Last name `WALKTEST`.** Record the exact address in the report's first line, and **list every
+   row it created** so the set is purgeable.
+   ⚠️ **`cjzigs@` is a D1 protected test identity — do NOT sign in as it or alter its records.**
+   You are borrowing its *inbox* via plus-addressing, not its account.
+   ⚠️ **Confirm plus-addressing survives the signup path** before relying on it — if any step
+   normalises or rejects the `+`, that is itself a finding worth reporting, and you should fall back
+   to a distinct address the owner supplies rather than reusing one.
+   **The owner is the human verifier for email.** When a message should have arrived, say so
+   explicitly in the report — subject, expected time, which step — so he can confirm or deny it
+   from his own inbox rather than you guessing.
 2. **NEVER touch a real client's record.** Read them, never write them. The production purge of
    2026-08-17 is why this rule exists.
 3. ⚠️ **MONEY — STOP AND ASK.** It is unknown whether Stripe is in live or test mode.
