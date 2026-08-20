@@ -34,7 +34,7 @@ Record the main commit you audit in the report header — other threads change s
 **128 vs 27 vs 117 is the gap this audit exists to explain, row by row.**
 
 Nav truth lives in **two places, and the registry is the smaller one**: `src/lib/pageRegistry.ts`
-AND hand-written JSX arrays in `src/components/AppLayout.tsx` (`StaffNavItems` ~line 415,
+AND hand-written JSX arrays in `src/components/app/AppLayout.tsx` (`StaffNavItems` ~line 415,
 `ClientNavItems` ~line 1085, header icons ~line 1738). A page can have a real nav row and no
 registry row (the calendar does). Audit both, always.
 
@@ -75,7 +75,7 @@ Per the L3 rule: **read each shared context ONCE**, then judge every row against
 Never re-open `App.tsx` per route.
 
 1. Read `src/App.tsx` once → the route list.
-2. Read `src/lib/pageRegistry.ts` once, `src/components/AppLayout.tsx` nav arrays once,
+2. Read `src/lib/pageRegistry.ts` once, `src/components/app/AppLayout.tsx` nav arrays once,
    `src/lib/reviewSection.ts` once → the reach map.
 3. `grep -rn "to=\|navigate(\|href=" src/` once → the link graph (LINK-ONLY vs ORPHAN).
 4. Then per page: read the page file and the `src/lib/api-*.ts` module it imports. That is the
