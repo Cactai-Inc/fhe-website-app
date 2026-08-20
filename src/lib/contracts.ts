@@ -635,6 +635,49 @@ export async function reassignDocumentParty(documentId: string, partyRole: strin
   if (error) throw error;
 }
 
+/**
+ * PARTYEMAIL Phase 1 — put a party on the contract from an EMAIL ADDRESS ALONE.
+ *
+ * D22 §7: "only an email address is required for a contract to have a valid
+ * party ... when its added to the contract to create a party that information is
+ * matched, that means it isnt read from the client record until they claim the
+ * contract by activating their account with a matching email."
+ *
+ * The address is matched against the org's contacts first — one we already hold IS
+ * that person, and their record fills the party straight away. Only an address we
+ * have never seen mints a stub contact carrying the email and nothing else. There
+ * is no email column on the party: the contact is the party identity.
+ *
+ * Returns the contact the party now points at, and whether it was newly created.
+ */
+export async function addDocumentPartyByEmail(
+  documentId: string, partyRole: string, email: string,
+): Promise<{ contact_id: string; contact_created: boolean; email: string }> {
+  const { data, error } = await supabase.rpc('add_document_party_by_email', {
+    p_document_id: documentId, p_party_role: partyRole, p_email: email,
+  });
+  if (error) throw error;
+  return data as { contact_id: string; contact_created: boolean; email: string };
+}
+
+/**
+ * PARTYEMAIL Phase 4 — fetch and read on generation (D22 §6: "this requires a
+ * fetch and read on generation for the contract even after its signed").
+ *
+ * Re-fills the party tokens from the contact records and the HORSE.* tokens from
+ * the horse record, recomposes the body and replays the signatures. Called when a
+ * contract is OPENED, and by redeem_contract_invitation when a party claims one.
+ * Phone, email and address propagate forever, including into an executed document;
+ * the two name tokens stop tracking the record the moment anything is signed.
+ */
+export async function regenerateContractDocument(documentId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('regenerate_contract_document', {
+    p_document_id: documentId,
+  });
+  if (error) throw error;
+  return (data as string | null) ?? null;
+}
+
 /** The required contact fields a lease party must have (owner directive 2026-07-22). */
 export type PartyField = 'name' | 'address' | 'email' | 'phone';
 
@@ -655,6 +698,9 @@ export interface PartySummary {
   last_name: string | null;
   /** required fields (name/address/email/phone) this party is still missing */
   missing: PartyField[];
+  /** PARTYEMAIL P1: this party is an email address and nothing else yet — the
+   *  contact record is a stub awaiting the person it belongs to. */
+  awaiting_details?: boolean;
 }
 export interface PartiesHorseSummary {
   parties: PartySummary[];

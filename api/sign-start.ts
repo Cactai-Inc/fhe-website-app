@@ -1,8 +1,9 @@
 /* POST /api/sign-start — public self-onboarding entry for the /sign/* pages
  * (TASK C, rewired by TASK ONBOARD §2/§3).
  *
- * Body: { path: 'guest'|'rider'|'horse'|'rider+horse', firstName, lastName,
- *         phone, email, confirmEmail }
+ * Body: { path: 'guest'|'rider'|'horse'|'rider+horse'|'deal', firstName, lastName,
+ *         phone, email, confirmEmail,
+ *         addressLine1, addressLine2, city, state, postalCode }
  * -> 200 { ok, status, attemptId } — `status` is the REAL send outcome
  *    ('sent' | 'send_failed' | 'rate_limited' | 'unavailable'), because the owner
  *    asked for "a screen that renders the actual email sending state with outcome"
@@ -31,6 +32,14 @@
  *  5. Record the attempt and its outcome (signup_attempts). That row is what
  *     /api/signup-help escalates from, and it is why "created but never emailed"
  *     is now a queryable fact instead of a lost 200.
+ *
+ * PARTYEMAIL §2 — THE ADDRESS. D22 §0 makes the collected set four values, and the
+ * fourth is a full address: `.ADDRESS` is one of the five party tokens a contract
+ * renders and nothing else populated it for a self-service signer. Both branches
+ * write it through the SAME helper, fill_claimant_details — blanks only, so a
+ * public form never overwrites what staff hold. The deal branch already called it;
+ * the provisioning branch now calls it too, using the contact_id
+ * provision_client_invitation returns. One writer, whichever door they came in.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHash } from 'node:crypto';
@@ -63,6 +72,7 @@ function sha256(s: string): string {
 interface ProvisionResult {
   token: string;
   invitation_id: string;
+  contact_id: string;
 }
 
 /** What the send-state screen renders. */
@@ -100,6 +110,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // the form; the server enforces the three it can check cheaply.
   if (!firstName || !lastName) return res.status(400).json({ error: 'name required' });
   if (!phone) return res.status(400).json({ error: 'phone required' });
+
+  // PARTYEMAIL §2 — the fourth value. Apt/suite is genuinely optional; the other
+  // four components are what compose_address needs to produce a usable address.
+  const addressLine1 = ((body.addressLine1 as string) || '').trim();
+  const addressLine2 = ((body.addressLine2 as string) || '').trim();
+  const city = ((body.city as string) || '').trim();
+  const stateV = ((body.state as string) || '').trim();
+  const postalCode = ((body.postalCode as string) || '').trim();
+  if (!addressLine1 || !city || !stateV || !postalCode) {
+    return res.status(400).json({ error: 'address required' });
+  }
+
+  /** The one write path for what the visitor typed: blanks only, never an
+   *  overwrite of the record staff maintain. contacts.address_composed is a
+   *  GENERATED column and is never among these — it recomputes from the parts. */
+  const claimantDetails = {
+    p_first_name: firstName || null,
+    p_last_name: lastName || null,
+    p_phone: phone || null,
+    p_address_line1: addressLine1 || null,
+    p_address_line2: addressLine2 || null,
+    p_city: city || null,
+    p_state: stateV || null,
+    p_postal_code: postalCode || null,
+  };
 
   try {
     const db = getSupabaseAdmin();
@@ -153,10 +188,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // What they typed goes on the contact the contract already points at —
         // blanks only, so a self-service form never overwrites staff's record.
         await db.rpc('fill_claimant_details', {
-          p_contact_id: claim.contact_id,
-          p_first_name: firstName || null,
-          p_last_name: lastName || null,
-          p_phone: phone || null,
+          p_contact_id: claim.contact_id, ...claimantDetails,
         });
 
         // The SAME invitation staff mint from the contract page. Activation
@@ -233,6 +265,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (rpcErr) throw rpcErr;
       const out = (Array.isArray(data) ? data[0] : data) as ProvisionResult;
       invitationId = out.invitation_id;
+
+      // provision_client_invitation carries name and phone, but has no address
+      // parameter — widening the canonical spine for one field would change every
+      // caller. The same helper the deal branch uses writes it onto the contact it
+      // just returned, so the address lands whichever path was taken.
+      if (out.contact_id) {
+        await db.rpc('fill_claimant_details', {
+          p_contact_id: out.contact_id, ...claimantDetails,
+        });
+      }
 
       const origin = req.headers.origin || `https://${req.headers.host}`;
       const registerUrl = `${origin}/activate?token=${out.token}`;
