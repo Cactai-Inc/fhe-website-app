@@ -160,7 +160,7 @@ TERMINAL     Each month: `lesson_credits` row for the period, bookings placed on
              days, credits spent to zero (walk21's shape).
 BREAKS
 1. **BROKEN today by data, not code** — every purchase in prod is `unpaid` (4 of 4), so the
-   paid-gated cron mints **nothing for anyone**. Until the payment tail (commerce.md F8)
+   paid-gated cron mints **nothing for anyone**. Until the payment tail (commerce.md F10)
    is exercised, month 2 of every plan silently fails to exist. The code is proven
    (walk21); the flow is not.
 2. **UNPROVEN** — the cron itself has never been observed running (no vercel log access,
