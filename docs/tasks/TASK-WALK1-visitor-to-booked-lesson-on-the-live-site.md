@@ -75,11 +75,26 @@ is what makes a browser walk expensive.
    from his own inbox rather than you guessing.
 2. **NEVER touch a real client's record.** Read them, never write them. The production purge of
    2026-08-17 is why this rule exists.
-3. ⚠️ **MONEY — STOP AND ASK.** It is unknown whether Stripe is in live or test mode.
-   **Do not submit a card payment until the orchestrator confirms the mode.** If a flow demands
-   payment to continue, prefer the **Zelle/cash path** (staff-confirmed, no card). If neither is
-   possible, **STOP at that step and report** — a real charge on a real card is not recoverable by
-   you.
+3. **MONEY — RULED BY THE OWNER, 2026-08-20. Use Zelle and cash ONLY. Never a card.**
+   > *"test mode use the only options, zelle and cash, you need to be able to verify both options
+   > are functioning properly, nothing is real, they both get approved manually now so the user just
+   > says they sent the payment or are paying cash. nothing blocks them from any action because the
+   > lesson never happens without payment being verified."*
+
+   **Both options must be exercised — one purchase paid by Zelle, one by cash.** Nothing is charged;
+   the user simply declares they have paid or will pay cash, and a human confirms later.
+   ⚠️ **STRIPE IS OUT — owner, 2026-08-20: *"kill stripe mode, its not setup and we dont need it
+   now."*** It is not configured and is not part of this programme. **DO NOT submit a card payment
+   under any circumstances.** If a surface offers a card option at all, **do not use it — record
+   that it is offered**, because presenting a payment method that is not set up is itself a defect
+   worth reporting.
+   ⚠️ **THE OWNER'S RULE IS AN ACCEPTANCE TEST, NOT JUST A PERMISSION: declaring payment must NOT
+   block the user from anything.** After the declaration, the user continues — booking included.
+   **If any action is gated on the payment being confirmed, that is a DEFECT and must be reported**,
+   because the real control is operational: *the lesson never happens without payment being
+   verified.* Test the claim, then keep going and record whether you were stopped.
+   **Leave both declarations UNCONFIRMED.** Admin confirmation is WALK2's job — it needs unconfirmed
+   claims waiting for it. Record the exact purchase ids and their state at hand-off.
 4. **The signing freeze:** the owner directed contract signing as part of this programme, so it is
    lifted **for the WALKTEST identity only**. **Never sign, alter or execute a real client's
    document.**
