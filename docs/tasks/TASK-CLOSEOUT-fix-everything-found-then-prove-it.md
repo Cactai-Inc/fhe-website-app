@@ -245,9 +245,10 @@ single lesson, or is it purely a scheduled visit with no credit at all? **Ask, t
 
 # PHASE 4 — THE RETEST  ⟵ **the deliverable the owner actually asked for**
 
-**Six separate browser checklists are now stacked** across the CAREPATH, LESSONREQUEST, GIFTPATH,
-SESSIONBOOK, PARTYROLE and FOOTER reports — roughly fifty steps, overlapping, in report order rather
-than in the order a person would actually do them.
+**Seven separate browser checklists are now stacked** across the CAREPATH, LESSONREQUEST, GIFTPATH,
+SESSIONBOOK, PARTYROLE, FOOTER and ASKRIGHT (report §7, 16 steps — added by the owner 2026-08-19)
+reports — roughly sixty-five steps, overlapping, in report order rather than in the order a person
+would actually do them.
 
 **Replace them with ONE ordered walk**, `docs/reports/RETEST-CHECKLIST.md`:
 - **In the order a real person moves** — visitor → inquiry → staff → activation → lease → execution.
