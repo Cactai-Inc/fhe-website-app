@@ -83,8 +83,11 @@ is what makes a browser walk expensive.
 
    **Both options must be exercised — one purchase paid by Zelle, one by cash.** Nothing is charged;
    the user simply declares they have paid or will pay cash, and a human confirms later.
-   ⚠️ **DO NOT submit a card payment under any circumstances**, in any mode. If a flow offers only a
-   card, **STOP and report** — that itself is the finding (Zelle and cash are the live options).
+   ⚠️ **STRIPE IS OUT — owner, 2026-08-20: *"kill stripe mode, its not setup and we dont need it
+   now."*** It is not configured and is not part of this programme. **DO NOT submit a card payment
+   under any circumstances.** If a surface offers a card option at all, **do not use it — record
+   that it is offered**, because presenting a payment method that is not set up is itself a defect
+   worth reporting.
    ⚠️ **THE OWNER'S RULE IS AN ACCEPTANCE TEST, NOT JUST A PERMISSION: declaring payment must NOT
    block the user from anything.** After the declaration, the user continues — booking included.
    **If any action is gated on the payment being confirmed, that is a DEFECT and must be reported**,
