@@ -56,10 +56,19 @@ orchestrator must know.
 **Two supported paths, in order of preference:**
 1. **`FHE_ADMIN_PASSWORD` in `.env.test`** — click *"Sign in with email and password"*, then submit.
    This is the primary path.
-2. **`FHE_STORAGE_STATE=<path>`** — a Playwright `storageState` JSON the owner produced by signing
-   in once himself. If that variable is present, **load the session and skip the login form
-   entirely.** Expect it to expire; if the session is dead, STOP and report rather than falling back
-   to Google.
+2. **`FHE_STORAGE_STATE=<path>`** — a Playwright `storageState` JSON. If present, **load the session
+   and skip the login form entirely.** If the session is dead, STOP and report rather than falling
+   back to Google.
+3. **`FHE_MAGIC_LINK=<url>`** — a one-time sign-in link the owner generates from the Supabase
+   dashboard. ⚠️ **SINGLE USE AND SHORT-LIVED.** If this is how you authenticate:
+   **open it, and the moment the session is live, WRITE `storageState` to disk and use that for the
+   rest of the walk.** Never navigate to the magic link twice — the second visit fails and the
+   credential is spent. If it is already expired or consumed, **STOP and ask for a fresh one**;
+   do not attempt any other route in.
+
+**Whichever path is used, save and reuse the session.** The walk switches between the test identity
+and the admin account repeatedly — re-authenticating per switch is both fragile and wasteful. Keep
+one storage-state file per identity and swap contexts.
 
 **Test accounts you create yourself set their own password at activation** — they never involve
 Google, so the client-side half of the walk is unaffected either way.
