@@ -21,7 +21,7 @@ cron run, or a browser render).
 |---|---|---|---|---|---|
 | F1 | Admin-provisioned client onboarding | staff | Records→Clients / lead drawer / dossier / `/app/ops/accounts/new` (§3) | invitation redeemed · wall {false,0} · categories derived | **PARTIAL** — spine works (walk16 e2e); payment card still single-SKU; emails unproven |
 | F2 | Self-onboarding funnel (kiosk gen-2) | visitor | `/sign`, `/sign/:path` (§1, URL-ONLY) | same as F1 + signup_attempts row | **BREAKS** — zero inbound links; zero staff visibility on success; 0 uses ever |
-| F3 | Visit-day release kiosk + participant flow | visitor | `/release`, `/docs/release-participant` (§1, URL-ONLY) | executed release + delivery row (+ kiosk request, participant only) | **PARTIAL** — signing+delivery work (35 delivery rows); `/release` alerts nobody |
+| F3 | Visit-day release kiosk + participant flow | visitor | `/release`, `/docs/release-participant` (§1, URL-ONLY) | executed release + delivery row (+ kiosk request, participant only) | **PARTIAL** — signing+delivery work (35 delivery rows); `/release` alerts nobody; ⚠️ **the GUEST flow does not exist as a flow** — see X9 |
 | F4 | Public booking request (funnels) | visitor | `/lessons` `/horse` `/acquisition` `/contact` `/gift` (§1, Header/Footer NAV) | request `converted` with stamped invitation | **PARTIAL** — spine works; 2 proven sends ever; mixed-cart filing open |
 | F5 | Authenticated session booking | member | `/app/calendar` (§2, NAV) | booking `completed` + credit + unit consumed | **PARTIAL** — pending→confirm works; **0 completions ever**; refusal = silent DELETE |
 | F6 | Recurring plans (care plans) | member/staff | CalendarItemPanel (via `/app/calendar`) | monthly credits minted · bookings on chosen days | **PARTIAL** — generator proven (walk21); month-roll dead while every order is unpaid |
@@ -153,3 +153,41 @@ Management (Dashboard/Records/Support/Payment review) · **COMM** Community grou
 - **SURFACE-INVENTORY** — one extension, not a contradiction: its `/release` D19 row
   says `records-reference:Y`; at the FLOW level the reference reaches no staff surface
   (F3-BREAKS-1).
+
+---
+
+## X9 — THE GUEST FLOW DOES NOT EXIST AS A FLOW (owner correction, 2026-08-20)
+
+**The owner defines the guest flow as three documents: the general liability release, the rules,
+and the policies.** That flow is not built. It was conflated with the *participant* (rider) flow
+by this map and by the orchestrator; the owner corrected both.
+
+**What actually exists:**
+- **`/release`** signs **exactly ONE document** (`Release.tsx:110` — bare `/release` defaults to
+  `RELEASE_GENERAL`). The facility rules appear as an **acknowledgment checkbox**
+  (`p_rules_acknowledged`), **not as executed documents.** No `FACILITY_RULES` or
+  `COMPANY_POLICIES` document is created by this path.
+- **`/docs/release-participant`** is the **rider/participant** flow — four documents
+  (`FACILITY_RULES`, `COMPANY_POLICIES`, `RELEASE_PARTICIPANT`, `HUMAN_EMERGENCY_MEDICAL`).
+  It is the multi-document guided flow, and it works (12 people, 35 delivery rows).
+
+**The proof it has never existed:** no contact in production has ever held the guest set. Every
+`FACILITY_RULES`+`COMPANY_POLICIES` pairing (12 of them) comes from the participant flow, and the
+single `RELEASE_GENERAL` document stands alone with neither beside it.
+
+```sql
+select d.contact_id, string_agg(t.template_key,', ' order by t.template_key)
+from documents d join contract_templates t on t.id=d.template_id
+where t.template_key in ('RELEASE_GENERAL','FACILITY_RULES','COMPANY_POLICIES')
+group by 1;
+--  every row: "COMPANY_POLICIES, FACILITY_RULES"   ← participant flow
+--  RELEASE_GENERAL never appears alongside either
+```
+
+**The fix is a convergence, not a build.** `DocsParticipantFlow.tsx` already IS a working
+multi-document guided signing flow with a per-document list (`:37-40`). A guest flow is that same
+engine with a different list. **Do not build a second multi-document signer** — this project has
+paid for that mistake repeatedly.
+
+**Open for the owner:** which URL the guest flow lives at, given `/sign` is the new family.
+
