@@ -1,10 +1,13 @@
 # TASK-NOSTRIP — narrowing a category must never destroy required paperwork
 
 **Branch `task/nostrip`, worktree `~/Downloads/claude-code-repo/wt-nostrip`.
-Committed, NOT pushed. NOTHING IS APPLIED TO PRODUCTION** — the migration was
-dry-run inside `BEGIN … ROLLBACK` and the rollback proven; WALK2/WALK3 are
-driving prod and `apply_category_documents` is exactly what WALK3 observes when
-a counterparty activates, so the apply step is held pending the go-ahead.
+Committed, NOT pushed. APPLIED TO PRODUCTION 2026-08-21** — dry-run inside
+`BEGIN … ROLLBACK` with the rollback proven first, then applied and verified
+against the live bodies (§10). The hold was released on the owner's reading of
+this report's own finding: `promote_buyer_from_offering` fires on every
+`purchase_items` insert and WALK3 was live on `redeem_contract_invitation` —
+two of the five callers — so *"a purely additive change cannot confuse a walk;
+a live strip can destroy real requirements."*
 **Render claims: NOT VERIFIED** (no browser was driven).
 
 ---
@@ -344,3 +347,83 @@ with a bad flag, and one with the migration still in the tree; both were killed
 checkout's (`package.json` verified byte-identical to `main` first), and `.env`
 / `.env.test` / `.env.db` were copied in so the suites could run. All four are
 gitignored and none is committed.
+
+---
+
+## 10. THE APPLY — production, 2026-08-21
+
+Applied with `lock_timeout 10s` / `statement_timeout 120s` so it could not block
+WALK2/WALK3. The migration carries its own `BEGIN … COMMIT`, so it landed as one
+transaction: five `CREATE FUNCTION`, two `COMMENT`, the REVOKE/GRANT pairs,
+`COMMIT`. No errors.
+
+**The requirement rows had moved from 23 to 27 between the dry-run and the
+apply** — WALK2/WALK3 provisioning in real time, which is precisely the
+condition that made an additive change the safe one.
+
+### Verified with queries against the live database
+
+**V1 — the apply moved no requirement rows.** Captured immediately before and
+immediately after:
+
+```
+BEFORE   27 rows   0 skipped   fingerprint 80c24765adb42643576e896023ac7d7a
+AFTER    27 rows   0 skipped   fingerprint 80c24765adb42643576e896023ac7d7a
+```
+
+**V2 — the four destroying lines are gone from the executable body.**
+`position('DELETE FROM contact_required_documents' in <definition with comments
+stripped>)` = **0**, and the epitaph comment that records what left and why is
+present.
+
+**V3 — the five functions are live with the intended grants:**
+
+| function | grants |
+|---|---|
+| `_skip_required_document(uuid,text,text,uuid)` | `service_role` only — internal, revoked from `authenticated` and `anon` |
+| `skip_required_document(uuid,text,text)` | `authenticated`, `service_role` |
+| `narrow_contact_required_documents(uuid,text[],text)` | `authenticated`, `service_role` |
+| `apply_category_documents(uuid,text[])` | `service_role` only — unreachable from a browser |
+| `set_contact_required_documents(uuid,text[])` | `anon`, `authenticated`, `service_role` — **the pre-existing anon grant survives**, as flagged-not-fixed #4 (`CREATE OR REPLACE` preserves the ACL) |
+
+### Behaviour re-proven against the LIVE functions
+
+A throwaway contact inside `BEGIN … ROLLBACK`, exercising the shapes the two
+callers the owner named actually use:
+
+```
+B1  apply_category_documents(['RIDER']) on the six-document mixed holder
+    -> 6 rows in, 6 rows out. THE CATEGORISE CASE, ON THE LIVE FUNCTION.
+       COMPANY_POLICIES, FACILITY_RULES, HORSE_EMERGENCY_VET,
+       HUMAN_EMERGENCY_MEDICAL, RELEASE_HORSE_CARE, RELEASE_PARTICIPANT
+
+B2  the TRIGGER's shape — apply_category_documents(['GUEST','RIDER'])
+    -> 7 rows. It ADDED Guest's RELEASE_GENERAL and stripped nothing.
+
+B3  redeem_contract_invitation's shape — _ensure_client_account(..., ['GUEST'],
+    '{}'::text[])  -> still 7 rows, unchanged. WALK3's path takes nothing away.
+
+B4  the deliberate door — narrow to Rider with a reason
+    -> {"skipped": ["HORSE_EMERGENCY_VET","RELEASE_GENERAL","RELEASE_HORSE_CARE"]}
+       all SEVEN rows still present, three marked skipped, each carrying
+       skipped_by b45a5503-… and 'post-apply verification'
+       wall: {"gating": 4, "pending": 4} — the three stopped blocking
+
+B5  narrow with a blank reason
+    -> REFUSED: a reason is required to remove required paperwork from
+       someone's record
+```
+
+**Nothing from the verification persists:** `ROLLBACK`, then production reads
+`27 rows / 0 skipped / fingerprint 80c24765adb42643576e896023ac7d7a` and zero
+`nostrip.postapply@invalid.test` contacts.
+
+### What is now true on production
+
+`apply_category_documents` cannot remove a required document from anybody, from
+any of its five callers, including the purchase trigger that fires on every
+`purchase_items` insert. Removal exists only behind
+`narrow_contact_required_documents`, which is staff-gated, demands a reason,
+refuses executed evidence by name, skips rather than deletes, and writes the
+audit row. The front-end changes ride on the same commit and reach production
+with the next deploy; the database is safe as of now, without one.
