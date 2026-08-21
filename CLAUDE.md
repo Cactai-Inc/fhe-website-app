@@ -487,13 +487,22 @@ reporting success.
   ruled behaviour** — the order page (*"scheduling doesn't wait on payment"*) and onboarding
   (*"either way you can book your sessions on the Calendar"*). **The copy was right and the code was
   wrong.**
-  ⚠️ **Corollary — no scheduler exists, and the design does not need one.** `pg_cron` is **not
-  installed** (no extension, no `cron` schema) and the Vercel crons were never created, so today a
-  recurring "monthly membership" purchase mints **nothing, ever**. **The fix is not a scheduler.**
-  Owner, 2026-08-20: *"mint into eternity the weekly schedule and its gated on did they pay at the
-  staff fullfilment level."* **A recurring purchase creates an OPEN-ENDED weekly entitlement** —
-  `weekly_frequency` is the entitlement, indefinitely, until cancelled — in the same shape as
-  CAREPLANS' *"the chosen days ARE the entitlement."* Nothing must wake up monthly to refill a
-  balance designed never to run out. **"Did they pay" is answered by staff AT FULFILMENT**, not at
-  minting and not at booking. ⚠️ **An orchestrator draft specced "mint the first period, then ask
-  about month 2" — the owner corrected it as the opposite of the instruction.**
+  ⚠️ **Corollary — A WEEKLY MEMBERSHIP IS A STANDING SLOT, NOT A CREDIT BALANCE.** Owner,
+  2026-08-20: *"its not like we get paid and then issue them credits and then they have to go
+  schedule them, that would be a monthly riding punch card, not a weekly paid monthly riding slot,"*
+  and *"mint into eternity the weekly schedule and its gated on did they pay at the staff
+  fullfilment level."*
+  **Two shapes, two products.** `config_kind = 'scheduled'` (Single, Evaluation, 4-/8-Lesson Punch
+  Cards) gives **credits the client spends and schedules themselves**. `config_kind = 'recurring'`
+  (1x/2x Weekly) gives **a standing weekly slot — a reserved recurring time that is theirs**, chosen
+  once, recurring until cancelled. **`weekly_frequency` is slots per week, not credits.**
+  **This is CAREPLANS' ruling generalised** — *the chosen days ARE the entitlement; the month opens
+  with bookings and zero spendable credits* — and weekly lessons must converge on that same
+  mechanism, not a second one. **A recurring purchase that produces `lesson_credits` rows is
+  defective.** **"Did they pay" is answered by staff AT FULFILMENT**, not at purchase and not at
+  booking.
+  ⚠️ **No scheduler exists and none is needed:** `pg_cron` is **not installed** (no extension, no
+  `cron` schema) and the Vercel crons were never created — but a standing slot has nothing to top up
+  monthly. Today a recurring purchase produces **nothing at all**, which is the live defect.
+  ⚠️ **The orchestrator specced this wrong twice — "mint the first period then ask about month 2",
+  then "mint credits forever" — and was corrected both times. The product is a slot.**
