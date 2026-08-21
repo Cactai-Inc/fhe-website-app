@@ -527,3 +527,85 @@ reporting success.
   This thread did exactly that, which is why the collision was ruled on rather than discovered later
   as a defect.
 
+- **D25 — "BOOKING" IS INTERNAL TAXONOMY ONLY. THE USER SEES THE OFFERING, AT THE RIGHT LEVEL
+  (owner, 2026-08-21).** Owner: *"we have bookings (a term used for a calendar item linked to an
+  offering purchased by a client on a processed order that has payment pending or paid status)…
+  Its supposed to be an internal taxonomy only… this was flat out wrong."* The word was applied
+  liberally to calendar entries, page names, step names and references. **It is a data concept, not
+  a label.**
+  **The naming level differs by service, deliberately:**
+  - **Riding lessons — go HIGH.** Always *"Riding Lesson"*. **Never** surface 2x weekly, evaluation,
+    single or à la carte to the client. *"Schedule a Riding Lesson"* · *"Select the day and time for
+    your weekly Riding Lesson(s)"* · *"You are scheduled for a Riding Lesson with Claire this week"*
+    · *"Reschedule your Riding Lesson"*.
+  - **Horse care — go LOW, but stop above quantity/frequency.** Name the actual service —
+    turnout · clipping · training · exercise — never the SKU's frequency. *"Select the day for
+    turnout"* · *"Select the day for your horse's hair clipping"*.
+  **And the noun changes per service:** exercise/turnout/training are a **service** (*"your horse
+  {name} is scheduled for turnout service with us"* → *"change or cancel your request"*); clipping is
+  an **appointment** (*"your horse {name} is booked with us for a hair clipping"* → *"change or
+  cancel your appointment"*); lessons are a **Riding Lesson**.
+  **⚠️ BOOKING CONFIGURATION IS PER-OFFERING AND MUST BE FLEXIBLE.** *"we need to be flexible for the
+  user to configure the terms of the booking request relative to what is needed/logical on an
+  offering by offering basis."*
+  - **Riding lessons:** day **and time** (a standing weekly slot — see D23).
+  - **Horse care:** the client picks **month OR week OR day** — one of three granularities — and
+    **"any day is fine" is valid** (common for training and clipping). **Do NOT make horse-care
+    clients pick timeslots**; if a specific slot matters it is resolved with Claire directly.
+  - **Turnout additionally takes a QUANTITY plus what the quantity applies to.** Real shapes to
+    support: *2x this week* · *4x every week* · *every Mon/Wed/Fri* · *every weekend* · *as needed,
+    bill me monthly for what was done* · *at least X times per week for the month of Z* (a
+    prearranged fixed monthly price, typically mixing ridden exercise and turnout, **with Claire
+    choosing which to do on a given day — or resting the horse — based on weather, the horse's
+    condition and her availability**).
+  **Owner presence is NOT modelled.** Horse care usually happens without the owner there, and is
+  often needed *because* they are away. If they want to attend, they arrange it with Claire.
+  **Do not add complexity to capture it.**
+- **D26 — TWO OWNER ROLES: HEAD TRAINER vs BUSINESS OPERATIONS, AND EACH GETS ITS OWN DASHBOARD
+  (owner, 2026-08-21).** *"the logical split is Client vs Business ops."*
+  **`hello@fhequestrian.com` (Claire) = Owner — Head Trainer.** Client-facing. Her dashboard is her
+  working surface: the day/week plan of what is scheduled · people to reach out to · outstanding
+  payments · new orders · client questions · client contributions and responses to lesson notes ·
+  **plus the stable: horses and their needs/appointments/schedule/usage, equipment and supplies
+  needed or broken, and follow-ups with vendors, suppliers, partners and customers.** Owner: *"She
+  should live in her dashboard as the action surface she uses to manage her day/week/month."*
+  **`admin@fhequestrian.com` (CJ) = Owner — Business Operations.** Business-facing, **but carries a
+  subset of Claire's KPIs, alerts and to-do visibility deliberately — a second set of eyes, or
+  because they are working on it together.**
+  **Both are Ops dashboards. The role selects the emphasis, not the capability** — same user role,
+  same permissions; only the default views and priorities differ.
+  ⚠️ **The dashboard is the LANDING SURFACE**, shown on a fresh login **and after ~30 minutes away**
+  — not a page you navigate to.
+  ⚠️ **Every user with anything on a calendar gets a schedule view.** Not staff-only.
+  ⚠️ **Revenue by week and month is a first-class dashboard number.** The calendar shows it today
+  and **shows it inaccurately.**
+  **Shippable now, ahead of the refactor:** a designation on the company accounts plus a
+  dashboard that reads it. The full split lands with the refactor.
+- **D27 — EVALUATIONS AND ACTIVITY RECORDS ARE RECORDS ON A RIDER OR HORSE — NOT DOCUMENTS, DEALS
+  OR MONEY (owner, 2026-08-21).** Corrects both the chat thread's *"move Evaluations to Money"* and
+  the orchestrator's counter-proposal of *"Documents & Deals"*. **Both were wrong.**
+  Owner: *"The evaluation is like a report card, we have two types, rider and horse, both live on
+  their record and both are considered an initial entry after creation of the account and used as
+  reference for downstream actions."*
+  **The full record taxonomy, all living on the rider or horse record:**
+  1. **Evaluations** — rider and horse. The initial entry; referenced downstream.
+  2. **Riding / exercise logs.** Riding applies to riders **and** horses; exercise applies to horses
+     only. **Claire rides as Trainer, with a ride type of Training or Exercise.**
+  3. **Reports** — Riding Lesson Report · Horse Training Report.
+  4. **Horse Exercise Notes** — covering turnout and riding.
+  5. **Photos and video** — lessons, training, exercise. **Clipping uses a log, a note and
+     before/after photos — and the app must PROMPT Claire to capture them.**
+  **Everyone involved sees what makes sense for them** — Claire, the horse's record, the business,
+  the rider. **An activity log is the minimum; clicking an entry opens the content.** Calendar and
+  schedule are additional access paths showing past/current/future, and **notes, photos and plans can
+  be added before and after the activity.**
+  ⚠️ **NEVER LOCKED, ALWAYS LOGGED.** *"they are never locked they can always be edited but the
+  changes are always logged so the record cant be changed without visibility if needed during an
+  audit."* Real deletion happens **only at the database level**, never through the UI.
+  ⚠️ **THE ONE SCRUB EXCEPTION — narrows D11/D15.** *"If something sensitive is accidentally captured
+  like maybe the wrong photo is added or the wrong text is pasted into a note and saved, we need to
+  have the ability to fully scrub it so we remove liability over that content."* **This is the sole
+  case where content is genuinely destroyed rather than retired behind a flag.** It exists for
+  liability over content that should never have been captured. **It is not a general delete, and it
+  does not weaken D11 (accounts archive), D15 (linked files survive) or the rule that executed
+  documents are evidence.**
