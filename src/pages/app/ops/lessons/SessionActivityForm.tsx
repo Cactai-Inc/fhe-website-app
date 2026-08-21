@@ -12,6 +12,8 @@ import {
   type BookingFormAnswers,
   type BookingNote,
 } from '../../../../lib/ops/api-lessons';
+import { recordLessonProgress, type ObjectiveOutcome } from '../../../../lib/ops/api-lessonplan';
+import { LessonPlanProgress, type PlanProgressValue } from '../../../../components/app/LessonPlanProgress';
 
 /**
  * SESSION ACTIVITY FORM (LESSONFORM) — the instructor's form for ONE booking,
@@ -33,6 +35,18 @@ import {
  *
  * Below the form, the authored-notes thread (booking_notes) is unchanged: it is
  * the rider⇄instructor conversation, a different thing from the form's answers.
+ *
+ * LESSONPLAN adds the top section and the primary action. The plan the rider is
+ * on rides in on the SAME read as the form (booking_form() returns both), and
+ * "Record progress" calls record_lesson_progress, which saves this form through
+ * save_booking_form — still the one writer — and advances the plan in the same
+ * call. That is the loop: what is recorded here is what the rider's NEXT Riding
+ * Lesson leads with.
+ *
+ * "Save" is deliberately NOT the plan-advancing button. A draft save keeps the
+ * per-objective results with the form and leaves the plan alone; advancing the
+ * plan is a stated, confirmed act (D19), because it changes what somebody else
+ * sees on their next lesson.
  */
 function noteLabel(n: BookingNote): string {
   const who = n.author_name || (n.author_role === 'rider' ? 'Rider' : 'Instructor');
@@ -40,13 +54,16 @@ function noteLabel(n: BookingNote): string {
   return `${when} · ${who}`;
 }
 
-/** The one-word state Claire scans for on a collapsed card. */
+/** The one-word state Claire scans for on a collapsed card. D25: the label names
+ *  what it is to a person — the plan and the record of the session — never the
+ *  internal taxonomy the row is stored under. */
 function formSummary(view: BookingFormView | null): string {
-  if (!view) return 'Activity form';
-  if (!view.form) return 'Activity form · discarded';
-  if (view.form.status === 'retired') return 'Activity form · kept (cancelled)';
-  if (view.form.status === 'submitted') return 'Activity form · done';
-  return view.form.blank ? 'Activity form · not started' : 'Activity form · in progress';
+  const noun = view?.kind === 'lesson' ? 'Plan & record' : 'Session record';
+  if (!view) return 'Plan & record';
+  if (!view.form) return `${noun} · discarded`;
+  if (view.form.status === 'retired') return `${noun} · kept (cancelled)`;
+  if (view.form.status === 'submitted') return `${noun} · done`;
+  return view.form.blank ? `${noun} · not started` : `${noun} · in progress`;
 }
 
 function asStringArray(v: unknown): string[] {
@@ -77,14 +94,29 @@ export function SessionActivityForm({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
+  /** The plan half of what gets saved. Outcomes are restored from the form's own
+   *  answers, so a half-filled write-up comes back exactly as it was left. */
+  const [progress, setProgress] = useState<PlanProgressValue>({ outcomes: [], nextFocus: null });
+
+  /** Take a fresh server copy as the truth. `keepFocus` preserves what Claire
+   *  has typed into "what to work on next": a plain Save does not persist it
+   *  anywhere (only recording progress does), so clearing it on a save would
+   *  throw away her sentence without telling her. */
+  function adopt(v: BookingFormView, keepFocus: string | null = null) {
+    setView(v);
+    setAnswers(v.form?.answers ?? {});
+    setProgress({
+      outcomes: (v.form?.answers?.plan_progress ?? []) as ObjectiveOutcome[],
+      nextFocus: keepFocus,
+    });
+  }
 
   async function expand() {
     setOpen(true);
     if (loaded) return;
     try {
       const [v, r] = await Promise.all([getBookingForm(bookingId), getBookingReport(bookingId)]);
-      setView(v);
-      setAnswers(v.form?.answers ?? {});
+      adopt(v);
       setNotes(r.notes ?? []);
       setLoaded(true);
     } catch (e) {
@@ -120,25 +152,80 @@ export function SessionActivityForm({
       .map((f) => f.label);
   }
 
+  /** A plain save. Keeps the per-objective results with the form and leaves the
+   *  rider's plan exactly where it is — advancing it is the other button. */
   async function save(submit: boolean) {
     if (submit) {
       const missing = missingRequired();
       if (missing.length > 0) {
-        setErr(`Still needed before this form is done: ${missing.join(', ')}.`);
+        setErr(`Still needed before this is done: ${missing.join(', ')}.`);
         return;
       }
     }
     setBusy(true);
     setErr(null);
     try {
-      const next = await saveBookingForm(bookingId, answers, submit);
-      setView(next);
-      setAnswers(next.form?.answers ?? answers);
-      setSaved(submit ? 'Form submitted.' : 'Saved.');
+      const next = await saveBookingForm(
+        bookingId,
+        { ...answers, plan_progress: progress.outcomes.filter((o) => o.id || o.label?.trim()) },
+        submit,
+      );
+      adopt(next, progress.nextFocus);
+      setSaved(submit ? 'Saved and marked done. The plan was left as it is.' : 'Saved.');
       onReportChange?.(asString(answers.report).trim());
       onChanged?.();
     } catch (e) {
-      setErr(toErrorMessage(e, 'Could not save the form.'));
+      setErr(toErrorMessage(e, 'Could not save.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** THE LOOP (§4). Saves the write-up through the same one writer AND advances
+   *  the rider's plan, so their next Riding Lesson leads with what was recorded
+   *  here. D19: it says what it is about to do and waits for a yes, because it
+   *  changes what somebody else sees. */
+  async function recordProgress() {
+    const missing = missingRequired();
+    if (missing.length > 0) {
+      setErr(`Still needed before this is done: ${missing.join(', ')}.`);
+      return;
+    }
+    const outcomes = progress.outcomes.filter((o) => o.id || o.label?.trim());
+    const achieved = outcomes.filter((o) => o.state === 'achieved').length;
+    const added = outcomes.filter((o) => !o.id && o.label?.trim()).length;
+    const focus = progress.nextFocus?.trim();
+    const lines = [
+      'Record this Riding Lesson and update the rider\'s plan?',
+      '',
+      achieved > 0 ? `· ${achieved} objective${achieved === 1 ? '' : 's'} marked achieved` : null,
+      added > 0 ? `· ${added} new objective${added === 1 ? '' : 's'} added to the plan` : null,
+      focus ? `· Next focus: “${focus}”` : '· The current focus stays as it is',
+      '',
+      'Their next Riding Lesson will lead with this. The plan as it stands now is kept and can be put back.',
+    ].filter((l) => l !== null);
+    if (!window.confirm(lines.join('\n'))) return;
+
+    setBusy(true);
+    setErr(null);
+    try {
+      const result = await recordLessonProgress({
+        bookingId,
+        answers,
+        outcomes,
+        nextFocus: focus || null,
+        submit: true,
+      });
+      adopt(await getBookingForm(bookingId));
+      setSaved(
+        result.plan_advanced
+          ? `Recorded. The plan is now version ${result.plan?.version} — the next Riding Lesson picks it up.`
+          : 'Recorded. Nothing on the plan changed, so no new version was written.',
+      );
+      onReportChange?.(asString(answers.report).trim());
+      onChanged?.();
+    } catch (e) {
+      setErr(toErrorMessage(e, 'Could not record the progress.'));
     } finally {
       setBusy(false);
     }
@@ -151,9 +238,7 @@ export function SessionActivityForm({
       const r = await discardBookingForm(bookingId);
       // Re-read rather than guess: a blank form is gone, one that had been
       // written in is retired and still here.
-      const next = await getBookingForm(bookingId);
-      setView(next);
-      setAnswers(next.form?.answers ?? {});
+      adopt(await getBookingForm(bookingId));
       setSaved(r.outcome === 'deleted' ? 'Form deleted.' : 'Form kept as a record and closed.');
       onChanged?.();
     } catch (e) {
@@ -310,15 +395,29 @@ export function SessionActivityForm({
 
       {view && !view.form && (
         <p className="text-sm text-muted">
-          No activity form on this booking — it was discarded, or this is not a session a
-          form applies to. Saving anything below starts a fresh one.
+          No record on this session — it was discarded, or this is not a session a form
+          applies to. Saving anything below starts a fresh one.
         </p>
       )}
       {readOnly && (
         <p className="text-xs text-gold-800">
-          This booking was cancelled. The form had been written in, so it is kept as a
-          record and can no longer be edited.
+          This session was cancelled. The record had been written in, so it is kept and
+          can no longer be edited.
         </p>
+      )}
+
+      {/* LESSONPLAN — the plan comes in on the same read as the form, so the two
+          can never render against different copies of the same lesson. */}
+      {view && view.kind === 'lesson' && (
+        <LessonPlanProgress
+          bookingId={bookingId}
+          plan={view.plan}
+          nextUp={view.plan_next_up}
+          pinned={view.plan_pinned}
+          readOnly={readOnly}
+          value={progress}
+          onChange={(v) => { setProgress(v); setSaved(null); }}
+        />
       )}
 
       {view?.definition?.schema.sections.map((section) => (
@@ -333,9 +432,15 @@ export function SessionActivityForm({
           <button type="button" className="btn-secondary text-xs" disabled={busy} onClick={() => void save(false)}>
             Save
           </button>
-          <button type="button" className="btn-primary text-xs" disabled={busy} onClick={() => void save(true)}>
-            {view.form?.status === 'submitted' ? 'Save as done' : 'Mark done'}
-          </button>
+          {view.kind === 'lesson' ? (
+            <button type="button" className="btn-primary text-xs" disabled={busy} onClick={() => void recordProgress()}>
+              Record progress &amp; update the plan
+            </button>
+          ) : (
+            <button type="button" className="btn-primary text-xs" disabled={busy} onClick={() => void save(true)}>
+              {view.form?.status === 'submitted' ? 'Save as done' : 'Mark done'}
+            </button>
+          )}
           {view.form && (
             <button
               type="button"
@@ -344,12 +449,12 @@ export function SessionActivityForm({
               onClick={() => void discard()}
               title={
                 view.form.blank
-                  ? 'Deletes this form — it has nothing in it'
-                  : 'Closes this form and keeps what is written in it as a record'
+                  ? 'Deletes this record — it has nothing in it'
+                  : 'Closes this record and keeps what is written in it'
               }
             >
               <Trash2 size={12} aria-hidden="true" />
-              {view.form.blank ? 'Delete this form' : 'Close and keep as a record'}
+              {view.form.blank ? 'Delete this record' : 'Close and keep as a record'}
             </button>
           )}
           {saved && <span className="text-xs text-green-800/70">{saved}</span>}

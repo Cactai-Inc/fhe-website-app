@@ -166,6 +166,11 @@ export const PAGE_REGISTRY: PageEntry[] = [
   // The key stays lessons.hub — MODULE_HUB_PAGE_KEY reads it by key, not path
   // (this is exactly the case pageRegistry.ts's own header comment names).
   { key: 'lessons.hub', path: '/app/records/lessons', label: 'Lessons', group: 'management', module: 'mod.lessons' },
+  // LESSONPLAN — its OWN nav row, per the hub/child rule above: no-cascade is
+  // only safe because children are in the nav. D17 was written about exactly the
+  // opposite of this (a routed page with no registry row, which the owner
+  // concluded did not exist).
+  { key: 'lessons.plans', path: '/app/ops/lessons/plans', label: 'Lesson plans', group: 'management', module: 'mod.lessons', parent: 'lessons.hub' },
 
   { key: 'boarding.hub', path: '/app/ops/boarding', label: 'Boarding', group: 'modules', module: 'mod.boarding' },
   { key: 'boarding.facilities', path: '/app/ops/boarding/facilities', label: 'Facilities & stalls', group: 'modules', module: 'mod.boarding', parent: 'boarding.hub' },

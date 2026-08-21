@@ -11,6 +11,8 @@ import { fetchMyMonthlyPlans, type MonthlyPlan } from '../../lib/ops/api-calenda
 import { formatSessionWhen } from '../../lib/formatDateTime';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { SessionNotesView } from './SessionNotesView';
+import { MyLessonPlanCard } from './MyLessonPlanCard';
+import { LessonActivityLog } from './LessonActivityLog';
 
 /**
  * MY LESSONS — the shared subject content (TASK-ACCOUNTSURFACE §1/§3), rendered
@@ -155,10 +157,15 @@ export function MyLessonsContent() {
 
       {load.isPending && !overview && <p className="body-text text-muted">Loading…</p>}
 
+      {/* YOUR PLAN — LESSONPLAN §5. The rider sees what they are working towards
+          and what comes next, which is the point of a plan; the instructor's own
+          private notes are a different column and never reach this surface. */}
+      <MyLessonPlanCard />
+
       {/* Upcoming sessions — above the credits ledger. */}
       {upcoming.length > 0 && (
-        <section aria-label="Upcoming lessons" className="mb-8" data-testid="upcoming-sessions">
-          <h2 className="font-serif font-medium text-green-800 text-xl mb-4">Upcoming lessons</h2>
+        <section aria-label="Upcoming Riding Lessons" className="mb-8" data-testid="upcoming-sessions">
+          <h2 className="font-serif font-medium text-green-800 text-xl mb-4">Your next Riding Lessons</h2>
           <div className="flex flex-col gap-3">
             {upcoming.map((s) => (
               <div key={s.id} className="bg-white border border-green-800/10 p-5">
@@ -211,6 +218,16 @@ export function MyLessonsContent() {
           </div>
         </section>
       )}
+
+      {/* THE ACTIVITY LOG — D27's "an activity log is the minimum; clicking an
+          entry opens the content." Every Riding Lesson with something on it,
+          collapsed, with the photos from that lesson inside. */}
+      <section aria-label="Your Riding Lessons" className="mb-8" data-testid="my-activity">
+        <h2 className="font-serif font-medium text-green-800 text-xl mb-4">
+          Every Riding Lesson
+        </h2>
+        <LessonActivityLog audience="rider" limit={50} />
+      </section>
 
       {/* BOOKLINK B4 + CREDITALIGN — every plan the member holds this month, lessons
           AND horse care, with the numbers read straight off the allotment they book

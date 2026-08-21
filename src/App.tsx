@@ -117,6 +117,7 @@ import LessonsHubPage, { LESSONS_HUB_STANDALONE_RETIRED } from './pages/app/ops/
 import LessonPackagesPage from './pages/app/ops/lessons/LessonPackagesPage';
 import LessonCreditsPage from './pages/app/ops/lessons/LessonCreditsPage';
 import SessionsPage from './pages/app/ops/lessons/SessionsPage';
+import LessonPlansPage from './pages/app/ops/lessons/LessonPlansPage';
 import RecordsHubPage, { RECORDS_HUB_RETIRED } from './pages/app/ops/hubs/RecordsHubPage';
 import HorsePartiesPage from './pages/app/ops/records/HorsePartiesPage';
 import HorseHealthPage from './pages/app/ops/records/HorseHealthPage';
@@ -403,6 +404,10 @@ export function AppRoutes() {
               <Route path="ops/lessons/packages" element={<ProtectedRoute requireStaff><LessonPackagesPage /></ProtectedRoute>} />
               <Route path="ops/lessons/credits" element={<ProtectedRoute requireStaff><LessonCreditsPage /></ProtectedRoute>} />
               <Route path="ops/lessons/sessions" element={<ProtectedRoute requireStaff><SessionsPage /></ProtectedRoute>} />
+              {/* LESSONPLAN — the plan roster + editor. Registered in
+                  pageRegistry.ts too, so it is reachable from the nav and not
+                  only by typing the URL (D17). */}
+              <Route path="ops/lessons/plans" element={<ProtectedRoute requireStaff><LessonPlansPage /></ProtectedRoute>} />
               {/* TASK-PAGEMERGE: RecordsHubPage's own roster is retired (a third
                   listing of the same horses); its two lane routes below are
                   unaffected and keep resolving. */}
