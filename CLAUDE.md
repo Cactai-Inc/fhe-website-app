@@ -510,3 +510,20 @@ reporting success.
   monthly. Today a recurring purchase produces **nothing at all**, which is the live defect.
   ⚠️ **The orchestrator specced this wrong twice — "mint the first period then ask about month 2",
   then "mint credits forever" — and was corrected both times. The product is a slot.**
+- **D24 — D23 NARROWS D9's PREPAID GATE: A STANDING SLOT SURVIVES AN UNCONFIRMED PAYMENT
+  (orchestrator ruling on the BUYANDBOOK thread's flagged override, 2026-08-20, owner-confirmed).**
+  D9 records the reasoning *"payment is prepaid-gated (no payment, no service)"*. **D23 rules that
+  declaring payment unblocks everything, and staff confirmation governs whether the lesson happens.**
+  The `BUYANDBOOK` thread hit the collision on recurring plans and **deliberately overrode the
+  prepaid gate, then flagged it rather than hiding it. That override is CORRECT and is now the
+  rule.**
+  **A weekly slot that disappears while a Zelle payment awaits confirmation is precisely the block
+  the owner ruled out** — the client would watch their reserved time vanish for a reason they cannot
+  act on. **The slot persists; delivery is the control.**
+  **D9's prepaid principle survives everywhere it was actually about** — no dunning, no overdue
+  reminders, no service delivered unpaid. **It does not extend to withholding a reserved time from a
+  client who has declared payment.**
+  ⚠️ **When a settled decision collides with a newer one, override deliberately and FLAG IT.**
+  This thread did exactly that, which is why the collision was ruled on rather than discovered later
+  as a defect.
+
