@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toErrorMessage } from '../../lib/ops/errors';
 import {
   adminSendInvitation, categoryDocumentDefaults, suggestedCategoryForContact,
-  onboardingTemplateOptions, matchesCategoryToken,
+  onboardingTemplateOptions, matchesCategoryToken, requestOnboardingCategories,
   CLIENT_CATEGORIES, CATEGORY_TOKEN, type CategoryDocDefault,
   type AdminInviteResult,
 } from '../../lib/admin';
@@ -119,12 +119,48 @@ export function ProvisionClientForm({
     { url: string; emailed: boolean; emailError?: string; email: string } | null>(null);
   // Already-signed templates (kiosk walk-in) — shown as complete, not re-requested.
   const [signedTemplates, setSignedTemplates] = useState<string[]>([]);
+  /** CATEGORISE §2 — the categories this inquiry's CART implied, for the note
+   *  that tells staff why the boxes below are ticked. */
+  const [derivedCategories, setDerivedCategories] = useState<string[]>([]);
 
   useEffect(() => {
     categoryDocumentDefaults().then(setDefaults).catch(() => setDefaults([]));
     onboardingTemplateOptions().then(setAllTemplates).catch(() => setAllTemplates([]));
     fetchOfferings().then(setOfferings).catch(() => setOfferings([]));
   }, []);
+
+  // ⚠️ CATEGORISE §2 — THE CART DECIDES THE CATEGORY, NOT THE FUNNEL.
+  //
+  // The category selects the LEGAL DOCUMENT SET this person must execute before
+  // they arrive. Until now the only signal on this screen was whatever a staff
+  // member remembered to tick, and the inquiry itself was filed under
+  // `state.funnel` — the page the visitor happened to be standing on. Someone
+  // who bought a lesson AND horse clipping in one cart was filed under one of
+  // them and signed one of the two sets.
+  //
+  // `request_onboarding_categories` reads the cart lines and answers with EVERY
+  // category they touch, already unioned with whatever this contact holds today
+  // (the RPC does that half — a derived default must never be able to strip a
+  // boarder's horse paperwork). It is a PREFILL: staff untick freely, and a
+  // phone call still beats a cart.
+  //
+  // Runs once per request. Re-ticking a box a staff member deliberately cleared
+  // would be worse than not prefilling at all.
+  const prefilledFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!requestId || prefilledFor.current === requestId) return;
+    prefilledFor.current = requestId;
+    requestOnboardingCategories(requestId, contactId)
+      .then((cats) => {
+        if (cats.length === 0) return;
+        setDerivedCategories(cats);
+        setCategories((prev) => {
+          const wanted = new Set([...prev, ...cats]);
+          return CLIENT_CATEGORIES.filter((c) => wanted.has(c));
+        });
+      })
+      .catch(() => { /* the checkboxes still work by hand */ });
+  }, [requestId, contactId]);
 
   // Signed-contact detection: preselect category from what they've already signed.
   useEffect(() => {
@@ -295,6 +331,15 @@ export function ProvisionClientForm({
         <div className="mb-6">
           <span className="form-label">Account category</span>
           <p className="text-sm text-muted mb-2.5">What kind of client — check everything that applies.</p>
+          {/* CATEGORISE §6 (THE REACH) — staff SEE that the cart chose these, and
+              can see it was the cart and not a guess. A prefill nobody can
+              account for is a prefill nobody trusts. */}
+          {derivedCategories.length > 0 && (
+            <p className="text-[12.5px] text-green-800/80 mb-2.5">
+              Prefilled from what they asked for: <strong className="font-medium">{derivedCategories.join(' + ')}</strong>.
+              {' '}This decides the paperwork below — change it if the conversation said otherwise.
+            </p>
+          )}
           <div className="flex flex-wrap gap-3">
             {CLIENT_CATEGORIES.map((c) => (
               <label key={c}

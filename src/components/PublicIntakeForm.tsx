@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { submitRequest } from '../lib/api';
 import { fetchIntakeRequirements } from '../lib/ops/api-public';
-import { CATEGORY_FIELDS } from '../lib/intakeCategoryFields';
+import { CATEGORY_FIELDS, PUBLIC_CATEGORY_OPTIONS } from '../lib/intakeCategoryFields';
 import { usePropertyTerm } from '../contexts/BrandProvider';
 import { withArticle, type PropertyTerm } from '../lib/propertyTerm';
 import type {
@@ -25,14 +25,9 @@ import type {
  * the sensible defaults (a Lessons page opens this with category='lessons').
  */
 
-const CATEGORIES: { value: RequestCategory; label: string }[] = [
-  { value: 'general', label: 'General question' },
-  { value: 'lessons', label: 'Riding lessons' },
-  { value: 'horse_care', label: 'Horse care' },
-  { value: 'acquisition', label: 'Buying or selling a horse' },
-  { value: 'media', label: 'Media / press' },
-  { value: 'partnership', label: 'Partnership / sponsorship' },
-];
+// CATEGORISE: the list moved to lib/intakeCategoryFields, which the staff inbox
+// reads too, so the public words and the staff filter's words are one map.
+const CATEGORIES = PUBLIC_CATEGORY_OPTIONS;
 
 function sourcesFor(term: PropertyTerm): { value: string; label: string }[] {
   return [

@@ -120,6 +120,47 @@ export async function listBookingRequests(
   return (data ?? []) as BookingRequest[];
 }
 
+/* ─── TASK-CATEGORISE §4 — the DERIVED category membership of an inquiry ──────
+ *
+ * `requests.category` is ONE value and it is chosen from `state.funnel` — the
+ * page the visitor happened to be standing on when they submitted. A cart
+ * holding a riding lesson and a horse clipping is filed under one of them, so a
+ * staff member filtering by horse care never sees it. The category is not a
+ * label: it selects the legal document set the person must sign before they
+ * arrive, so under-counting here is someone arriving uncovered.
+ *
+ * The `request_categories` view is the plural answer — every category the cart
+ * touches, PLUS the value the funnel stored, with provenance on each. It cannot
+ * under-count, which is why this shape was chosen over a second stored column
+ * that a trigger would have to keep in step with a cart that keeps changing.
+ */
+export interface RequestCategoryRow {
+  request_id: string;
+  category: string;
+  /** The cart says so — an offering in this category's segment is on the request. */
+  from_cart: boolean;
+  /** The stored `requests.category` says so — the funnel they submitted from. */
+  from_funnel: boolean;
+}
+
+/** Every inquiry's derived category membership, as request_id -> categories.
+ *  Read straight from the view: RLS (security_invoker) means a non-staff caller
+ *  gets an empty map rather than someone else's inbox. */
+export async function listRequestCategories(): Promise<Map<string, RequestCategoryRow[]>> {
+  const { data, error } = await supabase
+    .from('request_categories')
+    .select('request_id, category, from_cart, from_funnel');
+  if (error) throw error;
+  const out = new Map<string, RequestCategoryRow[]>();
+  for (const row of (data ?? []) as RequestCategoryRow[]) {
+    const list = out.get(row.request_id);
+    if (list) list.push(row);
+    else out.set(row.request_id, [row]);
+  }
+  for (const list of out.values()) list.sort((a, b) => a.category.localeCompare(b.category));
+  return out;
+}
+
 /** One row of the inbound QUEUE: the request plus how long it has been sitting
  *  and whether its person ever got captured. */
 export interface InboundQueueRow {

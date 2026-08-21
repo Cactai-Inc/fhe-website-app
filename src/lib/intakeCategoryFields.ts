@@ -73,3 +73,34 @@ export function categoryFieldLabel(key: string): string {
   if (EXTRA_DETAIL_LABELS[key]) return EXTRA_DETAIL_LABELS[key];
   return key.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 }
+
+/* ─── TASK-CATEGORISE — one label map for the request categories ──────────────
+ *
+ * The `requests.category` allowlist, in words. It lived twice — the public
+ * form's own dropdown list and `api/request-received.ts`'s CATEGORY_LABEL — and
+ * the staff category filter needed a third. This file already exists to stop
+ * exactly that drift between the public form and the staff inbox, so the map
+ * lives here and both read it. (`api/` compiles under its own tsconfig and is
+ * left alone.)
+ */
+export const REQUEST_CATEGORY_LABEL: Record<RequestCategory, string> = {
+  general: 'General question',
+  lessons: 'Riding lessons',
+  horse_care: 'Horse care',
+  acquisition: 'Buying or selling a horse',
+  media: 'Media / press',
+  partnership: 'Partnership / sponsorship',
+  gift: 'Gift enquiry',
+};
+
+/** What the PUBLIC form offers. `gift` is absent deliberately: a gift enquiry
+ *  has its own form and is never something a visitor picks from this list. */
+export const PUBLIC_CATEGORY_OPTIONS: { value: RequestCategory; label: string }[] =
+  (['general', 'lessons', 'horse_care', 'acquisition', 'media', 'partnership'] as const)
+    .map((value) => ({ value, label: REQUEST_CATEGORY_LABEL[value] }));
+
+/** The label for a stored category value, however old the row is. */
+export function requestCategoryLabel(category: string | null | undefined): string {
+  if (!category) return 'Uncategorised';
+  return REQUEST_CATEGORY_LABEL[category as RequestCategory] ?? category;
+}
