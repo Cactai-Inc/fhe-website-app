@@ -771,9 +771,20 @@ function FieldControl({
   // user is mid-edit, or a background reload would reset the input and drop the
   // characters being typed. Committed on blur.
   useEffect(() => { if (!editingRef.current) setLocal(f.value ?? ''); }, [f.value]);
+  // What this control has already sent — see InlineInput's sentRef: the date
+  // path below commits on change, and without this a later blur would send the
+  // same value a second time while the server copy was still catching up.
+  const sentRef = useRef(f.value ?? '');
+  useEffect(() => { sentRef.current = f.value ?? ''; }, [f.value]);
   const fmt = f.format_type ?? '';
   const kind = f.input_kind ?? 'text';
-  const save = () => { editingRef.current = false; if (local !== (f.value ?? '')) void onSave(f.field_key, local); };
+  const save = () => {
+    editingRef.current = false;
+    if (local !== (f.value ?? '') && local !== sentRef.current) {
+      sentRef.current = local;
+      void onSave(f.field_key, local);
+    }
+  };
 
   // ── structured formats (source of truth = f.structured) ──
   if (fmt === 'share_amount') {
@@ -941,8 +952,21 @@ function FieldControl({
       placeholder={f.label ?? undefined} />;
   }
   const type = kind === 'date' ? 'date' : kind === 'currency' || kind === 'percent' ? 'text' : 'text';
+  /* Dates commit on change here too — same reason as InlineInput above: the value
+     is atomic, and blur is not a reliable commit point for a picker that holds
+     focus. Keeping the two renderers in step matters because a flat-template
+     document uses THIS one. */
   return <input type={type} className={inputCls} disabled={disabled}
-    value={local} onFocus={() => { editingRef.current = true; }} onChange={(e) => setLocal(e.target.value)} onBlur={save}
+    value={local} onFocus={() => { editingRef.current = true; }}
+    onChange={(e) => {
+      const v = e.target.value;
+      setLocal(v);
+      if (type === 'date' && v !== (f.value ?? '') && v !== sentRef.current) {
+        sentRef.current = v;
+        void onSave(f.field_key, v);
+      }
+    }}
+    onBlur={save}
     placeholder={kind === 'currency' ? '$' : kind === 'percent' ? '%' : undefined} />;
 }
 
@@ -973,7 +997,34 @@ function InlineInput({
   // reload (triggered by any other field's save) could reset the input while the
   // user is typing, dropping characters.
   useEffect(() => { if (!editingRef.current) setLocal(value); }, [value]);
-  const commit = () => { editingRef.current = false; if (local !== value) onCommit(local); };
+  /* What this control has already sent, so a later blur cannot send it twice.
+     `value` is the SERVER's copy and only catches up after the page reloads —
+     comparing against it alone made the commit-on-change path below fire again
+     on the way out, i.e. two writes for one edit whenever the reload lagged. */
+  const sentRef = useRef(value);
+  useEffect(() => { sentRef.current = value; }, [value]);
+  const commit = () => {
+    editingRef.current = false;
+    if (local !== value && local !== sentRef.current) { sentRef.current = local; onCommit(local); }
+  };
+  /* DATES COMMIT ON CHANGE, NOT ON BLUR (TASK-CONTRACTSEND, WALK3 F-1).
+     A date input was the ONE control on the page that could never be saved: it
+     committed only on blur, and Enter — the commit shortcut every other input
+     honours — explicitly skipped it (see onKeyDown below, which used to read
+     `&& type !== 'date'`). Chrome's date field keeps focus through the whole
+     picker interaction, so a user could pick a date, watch it appear in the
+     document, and leave with nothing written. WALK3 proved it four ways and had
+     to write TXN.LEASE_START straight into the database to finish a lease.
+
+     Committing on change is safe HERE and not for free text: a date input's
+     value is atomic — the browser reports '' until every segment is valid, then
+     a complete ISO date — so there is no half-typed state to protect, which is
+     the only reason the text path waits for blur. This makes a date behave like
+     the select and yes/no controls, which have always saved on choice. */
+  const commitNow = (v: string) => {
+    setLocal(v);
+    if (v !== value && v !== sentRef.current) { sentRef.current = v; onCommit(v); }
+  };
   /* Width driver: the field sizes to its CONTENT — the entered value, or the
      full placeholder while empty (owner directive 2026-08-04). The old 18-char
      cap was the cause of the clipped placeholders ("Signing individual — nar",
@@ -999,9 +1050,9 @@ function InlineInput({
           value={local}
           placeholder={placeholder}
           onFocus={() => { editingRef.current = true; }}
-          onChange={(e) => setLocal(e.target.value)}
+          onChange={(e) => (type === 'date' ? commitNow(e.target.value) : setLocal(e.target.value))}
           onBlur={commit}
-          onKeyDown={(e) => { if (e.key === 'Enter' && type !== 'date') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } }}
         />
       </span>
     </span>

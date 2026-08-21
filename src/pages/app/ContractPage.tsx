@@ -71,6 +71,14 @@ function errMessage(e: unknown, fallback = 'That action failed.'): string {
   return fallback;
 }
 
+/** True when a field's `section` is the horse section, whatever case it carries.
+ *  Every live template stores the KEY ('HORSE'); the two call sites here used to
+ *  compare against the heading-cased 'Horse', so both silently matched nothing.
+ *  See WALK3 F-2 / TASK-CONTRACTSEND §2. */
+function isHorseSection(section: string | null | undefined): boolean {
+  return (section ?? '').trim().toUpperCase() === 'HORSE';
+}
+
 /** RETIRED behind a boolean, never deleted (standing rule from 86a2c33; the
  *  pattern is CONTACTS_PAGE_RETIRED).
  *
@@ -338,6 +346,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // bad origin degrades quietly instead of erroring or leaving the app.
   // Captured once on mount so later navigation can't move the target.
   const returnTo = useRef<string>(originFrom(location.state)).current;
+  /* A contract that was CREATED but not fully CONFIGURED arrives with the reason
+     in router state (NewContractPage's post-creation steps — see TASK-CONTRACTSEND
+     §3). It is shown as an error, not a note, because something the author asked
+     for did not happen and they have to finish it here. Captured once on mount so
+     a later reload cannot resurrect it. */
+  const setupNote = useRef<string | null>(
+    typeof (location.state as { setupNote?: unknown } | null)?.setupNote === 'string'
+      ? (location.state as { setupNote: string }).setupNote : null,
+  ).current;
   // Extra recipient emails typed into the Send-for-review card (beyond the emails
   // already on file for each party). The draft is the in-progress input.
   const [saving, setSaving] = useState(false);
@@ -777,8 +794,16 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // but no horse is chosen yet (its identifying fields are empty). Until the owner
   // picks/adds the horse, we gate the rest of the contract behind that choice —
   // the horse fields depend on it. (Staff/originator can also use it to set the horse.)
+  /* SECTION KEYS ARE COMPARED CASE-INSENSITIVELY (TASK-CONTRACTSEND, WALK3 F-2).
+     This read `=== 'Horse'` while every template stores the section key as
+     'HORSE' — so `horseFields` was ALWAYS empty, the horse-confirmation control
+     (below, and in the flat renderer) could never render, and
+     `contract_lock_blockers`' `horse_unconfirmed` could never be cleared through
+     the browser. No lease on this template could be locked or signed at all.
+     Matching on a case-folded key means the same defect cannot come back by
+     someone writing the heading rather than the key. */
   const horseFields = useMemo(
-    () => (detail?.fields ?? []).filter((f) => (f.section || '') === 'Horse'),
+    () => (detail?.fields ?? []).filter((f) => isHorseSection(f.section)),
     [detail?.fields],
   );
   const horseIsMine = horseFields.some((f) => f.can_edit) || isOwnerSide;
@@ -1599,6 +1624,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       )}
 
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
+      {/* Created-but-not-fully-configured (see setupNote above). Its own banner
+          rather than setError(), because load() clears `error` on every reload
+          and this has to survive long enough to be read and acted on. */}
+      {setupNote && <p role="alert" className="form-error mb-3">{setupNote}</p>}
       {/* Kept for the OTHER actions that report here (notify, send for review,
           re-fill). Save no longer sets it — its button turns green instead, so
           the outcome appears on the control that caused it. */}
@@ -1903,7 +1932,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           the gate applies, hidden for a review-only party, and skipped entirely for
           clause-model documents (rendered above). */}
       {state !== 'executed' && !showHorseGate && !readOnlyDoc && !structure && sections.map(([section, fields]) => {
-        const isHorse = section === 'Horse';
+        const isHorse = isHorseSection(section);
         const anyEditable = fields.some((f) => f.can_edit);
         // counterparty intake: show only sections with something for them (or filled)
         if (!isOwnerSide && !anyEditable && !fields.some((f) => f.value)) return null;
