@@ -652,6 +652,8 @@ export interface StandingScheduleResult {
   offering_name: string;
   weekly_frequency: number;
   slots: StandingSlotChoice[];
+  /** `ok:false` with a `reason` means the days were recorded but no bookings were
+   *  written — 'draft' (the order is still a basket) or 'needs_time'. */
   horizon: { ok: boolean; reason?: string; through?: string; months?: number; created?: number };
 }
 

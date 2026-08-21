@@ -206,7 +206,16 @@ function StandingSlotStep({ purchaseId, onFinished }: {
     if (!pending || !ready) return;
     setBusy(true); setError(null);
     try {
-      await setMyStandingSchedule({ purchaseItemId: pending.purchase_item_id, slots: choices });
+      const res = await setMyStandingSchedule({
+        purchaseItemId: pending.purchase_item_id, slots: choices,
+      });
+      // The days are recorded either way, but the BOOKINGS only appear once the
+      // order has left draft. Saying "that's yours" when nothing was written is
+      // the kind of promise this whole task exists to stop making.
+      if (!res.horizon?.ok && res.horizon?.reason === 'draft') {
+        setError('We have noted your time. It goes on the calendar as soon as your order is placed — '
+          + 'tell us how you are paying and it is yours.');
+      }
       load();
     } catch (e) {
       setError(toErrorMessage(e, 'Could not set your weekly time. Please try again.'));
