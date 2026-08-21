@@ -67,41 +67,48 @@ double-mint is impossible with a query.
 ever fire for it.** Fix so both methods reach the same declared state through one spine
 (`mark_purchase_paid` is the existing convergence point — **converge, do not add a fourth door**).
 
-## §4 — a recurring purchase mints the weekly schedule INTO ETERNITY
+## §4 — a weekly membership is a STANDING SLOT, not a credit balance
 
-> **Owner, 2026-08-20, correcting the orchestrator's first draft of this section:** *"mint into
-> eternity the weekly schedule and its gated on did they pay at the staff fullfilment level."*
+> **Owner, 2026-08-20:** *"mint into eternity the weekly schedule and its gated on did they pay at
+> the staff fullfilment level."* And, sharpening it: *"its not like we get paid and then issue them
+> credits and then they have to go schedule them, that would be a monthly riding punch card, not a
+> weekly paid monthly riding slot."*
 
-⚠️ **The orchestrator originally specced "mint the first period at purchase, then stop and ask the
-owner about month 2." That is WRONG and is withdrawn.** There is no month-2 event to design,
-because **the entitlement does not expire into a gap that something must refill.**
+⚠️ **The orchestrator got this wrong twice** — first "mint one period then ask about month 2", then
+"mint credits forever". **Both are withdrawn. Recurring does not mint credits at all.**
 
-**A recurring purchase creates an ONGOING WEEKLY ENTITLEMENT that keeps producing**, indefinitely,
-until it is cancelled. **`weekly_frequency` is the entitlement** — 1x or 2x weekly, forever — in the
-same shape as `CAREPLANS`' ruling that *the chosen days ARE the entitlement*.
+**THE TWO SHAPES, AND THEY ARE NOT THE SAME PRODUCT:**
 
-**And that is exactly why no scheduler is needed.** `pg_cron` is not installed and the Vercel crons
-do not exist, but **an open-ended schedule needs neither**: nothing has to wake up monthly to top up
-a balance that was designed never to run out.
+| `config_kind` | offerings | what the client gets | who schedules |
+|---|---|---|---|
+| **`scheduled`** | Single Lesson · Evaluation · 4- and 8-Lesson Punch Cards | **credits they spend** | the client, whenever |
+| **`recurring`** | 1x/2x Weekly Lesson (± *With your horse*) | **a standing weekly SLOT** — a reserved recurring time that is theirs | chosen once, then it recurs |
 
-**The gate is at STAFF FULFILMENT, not at minting and not at booking.** *"Did they pay"* is a
-question staff answer **when the lesson is fulfilled** — consistent with D23: the client is never
-blocked, and the lesson is the control.
+**A weekly membership client never "has credits" and never goes hunting for a time.** Their slot
+exists. **`weekly_frequency` is how many slots per week** — 2x weekly means two standing times, not
+two credits. Billing is monthly; **the slot is the product.**
 
-⚠️ **You cannot write infinite rows** — so state your mechanism explicitly and justify it. The
-likely shape is a **rolling horizon generated on demand** (bookable weeks materialise as the client
-looks forward, and the entitlement itself is open-ended and stored once), **not** a monthly batch.
-**Whatever you choose, prove that no scheduled job is required for it to keep working**, because
-none exists.
+**THE MODEL ALREADY EXISTS — CONVERGE ON IT, DO NOT INVENT ONE.** `CAREPLANS` established exactly
+this for horse care: *the chosen days ARE the entitlement; the month opens with bookings and **zero
+spendable credits**.* **Weekly lessons are the same product shape and must use the same mechanism.**
+`set_recurring_days` already computes a multi-day allowance. ⚠️ **Known defect to fix, not to work
+around: `generate_monthly_lessons` books ONE weekday while the entitlement allows several** — a
+2x-weekly client must get two standing days.
 
-⚠️ **Reuse what is there.** `set_recurring_days` already computes a multi-day allowance and
-`generate_monthly_lessons` already books — but a known defect is that the generator **books ONE
-weekday while the entitlement allows several.** Fix the convergence; **do not write a second
-generator (D18).**
+**Consequences to build to:**
+1. **Zero spendable credits** for a recurring purchase. If `lesson_credits` rows appear for one,
+   that is the defect, not the feature.
+2. **The client picks their day(s) and time once**, at or just after purchase, and those bookings
+   appear on the calendar as theirs.
+3. **It continues without any scheduled job.** `pg_cron` is not installed and the Vercel crons do
+   not exist. **Prove the slots keep existing beyond the first month with nothing waking up** —
+   a rolling horizon materialised on read is the likely shape. **Do not build a scheduler.**
+4. **"Did they pay" is answered by STAFF AT FULFILMENT** — not at purchase, not at booking. The
+   standing slot exists regardless; whether the lesson is delivered is the operational control (D23).
 
-⚠️ The order page currently tells a recurring buyer **no lesson count, no period, no expiry, no
-renewal terms.** With an open-ended entitlement the honest statement is different from a package —
-state what it should say. Build it only if it is small.
+⚠️ **The order page tells a recurring buyer no count, no period, no expiry, no renewal terms.** For a
+standing slot the honest statement is *which days and times are theirs, and that it recurs until
+cancelled* — not a lesson count. State the wording; build it only if small.
 
 ## §5 — the unmapped `NO_CREDITS`
 Route the second path's error to the **existing** panel. **Do not build a second no-credits UI.**
