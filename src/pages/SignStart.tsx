@@ -14,16 +14,25 @@
  * never received it" — which raises an owner dashboard notice AND an owner email
  * carrying the transport's own error, and tells the person support was notified.
  *
- * PARTYEMAIL §2 — THE FULL ADDRESS IS COLLECTED. D22 §0 (owner, 2026-08-20):
- * "the form they fill in when they use the link for /sign/deal they enter their
- * full name, phone number, email, and full address." The address was the one
- * missing value, and it matters because `.ADDRESS` is one of the five party tokens
- * a contract renders — no other self-service path populated it, so a party who
- * onboarded themselves printed on the instrument with no address at all.
+ * PARTYEMAIL §2 — THE FULL ADDRESS IS COLLECTED, AND THE FORM ASKS PER PATH.
+ * D22 §0 (owner, 2026-08-20, revised same day): "full name and email and phone
+ * number are the minimum required set, if they have a contract they need to give
+ * us an address."
  *
- * It is on the shared form, not a deal-only branch: the collected set is four
- * values for everybody, and the same record backs every path. api/sign-start.ts
- * writes it through fill_claimant_details on both branches.
+ * The address is shown on every path — the contact record wants it whoever is
+ * filling this in — but it is REQUIRED only on `deal`, because that is the path
+ * with a contract behind it and `.ADDRESS` is one of the five party tokens the
+ * instrument prints. Somebody signing up for lessons is not made to produce a
+ * street address before we will talk to them.
+ *
+ * The difference is `PATH_REQUIRES_ADDRESS` below — a constant map, the same idiom
+ * PATH_SEGMENTS / PATH_CATEGORIES / WELCOME_COPY already use to vary this page by
+ * path. It is deliberately NOT configuration: owner-ruled 2026-08-20, recorded in
+ * D22 §0. `form_definitions` + /app/ops/admin/forms exists and could back this, and
+ * the answer was no — do not propose it again.
+ *
+ * api/sign-start.ts writes the address through fill_claimant_details on both
+ * branches, and enforces the same deal-only requirement server-side.
  *
  * Anti-enumeration is unchanged: the outcome describes OUR send, never whether the
  * address was already known to us.
@@ -72,6 +81,19 @@ const PATH_SEGMENTS: Record<SignPath, Segment[]> = {
   horse: ['horse'],
   'rider+horse': ['rider', 'horse'],
   deal: [],
+};
+
+/**
+ * Which paths REQUIRE a full address (D22 §0, owner-revised 2026-08-20). Name,
+ * email and phone are the minimum everywhere; the address is required only where a
+ * contract will print it. It is still asked for on every path — optional there.
+ */
+const PATH_REQUIRES_ADDRESS: Record<SignPath, boolean> = {
+  guest: false,
+  rider: false,
+  horse: false,
+  'rider+horse': false,
+  deal: true,
 };
 
 function normalizePath(raw: string | undefined): SignPath | null {
@@ -303,9 +325,16 @@ export default function SignStart() {
   const emailsMatch = emailValid && email.trim().toLowerCase() === confirmEmail.trim().toLowerCase();
   const phoneValid = (phone.match(PHONE_DIGITS_RE) ?? []).length >= 10;
   const namesFilled = firstName.trim() !== '' && lastName.trim() !== '';
-  /* Apt/suite stays optional — it is the one line a great many addresses do not
-     have, and requiring it would teach people to type a dash. */
+  /* Apt/suite stays optional everywhere — it is the one line a great many addresses
+     do not have, and requiring it would teach people to type a dash. */
   const addressFilled = line1.trim() !== '' && city.trim() !== '' && stateV.trim() !== '' && zip.trim() !== '';
+  const addressRequired = path ? PATH_REQUIRES_ADDRESS[path] : false;
+  /* A partly-typed address is rejected on EVERY path. Optional means "leave it
+     blank"; it does not mean a street with no city is acceptable, because
+     compose_address would produce a fragment the contract then prints — verified:
+     compose_address(NULL,'Apt 3',NULL,NULL,NULL) returns 'Apt 3'. Apt/suite is in
+     this list for exactly that reason, even though it is never required. */
+  const addressStarted = [line1, line2, city, stateV, zip].some((v) => v.trim() !== '');
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -326,11 +355,15 @@ export default function SignStart() {
       setError('The two emails must match.');
       return;
     }
-    if (!addressFilled) {
-      setError('Please enter your full address.');
+    if (addressRequired && !addressFilled) {
+      setError('Please enter your full address — we need it for your contract.');
       return;
     }
-    if (!ZIP_RE.test(zip.trim())) {
+    if (addressStarted && !addressFilled) {
+      setError('Please complete the address, or leave all of it blank.');
+      return;
+    }
+    if (addressStarted && !ZIP_RE.test(zip.trim())) {
       setError('Please enter a valid ZIP code (e.g. 92109).');
       return;
     }
@@ -508,13 +541,22 @@ export default function SignStart() {
               </div>
               {/* The fourth value (D22 §0). It lands on the contact record, and the
                   contract composes {{...ADDRESS}} from it — nothing types an address
-                  into a contract a second time. */}
+                  into a contract a second time. Required on `deal` only: that is the
+                  path with a contract behind it. The label carries the asterisk (or
+                  the word "optional") so the form never asks for more than it means. */}
+              {!addressRequired && (
+                <p className="body-text text-sm text-muted mb-3">
+                  Your address is optional — it saves us asking later.
+                </p>
+              )}
               <div className="mb-5">
-                <label className="form-label" htmlFor="sign-address1">Street address *</label>
+                <label className="form-label" htmlFor="sign-address1">
+                  Street address{addressRequired ? ' *' : ''}
+                </label>
                 <input
                   id="sign-address1"
                   className="form-input"
-                  required
+                  required={addressRequired}
                   value={line1}
                   onChange={(e) => setLine1(e.target.value)}
                   autoComplete="address-line1"
@@ -534,22 +576,26 @@ export default function SignStart() {
               </div>
               <div className="grid grid-cols-[1fr_auto_auto] gap-3 mb-5">
                 <div>
-                  <label className="form-label" htmlFor="sign-city">City *</label>
+                  <label className="form-label" htmlFor="sign-city">
+                    City{addressRequired ? ' *' : ''}
+                  </label>
                   <input
                     id="sign-city"
                     className="form-input"
-                    required
+                    required={addressRequired}
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     autoComplete="address-level2"
                   />
                 </div>
                 <div>
-                  <label className="form-label" htmlFor="sign-state">State *</label>
+                  <label className="form-label" htmlFor="sign-state">
+                    State{addressRequired ? ' *' : ''}
+                  </label>
                   <input
                     id="sign-state"
                     className="form-input w-16"
-                    required
+                    required={addressRequired}
                     maxLength={2}
                     value={stateV}
                     onChange={(e) => setStateV(e.target.value.toUpperCase())}
@@ -558,11 +604,13 @@ export default function SignStart() {
                   />
                 </div>
                 <div>
-                  <label className="form-label" htmlFor="sign-zip">ZIP *</label>
+                  <label className="form-label" htmlFor="sign-zip">
+                    ZIP{addressRequired ? ' *' : ''}
+                  </label>
                   <input
                     id="sign-zip"
                     className="form-input w-24"
-                    required
+                    required={addressRequired}
                     inputMode="numeric"
                     value={zip}
                     onChange={(e) => setZip(e.target.value)}
@@ -577,7 +625,7 @@ export default function SignStart() {
               <button
                 type="submit"
                 disabled={submitting || !firstName || !lastName || !phone || !email || !confirmEmail
-                  || !line1 || !city || !stateV || !zip}
+                  || (addressRequired && !addressFilled)}
                 className="btn-primary w-full justify-center"
               >
                 {submitting ? 'Sending…' : 'Continue'}
