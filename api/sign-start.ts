@@ -33,12 +33,21 @@
  *     /api/signup-help escalates from, and it is why "created but never emailed"
  *     is now a queryable fact instead of a lost 200.
  *
- * PARTYEMAIL §2 — THE ADDRESS. D22 §0 makes the collected set four values, and the
- * fourth is a full address: `.ADDRESS` is one of the five party tokens a contract
- * renders and nothing else populated it for a self-service signer. Both branches
- * write it through the SAME helper, fill_claimant_details — blanks only, so a
- * public form never overwrites what staff hold. The deal branch already called it;
- * the provisioning branch now calls it too, using the contact_id
+ * PARTYEMAIL §2 — THE ADDRESS, AND IT IS ASKED PER PATH. D22 §0 (owner, revised
+ * 2026-08-20): "full name and email and phone number are the minimum required set,
+ * if they have a contract they need to give us an address."
+ *
+ * So the address is REQUIRED on `deal` and optional on the other four. `.ADDRESS`
+ * is one of the five party tokens a contract prints and nothing else populated it
+ * for a self-service signer — but only the deal path has a contract behind it, and
+ * a lessons signup is not made to produce a street address before we will talk.
+ *
+ * The rule is enforced HERE as well as in the form: the browser is not the
+ * authority on what a request must contain.
+ *
+ * Whatever is supplied is written through the SAME helper, fill_claimant_details —
+ * blanks only, so a public form never overwrites what staff hold. The deal branch
+ * already called it; the provisioning branch now calls it too, using the contact_id
  * provision_client_invitation returns. One writer, whichever door they came in.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -111,15 +120,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!firstName || !lastName) return res.status(400).json({ error: 'name required' });
   if (!phone) return res.status(400).json({ error: 'phone required' });
 
-  // PARTYEMAIL §2 — the fourth value. Apt/suite is genuinely optional; the other
-  // four components are what compose_address needs to produce a usable address.
+  // PARTYEMAIL §2 — the fourth value. Apt/suite is genuinely optional everywhere;
+  // the other four components are what compose_address needs to produce a usable
+  // address, which is why a PARTIAL address is refused on every path. "Optional"
+  // means leave it blank, not "a street with no city will do" — a fragment would be
+  // composed into the contract exactly as typed.
   const addressLine1 = ((body.addressLine1 as string) || '').trim();
   const addressLine2 = ((body.addressLine2 as string) || '').trim();
   const city = ((body.city as string) || '').trim();
   const stateV = ((body.state as string) || '').trim();
   const postalCode = ((body.postalCode as string) || '').trim();
-  if (!addressLine1 || !city || !stateV || !postalCode) {
+  const addressComplete = Boolean(addressLine1 && city && stateV && postalCode);
+  // addressLine2 counts as "started" though it is never required: verified on prod,
+  // compose_address(NULL,'Apt 3',NULL,NULL,NULL) returns 'Apt 3', so a lone apartment
+  // line would print on the contract as the party's whole address.
+  const addressStarted = Boolean(addressLine1 || addressLine2 || city || stateV || postalCode);
+  // Only the path with a contract behind it demands one.
+  if (isDeal && !addressComplete) {
     return res.status(400).json({ error: 'address required' });
+  }
+  if (addressStarted && !addressComplete) {
+    return res.status(400).json({ error: 'incomplete address' });
   }
 
   /** The one write path for what the visitor typed: blanks only, never an

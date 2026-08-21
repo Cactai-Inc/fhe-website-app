@@ -528,12 +528,16 @@ instruction and on the merits.
 **F6 — `document_parties_summary` reports `awaiting_details` but only
 `PartiesHorseCard` consumes it.** The e2e proves the data; **no render was verified.**
 
-**F7 — the address is now required on ALL five `/sign/*` paths, not just `deal`.**
-D22 §0 states the collected set as four values without qualifying by path, and one
-shared form cannot ask different questions per path without becoming a branch. This
-raises the bar on `guest` / `rider` / `horse` / `rider+horse` signup. **If the owner
-wants address optional for the non-deal paths, that is a two-line change** in
-`SignStart.tsx` (`addressFilled`) and `api/sign-start.ts` (the 400 guard).
+**F7 — RESOLVED 2026-08-20, owner-ruled. The address is required on `/sign/deal`
+only.** As first built it was required on all five paths, because D22 §0 stated the
+collected set as four values without qualifying by path. The owner revised the
+ruling: *"full name and email and phone number are the minimum required set, if they
+have a contract they need to give us an address."* D22 §0 is rewritten accordingly,
+and the fix is on `task/partyaddr` — `PATH_REQUIRES_ADDRESS` in `SignStart.tsx`
+plus the matching server-side guard in `api/sign-start.ts`, with a partial address
+refused on every path. A form-configuration surface for `/sign/*` was proposed and
+**declined by the owner**; that refusal is recorded in D22 §0 so it is not
+re-proposed.
 
 **F8 — the e2e impersonated via `request.jwt.claims` while connected as `postgres`.**
 Every *function-level* authorization check ran for real (`auth.uid()`,

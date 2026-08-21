@@ -402,10 +402,30 @@ reporting success.
   contract record changes, email, name, phone, address, they need to be pushed to the contract
   fields."* And on why: *"otherwise we end up with a contract that is locked to only using the
   email address."*
-  **0. THE COLLECTED SET IS FOUR VALUES (owner, 2026-08-20):** *"the form they fill in when they use
-  the link for /sign/deal they enter their full name, phone number, email, and full address."*
-  **`SignStart.tsx` has no address input today — it is the one field to add**, and it is required
-  because `.ADDRESS` is one of the five party tokens and no other path populates it.
+  **0. THE COLLECTED SET IS PER PATH (owner, 2026-08-20 — REVISED the same day; the revision is
+  the ruling).** First stated as four values for everyone: *"the form they fill in when they use the
+  link for /sign/deal they enter their full name, phone number, email, and full address."* That was
+  read as a universal rule and built as one, which made every `/sign/*` path demand a street address
+  before a stranger could ask about lessons. **Corrected:** *"full name and email and phone number
+  are the minimum required set, if they have a contract they need to give us an address."*
+  **So: name + email + phone are the minimum on every path. The full address is REQUIRED on
+  `/sign/deal` only** — that is the path with a contract behind it, and `.ADDRESS` is one of the
+  five party tokens the instrument prints. It is still ASKED for on the other four paths, plainly
+  marked optional, because the contact record wants it and asking later costs more.
+  **A PARTIAL address is refused on every path**, required or not: "optional" means leave it blank,
+  not "a street with no city will do" — `compose_address` would compose the fragment into the
+  contract exactly as typed. Enforced in `SignStart.tsx` AND in `api/sign-start.ts`; the browser is
+  not the authority on what a request must contain.
+  ⚠️ **THE PER-PATH DIFFERENCE IS A CONSTANT IN THE PAGE, NOT CONFIGURATION — AND THAT IS AN OWNER
+  RULING, NOT AN OVERSIGHT (2026-08-20).** `PATH_REQUIRES_ADDRESS` sits beside `PATH_SEGMENTS`,
+  `PATH_CATEGORIES` and `WELCOME_COPY`, which are the same idiom and already vary that page by path.
+  A thread proposed backing `/sign/*` with `form_definitions` + the existing `/app/ops/admin/forms`
+  editor instead; **the owner declined**, in these words: *"i did not intend to invite this type of
+  question and answer set into my life."* **This is a deliberate, recorded exception to the D13/D21
+  reflex** — the machinery exists (`form_definitions`, 28 live rows, `set_form_required`, a live
+  admin page) and was considered and rejected FOR THIS SURFACE. **Do not re-propose it.** D13 and
+  D21 are undisturbed everywhere else: they govern tenant-editable CONTENT and business FORMULAS,
+  and which four boxes a signup page shows is neither.
   **1. A contract party is an email plus a contact reference. Nothing else is stored on the
   contract.** Name, phone and address are DERIVED, never typed into the contract a second time.
   Selecting an existing contact pulls their record into the party fields; an email-only party
