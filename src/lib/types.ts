@@ -170,6 +170,13 @@ export interface Order {
   display_code: string | null;
   buyer_user_id: string;
   status: OrderStatus;
+  /** The order's TRUE status code from `status_events_vocab`, denormalised onto the
+   *  row by `trg_status_purchases`. RICHER THAN `status`: it is what distinguishes a
+   *  declared order ('payment_pending_zelle' / 'payment_pending_cash') from a silent
+   *  one ('submitted'), which the five-value `status` column cannot express. Read it
+   *  first wherever a state is shown; `status` is the fallback for rows written
+   *  before the trigger existed. */
+  current_status: string | null;
   payment_method: PaymentMethod | null;
   /** Inline payment state on the purchase row (payments table retired). */
   payment_status: 'unpaid' | 'pending' | 'paid';

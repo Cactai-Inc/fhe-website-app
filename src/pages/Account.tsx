@@ -6,15 +6,7 @@ import { listMyOrders, upsertMyProfile, myContactPhone, updateMyContactPhone } f
 import { useDocumentTitle } from '../lib/hooks';
 import { TwoFactorSettings } from '../components/auth/TwoFactorSettings';
 import type { Order } from '../lib/types';
-
-const ORDER_STATUS_LABEL: Record<string, string> = {
-  draft: 'In progress',
-  awaiting_payment: 'Awaiting payment',
-  paid: 'Paid',
-  confirmed: 'Confirmed',
-  cancelled: 'Cancelled',
-  expired: 'Expired',
-};
+import { orderStatusLabel } from '../lib/orderStatus';
 
 const usd = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
@@ -137,7 +129,7 @@ export default function Account() {
                         Order · {new Date(o.created_at).toLocaleDateString()}
                       </p>
                       <p className="text-xs font-sans text-muted mt-0.5">
-                        {ORDER_STATUS_LABEL[o.status] ?? o.status}
+                        {orderStatusLabel(o)}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
