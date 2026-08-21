@@ -140,3 +140,25 @@ One page under Configuration, three tabs over **one spine**:
   references for what each one generates. Editable, `+ Add New`.
 - **Price book** → effective-dated prices **for offerings**. Editable; a change writes a new row
   and never overwrites history.
+
+---
+
+## The two lesson sections are DELIBERATE — not a duplicate-name defect (owner, 2026-08-20)
+
+> *"the public site uses two sections one says horse included and the other says with your own
+> horse, the lesson card itself doesnt contain this language, the price is what denotes the
+> version."*
+
+**`TASK-WALK1` reported this as a defect** — the public page shows *"Single Lesson"* twice, at
+$150 and $120, because it strips the catalog's `(With your horse)` suffix. **The finding is
+WITHDRAWN.** The **section heading** carries the qualifier, so repeating it on every card would be
+redundant, and the price distinguishes the two.
+
+⚠️ **Do not "fix" this by restoring the suffix to the public cards, and do not rename the
+offerings.** The catalog keeps the full name — `Single Lesson (With your horse)` — because it must
+be unambiguous in staff surfaces, orders and documents where no section heading exists. **The public
+site is the only surface that strips it, and that is the design.**
+
+**The open question this does NOT answer:** whether the in-app catalog reproduces the same two-
+section grouping. A flat in-app list showing two identical names with different prices *would* be
+ambiguous, because no heading supplies the context. **Verify before changing anything.**
