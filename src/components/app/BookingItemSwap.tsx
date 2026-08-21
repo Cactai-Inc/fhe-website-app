@@ -21,7 +21,10 @@ import { toErrorMessage } from '../../lib/ops/errors';
 /** The server prefixes its refusals with a machine code; the member should read the
  *  sentence, not the code. */
 function readableRefusal(e: unknown): string {
-  const raw = e instanceof Error ? e.message : '';
+  // BUYANDBOOK §5 — same trap as the calendar's book(): a Supabase refusal is not an
+  // Error instance, so `instanceof` left `raw` empty and every code below went
+  // unstripped, showing the member the machine token.
+  const raw = toErrorMessage(e, '');
   const stripped = raw.replace(/^.*?(NO_ENTITLEMENT|ITEM_EXPIRED|WRONG_SERVICE|NOT_PENDING|NO_SUCH_ITEM|ALREADY_ON_THAT_ITEM|BOOKING_CLOSED):\s*/s, '');
   return stripped && stripped !== raw
     ? stripped.charAt(0).toUpperCase() + stripped.slice(1)

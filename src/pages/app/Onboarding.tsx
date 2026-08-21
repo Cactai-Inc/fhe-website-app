@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Circle, FileText } from 'lucide-react';
 import {
@@ -26,6 +26,12 @@ import {
 import OrderPayment from '../../components/order/OrderPayment';
 import type { Order, OrderItem, Payment } from '../../lib/types';
 import { signMyDocument } from '../../lib/ops/api-client';
+import {
+  fetchMyStandingSlots,
+  setMyStandingSchedule,
+  type StandingSlot,
+} from '../../lib/ops/api-calendar';
+import { WEEKDAYS, WEEKDAY_PLURAL, standingSlotSentence, standingSlotSummary } from '../../lib/standingSlots';
 import { BodyWithSignatures } from '../../components/ops/documents/MergedBodyView';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
@@ -69,7 +75,12 @@ import { consumeWallReturnDestination } from '../../lib/wallReturn';
 // the calendar and they click continue or they click a button that says 'notify
 // staff this isnt correct'… either way they are taken to the screen where they
 // add their horse's information."
-type Step = 'order' | 'details' | 'horse' | 'sign' | 'payment' | 'done';
+// BUYANDBOOK §4 — 'slots' is where a WEEKLY MEMBERSHIP becomes real. Owner,
+// 2026-08-20: "they pick the day or days for their weekly booking along with the
+// time(s) for each at the time they onboard." It is skipped entirely — exactly as
+// §C10a skips the horse step — for an order with no `recurring` line, because a
+// punch-card buyer has no standing time to choose.
+type Step = 'order' | 'details' | 'horse' | 'sign' | 'payment' | 'slots' | 'done';
 
 /** The plain profile fields (the name, minor toggle + fields are tracked apart). */
 type ProfileFormFields = Omit<
@@ -105,17 +116,24 @@ function formatAmount(amount: number): string {
   })}`;
 }
 
-/** "4 lessons" (punch cards) or the cadence line (subscriptions). */
+/** "4 lessons" for a punch card. NOT a cadence string for a weekly membership:
+ *  D23 — that product is a STANDING SLOT, and the honest summary of a standing slot
+ *  is which days and times are theirs, which `standingSlotSummary` renders from the
+ *  slot itself. "1 lessons/week" described a pool that does not exist. */
 function planQuantity(p: OnboardingPurchase): string | null {
-  if (p.lessons_included) return `${p.lessons_included} lessons`;
-  if (p.cadence) return /^\d+$/.test(String(p.cadence).trim()) ? `${p.cadence} lessons/week` : String(p.cadence);
-  return null;
+  return p.lessons_included ? `${p.lessons_included} lessons` : null;
 }
 
 /** Purchase summary card (step 3 + revisits after completion). Shows the
  *  minor rider's name when the plan is for a minor (the guardian signed). */
-function PurchaseCard({ purchase, riderName }: { purchase: OnboardingPurchase; riderName?: string | null }) {
+function PurchaseCard({ purchase, riderName, standing }: {
+  purchase: OnboardingPurchase;
+  riderName?: string | null;
+  /** D23 — a weekly membership's line is its standing time, never a count. */
+  standing?: StandingSlot[];
+}) {
   const quantity = planQuantity(purchase);
+  const slots = (standing ?? []).map((s) => ({ id: s.purchase_item_id, text: standingSlotSentence(s) }));
   return (
     <div className="bg-white border border-green-800/10 p-6 mb-6" data-testid="purchase-card">
       <p className="eyebrow mb-2">Your plan</p>
@@ -123,6 +141,7 @@ function PurchaseCard({ purchase, riderName }: { purchase: OnboardingPurchase; r
         <div>
           <p className="font-serif text-xl text-green-800">{purchase.tier_label}</p>
           {quantity && <p className="text-sm text-secondary mt-1">{quantity}</p>}
+          {slots.map((s) => <p key={s.id} className="text-sm text-secondary mt-1">{s.text}</p>)}
           {riderName && <p className="text-sm text-secondary mt-1">Rider: {riderName}</p>}
         </div>
         <p className="font-serif text-2xl text-green-800 whitespace-nowrap">{formatAmount(purchase.amount)}</p>
@@ -137,8 +156,175 @@ function PurchaseCard({ purchase, riderName }: { purchase: OnboardingPurchase; r
   );
 }
 
+/** THE WEEKLY MEMBERSHIP'S ONE QUESTION — which day(s) and time(s) are yours.
+ *
+ *  D23: a `recurring` SKU is a STANDING SLOT, not a credit balance. The client never
+ *  "has credits" and never goes hunting for a time; their slot exists and recurs
+ *  until cancelled. `weekly_frequency` is how many slots a week, so a 2x Weekly
+ *  buyer answers TWICE — two days, and a time for each.
+ *
+ *  ⚠️ ONE WRITER. `setMyStandingSchedule` is a thin front door onto the same
+ *  `set_recurring_days` + plan generator that staff's CalendarItemPanel calls. This
+ *  component holds no scheduling logic of its own; it collects the answer.
+ */
+function StandingSlotStep({ purchaseId, onFinished }: {
+  purchaseId: string | null;
+  onFinished: () => void;
+}) {
+  const [plans, setPlans] = useState<StandingSlot[] | null>(null);
+  const [choices, setChoices] = useState<Array<{ day: string; time: string }>>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<StandingSlot[]>([]);
+
+  const load = useCallback(() => {
+    fetchMyStandingSlots(purchaseId ?? undefined)
+      .then((all) => {
+        setPlans(all);
+        setSaved(all.filter((p) => p.chosen));
+        const next = all.find((p) => !p.chosen);
+        setChoices(
+          next
+            ? Array.from({ length: Math.max(next.weekly_frequency ?? 1, 1) }, () => ({ day: '', time: '' }))
+            : [],
+        );
+      })
+      .catch((e) => { setPlans([]); setError(toErrorMessage(e, 'Could not load your plan.')); });
+  }, [purchaseId]);
+  useEffect(() => { load(); }, [load]);
+
+  const pending = plans?.find((p) => !p.chosen) ?? null;
+
+  // Every session needs its own day, and no two may land on the same one — the
+  // server refuses a duplicate, so the button refuses it first.
+  const ready =
+    choices.length > 0 &&
+    choices.every((c) => c.day && c.time) &&
+    new Set(choices.map((c) => c.day)).size === choices.length;
+
+  async function save() {
+    if (!pending || !ready) return;
+    setBusy(true); setError(null);
+    try {
+      const res = await setMyStandingSchedule({
+        purchaseItemId: pending.purchase_item_id, slots: choices,
+      });
+      // The days are recorded either way, but the BOOKINGS only appear once the
+      // order has left draft. Saying "that's yours" when nothing was written is
+      // the kind of promise this whole task exists to stop making.
+      if (!res.horizon?.ok && res.horizon?.reason === 'draft') {
+        setError('We have noted your time. It goes on the calendar as soon as your order is placed — '
+          + 'tell us how you are paying and it is yours.');
+      }
+      load();
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not set your weekly time. Please try again.'));
+    } finally { setBusy(false); }
+  }
+
+  function setChoice(i: number, patch: Partial<{ day: string; time: string }>) {
+    setChoices((prev) => prev.map((c, n) => (n === i ? { ...c, ...patch } : c)));
+  }
+
+  return (
+    <section aria-labelledby="ob-slots-heading">
+      <h2 id="ob-slots-heading" className="font-serif text-lg text-green-900 mb-3">Your weekly time</h2>
+
+      {saved.length > 0 && (
+        <div className="bg-green-50 border border-green-200 p-4 mb-6">
+          {saved.map((p) => {
+            const summary = standingSlotSummary(p);
+            return (
+              <p key={p.purchase_item_id} className="text-sm font-sans text-green-900">
+                <span className="font-medium">{p.offering_name}</span>
+                {summary && <> — {summary} {p.indefinite ? 'are yours, every week until you tell us otherwise.' : 'are yours.'}</>}
+              </p>
+            );
+          })}
+          <p className="text-xs font-sans text-muted mt-2">
+            They are already on your{' '}
+            <Link to="/app/calendar" className="text-green-800 underline">Calendar</Link>. Change any one
+            of them from there — you are never locked into a single session.
+          </p>
+        </div>
+      )}
+
+      {pending ? (
+        <>
+          <p className="text-sm text-muted mb-6">
+            {pending.offering_name} is a standing time that is yours —{' '}
+            {Math.max(pending.weekly_frequency ?? 1, 1) === 1
+              ? 'pick the day and time that suit you'
+              : `pick ${Math.max(pending.weekly_frequency ?? 1, 1)} days and a time for each`}
+            , and we will hold {Math.max(pending.weekly_frequency ?? 1, 1) === 1 ? 'it' : 'them'} every
+            week until you tell us otherwise.
+          </p>
+          {error && <p role="alert" className="form-error mb-4">{error}</p>}
+          <div className="flex flex-col gap-4 mb-6">
+            {choices.map((c, i) => (
+              <div key={i} className="flex flex-wrap gap-3 items-end">
+                <label className="flex-1 min-w-[9rem]">
+                  <span className="form-label">
+                    {choices.length === 1 ? 'Day' : `Session ${i + 1} — day`}
+                  </span>
+                  <select
+                    className="form-input"
+                    value={c.day}
+                    onChange={(e) => setChoice(i, { day: e.target.value })}
+                  >
+                    <option value="">Choose a day…</option>
+                    {WEEKDAYS.map((d) => (
+                      <option
+                        key={d}
+                        value={d}
+                        disabled={choices.some((o, n) => n !== i && o.day === d)}
+                      >
+                        {WEEKDAY_PLURAL[d]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex-1 min-w-[9rem]">
+                  <span className="form-label">Time</span>
+                  <input
+                    type="time"
+                    className="form-input"
+                    value={c.time}
+                    onChange={(e) => setChoice(i, { time: e.target.value.slice(0, 5) })}
+                  />
+                </label>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" className="btn-primary" disabled={busy || !ready} onClick={() => void save()}>
+              {busy ? 'Setting your time…' : 'That is my weekly time'}
+            </button>
+            {/* Never a trap. Staff can set it from the calendar, and the member can
+                come back — but nothing about the rest of onboarding waits on it. */}
+            <button type="button" className="btn-outline-gold text-sm" onClick={onFinished}>
+              I&apos;ll decide later
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          {plans === null && <p className="body-text text-muted text-sm">Loading your plan…</p>}
+          {plans !== null && (
+            <button type="button" className="btn-primary" onClick={onFinished}>
+              Continue
+            </button>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
 /** Step header: which of the three steps we're on. */
-function Steps({ current, showHorse, showOrder }: { current: Step; showHorse: boolean; showOrder: boolean }) {
+function Steps({ current, showHorse, showOrder, showSlots }: {
+  current: Step; showHorse: boolean; showOrder: boolean; showSlots: boolean;
+}) {
   const steps: { id: Step; label: string }[] = [
     // §C9 — only when there IS an order to show; a member re-invited with no
     // purchase must not be walked past an empty screen.
@@ -150,6 +336,9 @@ function Steps({ current, showHorse, showOrder }: { current: Step; showHorse: bo
     ...(showHorse ? [{ id: 'horse' as Step, label: 'Your horse' }] : []),
     { id: 'sign', label: 'Review & sign' },
     { id: 'payment', label: 'Payment' },
+    // §C10a's rule, applied to the weekly membership: a step nobody can answer is a
+    // step that tells them we were not listening.
+    ...(showSlots ? [{ id: 'slots' as Step, label: 'Your weekly time' }] : []),
     { id: 'done', label: "You're all set" },
   ];
   const idx = steps.findIndex((s) => s.id === current);
@@ -296,6 +485,10 @@ export default function Onboarding() {
   const [order, setOrder] = useState<(Order & { items: OrderItem[] }) | null>(null);
   const [payment, setPayment] = useState<Payment | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
+  // BUYANDBOOK §4 — the slot step exists only for an order with a `recurring` line.
+  // Read once the purchase is known; an empty list means this is a punch-card buyer
+  // and the step never appears.
+  const [standing, setStanding] = useState<StandingSlot[]>([]);
 
   // Load the purchase for the payment step, then poll for confirmation.
   async function enterPayment() {
@@ -303,9 +496,12 @@ export default function Onboarding() {
     const purchaseId = state?.purchase?.purchase_id ?? null;
     try {
       if (!purchaseId) { setStep('done'); return; }
-      const [o, p] = await Promise.all([getOrder(purchaseId), getOrderPayment(purchaseId)]);
+      const [o, p, sl] = await Promise.all([
+        getOrder(purchaseId), getOrderPayment(purchaseId), fetchMyStandingSlots(purchaseId),
+      ]);
       setOrder(o);
       setPayment(p);
+      setStanding(sl);
       setStep('payment');
     } catch (err) {
       setPayError(toErrorMessage(err, 'Could not start payment. You can pay from your account.'));
@@ -319,7 +515,14 @@ export default function Onboarding() {
     const [o, p] = await Promise.all([getOrder(order.id), getOrderPayment(order.id)]);
     setOrder(o);
     setPayment(p);
-    if (o && o.status === 'paid') setStep('done');
+    if (o && o.status === 'paid') finishPayment();
+  }
+
+  /** Leaving payment. A weekly membership still owes us its standing time, so that
+   *  is the next step; a punch-card order goes straight to done. Either way nothing
+   *  here blocks the member — D23. */
+  function finishPayment() {
+    setStep(standing.some((p) => !p.chosen) ? 'slots' : 'done');
   }
 
   useEffect(() => {
@@ -645,6 +848,7 @@ export default function Onboarding() {
         current={step}
         showHorse={step === 'horse' || (state?.horse_needed ?? false)}
         showOrder={Boolean(state?.purchase?.purchase_id)}
+        showSlots={step === 'slots' || standing.length > 0}
       />
 
       {/* ── §C9: Your order ─────────────────────────────────────────────── */}
@@ -1161,11 +1365,24 @@ export default function Onboarding() {
           <button
             type="button"
             className="btn-outline-gold text-sm mt-2"
-            onClick={() => setStep('done')}
+            onClick={finishPayment}
           >
             I'll pay later — finish
           </button>
         </section>
+      )}
+
+      {step === 'slots' && (
+        <StandingSlotStep
+          purchaseId={state?.purchase?.purchase_id ?? null}
+          onFinished={() => {
+            // the summary card on the last step names the slot they just chose
+            fetchMyStandingSlots(state?.purchase?.purchase_id ?? undefined)
+              .then(setStanding)
+              .catch(() => { /* the card falls back to the plan name alone */ })
+              .finally(() => setStep('done'));
+          }}
+        />
       )}
 
       {/* ── Step 4: You're all set ───────────────────────────────────────── */}
@@ -1199,6 +1416,7 @@ export default function Onboarding() {
               riderName={state.minor
                 ? [state.minor.first_name, state.minor.last_name].filter(Boolean).join(' ')
                 : null}
+              standing={standing}
             />
           )}
 

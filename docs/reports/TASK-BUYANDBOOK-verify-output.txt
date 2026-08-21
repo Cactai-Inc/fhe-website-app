@@ -1,0 +1,304 @@
+
+════ TEST 1 — an authenticated member creates a purchase (the 403 is gone) ════
+SET
+SET
+ caller_is_staff 
+-----------------
+ f
+(1 row)
+
+-- the raw INSERT is STILL refused for a member (RLS untouched, by design):
+psql:docs/reports/TASK-BUYANDBOOK-verify.sql:26: NOTICE:  direct member INSERT still refused: new row violates row-level security policy for table "purchases"
+DO
+-- and the RPC succeeds:
+psql:docs/reports/TASK-BUYANDBOOK-verify.sql:28: NOTICE:  table "_wanted" does not exist, skipping
+INSERT 0 1
+INSERT 0 1
+RESET
+ display_code | status | payment_status | amount | amount_paid | has_login | has_contact 
+--------------+--------+----------------+--------+-------------+-----------+-------------
+ PUR-000278   | draft  | unpaid         | 880.00 |           0 | t         | t
+ PUR-000277   | draft  | unpaid         | 500.00 |           0 | t         | t
+(2 rows)
+
+
+════ TEST 2 — anon is STILL refused on purchases INSERT, and on the RPC ════
+INSERT 0 1
+SET
+SET
+ anon_uid | anon_holds_grant 
+----------+------------------
+          | t
+(1 row)
+
+psql:docs/reports/TASK-BUYANDBOOK-verify.sql:55: NOTICE:  anon INSERT refused: new row violates row-level security policy for table "purchases"
+psql:docs/reports/TASK-BUYANDBOOK-verify.sql:55: NOTICE:  anon create_my_purchase refused: permission denied for function create_my_purchase
+DO
+RESET
+SET
+-- and no permissive INSERT policy was added:
+           polname           | polcmd | polpermissive |      roles      
+-----------------------------+--------+---------------+-----------------
+ purchases_member_own_select | r      | t             | {authenticated}
+ purchases_staff_all         | *      | t             | {authenticated}
+ purchases_org_boundary      | *      | f             | {authenticated}
+(3 rows)
+
+
+════ TEST 3 — declare ZELLE ⇒ credits exist ⇒ Book this time books ════
+SET
+SET
+                                        declared                                        
+----------------------------------------------------------------------------------------
+ {"method": "zelle", "recorded": true, "reference": "CONF-12345", "order_opened": true}
+(1 row)
+
+RESET
+ display_code |      status      | payment_status | payment_method | client_claim_status 
+--------------+------------------+----------------+----------------+---------------------
+ PUR-000277   | awaiting_payment | pending        | zelle          | pending
+(1 row)
+
+     package_key     | credits_total | credits_remaining 
+---------------------+---------------+-------------------
+ 4-Lesson Punch Card |             4 |                 4
+(1 row)
+
+-- the member now books an open slot, server-side, through the real RPC:
+INSERT 0 1
+INSERT 0 1
+SET
+                                            booked                                             
+-----------------------------------------------------------------------------------------------
+ {"kind": "lesson", "status": "pending", "booking_id": "8fe121cc-e60b-4637-ae48-320b79a174c6"}
+(1 row)
+
+RESET
+                  id                  | status  |       starts_at        | debited_a_credit 
+--------------------------------------+---------+------------------------+------------------
+ 8fe121cc-e60b-4637-ae48-320b79a174c6 | pending | 2026-08-21 08:00:00-07 | t
+(1 row)
+
+
+════ TEST 4 — same for CASH, and the purchase leaves draft ════
+-- (the plan order, bought above, is still draft:)
+ display_code | status | payment_status 
+--------------+--------+----------------
+ PUR-000278   | draft  | unpaid
+(1 row)
+
+SET
+                                   declared                                    
+-------------------------------------------------------------------------------
+ {"method": "cash", "recorded": true, "reference": null, "order_opened": true}
+(1 row)
+
+RESET
+ display_code |      status      | payment_status | payment_method | client_claim_status 
+--------------+------------------+----------------+----------------+---------------------
+ PUR-000278   | awaiting_payment | pending        | cash           | pending
+(1 row)
+
+
+════ TEST 5 — confirming afterwards mints NOTHING further ════
+ credit_rows_before | credits_before 
+--------------------+----------------
+                  1 |              4
+(1 row)
+
+SET
+SET
+                       staff_confirmed                        
+--------------------------------------------------------------
+ {"method": "zelle", "confirmed": true, "settlement": "paid"}
+(1 row)
+
+RESET
+ credit_rows_after | credits_after 
+-------------------+---------------
+                 1 |             4
+(1 row)
+
+-- and the index that makes a double mint impossible:
+                                                                                                          indexdef                                                                                                          
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ CREATE UNIQUE INDEX lesson_credits_one_per_item_period ON public.lesson_credits USING btree (purchase_item_id, COALESCE(period_start, '0001-01-01'::date)) WHERE ((purchase_item_id IS NOT NULL) AND (deleted_at IS NULL))
+(1 row)
+
+-- proof: minting the same item+period twice inserts nothing the second time
+ second_mint_returns_zero 
+--------------------------
+                        0
+(1 row)
+
+
+════ TEST 6 — a recurring purchase yields an OPEN-ENDED weekly entitlement ════
+-- 6a. before the slot is chosen: NO credits, NO bookings (no punch card)
+ credits | bookings 
+---------+----------
+       0 |        0
+(1 row)
+
+-- 6b. the member picks TWO days and a time for EACH (2x Weekly = 2 slots)
+SET
+SET
+                             chosen                              
+-----------------------------------------------------------------
+ {                                                              +
+     "slots": [                                                 +
+         {                                                      +
+             "day": "Tue",                                      +
+             "time": "16:00"                                    +
+         },                                                     +
+         {                                                      +
+             "day": "Thu",                                      +
+             "time": "17:30"                                    +
+         }                                                      +
+     ],                                                         +
+     "horizon": {                                               +
+         "ok": true,                                            +
+         "minted": 29,                                          +
+         "months": 4,                                           +
+         "created": 29,                                         +
+         "through": "2026-11-18"                                +
+     },                                                         +
+     "offering_name": "2x Weekly Lessons",                      +
+     "purchase_item_id": "571c916c-91cc-4a38-8683-d0bdadb564b9",+
+     "weekly_frequency": 2                                      +
+ }
+(1 row)
+
+RESET
+-- 6c. TWO standing days a week, each at its own time, month after month:
+  month  | weekday |  at   | sessions 
+---------+---------+-------+----------
+ 2026-08 | Thu     | 17:30 |        2
+ 2026-08 | Tue     | 16:00 |        1
+ 2026-09 | Thu     | 17:30 |        4
+ 2026-09 | Tue     | 16:00 |        5
+ 2026-10 | Thu     | 17:30 |        5
+ 2026-10 | Tue     | 16:00 |        4
+ 2026-11 | Thu     | 17:30 |        4
+ 2026-11 | Tue     | 16:00 |        4
+(8 rows)
+
+-- 6d. bookable capacity in a month a monthly top-up would have been needed for,
+--     with NO scheduler: pg_cron is absent and nothing was woken up.
+ pg_cron_installed | cron_schema | sessions_2_months_out 
+-------------------+-------------+-----------------------
+                 0 |           0 |                    17
+(1 row)
+
+-- 6e. the order was NOT re-priced by choosing 2 days on a 2x SKU:
+ amount | quantity | weekly_frequency | sku_price 
+--------+----------+------------------+-----------
+ 880.00 |        1 |                2 |    880.00
+(1 row)
+
+-- 6f. the horizon ROLLS: asking for a later horizon extends it, and re-asking is a no-op
+                                    extended                                     
+---------------------------------------------------------------------------------
+ {"ok": true, "minted": 35, "months": 8, "created": 35, "through": "2027-03-08"}
+(1 row)
+
+                           re_asked_creates_nothing                            
+-------------------------------------------------------------------------------
+ {"ok": true, "minted": 0, "months": 8, "created": 0, "through": "2027-03-08"}
+(1 row)
+
+ furthest_standing_session 
+---------------------------
+ 2027-03-30
+(1 row)
+
+
+════ TEST 4b — a weekly credit exists ONLY behind a cancellation ════
+-- remaining is 0 the moment the slot is set:
+ period_start | credits_total | credits_remaining 
+--------------+---------------+-------------------
+ 2026-08-01   |             3 |                 0
+ 2026-09-01   |             9 |                 0
+(2 rows)
+
+-- staff cancel ONE standing session (delete_calendar_item → _refund_booking_credit):
+INSERT 0 1
+SET
+SET
+ cancelled 
+-----------
+         1
+(1 row)
+
+RESET
+ period_start | credits_total | remaining_after_cancel 
+--------------+---------------+------------------------
+ 2026-09-01   |             9 |                      1
+(1 row)
+
+-- the member rebooks with it — back to 0:
+SET
+SET
+                                           rebooked                                            
+-----------------------------------------------------------------------------------------------
+ {"kind": "lesson", "status": "pending", "booking_id": "9f5709c8-5370-4279-b78b-f6e62fd5fcc1"}
+(1 row)
+
+RESET
+ period_start | credits_total | remaining_after_rebook 
+--------------+---------------+------------------------
+ 2026-09-01   |             9 |                      0
+(1 row)
+
+-- and a horizon roll does NOT resurrect the cancelled session:
+                               roll_after_cancel                               
+-------------------------------------------------------------------------------
+ {"ok": true, "minted": 0, "months": 8, "created": 0, "through": "2027-03-08"}
+(1 row)
+
+ live_sessions_on_that_date 
+----------------------------
+                          0
+(1 row)
+
+
+════ TEST 8 — a failed booking produces no booking_time_requested ════
+INSERT 0 1
+ notifications_before 
+----------------------
+                    6
+(1 row)
+
+SET
+SET
+psql:docs/reports/TASK-BUYANDBOOK-verify.sql:197: NOTICE:  booking refused as expected: NO_CREDITS
+DO
+RESET
+ notifications_after 
+---------------------
+                   6
+(1 row)
+
+
+════ §6 — WALK1 false-notification finding: THE BOOKING EXISTS. Withdrawn. ════
+-- the notification WALK1 called an orphan, and the booking it names, to the microsecond:
+          kind          |               title               |          created_at           
+------------------------+-----------------------------------+-------------------------------
+ booking_time_requested | A client claimed Aug 16, 08:00 AM | 2026-08-20 17:01:59.347793-07
+ booking_time_requested | A client claimed Aug 16, 08:00 AM | 2026-08-20 17:01:59.347793-07
+(2 rows)
+
+                  id                  | status  |       starts_at        |              client_id               | debited |          updated_at           
+--------------------------------------+---------+------------------------+--------------------------------------+---------+-------------------------------
+ 9dd08aa2-d4a1-4adc-924d-b259ea33e7b9 | pending | 2026-08-16 08:00:00-07 | c5fd1335-74bd-4064-8976-11db4dfd9fbf | t       | 2026-08-20 17:01:59.347793-07
+(1 row)
+
+-- and the two emitters cannot notify without a row: notify_staff is a plain SQL
+-- INSERT in the SAME transaction, after the booking write, in both of them.
+      proname      | prokind | lanname | notify_comes_after_the_write 
+-------------------+---------+---------+------------------------------
+ book_open_slot    | f       | plpgsql | t
+ notify_staff      | f       | sql     | t
+ request_open_time | f       | plpgsql | t
+(3 rows)
+
+ROLLBACK
