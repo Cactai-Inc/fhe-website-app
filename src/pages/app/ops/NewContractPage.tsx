@@ -61,8 +61,16 @@ export default function NewContractPage() {
   const [newHorse, setNewHorse] = useState<Record<string, string>>({});
   const [horseId, setHorseId] = useState('');
   const [horseParty, setHorseParty] = useState<string>('');  // which party fills HORSE.*
+  /* THE COUNTERPARTY HOLDS "can edit deal terms" BY DEFAULT (TASK-CONTRACTSEND
+     §3, WALK3 F-3). `DEFAULT_CONTROLS` has it FALSE, and this page seeded BOTH
+     cards from it — so the combination the page displayed as its own default was
+     one `set_party_controls` refuses ("at least one party must be able to edit
+     deal terms"). Creation therefore failed at the SECOND controls call, every
+     time, for anyone who left the form alone. Party B is the counterparty (the
+     lessor / seller — the side that is not us), which is the side the guard
+     exists to keep in the conversation; staff can still switch it over. */
   const [controlsA, setControlsA] = useState<Controls>(DEFAULT_CONTROLS);
-  const [controlsB, setControlsB] = useState<Controls>(DEFAULT_CONTROLS);
+  const [controlsB, setControlsB] = useState<Controls>({ ...DEFAULT_CONTROLS, can_edit_deal: true });
   const [amount, setAmount] = useState('');
   const [deposit, setDeposit] = useState('');
   // sale: the horse step is a dropdown of the SELLER's horses + add-new (modal)
@@ -124,6 +132,19 @@ export default function NewContractPage() {
   async function create() {
     setErr(null);
     if (!ready) { setErr('Select both parties and the horse source first.'); return; }
+    /* REFUSE BEFORE WRITING, NOT AFTER. `set_party_controls` rejects a document
+       where neither party may edit deal terms — but it can only do that once the
+       document EXISTS, and this page used to discover it on the second of two
+       calls made after `start_lease_contract_v2` had already written the
+       contract, document and party rows. The result was a real, invisible,
+       orphaned document plus the false message "Could not start the contract".
+       Checking here means the combination is caught while nothing has been
+       created, and the message names the control the author has to change. */
+    if (!controlsA.can_edit_deal && !controlsB.can_edit_deal) {
+      setErr('At least one party must be able to edit deal terms — otherwise every '
+        + 'change has to go through staff. Turn “Can edit deal terms” on for one of the parties.');
+      return;
+    }
     setBusy(true);
     try {
       let chosenHorse = (type === 'purchase' || horseMode === 'pick') ? horseId : undefined;
@@ -152,14 +173,35 @@ export default function NewContractPage() {
         try { await linkContractToPurchase(result.contract_id, originPurchase); }
         catch { /* the contract exists either way; staff can link it later */ }
       }
+      /* EVERYTHING FROM HERE ON IS POST-CREATION SETUP, AND THE DOCUMENT ALREADY
+         EXISTS. A throw in any of these steps used to fall to the outer catch,
+         which reported "Could not start the contract" and left the author on this
+         page — while a real contract, document and party rows sat in the database
+         with nobody able to find them (WALK3 F-3: three such documents in
+         production, and the likeliest reason production held zero contracts).
+         So these steps report what did not get applied and then still open the
+         document: an incompletely configured contract the author can see and
+         finish beats an invisible one they cannot. */
+      const setupFailures: string[] = [];
+      const step = async (what: string, fn: () => Promise<unknown>) => {
+        try { await fn(); } catch (e) {
+          setupFailures.push(`${what}: ${e instanceof Error ? e.message : 'failed'}`);
+        }
+      };
       // The company originates — never a party by assumption.
-      await claimDocumentOrigination(docId);
+      await step('recording origination', () => claimDocumentOrigination(docId));
       // Per-party document controls, set at this stage.
-      await setPartyControls(docId, roleA, controlsA);
-      await setPartyControls(docId, roleB, controlsB);
+      await step(`${roleA} controls`, () => setPartyControls(docId, roleA, controlsA));
+      await step(`${roleB} controls`, () => setPartyControls(docId, roleB, controlsB));
       // Horse section: assigned to a party when not autofilled from a record.
       if (horseMode === 'party' && horseParty) {
-        await assignHorseSection(docId, horseParty);
+        await step('horse section assignment', () => assignHorseSection(docId, horseParty));
+      }
+      if (setupFailures.length > 0) {
+        navigate(`/app/contracts/${docId}`, {
+          state: { setupNote: `The contract was created, but some settings were not applied — ${setupFailures.join('; ')}. Set them on this page.` },
+        });
+        return;
       }
       // Open the full standalone contract page. Navigating (rather than embedding
       // the contract inline under the config) gives the author the real contract
