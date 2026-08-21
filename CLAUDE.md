@@ -487,7 +487,13 @@ reporting success.
   ruled behaviour** — the order page (*"scheduling doesn't wait on payment"*) and onboarding
   (*"either way you can book your sessions on the Calendar"*). **The copy was right and the code was
   wrong.**
-  ⚠️ **Corollary — no scheduler exists.** `pg_cron` is **not installed** (no extension, no `cron`
-  schema) and the Vercel crons were never created. **A recurring "monthly membership" purchase mints
-  nothing, ever.** Anything that defers minting to a scheduler is deferring it to nothing, so the
-  first period must mint at purchase.
+  ⚠️ **Corollary — no scheduler exists, and the design does not need one.** `pg_cron` is **not
+  installed** (no extension, no `cron` schema) and the Vercel crons were never created, so today a
+  recurring "monthly membership" purchase mints **nothing, ever**. **The fix is not a scheduler.**
+  Owner, 2026-08-20: *"mint into eternity the weekly schedule and its gated on did they pay at the
+  staff fullfilment level."* **A recurring purchase creates an OPEN-ENDED weekly entitlement** —
+  `weekly_frequency` is the entitlement, indefinitely, until cancelled — in the same shape as
+  CAREPLANS' *"the chosen days ARE the entitlement."* Nothing must wake up monthly to refill a
+  balance designed never to run out. **"Did they pay" is answered by staff AT FULFILMENT**, not at
+  minting and not at booking. ⚠️ **An orchestrator draft specced "mint the first period, then ask
+  about month 2" — the owner corrected it as the opposite of the instruction.**

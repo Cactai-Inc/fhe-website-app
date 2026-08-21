@@ -67,12 +67,41 @@ double-mint is impossible with a query.
 ever fire for it.** Fix so both methods reach the same declared state through one spine
 (`mark_purchase_paid` is the existing convergence point — **converge, do not add a fourth door**).
 
-## §4 — recurring mints its first period at purchase
-**There is no scheduler.** The first period's entitlement mints at purchase, with a real
-`period_start` and `expires_at`. **Do NOT build a scheduler** and do not install `pg_cron` — say in
-the report what would still be needed for month 2, and leave it to the owner.
+## §4 — a recurring purchase mints the weekly schedule INTO ETERNITY
+
+> **Owner, 2026-08-20, correcting the orchestrator's first draft of this section:** *"mint into
+> eternity the weekly schedule and its gated on did they pay at the staff fullfilment level."*
+
+⚠️ **The orchestrator originally specced "mint the first period at purchase, then stop and ask the
+owner about month 2." That is WRONG and is withdrawn.** There is no month-2 event to design,
+because **the entitlement does not expire into a gap that something must refill.**
+
+**A recurring purchase creates an ONGOING WEEKLY ENTITLEMENT that keeps producing**, indefinitely,
+until it is cancelled. **`weekly_frequency` is the entitlement** — 1x or 2x weekly, forever — in the
+same shape as `CAREPLANS`' ruling that *the chosen days ARE the entitlement*.
+
+**And that is exactly why no scheduler is needed.** `pg_cron` is not installed and the Vercel crons
+do not exist, but **an open-ended schedule needs neither**: nothing has to wake up monthly to top up
+a balance that was designed never to run out.
+
+**The gate is at STAFF FULFILMENT, not at minting and not at booking.** *"Did they pay"* is a
+question staff answer **when the lesson is fulfilled** — consistent with D23: the client is never
+blocked, and the lesson is the control.
+
+⚠️ **You cannot write infinite rows** — so state your mechanism explicitly and justify it. The
+likely shape is a **rolling horizon generated on demand** (bookable weeks materialise as the client
+looks forward, and the entitlement itself is open-ended and stored once), **not** a monthly batch.
+**Whatever you choose, prove that no scheduled job is required for it to keep working**, because
+none exists.
+
+⚠️ **Reuse what is there.** `set_recurring_days` already computes a multi-day allowance and
+`generate_monthly_lessons` already books — but a known defect is that the generator **books ONE
+weekday while the entitlement allows several.** Fix the convergence; **do not write a second
+generator (D18).**
+
 ⚠️ The order page currently tells a recurring buyer **no lesson count, no period, no expiry, no
-renewal terms.** State what it should say; build it only if it is small.
+renewal terms.** With an open-ended entitlement the honest statement is different from a package —
+state what it should say. Build it only if it is small.
 
 ## §5 — the unmapped `NO_CREDITS`
 Route the second path's error to the **existing** panel. **Do not build a second no-credits UI.**
@@ -94,8 +123,10 @@ mismatches (public strips *"(With your horse)"*) · WALK2's confirmations · any
    the booking row.
 4. Same for **cash**, and the purchase leaves `draft`.
 5. **Confirming afterwards mints nothing further** — counts identical before and after.
-6. **A recurring purchase mints its first period at purchase**, with `period_start` and
-   `expires_at` shown.
+6. **A recurring purchase yields an OPEN-ENDED weekly entitlement**, and bookable weeks continue to
+   be available beyond the first month **with no scheduled job running** — proven by showing
+   bookable capacity in a month far enough ahead that a monthly top-up would have been required.
+   **A 2x-weekly entitlement must yield two days per week, not one.**
 7. **No path surfaces a raw `NO_CREDITS`** — every throw site maps to the existing panel.
 8. **A failed booking produces no `booking_time_requested`.**
 9. `typecheck` 0 · lint identical to main · `test/db` diffed file-for-file (46 red baseline).
