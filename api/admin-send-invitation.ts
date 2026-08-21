@@ -311,8 +311,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // top. Only named when the RPC actually booked something — the caller's
       // `display` string alone is never enough to make that claim.
       const agreedTime = out.agreed_lesson && agreed?.display ? agreed.display : null;
+
+      // ⚠️ CATEGORISE §7 (THE TELL) — THE PAPERWORK GOES IN THE EMAIL.
+      //
+      // The plain-invite path below has always derived a checklist from
+      // `contact_checklist` and sent it; THIS path — the one an inquiry actually
+      // travels — never did. So the person whose categories were just decided
+      // was told what they bought and when their lesson is, and NOT which
+      // documents they must complete. The owner's acceptance criterion is "all
+      // required documents completed ahead of their initial arrival", and
+      // nothing before this line ever told them there were any.
+      //
+      // Same RPC, same template slot (MSG.CHECKLIST), and the contact id comes
+      // straight off the provisioning result rather than a second email lookup.
+      // Best-effort, exactly as the other path: a checklist that cannot be read
+      // must not hold back the invitation itself.
+      let checklist: ChecklistRow[] = [];
+      try {
+        const { data: cl } = await db.rpc('contact_checklist', { p_contact_id: out.contact_id });
+        checklist = (cl as ChecklistRow[]) ?? [];
+      } catch { /* the invite still goes out */ }
+
       const sent = await sendInvitationEmail(db, {
-        orgId, to: email, registerUrl, offeringLabel, agreedTime,
+        orgId, to: email, registerUrl, offeringLabel, agreedTime, checklist,
       });
       await recordInvitationDelivery(db, out.invitation_id, sent);
       return res.status(200).json({

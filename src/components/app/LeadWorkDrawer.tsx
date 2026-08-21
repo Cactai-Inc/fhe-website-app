@@ -22,7 +22,9 @@ import {
   markRequestContacted,
   appendRequestNote,
   setRequestChecklist,
+  listRequestCategories,
   type BookingRequest,
+  type RequestCategoryRow,
 } from '../../lib/ops/api-intake';
 import {
   scheduleLessonSession,
@@ -31,7 +33,7 @@ import {
 } from '../../lib/ops/api-lessons';
 import type { LessonSession, ScheduleHorseOption } from '../../lib/ops/api-lessons';
 import { formatSessionWhen } from '../../lib/formatDateTime';
-import { categoryFieldLabel } from '../../lib/intakeCategoryFields';
+import { categoryFieldLabel, requestCategoryLabel } from '../../lib/intakeCategoryFields';
 import { ScheduleSessionForm } from '../../pages/app/ops/lessons/ScheduleSessionForm';
 import type { ScheduleSessionFormValues } from '../../pages/app/ops/lessons/ScheduleSessionForm';
 import { ProvisionClientForm } from './ProvisionClientForm';
@@ -85,6 +87,37 @@ export function requestedSummary(r: BookingRequest): string {
     .map((s) => s.label ?? s.offering_slug)
     .filter((l): l is string => Boolean(l));
   return labels.length > 0 ? labels.join('; ') : '—';
+}
+
+/** CATEGORISE §6 — the derived category membership of one inquiry, in words.
+ *
+ *  Reads `request_categories` (the plural derivation), never `requests.category`
+ *  (the single funnel-chosen value). Renders nothing at all when the derivation
+ *  has nothing to say, rather than a row of empty furniture. */
+function RequestCategoriesLine({ requestId }: { requestId: string }) {
+  const [cats, setCats] = useState<RequestCategoryRow[]>([]);
+  useEffect(() => {
+    let active = true;
+    listRequestCategories()
+      .then((m) => { if (active) setCats(m.get(requestId) ?? []); })
+      .catch(() => { /* the summary above is still the truth */ });
+    return () => { active = false; };
+  }, [requestId]);
+  if (cats.length === 0) return null;
+  return (
+    <p className="text-xs text-green-800/70 mt-1.5">
+      Categories:{' '}
+      {cats.map((c, i) => (
+        <span key={c.category}>
+          {i > 0 ? ' · ' : ''}
+          <span className="text-green-900">{requestCategoryLabel(c.category)}</span>
+          <span className="text-green-800/60">
+            {c.from_cart ? ' (from what they asked for)' : ' (from the page they came from)'}
+          </span>
+        </span>
+      ))}
+    </p>
+  );
 }
 
 /** First-space split of the freeform contact_name (same rule as contact heal). */
@@ -321,6 +354,13 @@ export function LeadWorkDrawer({ request, onClose, onChanged }: LeadWorkDrawerPr
         <section aria-label="Requested items">
           <h3 className="form-label mb-2">Requested</h3>
           <p className="text-sm text-green-900">{requestedSummary(selected)}</p>
+          {/* ⚠️ CATEGORISE §6 (THE REACH) — WHAT THE CART MAKES THIS PERSON.
+              The categories are not a filing label: they select the legal
+              documents this person must execute before they set foot on the
+              property. A cart holding a lesson and a clipping is BOTH, and
+              staff have never been able to see that here — the row carried one
+              value, chosen from whichever page the visitor happened to be on. */}
+          <RequestCategoriesLine requestId={selected.id} />
         </section>
 
         {selected.details && Object.keys(selected.details).length > 0 && (

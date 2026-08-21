@@ -594,6 +594,35 @@ export async function suggestedCategoryForContact(
   return { suggested: out.suggested ?? 'GUEST', executed_templates: out.executed_templates ?? [] };
 }
 
+/** TASK-CATEGORISE §2 — THE CART'S OWN ANSWER TO "WHAT KIND OF CLIENT IS THIS?"
+ *
+ *  The onboarding categories an inquiry implies, in the display vocabulary
+ *  `CLIENT_CATEGORIES` uses, so the provision form can tick them. Derived from
+ *  the cart (`request_selections` -> `offerings.segment`), NOT from the funnel
+ *  the visitor happened to submit from — a cart with a riding lesson and a horse
+ *  clipping answers with BOTH, and both document sets follow.
+ *
+ *  ⚠️ It also unions in whatever the contact already holds. `apply_category_
+ *  documents` DELETES requirements outside the set it is given, so a derived
+ *  default that narrowed would strip a boarder's horse paperwork the moment they
+ *  enquired about a lesson. The union happens in the database, once, so the form
+ *  and `/api/sign-start` cannot disagree about it. Staff still uncheck freely —
+ *  this is the default, not a cage.
+ *
+ *  Returns `[]` for an inquiry with no cart (a kiosk walk-in, a contact-form
+ *  message): the cart decides nothing, so staff decide, exactly as before. */
+export async function requestOnboardingCategories(
+  requestId: string,
+  contactId?: string,
+): Promise<string[]> {
+  const { data, error } = await supabase.rpc('request_onboarding_categories', {
+    p_request_id: requestId,
+    p_contact_id: contactId ?? null,
+  });
+  if (error) throw error;
+  return (data ?? []) as string[];
+}
+
 /** Attach offering(s) to an EXISTING client account (purchase + credits only —
  *  no category/document/invitation side effects). Uses the same spine helper as
  *  provisioning via the attach_offerings_to_client RPC. */

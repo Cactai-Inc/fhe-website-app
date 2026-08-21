@@ -28,7 +28,9 @@ import { useDocumentTitle } from '../../../lib/hooks';
 import {
   listBookingRequests,
   listInboundQueue,
+  listRequestCategories,
   type InboundQueueRow,
+  type RequestCategoryRow,
 } from '../../../lib/ops/api-intake';
 import type {
   BookingRequest,
@@ -41,6 +43,7 @@ import {
   requestedSummary,
 } from '../../../components/app/LeadWorkDrawer';
 import { listSupportRequests, setSupportStatus, type SupportRequest } from '../../../lib/support';
+import { requestCategoryLabel } from '../../../lib/intakeCategoryFields';
 import { BookingFieldsSettings } from './BookingFieldsSettings';
 
 /* Moved to LeadWorkDrawer with the machinery it belongs to; re-exported here so
@@ -190,6 +193,9 @@ interface InboundRow {
   what: string;
   status: string;
   refId: string;
+  /** CATEGORISE §4 — every category this inquiry touches, not the one the
+   *  funnel stored. Empty for support rows, which have no category at all. */
+  categories: RequestCategoryRow[];
 }
 
 const KIND_LABEL: Record<Exclude<InboundKind, 'all'>, string> = {
@@ -200,6 +206,19 @@ const KIND_FILTERS: { id: InboundKind; label: string }[] = [
   { id: 'booking', label: 'Booking requests' },
   { id: 'support', label: 'Support' },
 ];
+
+/* ⚠️ CATEGORISE §4 — THE CATEGORY FILTER READS THE DERIVED MEMBERSHIP.
+ *
+ * There was no category filter here at all, and the only category an inquiry
+ * carried was `requests.category` — one value, set from the funnel the visitor
+ * submitted from. So a cart holding a riding lesson AND a horse clipping filed
+ * under "lessons", and nobody looking at horse care ever saw it. That is not a
+ * filing nuisance: the category selects the document set the person must sign
+ * before they arrive.
+ *
+ * These options are the `requests.category` allowlist, filtered to what the
+ * inbox actually holds, so the row of buttons never offers an empty result. */
+const ALL_CATEGORIES = 'all';
 
 /** The queue's conscience: what has waited too long, and what is merely unclosed.
  *  Renders nothing when the queue is clean, so a healthy inbox stays quiet. */
@@ -274,6 +293,7 @@ function InboundAttention() {
 export function IntakePage() {
   useDocumentTitle('Inbound');
   const [kind, setKind] = useState<InboundKind>('all');
+  const [category, setCategory] = useState<string>(ALL_CATEGORIES);
   const [rows, setRows] = useState<InboundRow[] | null>(null);
   const [inboundError, setInboundError] = useState<string | null>(null);
   // focus = drop into the existing deep workflow for one item
@@ -290,9 +310,13 @@ export function IntakePage() {
 
   const loadInbound = useCallback(async () => {
     try {
-      const [requests, support] = await Promise.all([
+      const [requests, support, categories] = await Promise.all([
         listBookingRequests().catch(() => [] as BookingRequest[]),
         listSupportRequests().catch(() => [] as SupportRequest[]),
+        // CATEGORISE §4 — one read of the derived membership for the whole list.
+        // A failure here must not blank the queue: the rows still load, they
+        // just carry no categories and the filter offers nothing.
+        listRequestCategories().catch(() => new Map<string, RequestCategoryRow[]>()),
       ]);
       setSupportRows(support);
       const merged: InboundRow[] = [
@@ -302,10 +326,12 @@ export function IntakePage() {
           what: (r.request_selections ?? []).map((x) => x.label).filter(Boolean).slice(0, 2).join(', ')
             || 'Booking request',
           status: r.status, refId: r.id,
+          categories: categories.get(r.id) ?? [],
         })),
         ...support.map((t) => ({
           key: `s-${t.id}`, kind: 'support' as const, when: t.created_at,
           who: 'Member', what: t.subject, status: t.status, refId: t.id,
+          categories: [] as RequestCategoryRow[],
         })),
       ].sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime());
       setRows(merged);
@@ -316,7 +342,15 @@ export function IntakePage() {
   }, []);
   useEffect(() => { void loadInbound(); }, [loadInbound]);
 
-  const visible = (rows ?? []).filter((r) => kind === 'all' || r.kind === kind);
+  // The category options are whatever the queue actually contains — a filter
+  // button that can only ever return nothing is worse than no button.
+  const categoryOptions = Array.from(
+    new Set((rows ?? []).flatMap((r) => r.categories.map((c) => c.category))),
+  ).sort();
+  const visible = (rows ?? []).filter(
+    (r) => (kind === 'all' || r.kind === kind)
+      && (category === ALL_CATEGORIES || r.categories.some((c) => c.category === category)),
+  );
 
   // focused: hand off to the existing full workflow with the row pre-opened
   if (focus?.kind === 'booking') {
@@ -365,16 +399,47 @@ export function IntakePage() {
           </button>
         ))}
       </div>
-      <div className="sm:hidden mb-5">
+      <div className="sm:hidden mb-3">
         <select className="form-input" value={kind} onChange={(e) => setKind(e.target.value as InboundKind)}>
           {KIND_FILTERS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
         </select>
       </div>
 
+      {/* ⚠️ CATEGORISE §4 — filtering by CATEGORY, from the derived membership.
+          A mixed cart appears under every category it touches, so filtering by
+          horse care and filtering by lessons both find the same inquiry. This
+          reads `request_categories`, never `requests.category`, because that
+          single column only ever holds the funnel the visitor submitted from. */}
+      {categoryOptions.length > 1 && (
+        <>
+          <div className="hidden sm:flex flex-wrap gap-2 mb-5 items-center" aria-label="Filter inbound by category">
+            <span className="text-xs text-green-800/70 mr-0.5">What it&rsquo;s about:</span>
+            {[ALL_CATEGORIES, ...categoryOptions].map((c) => (
+              <button key={c} type="button" aria-pressed={category === c}
+                onClick={() => setCategory(c)}
+                className={`px-3 py-1 rounded-full text-[13px] font-sans transition-colors focus-ring ${
+                  category === c ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'
+                }`}>
+                {c === ALL_CATEGORIES ? 'Any' : requestCategoryLabel(c)}
+              </button>
+            ))}
+          </div>
+          <div className="sm:hidden mb-5">
+            <select className="form-input" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value={ALL_CATEGORIES}>Any category</option>
+              {categoryOptions.map((c) => <option key={c} value={c}>{requestCategoryLabel(c)}</option>)}
+            </select>
+          </div>
+        </>
+      )}
+
       {inboundError && <p role="alert" className="form-error mb-4">{inboundError}</p>}
       {rows === null && !inboundError && <p className="text-sm text-green-800/70">Loading…</p>}
       {rows !== null && visible.length === 0 && (
-        <p className="text-sm text-green-800/70">Nothing inbound{kind !== 'all' ? ' in this kind' : ''}.</p>
+        <p className="text-sm text-green-800/70">
+          Nothing inbound{kind !== 'all' ? ' in this kind' : ''}
+          {category !== ALL_CATEGORIES ? ` under ${requestCategoryLabel(category).toLowerCase()}` : ''}.
+        </p>
       )}
 
       <div className="flex flex-col gap-2">
@@ -392,6 +457,15 @@ export function IntakePage() {
                 </span>
                 <span className="block text-xs text-muted mt-0.5">
                   {new Date(r.when).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                  {/* CATEGORISE §6 (THE REACH) — the categories are ON the row, so
+                      a mixed inquiry announces itself without being opened. */}
+                  {r.categories.map((c) => (
+                    <span key={c.category}
+                      title={c.from_cart ? 'From what they asked for' : 'From the page they submitted from'}
+                      className="ml-1.5 inline-block text-[10px] font-sans uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-green-800/[0.07] text-green-800/90">
+                      {requestCategoryLabel(c.category)}
+                    </span>
+                  ))}
                 </span>
               </span>
               <span className="flex items-center gap-2 shrink-0">
