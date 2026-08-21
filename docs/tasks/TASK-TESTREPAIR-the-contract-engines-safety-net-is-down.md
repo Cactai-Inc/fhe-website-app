@@ -38,6 +38,10 @@ run**, and to report honestly what the rest are.
 # 3. THE WORK
 
 ## §1 — refresh the schema snapshot
+⚠️ **The snapshot's cutoff is 2026-08-03 — "everything since is invisible to `test/db`"**
+(CONTRACTSEND, measured). **That is eighteen days and at least seven merged tasks**, so any test
+asserting behaviour introduced after that date cannot have been exercised, and any test written
+against it is running blind.
 The PGlite snapshot predates five merged tasks. Regenerate it so it carries the current schema —
 PARTYSTAGING, ADDITEM, NOSTRIP, BUYANDBOOK, CATEGORISE, and today's SLOTREACH and LESSONPLAN.
 ⚠️ **~31 migrations in this repo REWRITE existing function bodies in place** and are **not safe to
