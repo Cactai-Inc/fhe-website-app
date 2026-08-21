@@ -50,20 +50,34 @@ left at their shown defaults — very likely why production had 0 contracts befo
 **Reproduce it, fix it, and list the orphans already in production** (do not delete them; report
 them).
 
-## §4 — the change-request controls are reachable from BOTH sides
-⚠️ **The mechanism EXISTS and is WIRED — this is diagnosis, not construction.**
-`contract_change_requests_list` · `mark_change_request_seen` · `edit_change_request_entry` (**revise**)
-· `agree_change_request` (**accept**) are all called from `src/lib/contracts.ts:1127,1199,1240,1273`
-and rendered by `ContractChangeRequests.tsx`.
-**WALK3 reported "no accept/reject control anywhere" and counterparty-side Suggest failing
-silently.** Establish which it is: **controls genuinely not rendering for that party, or present but
-unrecognised** (they are labelled *Agree* and *Edit*, not *Accept* and *Reject*). **Check
-`caller_may_propose(p_document_id, p_control)` for the counterparty case** — that function exists to
-gate exactly this.
-**D29 governs:** a **change** is seen-is-approved (no accept button, by design); a **proposal**
-needs accept · revise. **Do not remove the disposition from proposals**, and **do not add an accept
-button to the change flow.**
-⚠️ **A silent failure is never acceptable** — if Suggest fails, it says why.
+## §4 — WHY IS `my_roles` EMPTY? (diagnosis — the feature is BUILT, do not rebuild it)
+
+⚠️ **The orchestrator twice claimed the disposition did not exist. It does. Everything below is
+built and wired — this section is a bug hunt, not construction.**
+
+`resolve_clause(p_addendum_id, p_accept boolean)` (accept/reject, guarded by `caller_may_resolve`
+so a proposer cannot resolve their own) · `resolve_field_edit` · `withdraw_clause` ·
+`withdraw_field_edit` · `update_contract_composition` (edit an added item, staff-or-author via
+`added_by_contact_id`). **Live UI call sites: `ContractPage.tsx:214-243`** (Accept · Reject ·
+Withdraw) and **`ClauseDocument.tsx:809/823`** (edit · remove).
+
+**WALK3 saw a proposal card with no controls on BOTH sessions.** The controls are conditional:
+```
+isOwnerSide || (hasPartyRole && !mine)  -> Accept / Reject
+mine                                     -> Withdraw
+otherwise                                -> the text "Pending review"
+```
+Both sessions hit the last branch. `isOwnerSide = isStaff && !viewAsSigner`;
+`hasPartyRole = myRoles.length > 0`, from `detail.my_roles`.
+
+**THE JOB: find why `contract_document_detail` returns empty `my_roles` for a counterparty**, and
+fix it. ⚠️ **The same identity gates the edit controls** (`isOwnerSide || f.added_by_me`) — **one
+identity bug presenting as two missing features.** Prove both clear together.
+⚠️ Related: **counterparty-side Suggest fails silently.** Check `caller_may_propose(p_document_id,
+p_control)` for that case. **A silent failure is never acceptable — it says why.**
+⚠️ **REVISE (counter-offer) is genuinely absent.** **Do NOT build it in this task** — report it.
+⚠️ **D29:** a *change* is seen-is-approved; a *proposal* has accept/reject. **Do not add an accept
+button to the change flow, and do not remove disposition from proposals.**
 
 ---
 
@@ -74,8 +88,9 @@ button to the change flow.**
 4. **A complete lease is authored, filled, locked and signed by both parties entirely through the
    browser, with ZERO direct database writes.** That is the acceptance criterion for this task.
 5. **New Contract creates no orphans**, and existing orphans are listed.
-6. **Both parties can see and act on a change request**, and Suggest either works from both sides or
-   fails loudly with a reason.
+6. **`my_roles` resolves for a counterparty**, and BOTH the proposal controls (Accept/Reject/
+   Withdraw) and the added-item edit controls render for them — **shown in a browser, screenshot.**
+   Suggest either works from both sides or fails loudly with a reason.
 7. **No real client document touched** — the original 55 verified untouched by id.
 8. `typecheck` 0 · lint identical to main.
 

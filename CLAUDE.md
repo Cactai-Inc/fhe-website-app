@@ -659,10 +659,27 @@ reporting success.
   2. **A PROPOSAL** — a party asks for something they cannot do unilaterally. It is **not** true yet.
      **It requires an explicit disposition: ACCEPT · REJECT · REVISE.** Being seen changes nothing,
      because nothing has happened yet.
-  ⚠️ **Measured 2026-08-21: four proposal RPCs exist — `propose_clause` · `propose_field_edit` ·
-  `propose_contract_composition` · `caller_may_propose` — and there is NO accept, reject or revise
-  function for any of them.** The proposal half is a one-way street: a party can ask and nobody can
-  answer. **WALK3 also found the counterparty-side Suggest fails silently, and a field-level suggest
-  referenced in the code's own comments with zero live callers.**
+  ⚠️ **CORRECTION, 2026-08-21 — THE ORCHESTRATOR WAS WRONG. THE DISPOSITION IS BUILT AND WIRED.**
+  I grepped for `accept`/`reject` by name, found nothing, and concluded it did not exist. **It is
+  named `resolve`.** Verified end to end by the repo-review thread:
+  `resolve_clause(p_addendum_id, p_accept boolean)` sets `status` to `accepted` or `rejected`,
+  guarded by **`caller_may_resolve`** so a proposer cannot resolve their own suggestion ·
+  `resolve_field_edit` · `withdraw_clause` · `withdraw_field_edit` · plus
+  `update_contract_composition` (edit an added item, gated staff-or-author via
+  `added_by_contact_id`). **All have live UI call sites** — `ContractPage.tsx:214-243` renders
+  Accept, Reject and Withdraw; `ClauseDocument.tsx:809/823` renders edit and remove. The
+  `20260815T1000_partystaging_edit_vs_suggest.sql` header states the design outright:
+  *"Suggest-tier stays pending until the ACTUAL COUNTERPARTY (not staff) resolves it — peer
+  approval, not a staff-brokered one."*
+  ⚠️ **SO WALK3's OBSERVATION IS A GATING BUG, NOT A MISSING FEATURE.** The controls are conditional:
+  `isOwnerSide || (hasPartyRole && !mine)` → Accept/Reject · `mine` → Withdraw · **otherwise the
+  text "Pending review"**. Both of WALK3's sessions landed on that last branch, which means
+  **`my_roles` came back empty from `contract_document_detail`.**
+  **ONE IDENTITY BUG PRESENTING AS TWO MISSING FEATURES:** the same identity resolution gates the
+  edit controls (`isOwnerSide || f.added_by_me`). If the viewer's party identity does not resolve,
+  proposal controls AND edit controls both vanish. **Fix `my_roles` and both symptoms likely clear
+  at once.** Connects to the `PARTYRLS` and `PARTYEMAIL` party-visibility work.
+  ✅ **REVISE is the ONLY genuinely absent capability** — a recipient can accept, reject or the
+  proposer can withdraw, but **there is no counter-offer.**
   **So the contract review area needs work in BOTH directions:** strip the explicit accept/reject
   from the CHANGE flow (D14), and build it for the PROPOSAL flow.
