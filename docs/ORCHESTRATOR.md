@@ -96,6 +96,29 @@ larger, anything contended, anything with a decision in it — spec it.
 | `.eq('status','sent')` | silently deleted a capability the owner had asked for |
 | `NEW.contact_id := v` in an **AFTER** trigger | assignment to `NEW` after the row is written does nothing |
 | `AdminFormsPage` required-toggle | writes to a column **no renderer reads** |
+| **`AFTER/BEFORE UPDATE OF <col>`** ×3 | **the trigger fires on the columns the UPDATE STATEMENT NAMES — not on the value that ends up stored.** See §3c. |
+
+## 3c. ⚠️ `UPDATE OF <col>` — THREE INSTANCES IN TWO DAYS. CHECK IT IN EVERY AUDIT.
+
+**A trigger declared `UPDATE OF a, b` fires only when the UPDATE statement's target list mentions
+`a` or `b`.** It does **not** fire because a BEFORE trigger assigned the column, and it does **not**
+fire because the stored value changed. **The data ends up correct, which is exactly why nobody
+catches it** — there is no wrong value to find, only an event that silently never happened.
+
+| where | the statement named | so what never fired |
+|---|---|---|
+| `sign_release` (PARTYEMAIL P0) | `status` only, while a BEFORE trigger set `workflow_state` | **all three execution triggers**, incl. `snapshot_execution_audit` — kiosk executions had **no archived copy** |
+| `deal_autocomplete_on_execution` (FLOWMAP X4) | — | the same mechanism; CONTRACTWALK's "trapped branch" diagnosis was wrong |
+| `status_purchases` (BUYANDBOOK) | `status, payment_status`, while `report_my_payment` sets **neither** | **every status event for a declared payment** — on any order past `draft`, declaring changed nothing |
+
+**Therefore, in every audit of a trigger:** read the **statement** that is supposed to fire it, not
+just the trigger definition and not just the resulting row. **Prove the firing** — a probe trigger
+with the identical event clause, or `track_functions='pl'` call counts, both proven in a rolled-back
+transaction. **Never infer a trigger fired because the stored value is right.**
+
+⚠️ **And the sibling trap, same task:** `CREATE OR REPLACE FUNCTION` with **new defaulted
+parameters OVERLOADS rather than replaces.** Old 2-arg call sites keep resolving to the old body —
+which looks exactly like a fix that did nothing. **Drop the old signature explicitly.**
 
 **Therefore: prove the row count, the compiled CSS, the composed prose, the emitted class.
 Never the absence of an error.** Make every spec demand the same.
