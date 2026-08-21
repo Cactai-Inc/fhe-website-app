@@ -2,8 +2,9 @@
 
 **Branch** `task/categorise` · worktree `~/Downloads/claude-code-repo/wt-categorise` · committed,
 **not pushed**. Base `origin/main` = `2b9530d`.
-**Migrations written and dry-run-proven against production — NOT APPLIED** (WALK2/WALK3 are driving
-prod; the task doc requires coordination before applying, and it was not given).
+**Both migrations are APPLIED to production and verified by query** (2026-08-21). The task doc's
+hold was cleared by the orchestrator: *"WALK2 and WALK3 were never started, so nothing is observing
+production… they should exercise the corrected provisioning, not the old behaviour."*
 **Render claims: NOT VERIFIED.** No browser was opened. Every claim below about the database is a
 query result; every claim about the screens is a claim about the code that produces them.
 
@@ -239,25 +240,58 @@ documents).
 
 Every template from Rider and every template from Horse owner. Nothing else.
 
-**3. A contact who already holds requirements does not LOSE any when categories widen.** ✅ Run on
-**Sarah Morgan** (`b996dd2c…`), a real production shape: `COMPANY_POLICIES, FACILITY_RULES,
-RELEASE_GENERAL` + groups `GUEST, HORSE_OWNER, RIDER`.
+**3. A contact who already holds requirements does not LOSE any when categories widen.** ✅
+**Re-run against the LIVE functions after the migrations were applied**, on **two** real production
+contacts, with "stripped" computed as a query against a `held_before` snapshot rather than read off a
+list by eye.
+
+| | holds today | groups |
+|---|---|---|
+| **Sarah Morgan** `b996dd2c…` | COMPANY_POLICIES, FACILITY_RULES, RELEASE_GENERAL | GUEST, HORSE_OWNER, RIDER |
+| **Kit Garcin** `5c5bbdb1…` | COMPANY_POLICIES, FACILITY_RULES, HUMAN_EMERGENCY_MEDICAL, RELEASE_PARTICIPANT | RIDER |
+
+A **lesson-only** inquiry arrives. Its cart alone says `{Rider}` — the narrowing case.
 
 ```
-before:                 3  COMPANY_POLICIES, FACILITY_RULES, RELEASE_GENERAL
+################ THE DANGER (what the cart alone would do) ################
+  apply_category_documents(sarah, ARRAY['RIDER'])  -> 4
+  apply_category_documents(kit,   ARRAY['RIDER'])  -> 4
+-- templates that WERE held and are now GONE:
+  who   |    destroyed
+  Sarah | RELEASE_GENERAL
 
--- the danger, demonstrated: the naive cart-only set {RIDER}
-after naive:            4  COMPANY_POLICIES, FACILITY_RULES, HUMAN_EMERGENCY_MEDICAL,
-                           RELEASE_PARTICIPANT          ← RELEASE_GENERAL DESTROYED
+################ THE GUARD (request_onboarding_categories, live) ################
+  Kit   | {Rider}
+  Sarah | {Guest,"Horse owner",Rider}
 
--- the guard: request_onboarding_categories unions what she holds
-default_for_sarah:         {Guest,"Horse owner",Rider}
-cart_only_for_sarah:       {"Horse owner",Rider}
-after guarded:          7  COMPANY_POLICIES, FACILITY_RULES, HORSE_EMERGENCY_VET,
-                           HUMAN_EMERGENCY_MEDICAL, RELEASE_GENERAL, RELEASE_HORSE_CARE,
-                           RELEASE_PARTICIPANT
-verdict:                   NOTHING LOST
+################ APPLY THE WIDENED SET ################
+  who   | before | after
+  Kit   |      4 |     4
+  Sarah |      3 |     7
+
+-- STRIPPED (must be ZERO ROWS):
+  (0 rows)
+
+-- ADDED:
+  Sarah | HORSE_EMERGENCY_VET
+  Sarah | HUMAN_EMERGENCY_MEDICAL
+  Sarah | RELEASE_HORSE_CARE
+  Sarah | RELEASE_PARTICIPANT
+
+-- IDEMPOTENT: applying the same widened set again -> 7
 ```
+
+Then `ROLLBACK`, and production re-queried: **Sarah 3 documents, Kit 4, requests 17 — unchanged.**
+
+Three things this proves beyond the ask:
+
+- **Sarah's `Horse owner` came from `groups`, not from her requirements** — she holds none of the
+  horse templates. The affiliation arm of the union is live, and it is what saves a boarder whose
+  paperwork is executed rather than pending.
+- **Kit was NOT credited with `Guest`** even though she holds two of Guest's three templates. The
+  ALL-not-ANY rule works: `COMPANY_POLICIES` alone cannot conjure a category.
+- **Kit is a genuine no-op** — 4 in, 4 out, nothing added, nothing stripped. Widening a Rider by a
+  rider cart is correctly nothing at all.
 
 **4. Existing single-category inquiries behave exactly as before.** ✅ All 17 production requests,
 after the backfill:
@@ -456,44 +490,46 @@ src/components/app/LeadWorkDrawer.tsx     the Categories line under Requested
 src/pages/app/ops/IntakePage.tsx          the category filter + the row chips
 ```
 
-## 9. Migrations — status and how to apply
+## 9. Migrations — APPLIED and verified
 
-**NOT APPLIED.** The task doc: *"WALK2 and WALK3 are driving production. Coordinate with the
-orchestrator before applying any migration — a category change mid-walk makes their findings
-unattributable."* No coordination was given, so both migrations are committed and unapplied.
+The task doc held these pending orchestrator coordination. **The orchestrator cleared the hold**:
+WALK2 and WALK3 were never started, so nothing was observing production and there were no findings to
+keep attributable — and applying migration 2 *before* those walks run is preferable, so they exercise
+the corrected provisioning rather than the old behaviour.
 
-Both were dry-run against production inside `BEGIN … ROLLBACK` and the rollback was **proven by
-query** afterwards, not assumed:
+Both were dry-run first inside `BEGIN … ROLLBACK`, with the rollback **proven by query** rather than
+assumed (`segment_categories: ABSENT`, `request_categories: ABSENT`, 17 requests, 7 still-null
+selections, Sarah still on 3 documents), then applied:
 
 ```
-segment_categories: ABSENT      request_categories: ABSENT
-requests: 17                    selections with NULL offering_id: 7
-request_onboarding_categories: 0 rows in pg_proc
-sarah's documents: 3
+20260821T0300  BEGIN / CREATE TABLE / … / INSERT 0 3 / UPDATE 7 / CREATE VIEW / CREATE FUNCTION / COMMIT
+20260821T0310  BEGIN / CREATE FUNCTION / COMMIT
 ```
 
-To apply, in order:
+Verified on production afterwards:
 
-```bash
-psql "$(head -1 .env.db)" -v ON_ERROR_STOP=1 \
-  -f supabase/migrations/20260821T0300_categorise_1_the_cart_decides_the_category.sql
-psql "$(head -1 .env.db)" -v ON_ERROR_STOP=1 \
-  -f supabase/migrations/20260821T0310_categorise_2_provisioning_defaults_from_the_cart.sql
+```
+=== segment_categories ===
+ acquisition | acquisition | Deal client | GUEST
+ horse       | horse_care  | Horse owner | HORSE_OWNER
+ rider       | lessons     | Rider       | RIDER
+
+=== the backfill ===                    still_null 0 | total 9
+=== derived membership ===              general  9 requests (0 from_cart, 9 from_funnel)
+                                        lessons  8 requests (8 from_cart, 8 from_funnel)
+=== request_onboarding_categories ===   SECURITY DEFINER, (p_request_id, p_contact_id, p_include_held)
+=== provision_client_invitation ===     derives_from_cart t | guard_intact t
+=== requests.category ===               general 9 | lessons 8   (untouched)
 ```
 
-Then verify:
+`from_cart` is now **8 of 8** on the lesson inquiries — before the backfill it would have been 1,
+because seven of those rows could not be joined to a catalog row at all.
 
-```sql
-SELECT * FROM segment_categories ORDER BY segment;                      -- 3 rows
-SELECT count(*) FROM request_selections WHERE offering_id IS NULL;      -- 0
-SELECT category, count(*) FROM request_categories GROUP BY 1;           -- general 9, lessons 8
-```
-
-**Migration 1 is additive and reversible** (`DROP VIEW request_categories; DROP FUNCTION
+**Reversibility.** Migration 1 is additive: `DROP VIEW request_categories; DROP FUNCTION
 request_onboarding_categories(uuid,uuid,boolean); DROP TABLE segment_categories;` — the §1b backfill
-is a data repair and would not be reverted). **Migration 2 rewrites a function body in place** and is
+is a data repair and would not be reverted. Migration 2 rewrites a function body in place and is
 therefore not replayable on a fresh database, the pre-existing property CLAUDE.md documents for ~31
-migrations.
+migrations; to revert it, re-execute the body captured in that file with its two hunks removed.
 
 ## 10. TEARDOWN — process census
 
