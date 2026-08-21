@@ -98,8 +98,24 @@ around: `generate_monthly_lessons` books ONE weekday while the entitlement allow
 **Consequences to build to:**
 1. **Zero spendable credits** for a recurring purchase. If `lesson_credits` rows appear for one,
    that is the defect, not the feature.
-2. **The client picks their day(s) and time once**, at or just after purchase, and those bookings
-   appear on the calendar as theirs.
+2. **The client picks their day(s) and time(s) DURING ONBOARDING** — owner, 2026-08-20: *"they pick
+   the day or days for their weekly booking along with the time(s) for each at the time they
+   onboard."* **Not at checkout, and not left to staff.** A 2x-weekly client picks **two** days and
+   a time for **each**. Those become their standing bookings.
+   ⚠️ **The surface exists: `src/pages/app/Onboarding.tsx`**, whose steps are already data-driven
+   (`type Step = 'order' | 'details' | 'horse' | 'sign' | 'payment' | 'done'`) and already skip
+   steps that do not apply (§C10a skips the horse step). **Add the slot step to that machine** —
+   shown only when the order contains a `recurring` item. **Do not build a separate scheduling
+   page.**
+   ⚠️ **Converge with the staff-side incumbent, do not duplicate it.** `AgreedLessonPanel.tsx`
+   already exists on every provisioning surface (`AccountInvitePage`, `ContactDossierModal`,
+   `Admin`) and `provision_client_invitation` already accepts `p_agreed_lesson` — that is the
+   phone-agreed path CLOSEOUT §3.5 built. **The client-chosen path must land in the same place**;
+   two ways to set a standing time that disagree is precisely the failure this project keeps
+   repeating (D18).
+   ⚠️ `Onboarding.tsx:108-111` currently renders a recurring purchase as a **cadence line**
+   (*"1 lessons/week"*). Once the slot is chosen, the honest summary is **the days and times that
+   are theirs**, not a cadence string.
 3. **It continues without any scheduled job.** `pg_cron` is not installed and the Vercel crons do
    not exist. **Prove the slots keep existing beyond the first month with nothing waking up** —
    a rolling horizon materialised on read is the likely shape. **Do not build a scheduler.**
