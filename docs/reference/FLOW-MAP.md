@@ -309,3 +309,42 @@ contract screen.
   `AFTER UPDATE ON contacts` trigger that re-merges everything.
 - **On a signable-but-unsigned document, a propagated change is a change, and D14 governs it** —
   surfaced to the other party, seen-is-approved. A machine-made edit does not bypass review.
+
+---
+
+## X1 — RESOLVED, AND IT INVERTS: EMAIL WORKS. THE LEDGER DOES NOT. (owner-confirmed 2026-08-20)
+
+**`TASK-WALK1` reported the two halves disagreeing: 64 `notifications` rows with `emailed_at` NULL on
+every one, while `api/inquiry-confirmation`, `api/request-received` and `api/sign-start` all returned
+200 and the UI claimed the mail was sent.** The report listed six messages with exact times for the
+owner to check.
+
+> **Owner, 2026-08-20: *"They arrived."***
+
+**So the transactional mail path WORKS and is proven for the first time in this project's history.**
+Every status in this map that read UNPROVEN *because email had never been demonstrated* is now
+upgraded — the delivery half is real.
+
+### The defect is the opposite of what it looked like
+
+**`emailed_at` is written by exactly two callers, and both are crons that have never run:**
+`api/notifications-nudge.ts:150` and `api/calendar-reminders.ts:116`. **No transactional send
+records itself.** So:
+
+- **Mail leaves the building and nothing in the system knows it did.**
+- `emailed_at` NULL means *"no cron has swept this row"* — **it has never meant "not delivered."**
+  Every reading of that column as a delivery signal, including this map's own first version, was
+  wrong.
+- **`pg_cron` is not installed and the Vercel crons do not exist**, so the only two writers of that
+  column can never fire. The column is **structurally always NULL.**
+
+⚠️ **This is the D19 corollary in its purest form.** The system sends a client an email and then
+cannot answer *"did they get it?"* — not because the send failed, but because **success is never
+recorded.** Four ledgers were already written-but-never-read; this is a fifth that is **never even
+written**.
+
+**Consequence for every future report:** *never cite `emailed_at` as evidence that mail did or did
+not arrive.* The only proof today is a human checking an inbox. **Making a send record itself is a
+task worth raising** — it is small, and without it no staff member can ever answer the question the
+owner asked first.
+
