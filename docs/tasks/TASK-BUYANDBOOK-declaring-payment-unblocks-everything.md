@@ -96,8 +96,21 @@ around: `generate_monthly_lessons` books ONE weekday while the entitlement allow
 2x-weekly client must get two standing days.
 
 **Consequences to build to:**
-1. **Zero spendable credits** for a recurring purchase. If `lesson_credits` rows appear for one,
-   that is the defect, not the feature.
+1. **Zero SPENDABLE credits for a recurring purchase — but the row itself is correct and expected.**
+   Owner, 2026-08-20: *"the way a credit is minted for a weekly recurring client is if they cancel
+   or while they are rescheduling."*
+   **The credit is a holding form for a session owed and not delivered at its standing time** —
+   never something handed out at purchase.
+   ⚠️ **THE ENGINE ALREADY DOES THIS AND WAS ALREADY PROVEN — DO NOT REBUILD IT.** `CAREPLANS`
+   established the shape: **one allotment row, `total = N`, `remaining = 0`** — zero because nothing
+   is spendable while the standing slot is being delivered — **and that row is the cap
+   `_refund_booking_credit` restores into** when a session is cancelled. An orchestrator previously
+   reported *"ZERO credit rows"* as a defect on a care plan and **was corrected by the thread: it is
+   correct.** Do not report it again and do not "fix" it.
+   **The acceptance rule is therefore precise:** a recurring purchase yields **no spendable credit**
+   (`remaining = 0`); **cancelling** a standing session restores one via `_refund_booking_credit`;
+   **rescheduling** holds one transiently while the slot is released and re-taken. **A spendable
+   credit at purchase, with no cancellation behind it, is the defect.**
 2. **The client picks their day(s) and time(s) DURING ONBOARDING** — owner, 2026-08-20: *"they pick
    the day or days for their weekly booking along with the time(s) for each at the time they
    onboard."* **Not at checkout, and not left to staff.** A 2x-weekly client picks **two** days and
@@ -145,6 +158,9 @@ mismatches (public strips *"(With your horse)"*) · WALK2's confirmations · any
 3. **Declare Zelle ⇒ credits exist ⇒ `Book this time` books**, proven end to end server-side, with
    the booking row.
 4. Same for **cash**, and the purchase leaves `draft`.
+4b. **Recurring credit lifecycle, all three states shown by query on one entitlement:**
+   `remaining = 0` immediately after purchase → cancelling one standing session raises it to 1 via
+   `_refund_booking_credit` → rebooking returns it to 0.
 5. **Confirming afterwards mints nothing further** — counts identical before and after.
 6. **A recurring purchase yields an OPEN-ENDED weekly entitlement**, and bookable weeks continue to
    be available beyond the first month **with no scheduled job running** — proven by showing

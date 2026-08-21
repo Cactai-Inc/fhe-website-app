@@ -498,8 +498,12 @@ reporting success.
   once, recurring until cancelled. **`weekly_frequency` is slots per week, not credits.**
   **This is CAREPLANS' ruling generalised** — *the chosen days ARE the entitlement; the month opens
   with bookings and zero spendable credits* — and weekly lessons must converge on that same
-  mechanism, not a second one. **A recurring purchase that produces `lesson_credits` rows is
-  defective.** **"Did they pay" is answered by staff AT FULFILMENT**, not at purchase and not at
+  mechanism, not a second one. **A recurring purchase that produces a SPENDABLE credit is defective** — the allotment
+  row itself is correct. Owner: *"the way a credit is minted for a weekly recurring client is if they
+  cancel or while they are rescheduling."* **The credit is a holding form for a session owed but not
+  delivered at its standing time.** CAREPLANS proved the shape — one allotment row, `total = N`,
+  `remaining = 0`, and that row is the cap `_refund_booking_credit` restores into on cancellation.
+  **An orchestrator reported the zero as a defect and was corrected; do not report it again.** **"Did they pay" is answered by staff AT FULFILMENT**, not at purchase and not at
   booking.
   ⚠️ **No scheduler exists and none is needed:** `pg_cron` is **not installed** (no extension, no
   `cron` schema) and the Vercel crons were never created — but a standing slot has nothing to top up
