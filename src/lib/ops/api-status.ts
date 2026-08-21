@@ -66,7 +66,11 @@ export function statusTone(code: string): 'neutral' | 'info' | 'success' | 'warn
       return 'danger';
     case 'ready_to_sign': case 'submitted': case 'scheduled': case 'sent_for_review':
       return 'info';
+    // A declared payment is a claim awaiting a human check — the same weight as every
+    // other "somebody has to do something" state, and deliberately NOT 'success':
+    // nothing has been received yet.
     case 'pending': case 'assigned': case 'in_progress': case 'invited': case 'superseded':
+    case 'payment_pending_zelle': case 'payment_pending_cash':
       return 'warning';
     default:
       return 'neutral';

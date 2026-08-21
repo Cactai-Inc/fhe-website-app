@@ -214,4 +214,47 @@ SELECT p.proname, p.prokind, l.lanname,
   FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace JOIN pg_language l ON l.oid=p.prolang
  WHERE n.nspname='public' AND p.proname IN ('book_open_slot','request_open_time','notify_staff') ORDER BY 1;
 
+\echo ''
+\echo '════ §9 — a declared order NAMES its payment type ════'
+\echo '-- the two new TRUE statuses, in the order vocabulary:'
+SELECT code, display_name, is_true_status, sort_order FROM status_events_vocab
+ WHERE entity_type='order' AND code LIKE 'payment_pending%' ORDER BY code;
+INSERT INTO t SELECT 'st', create_my_purchase('[{"offering_slug":"riding-lesson--item-3c53e30f"}]'::jsonb)
+  FROM (SELECT set_config('request.jwt.claims','{"sub":"03c14c97-6fae-4dba-80b4-c9ae47602f90","role":"authenticated"}',true)) x;
+\echo '-- a fresh order, nothing declared:'
+SELECT display_code, status, payment_status, client_claim_status, current_status
+  FROM purchases WHERE id=(SELECT v FROM t WHERE k='st');
+SET LOCAL request.jwt.claims = '{"sub":"03c14c97-6fae-4dba-80b4-c9ae47602f90","role":"authenticated"}';
+SET LOCAL role authenticated;
+\echo '-- the client declares CASH:'
+SELECT report_my_payment((SELECT v FROM t WHERE k='st'), 'cash') AS declared;
+RESET role;
+SELECT status, payment_status, client_reported_method, client_claim_status, current_status
+  FROM purchases WHERE id=(SELECT v FROM t WHERE k='st');
+\echo '-- "Actually, I sent it by Zelle" MOVES the state (the claim columns are in the'
+\echo '--  trigger list now, and this UPDATE touches neither status nor payment_status):'
+SET LOCAL role authenticated;
+SELECT report_my_payment((SELECT v FROM t WHERE k='st'), 'zelle', 'CONF-99') AS redeclared;
+RESET role;
+SELECT status, payment_status, client_reported_method, client_claim_status, current_status
+  FROM purchases WHERE id=(SELECT v FROM t WHERE k='st');
+\echo '-- the order timeline staff read — TRUE statuses and the claim events, together:'
+SET LOCAL request.jwt.claims = '{"sub":"b45a5503-89bc-489a-b012-c7fbf5c09632","role":"authenticated"}';
+SET LOCAL role authenticated;
+SELECT status, display_name, is_true_status, detail
+  FROM entity_status_log('order', (SELECT v FROM t WHERE k='st')) ORDER BY created_at;
+\echo '-- staff DECLINE it: the order falls back on its own, no second rule:'
+SELECT decline_payment_claim((SELECT v FROM t WHERE k='st'), 'no transfer found') AS declined;
+RESET role;
+SELECT client_claim_status, current_status FROM purchases WHERE id=(SELECT v FROM t WHERE k='st');
+\echo '-- re-declared, then CONFIRMED: paid wins over the claim:'
+SET LOCAL role authenticated;
+SET LOCAL request.jwt.claims = '{"sub":"03c14c97-6fae-4dba-80b4-c9ae47602f90","role":"authenticated"}';
+SELECT report_my_payment((SELECT v FROM t WHERE k='st'), 'cash') AS redeclared2;
+SET LOCAL request.jwt.claims = '{"sub":"b45a5503-89bc-489a-b012-c7fbf5c09632","role":"authenticated"}';
+SELECT confirm_payment_claim((SELECT v FROM t WHERE k='st')) AS confirmed;
+RESET role;
+SELECT status, payment_status, client_claim_status, current_status
+  FROM purchases WHERE id=(SELECT v FROM t WHERE k='st');
+
 ROLLBACK;

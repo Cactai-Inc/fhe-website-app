@@ -17,8 +17,8 @@ INSERT 0 1
 RESET
  display_code | status | payment_status | amount | amount_paid | has_login | has_contact 
 --------------+--------+----------------+--------+-------------+-----------+-------------
- PUR-000278   | draft  | unpaid         | 880.00 |           0 | t         | t
- PUR-000277   | draft  | unpaid         | 500.00 |           0 | t         | t
+ PUR-000286   | draft  | unpaid         | 500.00 |           0 | t         | t
+ PUR-000287   | draft  | unpaid         | 880.00 |           0 | t         | t
 (2 rows)
 
 
@@ -56,7 +56,7 @@ SET
 RESET
  display_code |      status      | payment_status | payment_method | client_claim_status 
 --------------+------------------+----------------+----------------+---------------------
- PUR-000277   | awaiting_payment | pending        | zelle          | pending
+ PUR-000286   | awaiting_payment | pending        | zelle          | pending
 (1 row)
 
      package_key     | credits_total | credits_remaining 
@@ -84,7 +84,7 @@ RESET
 -- (the plan order, bought above, is still draft:)
  display_code | status | payment_status 
 --------------+--------+----------------
- PUR-000278   | draft  | unpaid
+ PUR-000287   | draft  | unpaid
 (1 row)
 
 SET
@@ -96,7 +96,7 @@ SET
 RESET
  display_code |      status      | payment_status | payment_method | client_claim_status 
 --------------+------------------+----------------+----------------+---------------------
- PUR-000278   | awaiting_payment | pending        | cash           | pending
+ PUR-000287   | awaiting_payment | pending        | cash           | pending
 (1 row)
 
 
@@ -163,7 +163,7 @@ SET
          "through": "2026-11-18"                                +
      },                                                         +
      "offering_name": "2x Weekly Lessons",                      +
-     "purchase_item_id": "571c916c-91cc-4a38-8683-d0bdadb564b9",+
+     "purchase_item_id": "e9d7fb96-a880-4a18-a76c-0c5196d45b22",+
      "weekly_frequency": 2                                      +
  }
 (1 row)
@@ -300,5 +300,93 @@ RESET
  notify_staff      | f       | sql     | t
  request_open_time | f       | plpgsql | t
 (3 rows)
+
+
+════ §9 — a declared order NAMES its payment type ════
+-- the two new TRUE statuses, in the order vocabulary:
+         code          |      display_name       | is_true_status | sort_order 
+-----------------------+-------------------------+----------------+------------
+ payment_pending_cash  | Payment pending — Cash  | t              |         25
+ payment_pending_zelle | Payment pending — Zelle | t              |         25
+(2 rows)
+
+INSERT 0 1
+-- a fresh order, nothing declared:
+ display_code | status | payment_status | client_claim_status | current_status 
+--------------+--------+----------------+---------------------+----------------
+ PUR-000289   | draft  | unpaid         | none                | pending
+(1 row)
+
+SET
+SET
+-- the client declares CASH:
+                                   declared                                    
+-------------------------------------------------------------------------------
+ {"method": "cash", "recorded": true, "reference": null, "order_opened": true}
+(1 row)
+
+RESET
+      status      | payment_status | client_reported_method | client_claim_status |    current_status    
+------------------+----------------+------------------------+---------------------+----------------------
+ awaiting_payment | pending        | cash                   | pending             | payment_pending_cash
+(1 row)
+
+-- "Actually, I sent it by Zelle" MOVES the state (the claim columns are in the
+--  trigger list now, and this UPDATE touches neither status nor payment_status):
+SET
+                                      redeclared                                      
+--------------------------------------------------------------------------------------
+ {"method": "zelle", "recorded": true, "reference": "CONF-99", "order_opened": false}
+(1 row)
+
+RESET
+      status      | payment_status | client_reported_method | client_claim_status |    current_status     
+------------------+----------------+------------------------+---------------------+-----------------------
+ awaiting_payment | pending        | zelle                  | pending             | payment_pending_zelle
+(1 row)
+
+-- the order timeline staff read — TRUE statuses and the claim events, together:
+SET
+SET
+        status         |        display_name        | is_true_status |                             detail                             
+-----------------------+----------------------------+----------------+----------------------------------------------------------------
+ pending               | Pending                    | t              | 
+ payment_reported      | Payment reported by client | f              | Client says they sent the Zelle payment — confirmation CONF-99
+ payment_reported      | Payment reported by client | f              | Client says they are paying cash
+ payment_pending_zelle | Payment pending — Zelle    | t              | 
+ payment_pending_cash  | Payment pending — Cash     | t              | 
+(5 rows)
+
+-- staff DECLINE it: the order falls back on its own, no second rule:
+                     declined                      
+---------------------------------------------------
+ {"reason": "no transfer found", "declined": true}
+(1 row)
+
+RESET
+ client_claim_status | current_status 
+---------------------+----------------
+ declined            | submitted
+(1 row)
+
+-- re-declared, then CONFIRMED: paid wins over the claim:
+SET
+SET
+                                  redeclared2                                   
+--------------------------------------------------------------------------------
+ {"method": "cash", "recorded": true, "reference": null, "order_opened": false}
+(1 row)
+
+SET
+                          confirmed                          
+-------------------------------------------------------------
+ {"method": "cash", "confirmed": true, "settlement": "paid"}
+(1 row)
+
+RESET
+ status | payment_status | client_claim_status | current_status 
+--------+----------------+---------------------+----------------
+ paid   | paid           | confirmed           | paid
+(1 row)
 
 ROLLBACK

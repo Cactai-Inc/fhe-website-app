@@ -8,15 +8,7 @@ import { formatPrice } from '../lib/pricing';
 import OrderPayment from '../components/order/OrderPayment';
 import { fetchMyStandingSlots, type StandingSlot } from '../lib/ops/api-calendar';
 import { standingSlotSentence } from '../lib/standingSlots';
-
-const STATUS_COPY: Record<string, { title: string; body: string }> = {
-  draft: { title: 'Let’s finish setting this up', body: 'Review the details below, agree to the documents, and choose how you’d like to pay.' },
-  awaiting_payment: { title: 'Awaiting your payment', body: 'Send your payment using the details below. We’ll confirm as soon as it arrives — usually within the hour.' },
-  paid: { title: 'Payment received', body: 'Thank you. We’re finalizing your confirmation now.' },
-  confirmed: { title: 'You’re all set', body: 'Everything is confirmed. We can’t wait to ride with you.' },
-  cancelled: { title: 'This order was cancelled', body: 'If that wasn’t intended, reach out and we’ll sort it.' },
-  expired: { title: 'This order expired', body: 'No problem — reach out and we’ll start fresh.' },
-};
+import { orderStatusCopy } from '../lib/orderStatus';
 
 export default function OrderDetail() {
   useDocumentTitle('Your Order');
@@ -67,7 +59,9 @@ export default function OrderDetail() {
     );
   }
 
-  const copy = STATUS_COPY[order.status] ?? STATUS_COPY.draft;
+  // The order's TRUE status, which is what says "Payment pending — Cash" rather than
+  // the generic "Awaiting your payment" a silent order gets.
+  const copy = orderStatusCopy(order);
   // The order_documents surface is retired; nothing gates the booking/payment step.
   const allDocsSigned = true;
   const needsPayment = order.status === 'draft' || order.status === 'awaiting_payment';

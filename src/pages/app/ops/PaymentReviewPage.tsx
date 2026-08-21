@@ -21,6 +21,8 @@ import {
   type OrderRow,
 } from '../../../lib/ops/api-payments';
 import { useDocumentTitle } from '../../../lib/hooks';
+import { orderStatusCode, orderStatusLabel } from '../../../lib/orderStatus';
+import { statusTone } from '../../../lib/ops/api-status';
 
 /**
  * OPS-PAY-REVIEW — the payment review queue (core payments, NOT module-gated;
@@ -181,7 +183,14 @@ export function PaymentReviewPage() {
           '—'
         ),
     },
-    { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.payment_status} /> },
+    // The ORDER's state, not the raw payment_status. A declared order reads
+    // "Payment pending — Cash"; both of them read "pending" on payment_status alone,
+    // which is the distinction staff need to act on (owner, 2026-08-21).
+    {
+      key: 'status',
+      header: 'Status',
+      render: (r) => <StatusBadge status={orderStatusLabel(r)} tone={statusTone(orderStatusCode(r))} />,
+    },
     {
       key: 'actions',
       header: 'Mark paid',

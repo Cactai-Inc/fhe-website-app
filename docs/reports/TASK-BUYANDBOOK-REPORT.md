@@ -4,7 +4,7 @@
 pushed**. Branched from `main@dc641c9`, fast-forwarded to `main@f980fd5` to pick up the two §4
 rewrites and the onboarding ruling before any §4 work was written.
 
-**Migrations** — three, each dry-run inside `BEGIN … ROLLBACK` (rollback proven: `create_my_purchase`
+**Migrations** — four, each dry-run inside `BEGIN … ROLLBACK` (rollback proven: `create_my_purchase`
 was absent from `pg_proc` after the first one), then applied to prod `lrstswfxfsezdmvkvukc`, then
 verified. **Prod DATA is untouched** — the acceptance script runs inside its own transaction and
 rolls back; `purchases`, `lesson_credits` and `bookings` are byte-for-byte what they were.
@@ -12,6 +12,7 @@ rolls back; `purchases`, `lesson_credits` and `bookings` are byte-for-byte what 
 * `supabase/migrations/20260821T0100_buyandbook_1_a_member_can_create_a_purchase.sql`
 * `supabase/migrations/20260821T0110_buyandbook_2_declaring_payment_opens_the_order.sql`
 * `supabase/migrations/20260821T0120_buyandbook_3_a_weekly_membership_is_a_standing_slot.sql`
+* `supabase/migrations/20260821T0200_buyandbook_5_a_declared_order_names_its_payment_type.sql`
 
 **Evidence** — `docs/reports/TASK-BUYANDBOOK-verify.sql` (re-runnable, self-rollbacking) and its
 output `docs/reports/TASK-BUYANDBOOK-verify-output.txt`.
@@ -180,6 +181,63 @@ and it is easy to move** — the step is one entry in the `Step` union and one r
 
 ---
 
+## 2a. §9 — a declared order names its payment type (owner, 2026-08-21)
+
+> *"When a client declares their payment type the order should show a state of pending for payment
+> type, so payment-pending-Zelle and payment-pending-cash."*
+
+**What it read before.** A declared order's true status was `submitted` — **the same code as an order
+nobody has said a word about**. The declaration existed only as a non-true EVENT
+(`payment_reported`) and as three columns every surface had to reassemble for itself. The state of
+the order did not say the one thing that had just changed about it.
+
+**And the trigger could not have seen it anyway.** `status_purchases` was
+`BEFORE INSERT OR UPDATE OF status, payment_status`. `UPDATE OF` fires on the statement's **target
+list** (PARTYEMAIL X4), and `report_my_payment`'s claim UPDATE sets neither column — so **on an order
+already past draft, declaring a payment changed no status and wrote no status event at all.** The
+trigger's column list now includes `client_claim_status` and `client_reported_method`, which is the
+actual fix; the function body is the smaller half.
+
+**Two new TRUE statuses** in `status_events_vocab`, `sort_order` 25 — **below `paid`** (a settled
+order reads `paid`, whatever was claimed) and **above `submitted`** (a declared order is further
+along than a silent one):
+
+| code | display |
+|---|---|
+| `payment_pending_zelle` | Payment pending — Zelle |
+| `payment_pending_cash` | Payment pending — Cash |
+
+`order_status_code` gained the claim status and method as two defaulted parameters, and **the
+two-argument version was DROPPED rather than overloaded** — leaving it would have left
+`trg_status_purchases`'s two-argument call resolving to the old mapper, which is exactly the trap
+`_generate_plan_month` fell into earlier in this task.
+
+**A declined claim needs no second rule.** The CASE matches only `client_claim_status = 'pending'`,
+so declining drops the order back to `submitted` by itself, and confirming lands on `paid` because
+that branch is tested first.
+
+**Backfilled** — `current_status` is a denormalisation, so the two live claims were re-derived
+(`PUR-000245` → `payment_pending_cash`, `PUR-000238` → `payment_pending_zelle`). **No status event was
+written for the backfill:** nothing happened to those orders today, the cached column was simply
+wrong.
+
+**Where it shows.** `src/lib/orderStatus.ts` is now the single label source — the account list, the
+order page heading and the staff Orders queue were **three separate maps that could disagree**, about
+exactly the fact they must not disagree about. Every surface reads `current_status` first and falls
+back to `status`. The order page heading now reads *"Payment pending — cash"* with a body that states
+both halves of D23 (we know how you are paying, we have not confirmed it, **nothing is waiting on
+that**). Staff's Orders bucket shows the order's state instead of the raw `payment_status`, which
+said `pending` for declared and undeclared orders alike. `LeadOrderPanel` needed no change — it
+already renders `current_status_label` straight from the vocab.
+
+**Proven** (§9 block of the acceptance script): fresh order `pending` → declare cash →
+`payment_pending_cash` → *"Actually, I sent it by Zelle"* → `payment_pending_zelle` **on an UPDATE
+that touches neither `status` nor `payment_status`** → staff decline → back to `submitted` → re-declare
+and confirm → `paid`. The status log shows the two TRUE statuses and the two claim events side by
+side, on the two axes the STATUS-LOG model keeps separate.
+
+---
+
 ## 3. The test this must pass
 
 Full output: `docs/reports/TASK-BUYANDBOOK-verify-output.txt`.
@@ -195,7 +253,8 @@ Full output: `docs/reports/TASK-BUYANDBOOK-verify-output.txt`.
 | 6 | Open-ended weekly entitlement, no scheduler, 2 days/week | **PASS** — before choosing: 0 credits, 0 bookings. After choosing Tue 16:00 + Thu 17:30: **29 sessions across 4 months**, two weekdays every week, each at its own time; `pg_cron` absent; **17 sessions two months out**; order still $880 at quantity 1. Asking for a 200-day horizon extended it to **2027-03-30** and re-asking created nothing. |
 | 7 | No raw `NO_CREDITS` | **PASS (code)** — one throw site, one caller, and the catch branch that could not read it is fixed. ⚠️ Render not verified. |
 | 8 | A failed booking produces no `booking_time_requested` | **PASS** — notification count 6 before and 6 after a refused booking. |
-| 9 | typecheck 0 · lint identical · `test/db` diffed | **PASS** — typecheck clean; lint **46 warnings, 0 errors, identical to main**; `test/db` **46 failed / 26 passed (72 files), 203 failed / 479 passed / 107 skipped** on both — the failing **file list is identical**, and after stripping timings the 203 failing **test lines are identical** too. |
+| 9 | **§9** declared order names its payment type | **PASS** — see §2a. |
+| 10 | typecheck 0 · lint identical · `test/db` diffed | **PASS** — typecheck clean; lint **46 warnings, 0 errors, identical to main**; `test/db` **46 failed / 26 passed (72 files), 203 failed / 479 passed / 107 skipped** on both — the failing **file list is identical**, and after stripping timings the 203 failing **test lines are identical** too. |
 
 ---
 

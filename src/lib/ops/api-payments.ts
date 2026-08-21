@@ -239,6 +239,9 @@ export interface OrderRow {
   amount: number;
   amount_paid: number;
   status: string;
+  /** The order's TRUE status code — 'payment_pending_zelle' / 'payment_pending_cash'
+   *  once the client has declared, which `payment_status` ('pending') cannot say. */
+  current_status: string | null;
   payment_status: 'unpaid' | 'pending' | 'paid';
   payment_method: string | null;
   payment_reference: string | null;
@@ -257,6 +260,7 @@ interface RawOrderRow {
   amount: number;
   amount_paid: number;
   status: string;
+  current_status: string | null;
   payment_status: 'unpaid' | 'pending' | 'paid';
   payment_method: string | null;
   payment_reference: string | null;
@@ -270,7 +274,7 @@ interface RawOrderRow {
   purchase_items: { label: string | null }[] | null;
 }
 
-const ORDER_COLS = `id, amount, amount_paid, status, payment_status, payment_method,
+const ORDER_COLS = `id, amount, amount_paid, status, current_status, payment_status, payment_method,
   payment_reference, unique_amount, client_reported_method, client_reported_at,
   client_claim_status, paid_at, created_at,
   contacts:buyer_contact_id ( first_name, last_name ),
