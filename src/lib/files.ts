@@ -299,3 +299,102 @@ export async function uploadCompanyResource(args: {
   }
   return row;
 }
+
+// ─── Lesson media (TASK-LESSONPLAN §3) ───────────────────────────────────────
+
+/**
+ * A photo or video from a lesson.
+ *
+ * OWNERSHIP is the ORG, not Claire's account and not the rider's: the barn took
+ * it, and a staff member leaving must not take the record of a lesson with them
+ * (the same reasoning `uploadCompanyResource` already applies to company
+ * material). The RIDER can still see it — m4 adds one narrow policy for
+ * "an org file live-linked to a booking that is mine", which is the only new
+ * visibility this task introduces.
+ *
+ * SURFACING is a `file_links` row with subject_type 'booking' — a reference, not
+ * a copy. That subject already existed; nothing about the files spine changes.
+ */
+export async function uploadLessonMedia(
+  bookingId: string,
+  file: File,
+  title?: string,
+): Promise<FileRow> {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error('Not signed in.');
+  const { data: profile, error: pErr } = await supabase
+    .from('profiles').select('org_id').eq('user_id', auth.user.id).maybeSingle();
+  if (pErr) throw pErr;
+  const orgId = profile?.org_id as string | undefined;
+  if (!orgId) throw new Error('Your account is not attached to a stable.');
+
+  const row = await putFile({
+    orgId, ownerKind: 'org', ownerId: orgId, ownerContactId: null, file,
+    title: title?.trim() || null,
+  });
+
+  try {
+    assertWrote(
+      await supabase.from('file_links')
+        .insert({ org_id: orgId, file_id: row.id, subject_type: 'booking', subject_id: bookingId })
+        .select(),
+      'Attaching the photo to the lesson',
+    );
+  } catch (err) {
+    // An unlinked file on a lesson nobody can reach is worse than no file:
+    // undo the upload rather than leave bytes with no subject.
+    await supabase.from('files').delete().eq('id', row.id);
+    await supabase.storage.from(FILES_BUCKET).remove([row.storage_path]);
+    throw err;
+  }
+  return row;
+}
+
+/** One entry of a lesson's media. Server-side RLS decides who may list it —
+ *  staff in the org, or the rider whose lesson it is. */
+export interface LessonMediaRow {
+  file_id: string;
+  bucket_id: string;
+  storage_path: string;
+  filename: string;
+  mime_type: string | null;
+  title: string | null;
+  byte_size: number | null;
+  created_at: string;
+}
+
+export async function listLessonMedia(bookingId: string): Promise<LessonMediaRow[]> {
+  const { data, error } = await supabase.rpc('lesson_media', { p_booking_id: bookingId });
+  if (error) throw error;
+  return (data ?? []) as LessonMediaRow[];
+}
+
+/**
+ * D27's ONE scrub exception — content that should never have been captured,
+ * destroyed for liability. Not a delete button: it takes a reason, it is logged,
+ * and it is the only path in this app that genuinely destroys a record's
+ * content. Everything else retires behind a flag (D11, D15, D16).
+ *
+ * For media the RPC removes the rows and hands back the storage path; the object
+ * itself is removed here, the same way every other file path in this app removes
+ * an object (Supabase Storage has no SQL-side delete).
+ */
+export async function scrubLessonContent(args: {
+  kind: 'media' | 'answer' | 'objective_note';
+  subjectId: string;
+  reason: string;
+  key?: string;
+}): Promise<{ kind: string; scrubbed: number }> {
+  const { data, error } = await supabase.rpc('scrub_lesson_content', {
+    p_kind: args.kind,
+    p_subject: args.subjectId,
+    p_reason: args.reason,
+    p_key: args.key ?? null,
+  });
+  if (error) throw error;
+  const result = data as { kind: string; scrubbed: number; storage_path?: string; bucket_id?: string };
+  if (result.storage_path) {
+    await supabase.storage.from(result.bucket_id || FILES_BUCKET).remove([result.storage_path]);
+  }
+  return result;
+}

@@ -9,6 +9,7 @@ import { ModuleGate, useAsync } from '../../../lib/ops';
 import { useModules } from '../../../lib/ops/useModules';
 import { useAuth } from '../../../contexts/AuthContext';
 import { MODULE_HUB_PAGE_KEY, pageByKey } from '../../../lib/pageRegistry';
+import { TodaysPlansPanel } from '../../../components/app/TodaysPlansPanel';
 
 /**
  * OPS-DASH — Ops home dashboard (surface `ops`, module `core`).
@@ -200,6 +201,18 @@ export default function OpsDashboard({
           ))}
         </div>
       </section>
+
+      {/* TODAY'S PLANS — LESSONPLAN §2 / D26. Both owner accounts are admins, so
+          /app/ops renders THIS dashboard rather than InstructorHome; putting the
+          day's plans only on the trainer home would have hidden them from the
+          head trainer. Module-gated, so a lessons-OFF tenant never sees it or
+          fires its query; a lessons-ON day with nothing on it says so, which on
+          an ops dashboard is information rather than clutter. */}
+      <ModuleGate moduleKey="mod.lessons" modules={modules} fallback={null}>
+        <section aria-label="Today's Riding Lessons">
+          <TodaysPlansPanel />
+        </section>
+      </ModuleGate>
 
       <section aria-label="Modules">
         <h2 className="font-serif text-lg text-green-900">Modules</h2>

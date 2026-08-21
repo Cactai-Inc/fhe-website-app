@@ -15,6 +15,7 @@
  */
 import { supabase } from '../supabase';
 import { contactName } from './types';
+import type { LessonPlan, PlanObjective } from './api-lessonplan';
 
 // ─── Types (real columns of the mod.lessons tables) ─────────────────────────
 
@@ -413,6 +414,10 @@ export interface BookingReport {
   activity_log: { activities: string[]; text: string | null } | null;
   report: string | null;
   notes: BookingNote[];
+  /** LESSONPLAN — what this lesson is for. Present for the rider too; the
+   *  staff-private `coach_notes` comes back null unless the caller is staff. */
+  plan: LessonPlan | null;
+  plan_next_up: PlanObjective | null;
 }
 
 /** The active activity checklist for a service category (e.g. RIDING_LESSON). */
@@ -485,13 +490,19 @@ export interface BookingFormDefinition {
   schema: { sections: { heading: string; fields: BookingFormField[] }[] };
 }
 
-/** The answers, keyed by the definition's field keys. */
+/** The answers, keyed by the definition's field keys.
+ *
+ *  LESSONPLAN adds `plan_progress`: how each of the plan's objectives went at
+ *  this lesson. It lives in the SAME answers object rather than in a table of
+ *  its own so that the write-up and the per-objective result are one saved
+ *  thing and cannot half-land. */
 export interface BookingFormAnswers {
   attendance?: string;
   activities?: string[];
   log_text?: string;
   report?: string;
-  [key: string]: string | string[] | undefined;
+  plan_progress?: { id?: string; label?: string; state?: string; note?: string | null }[];
+  [key: string]: string | string[] | { id?: string; label?: string; state?: string; note?: string | null }[] | undefined;
 }
 
 /** The INSTANCE — the row that is linked to the booking, moves with it on a
@@ -504,6 +515,10 @@ export interface BookingFormInstance {
   blank: boolean;
   submitted_at: string | null;
   retired_at: string | null;
+  /** LESSONPLAN: the plan version this lesson was TAUGHT AGAINST, pinned when
+   *  progress was recorded. Null while the lesson is still ahead — which is how
+   *  the next lesson picks up a plan that advanced after the last one. */
+  plan_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -523,6 +538,13 @@ export interface BookingFormView {
   /** cancel_lesson_session owns the no_show transition and takes only a
    *  SCHEDULED lesson, so the option is offered only when it would work. */
   can_mark_no_show: boolean;
+  /** LESSONPLAN — the plan this Riding Lesson carries, in the same read as the
+   *  form so the two can never render against different copies. Staff surface,
+   *  so `coach_notes` is populated here and labelled staff-only on screen. */
+  plan: LessonPlan | null;
+  plan_next_up: PlanObjective | null;
+  plan_pinned: boolean;
+  client_id: string | null;
 }
 
 /** One row of the forms backlog (lesson_forms). */

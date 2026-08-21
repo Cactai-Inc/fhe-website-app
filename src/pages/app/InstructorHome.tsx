@@ -11,6 +11,7 @@ import { listContacts } from '../../lib/api';
 import { useOpenLeads, type LeadEntry } from '../../lib/ops/useOpenLeads';
 import { SEED_ENABLED } from '../../lib/seed';
 import { SEED_INSTRUCTOR_SESSIONS, type SeedSession } from '../../lib/seed';
+import { TodaysPlansPanel } from '../../components/app/TodaysPlansPanel';
 
 /**
  * INSTRUCTOR HOME — the servicing-scoped management home for trainers (role
@@ -140,23 +141,31 @@ export default function InstructorHome() {
 
       {/* Quick servicing actions */}
       <div className="grid sm:grid-cols-2 gap-2.5 mb-6">
-        <ActionTile to="/app/records/lessons" icon={GraduationCap} label="Lessons" sub="Sessions, packages, credits" />
+        <ActionTile to="/app/ops/lessons/plans" icon={GraduationCap} label="Lesson plans" sub="What each rider is working on" />
         <ActionTile to="/app/calendar" icon={CalendarDays} label="Availability" sub="Set the times you teach" />
         <ActionTile to="/app/ops/contacts" icon={Contact} label="Clients" sub={clientCount !== null ? `${clientCount} on file` : 'People you service'} />
         <ActionTile to="/app/dashboard" icon={Mail} label="Requests" sub={requests.length > 0 ? `${requests.length} to review` : 'Incoming inquiries'} />
+      </div>
+
+      {/* TODAY'S PLANS — LESSONPLAN §2 / D26. The plan for the day belongs on the
+          surface Claire lands on, not three clicks into a detail page. It reads
+          lesson_plans_for_day(), which is the live data; the seeded list below is
+          a demo fallback and is deliberately kept separate from it. */}
+      <div className="mb-6">
+        <TodaysPlansPanel />
       </div>
 
       {/* Today */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2.5">
           <h2 className="font-serif text-green-800 text-lg">Today</h2>
-          <Link to="/app/records/lessons" className="text-[12px] text-gold-800 font-semibold inline-flex items-center gap-1">All sessions <ChevronRight size={13} /></Link>
+          <Link to="/app/records/lessons" className="text-[12px] text-gold-800 font-semibold inline-flex items-center gap-1">All Riding Lessons <ChevronRight size={13} /></Link>
         </div>
         {today.length > 0 ? (
           <div className="flex flex-col gap-2">{today.map((r) => <LessonRow key={r.id} r={r} />)}</div>
         ) : (
           <div className="bg-white border border-green-800/10 rounded-xl px-4 py-6 text-center">
-            <p className="text-[13px] text-muted">No lessons scheduled today.</p>
+            <p className="text-[13px] text-muted">No Riding Lessons scheduled today.</p>
           </div>
         )}
       </div>

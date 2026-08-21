@@ -36,11 +36,16 @@ import { SessionActivityForm } from './SessionActivityForm';
  * rejects overlapping SCHEDULED sessions server-side and the message surfaces
  * in the form.
  *
- * LESSONFORM adds a fourth filter — FORMS TO FILL IN — which is the backlog the
+ * LESSONFORM adds a fourth filter — TO WRITE UP — which is the backlog the
  * owner asked for: every lesson that has ALREADY HAPPENED whose activity form
  * nobody has finished (lesson_forms('todo')), most recent first. It is a
  * different query from the session list, not a client-side slice of it, because
  * "has a form outstanding" is a fact about the form and not about the booking.
+ *
+ * LESSONPLAN renames what a person reads here (D25 — "booking" is internal
+ * taxonomy, a lesson is a Riding Lesson) and links out to the plan roster, so
+ * this board is not a dead end when Claire wants to plan rather than record.
+ * The plan itself renders inside each row's own record, via SessionActivityForm.
  */
 type SessionFilter = 'upcoming' | 'past' | 'all' | 'forms';
 
@@ -48,7 +53,7 @@ const FILTERS: { id: SessionFilter; label: string }[] = [
   { id: 'upcoming', label: 'Upcoming' },
   { id: 'past', label: 'Past' },
   { id: 'all', label: 'All' },
-  { id: 'forms', label: 'Forms to fill in' },
+  { id: 'forms', label: 'To write up' },
 ];
 
 /** '2:00 – 3:00 PM EDT' for one session row (full time window with zone). */
@@ -198,12 +203,17 @@ export function SessionsPage() {
     <div className="max-w-4xl mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-serif text-2xl text-green-900">Lesson sessions</h1>
-          <p className="text-sm text-green-800/70">Confirmed bookings — complete, cancel, no-show.</p>
+          {/* D25 — a person reads "Riding Lesson", never the internal
+              taxonomy the row is stored under. */}
+          <h1 className="font-serif text-2xl text-green-900">Riding Lessons</h1>
+          <p className="text-sm text-green-800/70">
+            Every scheduled Riding Lesson — complete, cancel, no-show, and write up what
+            happened.
+          </p>
           {/* COUNTFIX 1.3: this board counts LESSONS. Open slots nobody has taken
               are a different thing and are stated separately, never folded in. */}
           <p className="text-xs text-green-800/60 mt-1">
-            {rows.length} lesson{rows.length === 1 ? '' : 's'}
+            {rows.length} Riding Lesson{rows.length === 1 ? '' : 's'}
             {openSlots !== null && (
               <>
                 {' · '}
@@ -212,6 +222,12 @@ export function SessionsPage() {
                 </Link>
               </>
             )}
+            {/* LESSONPLAN — the second way to the plans, so this board is not a
+                dead end when Claire wants to plan rather than record. */}
+            {' · '}
+            <Link to="/app/ops/lessons/plans" className="link-underline">
+              Lesson plans
+            </Link>
             {/* COUNTFIX discipline: a third distinct thing, counted by its own
                 query and never folded into either of the other two. */}
             {forms.length > 0 && (
@@ -222,7 +238,7 @@ export function SessionsPage() {
                   className="link-underline"
                   onClick={() => setFilter('forms')}
                 >
-                  {forms.length} form{forms.length === 1 ? '' : 's'} to fill in
+                  {forms.length} to write up
                 </button>
               </>
             )}
@@ -237,7 +253,7 @@ export function SessionsPage() {
               setFormOpen(true);
             }}
           >
-            Schedule a lesson
+            Schedule a Riding Lesson
           </button>
         )}
       </div>
@@ -285,8 +301,8 @@ export function SessionsPage() {
              state: she can fill it in, or delete it, straight from this row. */
           forms.length === 0 ? (
             <p className="text-sm text-green-800/70" data-testid="forms-empty">
-              No activity forms outstanding. A form appears here once a lesson has
-              happened and nobody has finished its form yet.
+              Nothing waiting to be written up. A Riding Lesson appears here once it has
+              happened and nobody has recorded what went on yet.
             </p>
           ) : (
             <ul className="flex flex-col gap-2" data-testid="forms-list">
@@ -324,8 +340,8 @@ export function SessionsPage() {
           <p className="text-sm text-green-800/70">Loading…</p>
         ) : groups.length === 0 ? (
           <p className="text-sm text-green-800/70" data-testid="sessions-empty">
-            No lessons {filter === 'upcoming' ? 'coming up' : 'in this view'}. Use “Schedule a
-            lesson” to book one.
+            No Riding Lessons {filter === 'upcoming' ? 'coming up' : 'in this view'}. Use
+            “Schedule a Riding Lesson” to add one.
           </p>
         ) : (
           <div className="flex flex-col gap-6" data-testid="sessions-list">
@@ -403,7 +419,7 @@ export function SessionsPage() {
         <Modal
           open={formOpen}
           onClose={() => setFormOpen(false)}
-          title="Schedule a lesson"
+          title="Schedule a Riding Lesson"
           disableBackdropClose={schedule.isPending}
         >
           {formOpen && (

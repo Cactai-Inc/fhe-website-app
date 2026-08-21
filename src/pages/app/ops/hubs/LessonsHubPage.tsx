@@ -52,16 +52,36 @@ export function LessonsHubPage() {
 
         {summary && (
           <div className="grid gap-4 sm:grid-cols-3">
+            {/* LESSONPLAN — THE REACH (D17). The plan roster is a card of its
+                own, not a link buried on a KPI tile, which is the shape D17 was
+                written about. */}
+            <div
+              className="rounded border border-green-800/15 p-5 sm:col-span-3"
+              data-testid="card-plans"
+            >
+              <p className="form-label mb-1">Lesson plans</p>
+              <p className="text-sm text-green-800/70 mb-2">
+                What each rider is working on. The plan heads their next Riding Lesson,
+                and recording progress afterwards moves it on.
+              </p>
+              <Link to="/app/ops/lessons/plans" className="link-underline text-sm inline-block">
+                Open lesson plans
+              </Link>
+            </div>
+
             <div
               className="rounded border border-green-800/15 p-5 sm:col-span-3"
               data-testid="card-sessions"
             >
-              <p className="form-label mb-1">Sessions</p>
+              {/* D25 — "booking" is internal taxonomy; a person reads
+                  "Riding Lesson". */}
+              <p className="form-label mb-1">Riding Lessons</p>
               <p className="text-sm text-green-800/70 mb-2">
-                Confirmed lesson bookings — schedule, complete, cancel.
+                Every scheduled Riding Lesson — schedule, complete, cancel, and write
+                up what happened.
               </p>
               <Link to="/app/ops/lessons/sessions" className="link-underline text-sm inline-block">
-                Open the sessions board
+                Open the Riding Lessons board
               </Link>
             </div>
 
