@@ -573,13 +573,13 @@ export async function updateMyContactPhone(phone: string | null): Promise<void> 
 
 /** The captured INTENT for a scheduled/recurring order line (Phase 4).
  *
- *  Both scheduled and recurring SKUs grant a POOL of session credits that the
- *  client books FREELY against calendar availability (any days, any distribution
- *  — recurring is not a fixed weekday/time and not literally N×/week; the SKU's
- *  weekly_frequency only SIZES the monthly pool and reflects the recurring
- *  discount). So there is no weekday/time to capture here — actual scheduling is
- *  the existing calendar booking flow (book_open_slot). This line config carries
- *  only what the calendar doesn't: off-site address + any notes/constraints. */
+ *  ⚠️ THE TWO SKU SHAPES ARE NOT THE SAME PRODUCT (D23, owner 2026-08-20). A
+ *  `scheduled` SKU grants CREDITS the client spends against calendar availability,
+ *  any day, any distribution. A `recurring` SKU grants a STANDING WEEKLY SLOT — a
+ *  reserved time that is theirs, chosen once during onboarding
+ *  (`setMyStandingSchedule`) and recurring until cancelled; `weekly_frequency` is
+ *  slots per week, not credits. Neither shape is configured here: this line config
+ *  carries only what the calendar doesn't — off-site address + notes/constraints. */
 export interface OfferingLineConfig {
   /** off-site services (training/exercise): address when the horse isn't at CCR. */
   address?: string;
@@ -587,74 +587,40 @@ export interface OfferingLineConfig {
   notes?: string;
 }
 
+/** What a member's own order can say. Label, price and unit are DELIBERATELY absent:
+ *  the catalog is the price list, and `create_my_purchase` reads both from
+ *  `offerings`. A browser that could name its own price could name zero. */
 export interface DraftOrderInput {
   items: Array<{
     offering_id?: string;
-    offering_slug?: string;  // resolved to offering_id server-side
-    label: string;
-    price_amount: number;
-    price_unit: OrderItem['price_unit'];
+    offering_slug?: string;  // either one; resolved against the catalog server-side
+    quantity?: number;
     /** Phase 4: per-line scheduling/config intent → purchase_items.config. */
     config?: OfferingLineConfig;
   }>;
-  subtotal: number;
-  /** Staff/self mark-paid at order creation (any origin). Defaults to unpaid draft. */
-  markPaid?: boolean;
-  amountPaid?: number;
-  paymentMethod?: string;
 }
 
+/** THE MEMBER'S OWN PURCHASE ROUTE — one RPC, because RLS cannot do this.
+ *
+ *  BUYANDBOOK §1: a member has no INSERT path on `purchases` (the only permissive
+ *  policy covering INSERT is `purchases_staff_all`), which is the 403 the catalog
+ *  route hit. The fix is not a permissive policy — RLS gates ROWS, not COLUMNS, so
+ *  a member who could author the row could author `status='paid'` on a line priced
+ *  at zero and mint themselves credits. `create_my_purchase` owns every
+ *  money-bearing column instead: the order opens as an unpaid DRAFT and each line
+ *  is priced from the catalog. `anon`'s standing INSERT grant stays inert because
+ *  no policy changed and the function is granted to `authenticated` alone. */
 export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderId: string }> {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) throw new Error('Not authenticated');
-
-  // Resolve any offering_slug references to offering_id from the catalog.
-  const slugs = input.items.map((i) => i.offering_slug).filter(Boolean) as string[];
-  const slugToId = new Map<string, string>();
-  if (slugs.length > 0) {
-    const { data: offerings } = await supabase
-      .from('offerings')
-      .select('id, slug')
-      .in('slug', slugs);
-    for (const o of offerings ?? []) slugToId.set(o.slug, o.id);
-  }
-
-  // Purchase unification (Phase 2/3): always stamp buyer_contact_id, add
-  // buyer_user_id for the authenticated buyer. Mark-paid is first-class on every
-  // order-creation path (Phase 4).
-  const { data: contactId } = await supabase.rpc('current_contact_id');
-  const paid = input.markPaid === true;
-  const amountPaid = paid ? input.subtotal : (input.amountPaid ?? 0);
-  const { data: order, error } = await supabase
-    .from('purchases')
-    .insert({
-      buyer_user_id: auth.user.id,
-      buyer_contact_id: (contactId as string | null) ?? null,
-      status: paid ? 'paid' : 'draft',
-      amount: input.subtotal,
-      amount_paid: amountPaid,
-      payment_status: paid ? 'paid' : amountPaid > 0 ? 'pending' : 'unpaid',
-      ...(input.paymentMethod ? { payment_method: input.paymentMethod } : {}),
-      ...(paid ? { paid_at: new Date().toISOString() } : {}),
-    })
-    .select('id')
-    .single();
+  const { data, error } = await supabase.rpc('create_my_purchase', {
+    p_items: input.items.map((i) => ({
+      ...(i.offering_id ? { offering_id: i.offering_id } : {}),
+      ...(i.offering_slug ? { offering_slug: i.offering_slug } : {}),
+      ...(i.quantity ? { quantity: i.quantity } : {}),
+      ...(i.config ? { config: i.config } : {}),
+    })),
+  });
   if (error) throw error;
-
-  if (input.items.length > 0) {
-    const rows = input.items.map((i) => ({
-      purchase_id: order.id,
-      offering_id: i.offering_id ?? (i.offering_slug ? slugToId.get(i.offering_slug) ?? null : null),
-      label: i.label,
-      price_amount: i.price_amount,
-      price_unit: i.price_unit,
-      config: i.config ?? {},
-    }));
-    const { error: itemErr } = await supabase.from('purchase_items').insert(rows);
-    if (itemErr) throw itemErr;
-  }
-
-  return { orderId: order.id };
+  return { orderId: data as string };
 }
 
 export async function getOrder(orderId: string): Promise<(Order & { items: OrderItem[] }) | null> {

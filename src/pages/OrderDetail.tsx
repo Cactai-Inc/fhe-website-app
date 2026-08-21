@@ -6,6 +6,8 @@ import { useDocumentTitle } from '../lib/hooks';
 import type { Order, OrderItem, Payment } from '../lib/types';
 import { formatPrice } from '../lib/pricing';
 import OrderPayment from '../components/order/OrderPayment';
+import { fetchMyStandingSlots, type StandingSlot } from '../lib/ops/api-calendar';
+import { standingSlotSentence } from '../lib/standingSlots';
 
 const STATUS_COPY: Record<string, { title: string; body: string }> = {
   draft: { title: 'Let’s finish setting this up', body: 'Review the details below, agree to the documents, and choose how you’d like to pay.' },
@@ -21,16 +23,21 @@ export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<(Order & { items: OrderItem[] }) | null>(null);
   const [payment, setPayment] = useState<Payment | null>(null);
+  const [standing, setStanding] = useState<StandingSlot[]>([]);
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
     if (!id) return;
-    const [o, p] = await Promise.all([
+    const [o, p, sl] = await Promise.all([
       getOrder(id),
       getOrderPayment(id).catch(() => null),
+      // BUYANDBOOK §4 — a `recurring` line has no count, period or expiry to show,
+      // because it is a standing weekly time. Empty for every other kind of order.
+      fetchMyStandingSlots(id).catch(() => [] as StandingSlot[]),
     ]);
     setOrder(o);
     setPayment(p);
+    setStanding(sl);
   }, [id]);
 
   useEffect(() => {
@@ -81,16 +88,38 @@ export default function OrderDetail() {
         <div className="bg-white border border-green-800/10 p-8 mb-8">
           <p className="eyebrow mb-5">Summary</p>
           <div className="flex flex-col divide-y divide-green-800/[0.08]">
-            {order.items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between py-3">
-                <div>
-                  <p className="text-sm font-sans font-medium text-green-900">{item.label}</p>
+            {order.items.map((item) => {
+              /* D23 — THE ONE THING A WEEKLY BUYER WAS NEVER TOLD. This page showed a
+                 recurring line as a price and nothing else: no count, no period, no
+                 expiry, no renewal terms. It has none of those, because it is not a
+                 bundle — it is a standing weekly time. So the line says which days
+                 and times are theirs and that it recurs until cancelled, and while
+                 that is still unchosen it says so and points at where to choose. */
+              const slot = standing.find((sl) => sl.purchase_item_id === item.id);
+              return (
+                <div key={item.id} className="flex items-start justify-between gap-4 py-3">
+                  <div>
+                    <p className="text-sm font-sans font-medium text-green-900">{item.label}</p>
+                    {slot && (
+                      <p className="text-xs font-sans text-muted mt-1 leading-relaxed">
+                        {standingSlotSentence(slot)}
+                        {!slot.chosen && (
+                          <>
+                            {' '}
+                            <Link to="/app/onboarding" className="text-green-800 underline">
+                              Pick your weekly time
+                            </Link>
+                          </>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-sm font-serif font-medium text-green-800 whitespace-nowrap">
+                    {formatPrice(item.price_amount, item.price_unit)}
+                  </p>
                 </div>
-                <p className="text-sm font-serif font-medium text-green-800">
-                  {formatPrice(item.price_amount, item.price_unit)}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

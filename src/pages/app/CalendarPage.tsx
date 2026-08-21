@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, X, Wallet, Settings } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { PageCreateButton } from '../../components/app/PageCreateButton';
@@ -12,6 +12,7 @@ import {
 } from '../../lib/ops/api-calendar';
 import {
   bookOpenSlot,
+  ensureStandingSlots,
   requestBookingChange,
   requestOpenTime,
   fetchRescheduleFee,
@@ -168,6 +169,21 @@ export default function CalendarPage() {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  // BUYANDBOOK §4.3 — THE HORIZON, MATERIALISED ON READ. There is no scheduler:
+  // `pg_cron` is not installed and the Vercel crons were never created, so nothing
+  // wakes up to open next month for a standing weekly slot. Loading a calendar is
+  // what rolls it forward — 90 days at a time, idempotent, and a no-op once the
+  // window is covered. Once per mount, and the calendar is reloaded only when
+  // sessions were actually written.
+  const rolled = useRef(false);
+  useEffect(() => {
+    if (rolled.current) return;
+    rolled.current = true;
+    ensureStandingSlots()
+      .then((r) => { if (r.created > 0) void load(); })
+      .catch(() => { /* a horizon that could not roll must never block the calendar */ });
   }, [load]);
 
   // ONBOARD §7 — reloaded alongside the calendar, so a booking that spends a
@@ -573,7 +589,10 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
       await bookOpenSlot(item.id, (isCare || isLesson) ? horseId || null : null, creditId || null);
       onChanged();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
+      // BUYANDBOOK §5 — read the code through errorCode, NOT `instanceof Error`: a
+      // Supabase refusal is a plain object, so the old test always saw '' and both
+      // branches below were dead. The panels existed; nothing could reach them.
+      const msg = toErrorMessage(e, '');
       if (msg.includes('NO_CREDITS')) setNoCredits(true);
       else if (msg.includes('HORSE_CARE_DOCS_REQUIRED')) {
         // backend generated whatever was missing for this horse; surface the list.
@@ -1000,15 +1019,7 @@ function PurchaseLessonsPanel({ onClose }: { onClose: () => void }) {
   async function buy(o: Offering) {
     setBusy(o.id); setError(null);
     try {
-      const { orderId } = await createDraftOrder({
-        items: [{
-          offering_slug: o.slug,
-          label: o.name,
-          price_amount: o.price_amount ?? 0,
-          price_unit: o.price_unit === 'week' || o.price_unit === 'month' ? 'session' : (o.price_unit ?? 'session'),
-        }],
-        subtotal: o.price_amount ?? 0,
-      });
+      const { orderId } = await createDraftOrder({ items: [{ offering_slug: o.slug }] });
       navigate(`/order/${orderId}`);
     } catch (e) {
       setError(toErrorMessage(e, 'Could not start your purchase.'));

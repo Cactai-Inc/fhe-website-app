@@ -628,6 +628,92 @@ export async function setRecurringDays(
   return data as RecurringDaysResult;
 }
 
+/** ── THE STANDING WEEKLY SLOT (D23 / BUYANDBOOK §4) ─────────────────────────
+ *
+ *  A `recurring` SKU is NOT a credit balance. It is a reserved weekly time that is
+ *  theirs — chosen once, recurring until cancelled — and `weekly_frequency` is how
+ *  many slots a week, not how many credits. A 2x Weekly buyer picks TWO days and a
+ *  time for EACH.
+ *
+ *  ⚠️ THIS IS THE CLIENT'S FRONT DOOR ONTO THE INCUMBENT WRITER, NOT A SECOND ONE.
+ *  The server RPC calls `set_recurring_days` (the same function staff's
+ *  `CalendarItemPanel` calls) and then materialises the bookings through
+ *  `_generate_plan_month`. There is one standing-slot writer and both surfaces
+ *  reach it. */
+export interface StandingSlotChoice {
+  /** 'Mon' … 'Sun' */
+  day: string;
+  /** 24-hour 'HH:MM' */
+  time: string;
+}
+
+export interface StandingScheduleResult {
+  purchase_item_id: string;
+  offering_name: string;
+  weekly_frequency: number;
+  slots: StandingSlotChoice[];
+  horizon: { ok: boolean; reason?: string; through?: string; months?: number; created?: number };
+}
+
+export async function setMyStandingSchedule(input: {
+  purchaseItemId: string;
+  slots: StandingSlotChoice[];
+  durationMinutes?: number;
+  horseId?: string | null;
+}): Promise<StandingScheduleResult> {
+  const { data, error } = await supabase.rpc('set_my_standing_schedule', {
+    p_purchase_item_id: input.purchaseItemId,
+    p_slots: input.slots,
+    p_duration_minutes: input.durationMinutes ?? 60,
+    p_horse_id: input.horseId ?? null,
+  });
+  if (error) throw error;
+  return data as StandingScheduleResult;
+}
+
+export interface StandingSlot {
+  purchase_id: string;
+  purchase_item_id: string;
+  offering_id: string;
+  offering_name: string;
+  segment: string;
+  weekly_frequency: number | null;
+  recurring_days: string[];
+  recurring_times: Record<string, string>;
+  duration_minutes: number;
+  /** Day(s) AND time(s) are both set — i.e. the slot actually exists. */
+  chosen: boolean;
+  indefinite: boolean;
+  plan_ends_on: string | null;
+  horizon_through: string | null;
+  booked_ahead: number;
+}
+
+/** The member's own weekly plans and what, if anything, they have chosen. */
+export async function fetchMyStandingSlots(purchaseId?: string): Promise<StandingSlot[]> {
+  const { data, error } = await supabase.rpc('my_standing_slots', {
+    p_purchase_id: purchaseId ?? null,
+  });
+  if (error) throw error;
+  return (data ?? []) as StandingSlot[];
+}
+
+/** WHAT REPLACES THE SCHEDULER THAT DOES NOT EXIST.
+ *
+ *  `pg_cron` is not installed and the Vercel crons were never created, so nothing
+ *  wakes up to open next month. A standing slot does not need one: the horizon is
+ *  MATERIALISED ON READ. Calling this when a calendar loads rolls every one of the
+ *  caller's plans forward to a 90-day window; it is idempotent and costs one index
+ *  lookup per plan once the window is already covered. Returns how many sessions it
+ *  had to create, so the caller only reloads when something actually changed. */
+export async function ensureStandingSlots(clientId?: string): Promise<{ plans: number; created: number }> {
+  const { data, error } = await supabase.rpc('ensure_standing_slots', {
+    p_client_id: clientId ?? null,
+  });
+  if (error) throw error;
+  return (data ?? { plans: 0, created: 0 }) as { plans: number; created: number };
+}
+
 /** Staff: produce this month's remaining weekly sessions on the calendar for
  *  a monthly-plan client (idempotent — re-running skips dates already booked). */
 export async function generateMonthlyLessons(input: {

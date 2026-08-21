@@ -87,10 +87,20 @@ function ReportPaymentPanel({
   if (reportedAt) {
     return (
       <div className="mt-5 pt-5 border-t border-green-800/10">
+        {/* D23 — BOTH HALVES, IN ONE BOX. The client is unblocked (their entitlement
+            exists the moment they declare, so this says so, plainly and with the
+            link), AND staff know a claim is waiting (the same act filed it in the
+            payments review queue). Neither sentence is a promise the code does not
+            keep any more: declaring is what opens the order. */}
         <p className="text-sm font-sans text-green-800 bg-green-50 border border-green-200 p-4">
           {reportedMethod === 'cash'
             ? 'Thanks — we’ve noted that you’re paying cash. We’ll settle it with you at the ranch.'
             : 'Thanks — we’ve noted that you sent the payment. We’ll confirm it as soon as it lands on our side.'}
+          {' '}
+          <span className="block mt-2 text-green-900">
+            Nothing is waiting on that. Your sessions are yours now — pick your times on the{' '}
+            <a href="/app/calendar" className="underline">Calendar</a> whenever you like.
+          </span>
         </p>
         <button
           type="button"
@@ -155,7 +165,15 @@ export default function OrderPayment({
   payment: Payment | null;
   onChange: () => void;
 }) {
-  const [method, setMethod] = useState<PaymentMethod>(order.payment_method ?? 'zelle');
+  // ⚠️ NOT `order.payment_method` — that column now carries 'cash' the moment the
+  //  buyer declares it (report_my_payment writes the method they said they'd use),
+  //  and every panel below sat behind `method === 'zelle'`. So declaring cash
+  //  emptied this entire card: no confirmation, no way back, nothing but a heading.
+  //  This state is the CARD's mode, not the order's settled method — the order's
+  //  method is read directly where it matters.
+  const [method, setMethod] = useState<PaymentMethod>(
+    order.payment_method === 'stripe' ? 'stripe' : 'zelle',
+  );
   const [working, setWorking] = useState(false);
   // Zelle's only sanctioned "one tap": the bank-issued receive QR. Its embedded
   // link preselects US as recipient — scannable on desktop, tappable on mobile.
@@ -208,7 +226,13 @@ export default function OrderPayment({
   // reach. Keying on the reference itself makes both origins converge on the same
   // path: no memo -> the button, which calls finalize_purchase_payment and
   // generates one; memo -> the instructions that quote it.
-  const showingZelleInstructions = !!order.payment_reference && method === 'zelle';
+  //  BUYANDBOOK §3 — a CASH declaration now opens the order through the same
+  //  `finalize_purchase_payment` the Zelle button calls, so a cash order has a
+  //  payment_reference too. Quoting Zelle instructions at someone who told us they
+  //  are paying cash would be the same "wasn't listening" failure in reverse.
+  const declaredCash = order.client_reported_method === 'cash';
+  const showingZelleInstructions =
+    !!order.payment_reference && !declaredCash && method === 'zelle';
   const reference = order.payment_reference ?? '';
 
   return (
@@ -258,7 +282,7 @@ export default function OrderPayment({
       </div>
       )}
 
-      {method === 'zelle' && (
+      {method !== 'stripe' && (
         <div>
           {showingZelleInstructions ? (
             <div className="bg-cream/60 border border-green-800/10 p-5">
@@ -294,7 +318,7 @@ export default function OrderPayment({
                 We’ll confirm as soon as it lands, usually within the hour.
               </p>
             </div>
-          ) : (
+          ) : declaredCash ? null : (
             <button type="button" onClick={chooseZelle} disabled={working} className="btn-primary w-full justify-center">
               {working ? 'Preparing…' : 'Pay with Zelle'}
             </button>

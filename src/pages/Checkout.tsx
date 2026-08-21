@@ -51,7 +51,7 @@ const usd = (n: number) =>
 
 export default function Checkout() {
   useDocumentTitle('Send an Inquiry');
-  const { state, removeItem, subtotal, clearCart, inquirySummary, setItemConfig } = useCart();
+  const { state, removeItem, clearCart, inquirySummary, setItemConfig } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   // Horse-care purchases require choosing the horse(s) so each has a Care Release.
@@ -87,13 +87,11 @@ export default function Checkout() {
           // it as offering_id so the line links to the real offering (previously it
           // was sent as offering_slug and the slug→id lookup silently dropped it).
           offering_id: i.offeringId,
-          label: i.offeringName,
-          price_amount: i.price,
-          // 'lesson' is a UI-only unit; the purchase_items check constraint knows 'session'.
-          price_unit: i.unit === 'lesson' ? 'session' : i.unit,
+          // BUYANDBOOK §1 — the label, price and unit are no longer sent. The cart's
+          // numbers are what the shopper was SHOWN; the order is priced from the
+          // catalog server-side, so the two can never quietly disagree.
           ...(i.config && (i.config.address || i.config.notes) ? { config: i.config } : {}),
         })),
-        subtotal,
       });
       clearCart();
       navigate(`/order/${orderId}`);
