@@ -609,3 +609,19 @@ reporting success.
   liability over content that should never have been captured. **It is not a general delete, and it
   does not weaken D11 (accounts archive), D15 (linked files survive) or the rule that executed
   documents are evidence.**
+- **D28 — THE GENERAL RELEASE IS FOR VISITORS AND DOES NOT STACK. RIDER AND OWNER RELEASES DO
+  (owner, 2026-08-21).** Owner: *"general release is for visitors, riders and horse owners have
+  their own release to sign and the rider and owner releases stack but the general release doesnt."*
+  **The live `category_document_requirements` data is CORRECT as it stands** — this rule exists to
+  stop it being "fixed":
+  - **Guest** → `RELEASE_GENERAL` + `COMPANY_POLICIES` + `FACILITY_RULES`
+  - **Rider** → `RELEASE_PARTICIPANT` + `HUMAN_EMERGENCY_MEDICAL` + policies + rules — **no general
+    release**
+  - **Horse owner** → `RELEASE_HORSE_CARE` + `RELEASE_PARTICIPANT` + `HORSE_EMERGENCY_VET` +
+    policies + rules — **no general release**
+  **A rider who is also a horse owner holds BOTH the participant and horse-care releases — they
+  stack.** `RELEASE_GENERAL` never joins that stack, because a person with a rider or owner release
+  is covered by a narrower, stronger instrument.
+  ⚠️ **`TASK-CATEGORISE` raised "a Rider never gets a general release" as an open question and the
+  orchestrator relayed it without checking the design. It was never a defect.** Do not raise it
+  again.
