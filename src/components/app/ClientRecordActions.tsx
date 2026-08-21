@@ -15,6 +15,7 @@ import {
   type HorseIntakeRecord, type ContactOption,
 } from '../../lib/horses';
 import { fetchOfferings } from '../../lib/api';
+import { toErrorMessage } from '../../lib/ops/errors';
 import type { Offering } from '../../lib/types';
 
 /** The small "+ add" button these panels share. */
@@ -372,6 +373,10 @@ export function PaperworkEditor({ contactId }: { contactId: string }) {
   // on the record (who/when/why) but stops blocking and is never asked.
   const [skipInfo, setSkipInfo] = useState<Map<string, RequiredDocumentState>>(new Map());
   const [saved, setSaved] = useState(true);
+  // NOSTRIP: this editor's save can now be REFUSED — executed paperwork is
+  // evidence and is never removed. A refusal that lands in an empty catch is
+  // indistinguishable from a save, so it is shown.
+  const [error, setError] = useState<string | null>(null);
 
   const loadState = useCallback(() => {
     getContactRequiredDocumentsState(contactId).then((rows) => {
@@ -388,17 +393,22 @@ export function PaperworkEditor({ contactId }: { contactId: string }) {
 
   async function skip(key: string) {
     // D19: a value-moving action states itself and captures a reason.
+    // NOSTRIP §2: the reason is REQUIRED, not optional — the database refuses a
+    // blank one, so asking again here beats bouncing off the RPC.
     const reason = window.prompt(
       'Skip this document? It will stop blocking their access and the contract '
-      + 'lock gate, but is NOT signed and stays on the record as skipped.\n\nReason:');
+      + 'lock gate, but is NOT signed and stays on the record as skipped.\n\nReason (required):');
     if (reason === null) return;
+    if (!reason.trim()) { setError('A reason is required to skip a required document.'); return; }
+    setError(null);
     try { await skipRequiredDocument(contactId, key, reason.trim()); loadState(); }
-    catch { /* row stays as it was */ }
+    catch (e) { setError(toErrorMessage(e, 'Could not skip that document.')); }
   }
 
   async function unskip(key: string) {
+    setError(null);
     try { await unskipRequiredDocument(contactId, key); loadState(); }
-    catch { /* row stays as it was */ }
+    catch (e) { setError(toErrorMessage(e, 'Could not restore that document.')); }
   }
 
   // ⚠️ PARTYROLE §4c — the list is EVERY onboarding document, and the categories
@@ -428,12 +438,19 @@ export function PaperworkEditor({ contactId }: { contactId: string }) {
   async function toggle(key: string) {
     const next = new Set(checked);
     if (next.has(key)) next.delete(key); else next.add(key);
-    setChecked(next); setSaved(false);
+    setChecked(next); setSaved(false); setError(null);
     try {
       await setContactRequiredDocuments(contactId, Array.from(next));
       setSaved(true);
       loadState();
-    } catch { /* row stays visibly unsaved */ }
+    } catch (e) {
+      // NOSTRIP §1 — the likeliest refusal is "that one is signed". Put the
+      // checkbox back where the record actually is rather than leaving the
+      // screen showing a removal that never happened.
+      setError(toErrorMessage(e, 'Could not save the paperwork.'));
+      setSaved(true);
+      loadState();
+    }
   }
 
   return (
@@ -444,15 +461,21 @@ export function PaperworkEditor({ contactId }: { contactId: string }) {
       </div>
       <p className="text-sm text-muted mb-3">
         What they'll be asked to review and sign when they activate. The invitation email lists exactly this.
+        {' '}Signed paperwork stays on the record — it is the evidence they were asked and agreed.
       </p>
+      {error && <p className="form-error mb-3" role="alert">{error}</p>}
       <div className="grid sm:grid-cols-2 gap-2.5">
         {templates.map((t) => (
           <label key={t.key}
             className={`flex items-start gap-2.5 px-4 py-3 rounded-lg border cursor-pointer ${
               checked.has(t.key) ? 'border-green-700 bg-green-50' : 'border-green-800/15 hover:bg-green-50/50'
             }`}>
+            {/* NOSTRIP §1 — an EXECUTED requirement is never removed by any path.
+                The database refuses it; the box must not invite the attempt. */}
             <input type="checkbox" className="accent-green-700 w-[18px] h-[18px] mt-0.5"
-              checked={checked.has(t.key)} onChange={() => void toggle(t.key)} />
+              checked={checked.has(t.key)}
+              disabled={skipInfo.get(t.key)?.satisfied === true}
+              onChange={() => void toggle(t.key)} />
             <span className="min-w-0 flex-1">
               <span className={`block text-[14px] leading-snug ${checked.has(t.key) ? 'text-green-900 font-medium' : 'text-secondary'}`}>{t.title}</span>
               <span className="block text-[11.5px] text-muted mt-0.5">
@@ -486,7 +509,11 @@ export function PaperworkEditor({ contactId }: { contactId: string }) {
                     </span>
                   );
                 }
-                return null;
+                return (
+                  <span className="block text-[11.5px] text-green-700 mt-1">
+                    Signed — kept as evidence, and cannot be removed or skipped
+                  </span>
+                );
               })()}
             </span>
           </label>
