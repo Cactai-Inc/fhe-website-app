@@ -700,6 +700,24 @@ export async function fetchMyStandingSlots(purchaseId?: string): Promise<Standin
   return (data ?? []) as StandingSlot[];
 }
 
+/** SLOTREACH §2 — STAFF'S READ OF A CLIENT'S STANDING SLOT.
+ *
+ *  `my_standing_slots` is caller-scoped (`buyer_user_id = auth.uid()`), so staff had
+ *  no way to SEE the weekly time of the client in front of them, let alone change it.
+ *  This is the same shape, keyed on the contact, staff-gated in the database.
+ *
+ *  ⚠️ A READ ONLY. The write stays `setMyStandingSchedule` for both audiences —
+ *  `set_my_standing_schedule` already authorises `has_staff_access() OR the plan's
+ *  own client`, so staff reach the incumbent writer rather than a second one (D18).
+ */
+export async function fetchClientStandingSlots(contactId: string): Promise<StandingSlot[]> {
+  const { data, error } = await supabase.rpc('client_standing_slots', {
+    p_contact_id: contactId,
+  });
+  if (error) throw error;
+  return (data ?? []) as StandingSlot[];
+}
+
 /** WHAT REPLACES THE SCHEDULER THAT DOES NOT EXIST.
  *
  *  `pg_cron` is not installed and the Vercel crons were never created, so nothing
