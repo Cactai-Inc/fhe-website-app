@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Check, Circle, FileText } from 'lucide-react';
 import {
   getMyProfile,
@@ -28,10 +28,10 @@ import type { Order, OrderItem, Payment } from '../../lib/types';
 import { signMyDocument } from '../../lib/ops/api-client';
 import {
   fetchMyStandingSlots,
-  setMyStandingSchedule,
   type StandingSlot,
 } from '../../lib/ops/api-calendar';
-import { WEEKDAYS, WEEKDAY_PLURAL, standingSlotSentence, standingSlotSummary } from '../../lib/standingSlots';
+import { standingSlotSentence, serviceLabel } from '../../lib/standingSlots';
+import { StandingSlotPicker } from '../../components/app/StandingSlotPicker';
 import { BodyWithSignatures } from '../../components/ops/documents/MergedBodyView';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
@@ -134,12 +134,20 @@ function PurchaseCard({ purchase, riderName, standing }: {
 }) {
   const quantity = planQuantity(purchase);
   const slots = (standing ?? []).map((s) => ({ id: s.purchase_item_id, text: standingSlotSentence(s) }));
+  /* D25 (SLOTREACH §4) — a weekly member is NEVER shown the SKU. "2x Weekly Lessons"
+     is the internal name of what was sold; what they have is two Riding Lessons a
+     week, and that is what the card says. A punch card or a one-off keeps its own
+     product title, because there the count IS the thing they bought. */
+  const weekly = (standing ?? [])[0] ?? null;
+  const title = weekly
+    ? serviceLabel(weekly, Math.max(weekly.weekly_frequency ?? 1, 1))
+    : purchase.tier_label;
   return (
     <div className="bg-white border border-green-800/10 p-6 mb-6" data-testid="purchase-card">
       <p className="eyebrow mb-2">Your plan</p>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="font-serif text-xl text-green-800">{purchase.tier_label}</p>
+          <p className="font-serif text-xl text-green-800">{title}</p>
           {quantity && <p className="text-sm text-secondary mt-1">{quantity}</p>}
           {slots.map((s) => <p key={s.id} className="text-sm text-secondary mt-1">{s.text}</p>)}
           {riderName && <p className="text-sm text-secondary mt-1">Rider: {riderName}</p>}
@@ -158,165 +166,45 @@ function PurchaseCard({ purchase, riderName, standing }: {
 
 /** THE WEEKLY MEMBERSHIP'S ONE QUESTION — which day(s) and time(s) are yours.
  *
- *  D23: a `recurring` SKU is a STANDING SLOT, not a credit balance. The client never
- *  "has credits" and never goes hunting for a time; their slot exists and recurs
- *  until cancelled. `weekly_frequency` is how many slots a week, so a 2x Weekly
- *  buyer answers TWICE — two days, and a time for each.
- *
- *  ⚠️ ONE WRITER. `setMyStandingSchedule` is a thin front door onto the same
- *  `set_recurring_days` + plan generator that staff's CalendarItemPanel calls. This
- *  component holds no scheduling logic of its own; it collects the answer.
+ *  SLOTREACH §1: the picker itself moved OUT of this file into
+ *  `components/app/StandingSlotPicker`, because a control that exists only inside an
+ *  onboarding wizard is a control a signed client cannot reach — WALK2's finding, and
+ *  the eleventh reach failure in this project (D17). The same component now also
+ *  mounts on the member's Calendar and on the staff dossier. What stays here is only
+ *  the wizard's own framing: the heading, and the way OUT of the step.
  */
-function StandingSlotStep({ purchaseId, onFinished }: {
-  purchaseId: string | null;
+function StandingSlotStep({ slots, onReload, onFinished }: {
+  slots: StandingSlot[];
+  onReload: () => void;
   onFinished: () => void;
 }) {
-  const [plans, setPlans] = useState<StandingSlot[] | null>(null);
-  const [choices, setChoices] = useState<Array<{ day: string; time: string }>>([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState<StandingSlot[]>([]);
-
-  const load = useCallback(() => {
-    fetchMyStandingSlots(purchaseId ?? undefined)
-      .then((all) => {
-        setPlans(all);
-        setSaved(all.filter((p) => p.chosen));
-        const next = all.find((p) => !p.chosen);
-        setChoices(
-          next
-            ? Array.from({ length: Math.max(next.weekly_frequency ?? 1, 1) }, () => ({ day: '', time: '' }))
-            : [],
-        );
-      })
-      .catch((e) => { setPlans([]); setError(toErrorMessage(e, 'Could not load your plan.')); });
-  }, [purchaseId]);
-  useEffect(() => { load(); }, [load]);
-
-  const pending = plans?.find((p) => !p.chosen) ?? null;
-
-  // Every session needs its own day, and no two may land on the same one — the
-  // server refuses a duplicate, so the button refuses it first.
-  const ready =
-    choices.length > 0 &&
-    choices.every((c) => c.day && c.time) &&
-    new Set(choices.map((c) => c.day)).size === choices.length;
-
-  async function save() {
-    if (!pending || !ready) return;
-    setBusy(true); setError(null);
-    try {
-      const res = await setMyStandingSchedule({
-        purchaseItemId: pending.purchase_item_id, slots: choices,
-      });
-      // The days are recorded either way, but the BOOKINGS only appear once the
-      // order has left draft. Saying "that's yours" when nothing was written is
-      // the kind of promise this whole task exists to stop making.
-      if (!res.horizon?.ok && res.horizon?.reason === 'draft') {
-        setError('We have noted your time. It goes on the calendar as soon as your order is placed — '
-          + 'tell us how you are paying and it is yours.');
-      }
-      load();
-    } catch (e) {
-      setError(toErrorMessage(e, 'Could not set your weekly time. Please try again.'));
-    } finally { setBusy(false); }
-  }
-
-  function setChoice(i: number, patch: Partial<{ day: string; time: string }>) {
-    setChoices((prev) => prev.map((c, n) => (n === i ? { ...c, ...patch } : c)));
-  }
-
+  const nothingPending = slots.length > 0 && slots.every((p) => p.chosen);
   return (
     <section aria-labelledby="ob-slots-heading">
-      <h2 id="ob-slots-heading" className="font-serif text-lg text-green-900 mb-3">Your weekly time</h2>
+      <h2 id="ob-slots-heading" className="font-serif text-lg text-green-900 mb-3">
+        Your weekly time
+      </h2>
 
-      {saved.length > 0 && (
-        <div className="bg-green-50 border border-green-200 p-4 mb-6">
-          {saved.map((p) => {
-            const summary = standingSlotSummary(p);
-            return (
-              <p key={p.purchase_item_id} className="text-sm font-sans text-green-900">
-                <span className="font-medium">{p.offering_name}</span>
-                {summary && <> — {summary} {p.indefinite ? 'are yours, every week until you tell us otherwise.' : 'are yours.'}</>}
-              </p>
-            );
-          })}
-          <p className="text-xs font-sans text-muted mt-2">
-            They are already on your{' '}
-            <Link to="/app/calendar" className="text-green-800 underline">Calendar</Link>. Change any one
-            of them from there — you are never locked into a single session.
-          </p>
-        </div>
+      <StandingSlotPicker slots={slots} onSaved={onReload} audience="client" />
+
+      {slots.length > 0 && (
+        <p className="text-xs font-sans text-muted mt-4">
+          {nothingPending ? 'They are already on your ' : 'It will show up on your '}
+          <Link to="/app/calendar" className="text-green-800 underline">Calendar</Link>
+          , and you can change any single week from there — you are never locked into
+          one session.
+        </p>
       )}
 
-      {pending ? (
-        <>
-          <p className="text-sm text-muted mb-6">
-            {pending.offering_name} is a standing time that is yours —{' '}
-            {Math.max(pending.weekly_frequency ?? 1, 1) === 1
-              ? 'pick the day and time that suit you'
-              : `pick ${Math.max(pending.weekly_frequency ?? 1, 1)} days and a time for each`}
-            , and we will hold {Math.max(pending.weekly_frequency ?? 1, 1) === 1 ? 'it' : 'them'} every
-            week until you tell us otherwise.
-          </p>
-          {error && <p role="alert" className="form-error mb-4">{error}</p>}
-          <div className="flex flex-col gap-4 mb-6">
-            {choices.map((c, i) => (
-              <div key={i} className="flex flex-wrap gap-3 items-end">
-                <label className="flex-1 min-w-[9rem]">
-                  <span className="form-label">
-                    {choices.length === 1 ? 'Day' : `Session ${i + 1} — day`}
-                  </span>
-                  <select
-                    className="form-input"
-                    value={c.day}
-                    onChange={(e) => setChoice(i, { day: e.target.value })}
-                  >
-                    <option value="">Choose a day…</option>
-                    {WEEKDAYS.map((d) => (
-                      <option
-                        key={d}
-                        value={d}
-                        disabled={choices.some((o, n) => n !== i && o.day === d)}
-                      >
-                        {WEEKDAY_PLURAL[d]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="flex-1 min-w-[9rem]">
-                  <span className="form-label">Time</span>
-                  <input
-                    type="time"
-                    className="form-input"
-                    value={c.time}
-                    onChange={(e) => setChoice(i, { time: e.target.value.slice(0, 5) })}
-                  />
-                </label>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button type="button" className="btn-primary" disabled={busy || !ready} onClick={() => void save()}>
-              {busy ? 'Setting your time…' : 'That is my weekly time'}
-            </button>
-            {/* Never a trap. Staff can set it from the calendar, and the member can
-                come back — but nothing about the rest of onboarding waits on it. */}
-            <button type="button" className="btn-outline-gold text-sm" onClick={onFinished}>
-              I&apos;ll decide later
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
-          {plans === null && <p className="body-text text-muted text-sm">Loading your plan…</p>}
-          {plans !== null && (
-            <button type="button" className="btn-primary" onClick={onFinished}>
-              Continue
-            </button>
-          )}
-        </>
-      )}
+      <div className="flex flex-wrap gap-3 mt-6">
+        {/* Never a trap. Staff can set it from the dossier, the member can come back
+            to it from their Calendar, and nothing else in onboarding waits on it. */}
+        <button type="button"
+          className={nothingPending ? 'btn-primary' : 'btn-outline-gold text-sm'}
+          onClick={onFinished}>
+          {nothingPending ? 'Continue' : "I'll decide later"}
+        </button>
+      </div>
     </section>
   );
 }
@@ -360,6 +248,13 @@ function Steps({ current, showHorse, showOrder, showSlots }: {
 export default function Onboarding() {
   useDocumentTitle('Welcome Aboard');
   const navigate = useNavigate();
+  // SLOTREACH §1 — `?step=slots` is THE REACH. The order page's "Pick your weekly
+  // time" link pointed at `/app/onboarding`, the wizard's root, which for a signed
+  // client resolves to "You're all set" or to "Nothing to do here" — so the only
+  // door to the standing-slot picker opened onto a wall (WALK2). The link now names
+  // the step, and the step machine below honours it whatever the paperwork says.
+  const [searchParams] = useSearchParams();
+  const wantsSlots = searchParams.get('step') === 'slots';
   const { hasModule } = useAuth();
   const propertyTerm = usePropertyTerm();
   // I6 — the app-overview modal's page list now mirrors AppLayout's canonical
@@ -485,10 +380,17 @@ export default function Onboarding() {
   const [order, setOrder] = useState<(Order & { items: OrderItem[] }) | null>(null);
   const [payment, setPayment] = useState<Payment | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
-  // BUYANDBOOK §4 — the slot step exists only for an order with a `recurring` line.
-  // Read once the purchase is known; an empty list means this is a punch-card buyer
-  // and the step never appears.
+  // BUYANDBOOK §4 — the slot step exists only for a client with a `recurring` line.
+  // An empty list means this is a punch-card buyer and the step never appears.
+  // SLOTREACH §1: loaded at MOUNT now, not when the payment step is entered, and
+  // never filtered to one purchase — see the mount effect below.
   const [standing, setStanding] = useState<StandingSlot[]>([]);
+  const reloadStanding = useCallback(
+    () => fetchMyStandingSlots()
+      .then(setStanding)
+      .catch(() => { /* the picker keeps what it has; nothing is lost */ }),
+    [],
+  );
 
   // Load the purchase for the payment step, then poll for confirmation.
   async function enterPayment() {
@@ -497,7 +399,7 @@ export default function Onboarding() {
     try {
       if (!purchaseId) { setStep('done'); return; }
       const [o, p, sl] = await Promise.all([
-        getOrder(purchaseId), getOrderPayment(purchaseId), fetchMyStandingSlots(purchaseId),
+        getOrder(purchaseId), getOrderPayment(purchaseId), fetchMyStandingSlots(),
       ]);
       setOrder(o);
       setPayment(p);
@@ -533,8 +435,17 @@ export default function Onboarding() {
     // Same quiet-catch fallback as AppLayout's useNavPresence: a failed read
     // just leaves every presence-gated tour line hidden.
     myNavPresence().then((p) => active && setPresence(p)).catch(() => {});
-    Promise.all([myOnboardingState(), getMyProfile().catch(() => null)])
-      .then(([s, p]) => {
+    Promise.all([
+      myOnboardingState(),
+      getMyProfile().catch(() => null),
+      // SLOTREACH §1 — READ UNFILTERED, AND READ IT FIRST. This used to be read only
+      // when the payment step was entered, so the one fact that decides whether a
+      // weekly member still owes us their standing time was unknown at exactly the
+      // moment the wizard decided whether to short-circuit. Unfiltered by purchase,
+      // because a member may hold a plan from an order this wizard is not about.
+      fetchMyStandingSlots().catch(() => [] as StandingSlot[]),
+    ])
+      .then(([s, p, sl]) => {
         if (!active) return;
         setState(s);
         setProfile(p);
@@ -578,7 +489,17 @@ export default function Onboarding() {
             riding_background: pre?.riding_background ?? '',
           }));
         }
-        if (!s.needed) setStep('done');
+        setStanding(sl);
+        // SLOTREACH §1 — THE PAPERWORK SHORT-CIRCUIT, FIXED AT THE CONDITION.
+        // `!s.needed` means "no documents are waiting on you", and it used to end the
+        // wizard outright. A weekly member whose paperwork is signed and whose
+        // standing time is UNCHOSEN has the single most important thing in the
+        // product still outstanding, and that is the exact client WALK2 got stuck as.
+        // Asking for the step by name wins over everything; an unchosen slot wins
+        // over "nothing to do".
+        const slotOutstanding = sl.some((x) => !x.chosen);
+        if (wantsSlots && sl.length > 0) setStep('slots');
+        else if (!s.needed) setStep(slotOutstanding ? 'slots' : 'done');
         // §C9 — the order screen comes FIRST when there is an order to show.
         else if (s.purchase?.purchase_id) setStep('order');
         // 3f: the input form ALWAYS renders, prefilled, even when nothing is
@@ -589,7 +510,7 @@ export default function Onboarding() {
       .catch((err) => active && setLoadError(toErrorMessage(err, 'Could not load your onboarding.')))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, []);
+  }, [wantsSlots]);
 
   const documents = state?.documents ?? [];
   const currentDoc = documents.find((d) => d.status !== 'EXECUTED') ?? null;
@@ -798,7 +719,14 @@ export default function Onboarding() {
         if (next.purchase && !next.purchase.paid) {
           await enterPayment();
         } else {
-          setStep('done');
+          // SLOTREACH §1 — the OTHER paperwork short-circuit. A member whose order
+          // was already paid landed on "You're all set" the moment their last
+          // signature went down, with their standing weekly time still unchosen and
+          // no way back to the step. Re-read first: a slot may have been chosen on
+          // another surface since this page loaded.
+          const sl = await fetchMyStandingSlots().catch(() => standing);
+          setStanding(sl);
+          setStep(sl.some((x) => !x.chosen) ? 'slots' : 'done');
         }
       }
     } catch (err) {
@@ -825,7 +753,12 @@ export default function Onboarding() {
   }
 
   // Nothing pending and nothing purchased — a member with no onboarding to do.
-  if (state && !state.needed && !state.purchase) {
+  // SLOTREACH §1: `standing.length === 0` is the third condition and it is not
+  // cosmetic. WALK2's signed weekly member hit this branch and was told "Nothing to
+  // do here" while their standing time was unchosen and their calendar was empty.
+  // Anyone holding a weekly plan gets the wizard — to choose the time if it is
+  // outstanding, and to see what they hold if it is not.
+  if (state && !state.needed && !state.purchase && standing.length === 0) {
     return (
       <div className="max-w-3xl">
         <p className="eyebrow mb-2">Onboarding</p>
@@ -1374,13 +1307,11 @@ export default function Onboarding() {
 
       {step === 'slots' && (
         <StandingSlotStep
-          purchaseId={state?.purchase?.purchase_id ?? null}
+          slots={standing}
+          onReload={() => void reloadStanding()}
           onFinished={() => {
             // the summary card on the last step names the slot they just chose
-            fetchMyStandingSlots(state?.purchase?.purchase_id ?? undefined)
-              .then(setStanding)
-              .catch(() => { /* the card falls back to the plan name alone */ })
-              .finally(() => setStep('done'));
+            void reloadStanding().finally(() => setStep('done'));
           }}
         />
       )}

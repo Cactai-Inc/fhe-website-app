@@ -487,7 +487,10 @@ export function CalendarItemPanel({
                 onClick={() => setType(t)}
                 className={`px-3 py-1 rounded-full text-sm ${type === t ? 'bg-green-800 text-white' : 'text-green-800'}`}
               >
-                {t === 'offering' ? 'Booking' : t === 'appointment' ? 'Appointment' : 'Unavailable'}
+                {/* D25 (SLOTREACH §4) — "booking" is internal taxonomy and must not
+                    appear in staff-facing copy either. What this tab creates is a
+                    session against something the client bought. */}
+                {t === 'offering' ? 'Session' : t === 'appointment' ? 'Appointment' : 'Unavailable'}
               </button>
             ))}
           </div>
@@ -593,7 +596,11 @@ export function CalendarItemPanel({
                   <p className="form-label mb-0">Monthly plan</p>
                   {!monthlyPlan ? (
                     <p className="text-xs text-green-800/70">
-                      Save this booking once to assign the plan, then choose the days it runs on.
+                      Save this session once to assign the plan, then choose the days it runs on.
+                      To set the standing weekly time itself — day AND time, materialised for
+                      the next three months — open their record and use “Their standing
+                      weekly time”.
+                      
                     </p>
                   ) : (
                     <>

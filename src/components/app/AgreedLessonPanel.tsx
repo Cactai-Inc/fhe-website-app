@@ -18,6 +18,16 @@
  * words — visible, never silent, and never forbidden. The phone call decides,
  * and someone may perfectly well have agreed to a time they never listed.
  *
+ * ⚠️ IT SETS ONE LESSON, NOT A WEEKLY SLOT — SLOTREACH §2.
+ * `provision_client_invitation(p_agreed_lesson => …)` writes a single `bookings` row:
+ * the first lesson agreed on the phone. A WEEKLY MEMBERSHIP is a different fact —
+ * D23's standing slot, stored on `purchase_items.config` and materialised out to a
+ * rolling horizon — and putting it through this panel would book one lesson and leave
+ * the membership with no slot at all. `StaffStandingSlotSection` is its control and it
+ * mounts on the same surfaces, immediately beside this one. Two adjacent, deliberately
+ * distinct questions: "the lesson we agreed on the call" and "the weekly time that is
+ * theirs". Neither is a second implementation of the other.
+ *
  * ⚠️ AND IT NEVER WRITES BACK TO `proposed_times`. What was WANTED and what was
  * AGREED are different facts: the ranges stay on the request, the slot lands on
  * the booking. Overwriting the ask with the agreement is the one thing that

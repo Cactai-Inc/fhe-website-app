@@ -7,7 +7,7 @@ import type { Order, OrderItem, Payment } from '../lib/types';
 import { formatPrice } from '../lib/pricing';
 import OrderPayment from '../components/order/OrderPayment';
 import { fetchMyStandingSlots, type StandingSlot } from '../lib/ops/api-calendar';
-import { standingSlotSentence } from '../lib/standingSlots';
+import { standingSlotSentence, serviceLabel } from '../lib/standingSlots';
 import { orderStatusCopy } from '../lib/orderStatus';
 
 export default function OrderDetail() {
@@ -93,15 +93,31 @@ export default function OrderDetail() {
               return (
                 <div key={item.id} className="flex items-start justify-between gap-4 py-3">
                   <div>
-                    <p className="text-sm font-sans font-medium text-green-900">{item.label}</p>
+                    {/* D25 (SLOTREACH §4) — a riding lesson names HIGH. The client
+                        never sees "2x Weekly Lessons"; they see the Riding Lessons
+                        they have. Every other line keeps its own product name. */}
+                    <p className="text-sm font-sans font-medium text-green-900">
+                      {slot
+                        ? serviceLabel(slot, Math.max(slot.weekly_frequency ?? 1, 1))
+                        : item.label}
+                    </p>
                     {slot && (
                       <p className="text-xs font-sans text-muted mt-1 leading-relaxed">
                         {standingSlotSentence(slot)}
                         {!slot.chosen && (
                           <>
                             {' '}
-                            <Link to="/app/onboarding" className="text-green-800 underline">
-                              Pick your weekly time
+                            {/* SLOTREACH §1 — THE BREAK, LOCATED. This pointed at
+                                `/app/onboarding`, the wizard's ROOT, and a client whose
+                                paperwork is signed is short-circuited straight past the
+                                slot step to "You're all set" or "Nothing to do here".
+                                So the one door to the standing-slot picker opened onto a
+                                wall, and a weekly membership could not be scheduled at
+                                all (WALK2). The link names the step; the wizard honours
+                                it whatever the paperwork says. */}
+                            <Link to="/app/onboarding?step=slots" className="text-green-800 underline">
+                              Select the day and time for your weekly{' '}
+                              {serviceLabel(slot, Math.max(slot.weekly_frequency ?? 1, 1))}
                             </Link>
                           </>
                         )}

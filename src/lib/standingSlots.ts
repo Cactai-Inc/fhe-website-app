@@ -32,6 +32,45 @@ export function clockLabel(hhmm: string): string {
   return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(d);
 }
 
+/** ── D25: WHAT THE PERSON IS TOLD THEY HAVE ──────────────────────────────────
+ *
+ *  Owner, 2026-08-21: *"we have bookings (a term used for a calendar item linked to
+ *  an offering purchased by a client…) Its supposed to be an internal taxonomy
+ *  only."* And the naming ALTITUDE differs per service, deliberately:
+ *
+ *   • Riding lessons name HIGH — always "Riding Lesson". The client is NEVER shown
+ *     1x/2x weekly, evaluation, single or à la carte. A weekly member does not have
+ *     "2x Weekly Lessons"; they have two Riding Lessons a week.
+ *   • Horse care names LOW, but stops above quantity and frequency — "turnout",
+ *     "hair clipping", never "2x Weekly Turnout".
+ *
+ *  The frequency prefix is STRIPPED rather than curated: the SKU names are the
+ *  owner's to edit (D13), so a hardcoded lookup table would go stale the first time
+ *  he renames one. Mirrors `booking_service_label()` in the database, which does the
+ *  same job for notification titles.
+ */
+export function serviceLabel(
+  slot: { segment?: string | null; offering_name?: string | null },
+  count = 1,
+): string {
+  if ((slot.segment ?? 'rider') !== 'horse') {
+    return count === 1 ? 'Riding Lesson' : 'Riding Lessons';
+  }
+  const stripped = (slot.offering_name ?? '')
+    .replace(/^\s*\d+\s*x?\s*(weekly|daily|monthly|per week|\/week)?\s*/i, '')
+    .trim();
+  return stripped || 'horse care';
+}
+
+/** D25's other half — the NOUN changes per service. Exercise, turnout and training
+ *  are a *service*; clipping is an *appointment*; a lesson is a Riding Lesson and is
+ *  never called anything else. Used where the sentence needs the category rather
+ *  than the name ("change or cancel your appointment"). */
+export function serviceNoun(slot: { segment?: string | null; offering_name?: string | null }): string {
+  if ((slot.segment ?? 'rider') !== 'horse') return 'Riding Lesson';
+  return /clip/i.test(slot.offering_name ?? '') ? 'appointment' : 'service';
+}
+
 /** "Tuesdays at 4:00 PM and Thursdays at 5:30 PM", or null while nothing is chosen. */
 export function standingSlotSummary(slot: StandingSlot): string | null {
   const parts = (slot.recurring_days ?? [])

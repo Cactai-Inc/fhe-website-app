@@ -9,6 +9,7 @@ import {
 } from './ClientRecordActions';
 import { ProvisionClientForm } from './ProvisionClientForm';
 import { AgreedLessonSection, type AgreedLesson } from './AgreedLessonPanel';
+import { StaffStandingSlotSection } from './StandingSlotPicker';
 
 /**
  * THE CONTACT DOSSIER — every person, one modal.
@@ -273,6 +274,14 @@ export function ContactDossierModal({
 
               {tab === 'orders' && (
                 <div className="flex flex-col gap-5">
+                  {/* SLOTREACH §2 — a weekly plan's standing time lives on the
+                      purchase item, so this is where it belongs: beside the orders
+                      that carry it. Renders nothing for a contact with no weekly
+                      purchase. */}
+                  <StaffStandingSlotSection
+                    contactId={contactId}
+                    personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
+                  />
                   <AttachOfferingPanel contactId={contactId} onAttached={load} />
                   <Section title="Orders">
                   {d.orders.length === 0 ? <Empty>None.</Empty>
@@ -291,6 +300,14 @@ export function ContactDossierModal({
               {tab === 'account' && (
                 d.account ? (
                   <div className="flex flex-col gap-5">
+                    {/* SLOTREACH §2 — the standing weekly time sits on the same
+                        surface as the agreed lesson below, deliberately adjacent and
+                        deliberately distinct: that one books THE lesson agreed on the
+                        call, this one sets THE WEEKLY TIME that is theirs. */}
+                    <StaffStandingSlotSection
+                      contactId={contactId}
+                      personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
+                    />
                     <Section title="Account">
                       <Row main={d.account.display_name ?? '(no display name)'} sub={d.account.role ?? undefined}
                         badge={d.account.is_suspended ? 'suspended' : (d.account.member_status ?? undefined)} />
@@ -314,6 +331,13 @@ export function ContactDossierModal({
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
+                    {/* SLOTREACH §2 — a contact can hold a weekly purchase before they
+                        ever have a login (staff attach the offering, the invitation
+                        follows). Their standing time is settable either way. */}
+                    <StaffStandingSlotSection
+                      contactId={contactId}
+                      personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
+                    />
                     <Empty>
                       This person has no account — they have never signed in. That is
                       normal for a counterparty, a lead, or a minor on a parent&apos;s account.

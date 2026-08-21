@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, X, Wallet, Settings } from 'lucide-react';
+import { CalendarDays, CalendarClock, ChevronLeft, ChevronRight, X, Wallet, Settings } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { PageCreateButton } from '../../components/app/PageCreateButton';
 import {
@@ -23,9 +23,13 @@ import {
   fetchMyPendingChanges,
   updateMyPendingBooking,
   withdrawMyPendingBooking,
+  fetchMyStandingSlots,
   type OpenChangeRequest,
   type MyPendingChange,
+  type StandingSlot,
 } from '../../lib/ops/api-calendar';
+import { StandingSlotPicker } from '../../components/app/StandingSlotPicker';
+import { serviceLabel, standingSlotSummary } from '../../lib/standingSlots';
 import { fetchOfferings, createDraftOrder } from '../../lib/api';
 import type { Offering } from '../../lib/types';
 import { myBookableItems, type MemberBookableItem } from '../../lib/ops/api-member';
@@ -120,8 +124,11 @@ function itemLabel(item: CalendarItem): string {
   // (staff see every title; a client sees only their own linked appointment's).
   if (item.kind === 'block') return title || 'Unavailable';
   if (item.status === 'unavailable') return 'Unavailable';
-  if (item.is_mine) return item.kind === 'lesson' ? 'Your lesson' : 'Your booking';
-  return 'Booking';
+  // D25 (SLOTREACH §4) — "booking" is INTERNAL TAXONOMY and must never appear on a
+  // calendar chip. A rider's own item is a Riding Lesson; a horse-care item is a
+  // session with their horse; someone else's is opaque anyway.
+  if (item.is_mine) return item.kind === 'lesson' ? 'Your Riding Lesson' : 'Your session';
+  return 'Reserved';
 }
 
 export default function CalendarPage() {
@@ -141,6 +148,20 @@ export default function CalendarPage() {
   const [buying, setBuying] = useState(false); // A5 — client lesson-purchase panel
   // ONBOARD §7 — the member's own balances, on the page they book from.
   const [myCredits, setMyCredits] = useState<MemberBookableItem[]>([]);
+  /* SLOTREACH §1 — THE REACH, ANSWERED PERMANENTLY.
+     The standing-slot picker lived inside the onboarding wizard and nowhere else, so
+     a member who finished onboarding could never change their weekly time and a
+     member who skipped the step could never come back to it (WALK2). This is the
+     permanent home: the page they already come to for their schedule, on every
+     visit, forever. The order page's link is the transient one. */
+  const [standing, setStanding] = useState<StandingSlot[]>([]);
+  const [slotsOpen, setSlotsOpen] = useState(false);
+  const reloadStanding = useCallback(
+    () => fetchMyStandingSlots()
+      .then((r) => { setStanding(r); return r; })
+      .catch(() => [] as StandingSlot[]),
+    [],
+  );
 
   const isStaff = data?.role === 'staff';
 
@@ -194,6 +215,19 @@ export default function CalendarPage() {
     myBookableItems().then((r) => { if (active) setMyCredits(r); }).catch(() => {});
     return () => { active = false; };
   }, [isStaff, data]);
+
+  // SLOTREACH §1 — the member's weekly plans, read alongside their credits. An
+  // unchosen slot opens the picker by itself, because it is the one thing they
+  // still owe us and the reason their calendar looks empty.
+  useEffect(() => {
+    if (isStaff || !data) return;
+    let cancelled = false;
+    void reloadStanding().then((r) => {
+      if (cancelled) return;
+      if (r.some((x) => !x.chosen)) setSlotsOpen(true);
+    });
+    return () => { cancelled = true; };
+  }, [isStaff, data, reloadStanding]);
 
   // staff revenue (this week + this month) + credits roster
   useEffect(() => {
@@ -258,7 +292,9 @@ export default function CalendarPage() {
           <CalendarDays size={22} className="text-gold-ink" aria-hidden="true" /> Calendar
         </h1>
         <div className="flex items-center gap-2">
-          <PageCreateButton label="Booking" onClick={onCreateBooking} />
+          {/* D25 — the button used to say "+ Booking", which is the internal word
+              for the row it writes, on a surface both staff and clients read. */}
+          <PageCreateButton label={isStaff ? 'Calendar item' : 'Request a time'} onClick={onCreateBooking} />
           <div className="inline-flex rounded-full bg-green-800/10 p-0.5">
             {(['week', 'month'] as ViewMode[]).map((v) => (
               <button
@@ -332,6 +368,62 @@ export default function CalendarPage() {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* ── SLOTREACH §1 — THE STANDING WEEKLY TIME, ON THE PAGE THEY LIVE ON ──
+          D17: routed is not reachable. A weekly membership is the barn's monthly
+          product and its one question — which day and time are yours — could only
+          be answered inside an onboarding wizard that a signed client is walked
+          past. This bar is the permanent answer to THE REACH: it is on the member's
+          own Calendar, it states what they hold in the barn's own words (D25 — a
+          Riding Lesson, never "2x Weekly Lessons"), and the picker behind it is the
+          same component and the same single writer the wizard uses. */}
+      {!isStaff && standing.length > 0 && (
+        <div className="bg-white border border-green-800/15 rounded-lg p-4 mb-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="inline-flex items-center gap-1.5 text-sm font-medium text-green-900">
+                <CalendarClock size={15} className="text-gold-ink" aria-hidden="true" />
+                Your weekly {standing.length === 1
+                  ? serviceLabel(standing[0], Math.max(standing[0].weekly_frequency ?? 1, 1))
+                  : 'schedule'}
+              </p>
+              {standing.map((sl) => {
+                const summary = standingSlotSummary(sl);
+                return (
+                  <p key={sl.purchase_item_id} className="text-sm text-secondary mt-1">
+                    {summary
+                      ? `${summary} — held for you every week${sl.indefinite ? '' : ` until ${sl.plan_ends_on}`}.`
+                      : 'No day and time chosen yet — that is why nothing is on your calendar.'}
+                  </p>
+                );
+              })}
+            </div>
+            <button type="button"
+              className={standing.some((x) => !x.chosen) ? 'btn-primary text-sm' : 'btn-outline-gold text-sm'}
+              onClick={() => setSlotsOpen((o) => !o)}>
+              {slotsOpen
+                ? 'Close'
+                : standing.some((x) => !x.chosen)
+                  ? 'Select your day and time'
+                  : 'Change your day and time'}
+            </button>
+          </div>
+          {slotsOpen && (
+            <div className="mt-4 pt-4 border-t border-green-800/10">
+              <StandingSlotPicker
+                slots={standing}
+                audience="client"
+                onSaved={() => {
+                  // The write materialises the horizon server-side, so the calendar
+                  // has new sessions on it the moment this returns.
+                  void reloadStanding();
+                  void load();
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -705,7 +797,7 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
                 is the first question the owner's flow asks. */}
             {items.length > 0 ? (
               <label className="text-sm">
-                <span className="form-label">What are you booking?</span>
+                <span className="form-label">What is this time for?</span>
                 <select className="form-input" value={creditId} onChange={(e) => setCreditId(e.target.value)}>
                   <option value="">Use my next available credit</option>
                   {items.map((i) => (
@@ -717,7 +809,7 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
               </label>
             ) : (
               <p className="text-xs text-muted">
-                You have no credits left. Booking this time will prompt you to buy.
+                You have no sessions left. Taking this time will prompt you to buy.
               </p>
             )}
             {isCare && (
@@ -808,9 +900,15 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
         {!done && canChange && mode === 'view' && (
           <div className="flex flex-col gap-2">
             <BookingItemSwap bookingId={item.id} onChanged={onChanged} />
-            <button type="button" className="btn-secondary w-full justify-center" onClick={() => setMode('reschedule')}>Reschedule</button>
+            {/* D25 — "Reschedule your Riding Lesson", the owner's own words. */}
+            <button type="button" className="btn-secondary w-full justify-center" onClick={() => setMode('reschedule')}>
+              Reschedule {item.kind === 'lesson' ? 'your Riding Lesson' : 'this session'}
+            </button>
             <button type="button" className="btn-secondary w-full justify-center" disabled={busy} onClick={() => void change('defer')}>Defer (get a credit)</button>
-            <button type="button" className="text-sm text-red-700 py-2 hover:bg-red-50 rounded" disabled={busy} onClick={() => void change('cancel')}>Cancel this booking</button>
+            <button type="button" className="text-sm text-red-700 py-2 hover:bg-red-50 rounded" disabled={busy} onClick={() => void change('cancel')}>
+              {/* D25 — never "this booking". */}
+              Cancel this {item.kind === 'lesson' ? 'Riding Lesson' : 'session'}
+            </button>
           </div>
         )}
 
@@ -822,7 +920,9 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
             </label>
             {item.series_id && (
               <label className="text-sm">
-                <span className="form-label">This is a recurring booking — move</span>
+                <span className="form-label">
+                  This is a weekly {item.kind === 'lesson' ? 'Riding Lesson' : 'service'} — move
+                </span>
                 <select className="form-input" value={scope} onChange={(e) => setScope(e.target.value)}>
                   <option value="one">Just this one</option>
                   <option value="weeks:2">The next 2 weeks</option>
@@ -959,7 +1059,7 @@ function RequestTimePanel({ start, onClose, onDone }: { start: Date; onClose: ()
             <p className="text-sm text-green-900">{formatSessionWhen(start.toISOString())}</p>
             {items.length > 0 && (
               <label className="text-sm">
-                <span className="form-label">What are you booking?</span>
+                <span className="form-label">What is this time for?</span>
                 <select className="form-input" value={itemCreditId} onChange={(e) => setItemCreditId(e.target.value)}>
                   <option value="">Not sure — staff will help</option>
                   {items.map((i) => (
@@ -986,7 +1086,7 @@ function RequestTimePanel({ start, onClose, onDone }: { start: Date; onClose: ()
             </label>
             <p className="form-hint">
               {recurring
-                ? 'We’ll set up your recurring slot and confirm it. Payment is arranged separately — staff confirm your bookings.'
+                ? 'We’ll set up your weekly time and confirm it. Payment is arranged separately — we confirm each session.'
                 : 'You can request any open time — we’ll confirm it (or suggest the nearest fit).'}
             </p>
             <button type="button" className="btn-primary w-full justify-center" disabled={busy} onClick={() => void submit()}>
@@ -1060,7 +1160,7 @@ function PurchaseLessonsPanel({ onClose }: { onClose: () => void }) {
           </ul>
         )}
         <p className="form-hint mt-4">
-          You’ll get Zelle payment instructions on the next screen. Bookings are still confirmed by our staff — paying holds your purchase, not a specific time.
+          You’ll get Zelle payment instructions on the next screen. Each session is still confirmed by our staff — paying holds your purchase, not a specific time.
         </p>
       </div>
     </div>
