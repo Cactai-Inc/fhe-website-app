@@ -435,6 +435,22 @@ requires a real SMTP send to observe.
 `ProvisionClientForm` (each titled, already-signed ones shown complete and disabled), and after
 sending, `InviteResultPanel`. The RPC also returns `categories`, which the endpoint passes back.
 
+**Post-apply smoke, against the live functions** — a mixed cart provisioned with no categories named:
+
+```
+view:        horse_care (from_cart) + lessons (from_cart, from_funnel)
+filter:      horse_care -> found t   |   lessons -> found t
+categories:  ["HORSE_OWNER", "RIDER"]
+assigned:    6 documents
+contact_checklist() -> 6 items:
+  Company Policies · Facility Rules and Safety Acknowledgment ·
+  Horse Emergency Veterinary Authorization · Human Emergency Medical Authorization v2 ·
+  Horse Handling and Routine Care Liability Release · Participant Liability Release
+```
+
+That last block is what the invitation email's `MSG.CHECKLIST` now merges. **The source is proven;
+the SEND is not** — observing it needs a real SMTP delivery.
+
 ---
 
 ## 7. FLAGGED, NOT FIXED
@@ -552,3 +568,7 @@ build check has been removed.
 
 ⚠️ **Swap is at 3.0 GB of 4.0 GB with this thread's processes all gone**, so that load belongs to
 other threads or to the editor — worth a look before another parallel `test/db` run.
+
+**Production is clean.** Every probe in this report ran inside `BEGIN … ROLLBACK`. After the
+migrations were applied and all proofs re-run: `requests 17` (unchanged), `purchases 6`, and **zero**
+rows anywhere matching `%example.test` — no request, no contact, no invitation.
