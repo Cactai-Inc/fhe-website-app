@@ -625,3 +625,24 @@ reporting success.
   ⚠️ **`TASK-CATEGORISE` raised "a Rider never gets a general release" as an open question and the
   orchestrator relayed it without checking the design. It was never a defect.** Do not raise it
   again.
+- **D29 — A CHANGE AND A PROPOSAL ARE DIFFERENT THINGS. D14's SEEN-IS-APPROVED APPLIES ONLY TO
+  CHANGES (owner correction, 2026-08-21).** The orchestrator read `TASK-WALK3`'s observation —
+  *"proposals appear in a card with no accept/reject control anywhere"* — as confirming D14. **It
+  does not. It is the defect.** Owner: *"how is this good news? the entire task was adding the
+  accept reject revise mechanisms."*
+  **The two mechanisms, and they must never be conflated again:**
+  1. **A CHANGE** — a party edits something they are entitled to edit. It is already true. The other
+     party is shown it before signing, one at a time, and **being seen on screen IS approval**
+     (D14 §2). **No accept button, by design.** `ReviewChangesModal.tsx` is this flow — and note it
+     still carries the OLD explicit accept/reject machinery (`outcomes: 'accepted' | 'rejected'`,
+     rejection comments) that D14 says to replace with seen-is-approved.
+  2. **A PROPOSAL** — a party asks for something they cannot do unilaterally. It is **not** true yet.
+     **It requires an explicit disposition: ACCEPT · REJECT · REVISE.** Being seen changes nothing,
+     because nothing has happened yet.
+  ⚠️ **Measured 2026-08-21: four proposal RPCs exist — `propose_clause` · `propose_field_edit` ·
+  `propose_contract_composition` · `caller_may_propose` — and there is NO accept, reject or revise
+  function for any of them.** The proposal half is a one-way street: a party can ask and nobody can
+  answer. **WALK3 also found the counterparty-side Suggest fails silently, and a field-level suggest
+  referenced in the code's own comments with zero live callers.**
+  **So the contract review area needs work in BOTH directions:** strip the explicit accept/reject
+  from the CHANGE flow (D14), and build it for the PROPOSAL flow.
