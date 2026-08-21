@@ -473,3 +473,21 @@ reporting success.
   empty contact and **nothing ever re-fills it** — `redeem_contract_invitation` promotes and
   re-anchors but never calls the pair. The party opens their contract and sees their own details
   blank.
+- **D23 — DECLARING PAYMENT UNBLOCKS EVERYTHING. THE LESSON IS THE CONTROL, NOT THE BOOKING
+  (owner, 2026-08-20, restated and enforced).** Owner: *"nothing blocks them from any action because
+  the lesson never happens without payment being verified,"* and when shown that the app did the
+  opposite: *"the app needs to follow my instruction that you quoted back to me, nothing blocks
+  them."*
+  **A client who declares payment — Zelle or cash — is immediately able to do everything**, booking
+  included. **Credits mint on DECLARATION, not on staff confirmation.** Staff confirmation remains,
+  and it governs **whether the lesson happens**, which is an operational control, not a UI gate.
+  **Proven broken by `TASK-WALK1` (2026-08-20):** after declaring both Zelle and cash, *Book this
+  time* returned `NO_CREDITS` and booked nothing, because `trg_mint_credits_when_order_opens` mints
+  only on a status transition staff perform. **Two of the app's own screens already promise the
+  ruled behaviour** — the order page (*"scheduling doesn't wait on payment"*) and onboarding
+  (*"either way you can book your sessions on the Calendar"*). **The copy was right and the code was
+  wrong.**
+  ⚠️ **Corollary — no scheduler exists.** `pg_cron` is **not installed** (no extension, no `cron`
+  schema) and the Vercel crons were never created. **A recurring "monthly membership" purchase mints
+  nothing, ever.** Anything that defers minting to a scheduler is deferring it to nothing, so the
+  first period must mint at purchase.
