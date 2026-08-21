@@ -924,6 +924,40 @@ export async function skipRequiredDocument(
   if (error) throw error;
 }
 
+/** TASK-NOSTRIP — THE ONLY DOOR THAT TAKES REQUIRED PAPERWORK AWAY.
+ *
+ *  Narrowing someone's categories used to DESTROY the requirements that fell
+ *  outside the new set — no audit row, no reason, no actor, no undo. What was
+ *  destroyed is the record of what a person was obliged to sign before being on
+ *  the property or handling a horse (CATEGORISE proved it on production: six
+ *  documents in, four out, HORSE_EMERGENCY_VET and RELEASE_HORSE_CARE gone).
+ *
+ *  `apply_category_documents` is now purely ADDITIVE from all five of its
+ *  callers — one of which is a trigger that fires when somebody buys a lesson —
+ *  and removal moved here, where it has to be asked for by name:
+ *    · the reason is REQUIRED, not optional;
+ *    · a requirement satisfied by an EXECUTED document is refused outright, by
+ *      name — executed paperwork is the evidence that the obligation existed and
+ *      was met, and is never removed;
+ *    · nothing is deleted. Each dropped requirement is SKIPPED — the row stays,
+ *      marked with who/when/why, stops blocking the wall, and is never asked of
+ *      the member;
+ *    · `unskipRequiredDocument` is the undo, and it already existed.
+ *
+ *  `keepTemplateKeys` is what they will still owe afterwards; everything else
+ *  currently standing on the record is skipped. Returns the keys it skipped. */
+export async function narrowContactRequiredDocuments(
+  contactId: string, keepTemplateKeys: string[], reason: string,
+): Promise<string[]> {
+  const { data, error } = await supabase.rpc('narrow_contact_required_documents', {
+    p_contact_id: contactId,
+    p_keep_template_keys: keepTemplateKeys,
+    p_reason: reason,
+  });
+  if (error) throw error;
+  return ((data ?? {}) as { skipped?: string[] }).skipped ?? [];
+}
+
 /** Restore a skipped requirement to blocking. */
 export async function unskipRequiredDocument(
   contactId: string, templateKey: string,

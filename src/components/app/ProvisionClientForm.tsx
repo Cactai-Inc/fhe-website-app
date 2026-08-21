@@ -3,8 +3,9 @@ import { toErrorMessage } from '../../lib/ops/errors';
 import {
   adminSendInvitation, categoryDocumentDefaults, suggestedCategoryForContact,
   onboardingTemplateOptions, matchesCategoryToken, requestOnboardingCategories,
+  getContactRequiredDocumentsState, narrowContactRequiredDocuments,
   CLIENT_CATEGORIES, CATEGORY_TOKEN, type CategoryDocDefault,
-  type AdminInviteResult,
+  type AdminInviteResult, type RequiredDocumentState,
 } from '../../lib/admin';
 import { fetchOfferings } from '../../lib/api';
 import { InviteResultPanel } from './InviteResultPanel';
@@ -122,6 +123,12 @@ export function ProvisionClientForm({
   /** CATEGORISE §2 — the categories this inquiry's CART implied, for the note
    *  that tells staff why the boxes below are ticked. */
   const [derivedCategories, setDerivedCategories] = useState<string[]>([]);
+  /** NOSTRIP §4 — what this person ALREADY owes. Without it this screen could
+   *  not name what a narrower category selection was about to take away, and
+   *  for most of this system's life it took it away silently. */
+  const [held, setHeld] = useState<RequiredDocumentState[]>([]);
+  const [removeHeld, setRemoveHeld] = useState(false);
+  const [removeReason, setRemoveReason] = useState('');
 
   useEffect(() => {
     categoryDocumentDefaults().then(setDefaults).catch(() => setDefaults([]));
@@ -161,6 +168,16 @@ export function ProvisionClientForm({
       })
       .catch(() => { /* the checkboxes still work by hand */ });
   }, [requestId, contactId]);
+
+  // NOSTRIP §4 — the paperwork already standing on this person's record, so the
+  // screen can SAY, by name, what a narrower selection would remove, BEFORE the
+  // action commits. CATEGORISE shipped an informational note about where the
+  // prefill came from; this is the part that was missing — the note explained,
+  // it did not gate.
+  useEffect(() => {
+    if (!contactId) { setHeld([]); return; }
+    getContactRequiredDocumentsState(contactId).then(setHeld).catch(() => setHeld([]));
+  }, [contactId]);
 
   // Signed-contact detection: preselect category from what they've already signed.
   useEffect(() => {
@@ -205,6 +222,27 @@ export function ProvisionClientForm({
     if (docChecked) docChecked.forEach((k) => s.add(k));
     return Array.from(s);
   }, [derivedDocKeys, docChecked]);
+  // ⚠️ NOSTRIP §4 — SAY IT BEFORE DOING IT.
+  //
+  // Everything this person currently owes that the selection above does NOT
+  // cover. Until this task, ticking a narrower category silently DELETED these
+  // rows: no audit_logs row, no reason, no actor, no undo, no trace it ever
+  // happened — and what was deleted is the record of what somebody was obliged
+  // to sign before being on the property or handling a horse.
+  //
+  // Nothing is removed now unless a staff member asks for it here, by name, with
+  // a reason. Already-skipped rows are not listed: they are already not being
+  // asked for, and re-announcing them every visit would train people to ignore
+  // this panel.
+  const wouldDrop = useMemo(
+    () => held.filter((r) => !r.skipped_at && !effectiveDocs.has(r.template_key)),
+    [held, effectiveDocs]);
+  // Executed paperwork is EVIDENCE that the obligation existed and was met. It
+  // is refused by the database on every path; the screen must not offer it.
+  const dropExecuted = useMemo(() => wouldDrop.filter((r) => r.satisfied), [wouldDrop]);
+  const dropRemovable = useMemo(() => wouldDrop.filter((r) => !r.satisfied), [wouldDrop]);
+  const narrowingBlocked = removeHeld && dropRemovable.length > 0 && !removeReason.trim();
+
   // What staff can still REACH FOR: every onboarding template not already on the
   // list above. The owner's rule is that nothing is required of a counterparty
   // and everything is permitted, so this is deliberately not filtered by category
@@ -284,6 +322,22 @@ export function ProvisionClientForm({
     try {
       const tokens = categories.map((c) => CATEGORY_TOKEN[c]).filter(Boolean);
       const finalDocs = docChecked ? Array.from(effectiveDocs) : undefined;
+
+      // ⚠️ NOSTRIP §2 — REMOVAL IS ITS OWN ACT, AND IT SKIPS RATHER THAN DELETES.
+      //
+      // It runs FIRST and on its own: if the database refuses (an executed
+      // document is in the way, or the reason is blank) nothing else has
+      // happened yet, so there is no half-narrowed record and no invitation
+      // promising a document set that was never applied. The kept set carries
+      // the executed rows explicitly — they are never removable, and leaving
+      // them out would be asking for the refusal.
+      if (contactId && removeHeld && dropRemovable.length > 0) {
+        await narrowContactRequiredDocuments(
+          contactId,
+          [...effectiveDocs, ...dropExecuted.map((r) => r.template_key)],
+          removeReason.trim(),
+        );
+      }
       const r = await adminSendInvitation({
         email: email.trim(),
         ...(requestId ? { requestId } : {}),
@@ -300,6 +354,8 @@ export function ProvisionClientForm({
       });
       setResult({ url: r.registerUrl, emailed: r.emailed, emailError: r.emailError, email: email.trim() });
       onProvisioned?.(r);
+      setRemoveHeld(false); setRemoveReason('');
+      if (contactId) getContactRequiredDocumentsState(contactId).then(setHeld).catch(() => {});
       if (source === 'new') {
         setEmail(''); setCategories([]); setDocChecked(null); setOfferingIds([]);
         setPayStatus('unpaid'); setPartialAmount(''); setNotes('');
@@ -425,6 +481,54 @@ export function ProvisionClientForm({
                   )}
                 </div>
               )}
+
+              {/* ⚠️ NOSTRIP §4 — SAY IT BEFORE DOING IT.
+                  This selection used to DESTROY everything outside it, silently:
+                  six documents in, four out, with no audit row, no reason, no
+                  actor and no undo. Now it destroys nothing, and this panel is
+                  where a staff member who genuinely wants paperwork off somebody's
+                  record has to say so — by name, and with a reason. The mitigation
+                  CATEGORISE shipped explained the prefill; it did not gate. */}
+              {wouldDrop.length > 0 && (
+                <div className="mt-4 rounded-lg border border-gold-700/30 bg-gold-50/40 p-4">
+                  <p className="text-[13.5px] text-green-900 font-medium mb-1">
+                    They already owe paperwork this selection doesn't cover
+                  </p>
+                  <ul className="text-[13px] text-secondary list-disc pl-5 mb-2 space-y-0.5">
+                    {wouldDrop.map((r) => (
+                      <li key={r.template_key}>
+                        {titleFor(r.template_key)}
+                        {r.satisfied && <span className="text-green-700"> — already signed, stays on the record</span>}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-[12.5px] text-muted mb-2">
+                    These stay on their record unless you say otherwise. Signed paperwork is
+                    never removed — it is the evidence that they were asked and agreed.
+                  </p>
+                  {dropRemovable.length > 0 && (
+                    <>
+                      <label className="flex items-start gap-2.5 text-[13px] text-green-900 cursor-pointer">
+                        <input type="checkbox" className="accent-green-700 w-[16px] h-[16px] mt-0.5"
+                          checked={removeHeld} onChange={() => setRemoveHeld((v) => !v)} />
+                        <span>
+                          Stop asking them for{' '}
+                          <strong className="font-medium">
+                            {dropRemovable.map((r) => titleFor(r.template_key)).join(', ')}
+                          </strong>
+                          {' '}— kept on the record, marked skipped with your name, and reversible
+                          from their Paperwork panel.
+                        </span>
+                      </label>
+                      {removeHeld && (
+                        <input type="text" className="form-input mt-2 text-sm" value={removeReason}
+                          onChange={(e) => setRemoveReason(e.target.value)}
+                          placeholder="Why are these no longer required? (required)" />
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="mb-6">
@@ -527,10 +631,18 @@ export function ProvisionClientForm({
           </>
         )}
 
-        <button type="submit" disabled={working || !email.trim() || categories.length === 0}
+        {/* NOSTRIP §4: the removal is gated, not merely announced — a reason is
+            what makes the skip mark worth more than the delete it replaced. */}
+        <button type="submit"
+          disabled={working || !email.trim() || categories.length === 0 || narrowingBlocked}
           className="btn-primary">
           {working ? 'Sending…' : primaryLabel}
         </button>
+        {narrowingBlocked && (
+          <p className="text-[12.5px] text-gold-800 mt-2">
+            Say why those documents are no longer required, or untick the removal.
+          </p>
+        )}
         {error && <p className="form-error mt-4" role="alert">{error}</p>}
       </form>
 
