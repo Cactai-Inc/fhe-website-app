@@ -736,3 +736,22 @@ reporting success.
   already names the category/role model as first in line for the ground-up redesign. Stabilize
   the current app by using the null-tag state where it already works (see the `TASK-STABILIZE`
   deal-party resolution); do not extend the old paradigm to buy time.
+  ⚠️ **CORRECTED SAME DAY — the null-tag answer was incomplete.** Owner: *"deal party or contract
+  party are appropriate tags for an account that has a deal or a contract. for something like a
+  lease agreement with signed auth and liability release docs where there are no purchases they
+  need to be a deal so the three documents can be seen together. and live in the same known
+  event."*
+  **The account-level category still stays empty for a pure contract signer** — that holds.
+  **But document OBLIGATION for a contract party is not an account-category question at all —
+  it is a CONTRACT-ROLE question, and the mechanism already exists, seeded, completely unwired:**
+  `contract_role_documents` (`doc_role`, `template_key`) already maps LESSEE → Company Policies +
+  Facility Rules + Horse Care Release + Emergency Vet Auth; LESSOR/BUYER/SELLER have their own
+  bundles. **Verified 2026-08-22: zero functions in the database reference this table.** It is
+  exactly "the documents that live together in one known event" the owner is describing — the
+  event is the specific contract, the role determines the bundle — and it was never wired to
+  actually assign anything.
+  **So the real fix is not a new account tag. It is connecting `contract_role_documents` to
+  document assignment when a party is placed in a role on a contract** (D22's
+  `document_parties`/party-add machinery is where this belongs). The visible "deal party" badge
+  the owner wants is a DISPLAY layer on top of this — a person derives that badge from holding a
+  contract role with no purchase behind it, not from a category picked at account creation.
