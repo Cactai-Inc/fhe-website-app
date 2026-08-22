@@ -288,6 +288,19 @@ export async function createTestDbFromSnapshot(): Promise<TestDb> {
   // `CREATE EXTENSION pgcrypto` (20260703110000 — execution hashes) to work.
   const db = await PGlite.create({ extensions: { pgcrypto } });
   await db.exec(BOOTSTRAP);
+  // TESTREPAIR: the comment above always claimed this, but no code ever ran
+  // it on the snapshot path — pg_dump's `--schema=public` filter excludes the
+  // `extensions` schema pgcrypto lives in on production, so `CREATE EXTENSION
+  // pgcrypto` never appears in the dumped SQL at all. Without it,
+  // `compute_execution_hash()` silently returns NULL (it catches
+  // undefined_function around its digest() call) — every document signs and
+  // reaches EXECUTED, but execution_hash is NULL forever, undetected because
+  // no test previously drove a document all the way to a real signature.
+  // Installed into public (unqualified, matching the migration's own
+  // `CREATE EXTENSION IF NOT EXISTS pgcrypto;` at 20260703110000) so it is
+  // found by every function's `SET search_path TO 'public', 'extensions'`
+  // regardless of whether `extensions` exists in this in-memory database.
+  await db.exec(`CREATE EXTENSION IF NOT EXISTS pgcrypto;`);
   try {
     await db.exec(sql);
   } catch (err) {
