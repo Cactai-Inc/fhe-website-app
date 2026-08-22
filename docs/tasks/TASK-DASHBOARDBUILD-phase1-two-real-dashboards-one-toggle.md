@@ -26,6 +26,43 @@ whole subsystems (standing slots, lesson plans, archived contacts) have moved.
 
 ---
 
+# 1B. VISUAL DIRECTION — synthesized 2026-08-22 from five mockups down to one
+
+The owner reviewed five design artifacts and ruled: build on the artifact published at
+`docs/design/DASHBOARDS-GROUND-UP-PLAN.md`'s own rendered mockup (zones, data table, phasing —
+**this is already §1's design basis, unchanged**) and pull specific, named elements from the
+others. Do not treat this section as a second design basis — it is a palette and polish overlay
+on top of §1's zone content, nothing more.
+
+**Colors — layer, do not replace.** Keep the plan's sage/tan brand palette (`--accent:#2E5B40`,
+`--tan:#96702F`) as the base; it is already close to "Direction A / First Light" from the
+visual-direction-board (`docs/design/mockups/visual-direction-board.html`) in spirit — near-white
+ground, one deep accent kept out of flat slabs. Bring in, specifically: a soft dawn-toned gradient
+glow (gold→rose→sky, low opacity) used only as atmosphere behind hero/greeting elements and
+progress rings — never as a background fill; a brass/tan hairline (1px, `--tan` at reduced
+opacity) as the accent border on KPI tiles instead of the flat `--line` gray; a serif (the plan
+already uses "Iowan Old Style" — keep it) reserved for the greeting and large numerals only, never
+body text. This directly answers the owner's "colors need to be revised in either version."
+
+**Motion & polish — borrow from the v4 "motion, glass, depth" mockup (reviewed in chat, not
+saved as a repo file).** Not required to pass §7's test; cut first under time pressure. If time
+allows: sticky header with `backdrop-filter: blur(14px) saturate(1.4)` on scroll; hover-lift
+(subtle translateY + shadow) on zone cards; a staggered fade-in on first paint (short, capped
+delay, respects `prefers-reduced-motion`); an animated count-up on KPI numbers; an animated
+conic-gradient draw on any progress-ring visual. This answers "slightly improved modernized
+layout format styling."
+
+**Named but explicitly NOT in this pass:** a separately-reviewed "Proposed Information
+Architecture & Layout Tree" document (chat only, not saved as a repo file) proposes replacing the
+app's entire top-level nav with a left rail — Today / Schedule / People / Horses / Money /
+Documents & Deals / Operations / Admin→Settings — across all ~122 routed surfaces, and explicitly
+depends on TASK-AUTHORITY being run first. **That is a full-app IA change, not a dashboard-page
+change — out of scope here.** This task keeps the existing top nav and only adds the dashboard's
+own first-position link (plan §"Landing"). Flag the IA-tree proposal in the report as an open item
+for the owner, do not build toward it.
+
+---
+
 # 2. THE NEW RULING — a toggle, not a fixed designation
 
 > **Owner, 2026-08-22:** *"we need to have a way for claire and i to either select which
