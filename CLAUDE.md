@@ -755,3 +755,29 @@ reporting success.
   `document_parties`/party-add machinery is where this belongs). The visible "deal party" badge
   the owner wants is a DISPLAY layer on top of this — a person derives that badge from holding a
   contract role with no purchase behind it, not from a category picked at account creation.
+- **D32 — THE MASTER RETENTION PRINCIPLE: NOTHING IS EVER REMOVED FROM THE DATABASE, EXCEPT
+  DELIBERATELY SCRUBBED SENSITIVE CONTENT (owner, 2026-08-22).** Owner, generalizing today's
+  archive-vs-delete finding into the standing rule it always was: *"the rule is that nothing
+  ever actually gets removed from the db and this is a good example of the reason why. the only
+  time something is ever actually truly scrubbed is if its deemed sensitive information that
+  shouldnt be in the database."*
+  **This is the single principle D11, D15, D16 and D27 were each independently instances of.**
+  Cite D32 going forward; the other four remain as the worked examples.
+  - **D11** — accounts are archived, never purged; a departing client's files stay because
+    other people's records still depend on them.
+  - **D15** — a file linked to a shared item is never removed, even by its own uploader.
+  - **D16** — templates are never deleted, hard or soft; a retired one is flagged and kept.
+  - **D27** — activity/evaluation records are never locked and never destroyed through the UI;
+    editable forever, every change logged.
+  **The ONE exception, and it is narrow on purpose:** content that should never have been
+  captured at all — an accidentally uploaded photo, a pasted note containing something
+  sensitive — may be genuinely scrubbed, because its continued existence is the liability, not
+  its removal. **This is a decision about the CONTENT, never about the ACCOUNT or RECORD it sits
+  on.** Archiving a person is never a reason to scrub their data; only the sensitivity of a
+  specific piece of content is.
+  ⚠️ **Consequence for `purge_account`:** it is a genuine hard delete (confirmed 2026-08-22 —
+  `DELETE FROM signatures WHERE signer_contact_id = …` among ~15 other DELETEs) and is
+  **already the odd one out under D32**, kept only as the owner's own deliberate, manually
+  invoked tool for his own test identities (D1's 5g routine). **It is not a pattern to extend or
+  generalize — `TASK-ARCHIVE` is the actual D32-compliant tool**, and the rebuild's job is to
+  ask whether `purge_account` should exist at all once a real archive mechanism does.
