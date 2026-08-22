@@ -589,7 +589,7 @@ export default function Admin() {
         .is('deleted_at', null),
       supabase.from('horses').select('registered_name, nickname, current_owner_contact_id, lessee_contact_id')
         .is('deleted_at', null),
-      supabase.from('document_parties').select('contact_id, documents(status, deleted_at)')
+      supabase.from('document_parties').select('contact_id, party_role, documents(status, deleted_at)')
         .in('contact_id', contactIds),
       supabase.from('documents').select('contact_id, status').in('contact_id', contactIds).is('deleted_at', null),
       supabase.from('purchases').select('buyer_contact_id').eq('status', 'awaiting_payment').is('deleted_at', null),
@@ -638,11 +638,17 @@ export default function Admin() {
       }
 
       const dealParty = new Set<string>();
+      // TASK-ROLEBUNDLE: the four roles `contract_role_documents` is keyed on —
+      // the same set the DB reader uses, so the badge and the contract's own
+      // paperwork panel can never disagree about who is a party to a deal.
+      const CONTRACT_ROLES = new Set(['BUYER', 'LESSEE', 'LESSOR', 'SELLER']);
+      const contractRole = new Set<string>();
       const outstandingDocs = new Set<string>();
       const OUTSTANDING = new Set(['DRAFT', 'AWAITING_SIGNATURE']);
-      type PartyRow = { contact_id: string; documents: { status: string; deleted_at: string | null } | { status: string; deleted_at: string | null }[] | null };
+      type PartyRow = { contact_id: string; party_role: string | null; documents: { status: string; deleted_at: string | null } | { status: string; deleted_at: string | null }[] | null };
       for (const r of (partiesRes.data ?? []) as PartyRow[]) {
         dealParty.add(r.contact_id);
+        if (r.party_role && CONTRACT_ROLES.has(r.party_role)) contractRole.add(r.contact_id);
         const docs = Array.isArray(r.documents) ? r.documents : (r.documents ? [r.documents] : []);
         for (const d of docs) {
           if (!d.deleted_at && OUTSTANDING.has(d.status)) outstandingDocs.add(r.contact_id);
@@ -663,7 +669,7 @@ export default function Admin() {
       }
 
       setSupplement({
-        groups, guardianOf, dependentsOf, contactNames, dealParty, outstandingDocs,
+        groups, guardianOf, dependentsOf, contactNames, dealParty, contractRole, outstandingDocs,
         unpaidContacts, horsesOwned, horsesLeased, lastActive,
       });
     });

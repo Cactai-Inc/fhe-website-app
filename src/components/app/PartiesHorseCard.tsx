@@ -1,9 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Users, Pencil, Check, Plus, MapPin, Phone, Mail, User } from 'lucide-react';
+import { Users, Pencil, Check, Plus, MapPin, Phone, Mail, User, FileCheck2, Clock } from 'lucide-react';
 import {
   documentPartiesSummary, reassignDocumentParty, attachHorseToDocument,
-  addDocumentPartyByEmail,
+  addDocumentPartyByEmail, contractRoleDocumentRequirements,
   type PartiesHorseSummary, type PartySummary, type PartyField,
+  type RoleDocumentRequirement,
 } from '../../lib/contracts';
 import { contractPartyOptions, staffHorseRecords, type PartyOption, type StaffHorseRecord } from '../../lib/horses';
 import { CaptureInfoModal } from './CaptureInfoModal';
@@ -51,7 +52,15 @@ export function PartiesHorseCard({
   // PARTYEMAIL: the email typed into a role's "add by email" box, keyed by role.
   const [emailDraft, setEmailDraft] = useState<Record<string, string>>({});
 
-  const load = () => { documentPartiesSummary(documentId).then(setSummary).catch(() => setSummary(null)); };
+  /** TASK-ROLEBUNDLE: what each role owes on THIS contract. Empty on error —
+   *  a panel that cannot load must not imply nobody owes anything, so it simply
+   *  does not render rather than rendering "nothing required". */
+  const [roleDocs, setRoleDocs] = useState<RoleDocumentRequirement[]>([]);
+
+  const load = () => {
+    documentPartiesSummary(documentId).then(setSummary).catch(() => setSummary(null));
+    contractRoleDocumentRequirements(documentId).then(setRoleDocs).catch(() => setRoleDocs([]));
+  };
   useEffect(load, [documentId]);
   useEffect(() => {
     if (!editing || contacts.length) return;
@@ -212,6 +221,70 @@ export function PartiesHorseCard({
           onClose={() => setCapture(null)}
           onSaved={() => { setCapture(null); load(); onChanged(); }}
         />
+      )}
+
+      {/* ── TASK-ROLEBUNDLE — THE PAPERWORK THIS DEAL CARRIES ──────────────
+          Owner (D31): a lease with its authorization and liability releases is
+          one event, and "the three documents need to be seen together and live
+          in the same known event." This is that view. It is not a second list of
+          account paperwork — every row here is owed because of the ROLE its party
+          holds ON THIS CONTRACT, read from `contract_role_documents`, which was
+          seeded years-of-decisions ago and which nothing had ever read.
+
+          Rows marked "attaches on execution" are NOT gaps. CLOSEOUT §1.5 (owner,
+          2026-08-18) deliberately holds the horse documents back until the lease
+          executes — "only then is the horse genuinely coming into care" — and
+          this panel says so rather than showing an alarm for a document that is
+          not due yet. */}
+      {roleDocs.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-green-800/10">
+          <p className="text-[11px] uppercase tracking-wide text-secondary/70 mb-2">
+            The paperwork this deal carries
+          </p>
+          <div className="flex flex-col gap-3">
+            {Array.from(new Set(roleDocs.map((r) => r.party_role))).map((role) => {
+              const rows = roleDocs.filter((r) => r.party_role === role);
+              const who = rows[0]?.party_name || rows[0]?.party_email || 'This party';
+              const outstanding = rows.filter((r) => !r.satisfied);
+              return (
+                <div key={role}>
+                  <p className="text-[12.5px] text-green-900 mb-1">
+                    <span className="font-medium">{who}</span>
+                    <span className="text-muted"> · {roleLabel(role)}</span>
+                    {outstanding.length === 0 && (
+                      <span className="text-green-800"> · all on file</span>
+                    )}
+                  </p>
+                  <ul className="flex flex-col gap-1">
+                    {rows.map((r) => (
+                      <li key={r.template_key} className="flex items-start gap-1.5 text-[12.5px]">
+                        {r.satisfied ? (
+                          <>
+                            <FileCheck2 size={13} className="text-green-800 mt-0.5 shrink-0" aria-hidden="true" />
+                            <span className="text-green-900/80">{r.title}</span>
+                            <span className="text-muted">— signed</span>
+                          </>
+                        ) : r.owned_by === 'ensure_horse_documents@execution' ? (
+                          <>
+                            <Clock size={13} className="text-muted mt-0.5 shrink-0" aria-hidden="true" />
+                            <span className="text-green-900/80">{r.title}</span>
+                            <span className="text-muted">— attaches when this lease executes</span>
+                          </>
+                        ) : (
+                          <>
+                            <Clock size={13} className="text-gold-800 mt-0.5 shrink-0" aria-hidden="true" />
+                            <span className="text-green-900/80">{r.title}</span>
+                            <span className="text-gold-800">— not on file</span>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {footer && (

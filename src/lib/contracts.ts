@@ -468,6 +468,41 @@ export async function redeemContractInvitation(token: string): Promise<string> {
   return (data as { document_id: string }).document_id;
 }
 
+/** TASK-ROLEBUNDLE — what each party on this contract owes BY VIRTUE OF THE ROLE
+ *  THEY HOLD ON IT (D31's "one known event": the event is this contract, the role
+ *  decides the bundle).
+ *
+ *  Read from `contract_role_documents`, which has been seeded and correct since
+ *  stage1h and which, until 2026-08-22, **nothing in the database or the app ever
+ *  referenced.** It is COMPUTED, never stored: the `document_parties` row is the
+ *  fact, so there is no copy to drift. `owned_by` names the incumbent generator
+ *  for the templates that already have one, so a surface can say "attaches on
+ *  execution" instead of showing a gap that is not a gap. */
+export interface RoleDocumentRequirement {
+  contact_id: string;
+  party_role: string;
+  party_name: string | null;
+  party_email: string | null;
+  template_key: string;
+  title: string;
+  satisfied: boolean;
+  satisfied_document_id: string | null;
+  on_this_contract_document_id: string | null;
+  on_this_contract_addressed_to: string | null;
+  /** 'ensure_horse_documents@execution' | 'unassigned' */
+  owned_by: string;
+}
+
+export async function contractRoleDocumentRequirements(
+  documentId: string,
+): Promise<RoleDocumentRequirement[]> {
+  const { data, error } = await supabase.rpc('contract_role_document_requirements', {
+    p_document_id: documentId,
+  });
+  if (error) throw error;
+  return ((data as { requirements?: RoleDocumentRequirement[] } | null)?.requirements) ?? [];
+}
+
 /** Staff: invite the counterparty by email. The server resolves the engagement
  *  party contact for the given role (LESSOR/LESSEE/BUYER/SELLER), issues the
  *  token, and sends the branded email. */

@@ -22,6 +22,11 @@ export interface RosterSupplement {
   contactNames: Map<string, string>;
   /** contact_ids that are a party to at least one document. */
   dealParty: Set<string>;
+  /** TASK-ROLEBUNDLE — contact_ids holding a CONTRACT ROLE (BUYER / LESSEE /
+   *  LESSOR / SELLER) on at least one live document. Deliberately narrower than
+   *  `dealParty`, which is "party to any document at all" and therefore true of
+   *  every onboarded client the moment they sign a release. */
+  contractRole: Set<string>;
   /** contact_ids with a DRAFT or AWAITING_SIGNATURE document (own or party). */
   outstandingDocs: Set<string>;
   /** contact_ids with a purchase awaiting payment. */
@@ -36,7 +41,8 @@ export interface RosterSupplement {
 
 export const EMPTY_SUPPLEMENT: RosterSupplement = {
   groups: new Map(), guardianOf: new Map(), dependentsOf: new Map(),
-  contactNames: new Map(), dealParty: new Set(), outstandingDocs: new Set(),
+  contactNames: new Map(), dealParty: new Set(), contractRole: new Set(),
+  outstandingDocs: new Set(),
   unpaidContacts: new Set(), horsesOwned: new Map(), horsesLeased: new Map(),
   lastActive: new Map(),
 };
@@ -90,10 +96,20 @@ function badgesOf(m: ClientAccountRow, supp: RosterSupplement): Badge[] {
   const badges: Badge[] = [];
   if (groups.includes('RIDER')) badges.push({ key: 'rider', label: 'Rider' });
   if (groups.includes('HORSE_OWNER')) badges.push({ key: 'horse_owner', label: 'Horse Owner' });
-  // deal-only party: a document party with no account and no clients row —
-  // only possible for the bare 'contact' arm by construction.
-  if (m.kind === 'contact' && supp.dealParty.has(cid)) {
-    badges.push({ key: 'deal_only', label: 'Deal-only party' });
+  // TASK-ROLEBUNDLE — DEAL PARTY, DERIVED, NOT A CATEGORY (D31).
+  //
+  // Owner, 2026-08-22: *"derive it from 'this account holds a contract role and
+  // has no purchases' — don't add it as a category token."* So it is computed
+  // here from two facts the roster already loads, and there is no fifth entry in
+  // CLIENT_CATEGORIES and no fifth `groups.group_type`.
+  //
+  // This REPLACES the old 'Deal-only party' chip, which was wrong twice over:
+  // it read `dealParty` — party to ANY document, which is true of every client
+  // who has ever signed a release — and it was saved from showing on all of them
+  // only by an unrelated `kind === 'contact'` gate, so a real account holding a
+  // lease and buying nothing (exactly the person this badge is for) never got it.
+  if (supp.contractRole.has(cid) && (m.order_count ?? 0) === 0) {
+    badges.push({ key: 'deal_party', label: 'Deal party' });
   }
   return badges;
 }
