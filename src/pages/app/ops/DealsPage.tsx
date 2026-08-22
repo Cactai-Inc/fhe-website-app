@@ -12,15 +12,25 @@ import {
 import { contractPartyOptions, contactHorseRecords, type PartyOption, type HorseIntakeRecord } from '../../../lib/horses';
 
 /**
- * DEALS (/app/ops/deals) — every transaction the business is party to or
- * facilitating, and the way a new one starts.
+ * DEALS (/app/ops/deals, and the Records "Deals" tab) — every transaction the
+ * business is party to or facilitating.
  *
- * A deal is a blank named container. Creating one is a single modal that
- * captures only what the container needs — a name, the kind of deal, who is on
- * each side, the horse, and (for a sale) whether the bill of sale stands alone
- * or is accompanied by an agreement. Everything else lives in the documents,
- * which are added from the deal's own page.
+ * TASK DEALAUTO §4, owner 2026-08-22: "deals should auto generate now that i
+ * think about it so that page should be self-populating not manually authored
+ * as the first step before a contract nor after."
+ *
+ * THIS PAGE IS A READ SURFACE. A deal is opened by the database the moment its
+ * contract row is inserted (contracts_ensure_deal_trg -> ensure_deal_for_contract),
+ * whichever way that contract was started — New Contract, the lease flow, the
+ * sale flow, the standalone bill of sale. Nothing here creates one.
+ *
+ * The New-deal modal below is RETIRED, NOT DELETED (D32). It is the only caller
+ * `create_deal` has ever had, and `create_deal` itself is untouched and still
+ * granted: it remains the escape hatch for a deal that needs a contract
+ * envelope of its own with no governing document yet. Flip the boolean to bring
+ * the modal back; nothing else has to change.
  */
+export const DEALS_MANUAL_CREATION_RETIRED = true;
 
 const field = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 focus-ring bg-white';
 
@@ -228,9 +238,10 @@ export default function DealsPage() {
   return (
     <PageLayout
       name="Deals"
-      description="Every sale and lease, and the documents that make each one real."
+      description="Every sale and lease, opened automatically with its contract, and the documents that make each one real."
       width="wide"
-      onAdd={rows && rows.length > 0 ? () => setCreating(true) : undefined}
+      onAdd={DEALS_MANUAL_CREATION_RETIRED || !rows || rows.length === 0
+        ? undefined : () => setCreating(true)}
       addLabel="deal"
     >
       {err && <p role="alert" className="form-error mb-3">{err}</p>}
@@ -240,11 +251,23 @@ export default function DealsPage() {
       ) : rows.length === 0 ? (
         <div className="border border-dashed border-green-800/20 rounded-xl py-16 text-center">
           <Handshake size={26} className="mx-auto text-green-700/70 mb-3" />
-          <p className="text-sm text-green-900 mb-4">No deals yet.</p>
-          <button type="button" onClick={() => setCreating(true)}
-            className="px-5 py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center gap-2">
-            <Plus size={16} /> Create your first deal
-          </button>
+          {DEALS_MANUAL_CREATION_RETIRED ? (
+            <>
+              <p className="text-sm text-green-900 mb-1">No deals yet.</p>
+              <p className="text-[12.5px] text-muted max-w-sm mx-auto">
+                A deal opens by itself the moment a lease, sale or bill of sale is
+                started. Start one from New Contract and it will appear here.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-green-900 mb-4">No deals yet.</p>
+              <button type="button" onClick={() => setCreating(true)}
+                className="px-5 py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center gap-2">
+                <Plus size={16} /> Create your first deal
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -275,7 +298,7 @@ export default function DealsPage() {
         </div>
       )}
 
-      {creating && (
+      {creating && !DEALS_MANUAL_CREATION_RETIRED && (
         <CreateDealModal onClose={() => setCreating(false)}
           onCreated={(id) => navigate(`/app/ops/deals/${id}`)} />
       )}
