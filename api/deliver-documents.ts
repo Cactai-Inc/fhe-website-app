@@ -12,8 +12,13 @@
  * -> 5xx when a read/render fails
  *
  * Recipients: by default, the union of the documents' engagement parties,
- * grouped by contact email — each distinct signer gets ONE email with all the
- * PDFs. A company copy (org public inbox) receives the same attachments once.
+ * grouped by contact email — each distinct signer gets ONE email carrying the
+ * documents THEY ARE A PARTY TO, and no others. Owner, 2026-08-22: "they only
+ * get things sent to them based on their email being actually on it." A set can
+ * legitimately mix documents with different parties (a lease plus each side's
+ * own role paperwork, TASK DEALAUTO) — one email, but never one attachment list
+ * for everybody. The company copy (org public inbox) is the org's own file copy
+ * and still receives the whole set.
  *
  * TARGETING (A8B): when `recipientContactIds` is present, delivery goes ONLY to
  * those contacts instead of the full party union. Each id must be either a
@@ -66,6 +71,17 @@ interface DocRow {
 interface PartyRow {
   contact_id: string;
   contacts: { email: string | null; first_name: string | null; last_name: string | null } | null;
+}
+
+/** Documents a contact is actually a party to, out of the set being delivered.
+ *  Empty means "not a party to any of them" — an audit/mirror recipient, which
+ *  only the targeted path can produce. */
+function documentsFor(
+  contactId: string, index: Map<string, Set<string>>, all: DocRow[],
+): DocRow[] {
+  const mine = index.get(contactId);
+  if (!mine || mine.size === 0) return all;
+  return all.filter((d) => mine.has(d.id));
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -158,6 +174,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         attachment: { filename: pdfFileName(d.title), content: bytes, contentType: 'application/pdf' },
       });
     }
+    // the whole set, in one list — the company file copy's attachments. Party
+    // copies are scoped per recipient inside the loop below.
     const allAttachments = pdfs.map((p) => p.attachment);
 
     // 3. Recipients: default = union of all documents' parties, grouped by
@@ -180,12 +198,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else {
       const { data: partiesRaw, error: partyErr } = await db
         .from('document_parties')
-        .select('contact_id, contacts:contact_id (email, first_name, last_name)')
+        .select('document_id, contact_id, contacts:contact_id (email, first_name, last_name)')
         .in('document_id', documentIds);
       if (partyErr) throw partyErr;
-      const parties = (partiesRaw ?? []) as unknown as PartyRow[];
-      // dedupe by contact_id
-      for (const p of parties) if (!byContact.has(p.contact_id)) byContact.set(p.contact_id, p);
+      const parties = (partiesRaw ?? []) as unknown as (PartyRow & { document_id: string })[];
+      // dedupe by contact_id, and record WHICH documents each one is on — that
+      // index is what scopes their attachment list below.
+      for (const p of parties) {
+        if (!byContact.has(p.contact_id)) byContact.set(p.contact_id, p);
+        if (!partyDocsByContact.has(p.contact_id)) partyDocsByContact.set(p.contact_id, new Set());
+        partyDocsByContact.get(p.contact_id)!.add(p.document_id);
+      }
     }
 
     // 4. Tenant-branded identity (once, scoped to the docs' org).
@@ -205,7 +228,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ),
     );
 
-    const titles = docs.map((d) => d.title);
+    /** The whole set's titles — used only for the company file copy. Each party
+     *  gets their own list, built inside the loop. */
+    const allTitles = docs.map((d) => d.title);
 
     const delivered: Array<{ email: string; count: number }> = [];
     /** Logging failures collected so they surface in the response + logs
@@ -215,11 +240,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // invocation, not one per skipped party.
     const skippedMinors: string[] = [];
 
-    // 6. One email per distinct signer, with ALL the PDFs attached.
+    // 6. One email per distinct signer — carrying THEIR documents, not the set's.
     for (const party of Array.from(byContact.values())) {
-      // Which of these documents still need a delivery row for this recipient?
-      const pending = docs.filter((d) => !deliveredSet.has(`${d.id}:${party.contact_id}`));
+      // The documents of this set that this person is actually a party to. A
+      // recipient with no party rows at all is an audit copy (targeted staff
+      // "send me a copy") and still gets everything — documentsFor() says so.
+      const mine = documentsFor(party.contact_id, partyDocsByContact, docs);
+      // Which of THOSE still need a delivery row for this recipient?
+      const pending = mine.filter((d) => !deliveredSet.has(`${d.id}:${party.contact_id}`));
       if (pending.length === 0) continue; // fully delivered already
+      const pendingIds = new Set(pending.map((d) => d.id));
+      // Attach exactly what is being delivered now: nothing that is not theirs,
+      // and nothing they have already been sent.
+      const attachments = pdfs.filter((x) => pendingIds.has(x.docId)).map((x) => x.attachment);
+      const titles = pending.map((d) => d.title);
 
       let toEmail = party.contacts?.email ?? null;
       let guardianRecipient: GuardianRecipient | null = null;
@@ -257,7 +291,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         fromEmail: identity.fromEmail,
         subject: rendered.subject,
         html: rendered.html,
-        attachments: allAttachments,
+        attachments,
       });
       if (!sent.ok) continue; // no orphan delivery rows without a successful send
 
@@ -312,7 +346,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .filter(Boolean)
         .join(', ');
       const mirrorEmail = await renderEmailTemplate(db, 'DOCUMENT_SET_COMPANY_COPY', {
-        'DOC.TITLES': titles,
+        // the org's own file copy: the whole set, unlike the party copies
+        'DOC.TITLES': allTitles,
         'PARTY.SIGNERS': signers,
       });
       const notice = mirrorEmail

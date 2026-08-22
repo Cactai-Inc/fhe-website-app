@@ -28,6 +28,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider, type TenantEmailIdentity } from './_lib/email.js';
 import { renderEmailTemplate } from './_lib/emailTemplates.js';
+import { authorizeCronRequest } from './_lib/cronAuth.js';
 
 const GRACE_MINUTES = 30;
 const PER_USER_CAP = 10;
@@ -47,15 +48,14 @@ function escapeHtml(s: string): string {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Vercel cron invokes with GET + the x-vercel-cron header; manual runs POST.
-  const isVercelCron = req.headers['x-vercel-cron'] !== undefined;
+  // One shared rule for all five scheduled endpoints — see api/_lib/cronAuth.ts.
+  const auth = authorizeCronRequest(req);
+  const isVercelCron = auth.isVercelCron;
   if (req.method !== 'POST' && !(req.method === 'GET' && isVercelCron)) {
     return res.status(405).json({ error: 'method not allowed' });
   }
 
-  const bearer = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  const secret = process.env.CRON_SECRET;
-  const isManualRun = Boolean(secret && bearer && bearer === secret);
-  if (!isVercelCron && !isManualRun) return res.status(401).json({ error: 'unauthorized' });
+  if (!auth.ok) return res.status(401).json({ error: auth.reason ?? 'unauthorized' });
 
   try {
     const db = getSupabaseAdmin();

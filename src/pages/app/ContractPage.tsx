@@ -374,22 +374,33 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [coBuyerEntry, setCoBuyerEntry] = useState<Record<string, string>>({});
   const [coBuyerOptions, setCoBuyerOptions] = useState<PartyOption[]>([]);
 
-  // DOCUMENT-BEFORE-CONTRACT: does the VIEWER still owe onboarding documents?
-  // Fails CLOSED — if we cannot tell, we gate rather than offer a signing box
-  // the server would reject anyway. Staff are never gated (they are never
-  // hard-walled, and they sign on a party's behalf from the barn office).
+  /* DOCUMENT-BEFORE-CONTRACT — RETIRED 2026-08-22, not deleted (D32).
+     Owner: "Lessee paperwork is handled separately and doesnt gate signing nor
+     required after signing," and, asked how far that goes, "off entirely."
+
+     This gate hid the signing box while the viewer still owed anything on their
+     onboarding wall, mirroring `contract_lock_blockers`' `onboarding_documents`
+     blocker so the page and the database agreed. That blocker is gone (migration
+     20260822T0820), so this mirror has to go with it — left in place it would
+     refuse a signature the server now accepts, which is the same disagreement
+     the mirroring existed to prevent, pointing the other way.
+
+     The wall itself is untouched: `myWallState()` still exists, /app/onboarding
+     still presents it, everything else that reads it still reads it. Flip the
+     boolean to bring the gate back; the banner below is unchanged. */
+  const CONTRACT_ONBOARDING_GATE_RETIRED = true;
   const [docGated, setDocGated] = useState(false);
   useEffect(() => {
     let active = true;
-    if (isStaff) { setDocGated(false); return; }
+    if (CONTRACT_ONBOARDING_GATE_RETIRED || isStaff) { setDocGated(false); return; }
     myWallState()
       // `wall` is the wall_gating subset — exactly what the server-side guard
-      // (contact_document_wall_state → 'gating') tests, so the UI and the DB
-      // agree. `pending` would over-gate on non-gating assignments.
+      // (contact_document_wall_state → 'gating') tested, so the UI and the DB
+      // agreed. `pending` would over-gate on non-gating assignments.
       .then((w) => { if (active) setDocGated(Boolean(w?.wall)); })
       .catch(() => { if (active) setDocGated(true); });
     return () => { active = false; };
-  }, [isStaff]);
+  }, [CONTRACT_ONBOARDING_GATE_RETIRED, isStaff]);
 
   // NAME-BEFORE-SIGNATURE: a party whose legal name we could not safely assert
   // must state it before signing — otherwise the contract names the wrong

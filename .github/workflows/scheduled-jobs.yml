@@ -1,0 +1,116 @@
+# Scheduled jobs — the working scheduler for this project.
+#
+# Owner, 2026-08-22: "there are no crons setup on vercel and i dont know how to
+# do that."
+#
+# `vercel.json` has declared five cron jobs since they were written. They have
+# never run. Measured 2026-08-22 against production: ten executed documents have
+# sat with `delivery_held_at` set and `executed_email_sent_at` NULL since
+# 2026-08-20 16:48 — roughly 46 consecutive missed hourly runs of
+# /api/delivery-sweep, whose only job is to release exactly those. Every
+# time-based behaviour in the product is in the same state: nothing expires,
+# nothing is reminded, nothing is minted, nothing is swept.
+#
+# Vercel only runs the `crons` block in vercel.json if the project's plan allows
+# it — Hobby permits 2 jobs at daily frequency, and this file asks for 5 at
+# hourly. That is the likeliest reason, and it is not something a repo can fix.
+# GitHub Actions can: this repository is public, so scheduled workflows are free
+# and unmetered, and the endpoints already exist, already work and already
+# authenticate. Only the thing that calls them was missing.
+#
+# ── TO TURN THIS ON (two settings, both one-time) ──────────────────────────────
+#  1. Pick a long random value once, e.g.  openssl rand -hex 32
+#  2. Vercel → this project → Settings → Environment Variables → add
+#         CRON_SECRET = <that value>     (Production)
+#     …then redeploy, so the running functions can see it.
+#  3. GitHub → this repo → Settings → Secrets and variables → Actions → New
+#     repository secret → CRON_SECRET = <the same value>
+#
+#  Until BOTH exist and match, every call below returns 401 and this workflow
+#  fails loudly — which is the intended failure mode. A scheduler that fails
+#  silently is what put the product here.
+#
+#  Optional: set an Actions *variable* named SITE_URL to override the default.
+#
+# ── NOTES ─────────────────────────────────────────────────────────────────────
+#  • GitHub cron is UTC, exactly like Vercel's — the schedules below are copied
+#    from vercel.json unchanged, so behaviour does not shift by moving here.
+#  • GitHub may delay a scheduled run by several minutes under load. Every one
+#    of these endpoints is idempotent and window-based, not instant-sensitive.
+#  • vercel.json's `crons` block is deliberately LEFT IN PLACE. If the plan is
+#    upgraded later the two would double-fire — harmless (all five endpoints are
+#    idempotent) but pointless, so delete one side at that point.
+name: Scheduled jobs
+
+on:
+  schedule:
+    - cron: '0 * * * *'    # hourly       — expire-holds, calendar-reminders, delivery-sweep
+    - cron: '0 16 * * *'   # 16:00 UTC    — notifications-nudge
+    - cron: '20 8 * * *'   # 08:20 UTC    — mint-monthly-allotments
+  workflow_dispatch:
+    inputs:
+      endpoint:
+        description: 'Run one job now (use delivery-sweep to flush stuck document emails)'
+        required: true
+        default: delivery-sweep
+        type: choice
+        options:
+          - delivery-sweep
+          - expire-holds
+          - calendar-reminders
+          - notifications-nudge
+          - mint-monthly-allotments
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scheduled-jobs-${{ github.event.schedule || github.event.inputs.endpoint }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      SITE_URL: ${{ vars.SITE_URL || 'https://www.frenchheritageequestrian.com' }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Refuse to run without a shared secret
+        if: env.CRON_SECRET == ''
+        run: |
+          echo "::error::CRON_SECRET is not set on this repository. See the header of" \
+               ".github/workflows/scheduled-jobs.yml — it must be set in BOTH Vercel" \
+               "(environment variable, then redeploy) and here (Actions secret), to the same value."
+          exit 1
+
+      - name: Decide which endpoints this run is for
+        id: pick
+        run: |
+          case "${{ github.event.schedule }}" in
+            '0 * * * *')  echo 'jobs=expire-holds calendar-reminders delivery-sweep' >> "$GITHUB_OUTPUT" ;;
+            '0 16 * * *') echo 'jobs=notifications-nudge' >> "$GITHUB_OUTPUT" ;;
+            '20 8 * * *') echo 'jobs=mint-monthly-allotments' >> "$GITHUB_OUTPUT" ;;
+            *)            echo 'jobs=${{ github.event.inputs.endpoint }}' >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Call them
+        run: |
+          set -u
+          failed=0
+          for job in ${{ steps.pick.outputs.jobs }}; do
+            echo "── POST /api/$job"
+            # --fail-with-body: a non-2xx is a FAILURE, and we still print what it said.
+            # The secret rides in a header; GitHub masks it in the log either way.
+            if curl -sS --fail-with-body --max-time 120 \
+                 -X POST "$SITE_URL/api/$job" \
+                 -H "Authorization: Bearer $CRON_SECRET" \
+                 -H 'Content-Type: application/json'; then
+              echo ""
+              echo "   ok"
+            else
+              echo ""
+              echo "::error::/api/$job failed"
+              failed=1
+            fi
+          done
+          exit $failed

@@ -18,16 +18,16 @@
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
+import { authorizeCronRequest } from './_lib/cronAuth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const isVercelCron = req.headers['x-vercel-cron'] !== undefined;
+  // One shared rule for all five scheduled endpoints — see api/_lib/cronAuth.ts.
+  const auth = authorizeCronRequest(req);
+  const isVercelCron = auth.isVercelCron;
   if (req.method !== 'POST' && !(req.method === 'GET' && isVercelCron)) {
     return res.status(405).json({ error: 'method not allowed' });
   }
-  const bearer = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  const secret = process.env.CRON_SECRET;
-  const isManualRun = Boolean(secret && bearer && bearer === secret);
-  if (!isVercelCron && !isManualRun) return res.status(401).json({ error: 'unauthorized' });
+  if (!auth.ok) return res.status(401).json({ error: auth.reason ?? 'unauthorized' });
 
   try {
     const db = getSupabaseAdmin();
