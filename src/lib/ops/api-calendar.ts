@@ -180,12 +180,38 @@ export async function setBusinessHours(hours: BusinessHour[]): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * REVENUE — ONE ENGINE, AND THIS IS THE CALL (TASK-DASHBOARDBUILD §5 / D18).
+ *
+ * This used to call `calendar_revenue`, which sums `bookings.price_amount` over
+ * non-cancelled bookings in the window. That is SCHEDULED VALUE, not revenue,
+ * and it was wrong four ways — it counted unpaid orders, re-counted sessions a
+ * punch card had already paid for, counted standing-slot sessions minted into
+ * the future (D23), and recognised at session date instead of payment date.
+ *
+ * Measured against production on 2026-08-22, the two disagree by an order of
+ * magnitude: `calendar_revenue` reported $15,600 for August where $1,510 had
+ * actually been paid, and reported $4,550 of "revenue" in the twelve months
+ * AHEAD of today, from sessions that have not happened.
+ *
+ * `revenue_summary` is paid purchases recognised at `purchases.paid_at`, with
+ * the prior equal-length window for a delta. The dashboard KPI ribbon calls the
+ * same function with the same windows, which is the point: there is no second
+ * number for the two owners to disagree about.
+ *
+ * `calendar_revenue` is NOT dropped — nothing is removed from this database
+ * (D32) — but it now has no callers.
+ */
 export interface CalendarRevenue {
   total: number;
   count: number;
+  prior_total: number;
+  prior_count: number;
+  delta: number;
+  delta_pct: number | null;
 }
 export async function fetchRevenue(fromISO: string, toISO: string): Promise<CalendarRevenue> {
-  const { data, error } = await supabase.rpc('calendar_revenue', { p_from: fromISO, p_to: toISO });
+  const { data, error } = await supabase.rpc('revenue_summary', { p_from: fromISO, p_to: toISO });
   if (error) throw error;
   return data as CalendarRevenue;
 }

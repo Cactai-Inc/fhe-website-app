@@ -12,6 +12,7 @@ import {
   adminPendingStaffInvites, adminRevokeStaffInvite,
   type AdminMemberRow, type MemberRole, type PendingStaffInvite,
 } from '../../../lib/admin';
+import { setDashboardFocus } from '../../../lib/ops/api-dashboard';
 import { InviteResultPanel } from '../../../components/app/InviteResultPanel';
 import { InvitationHistoryPanel } from '../../../components/app/InvitationHistoryPanel';
 
@@ -143,6 +144,13 @@ function TeamMemberPanel({
     phone: member.phone ?? '', riding_level: member.riding_level ?? '', bio: member.bio ?? '',
   });
   const [role, setRole] = useState<MemberRole>((member.role as MemberRole) ?? 'MANAGER');
+  /* DASHBOARDBUILD §2.2 — the stored default dashboard view. `dashboard_focus`
+     is not on the base `Profile` type (it is a column the AuthContext's
+     `select('*')` picks up), so it is projected here the same way `role` is. */
+  const [focus, setFocus] = useState<'trainer' | 'business'>(
+    ((member as AdminMemberRow & { dashboard_focus?: string | null }).dashboard_focus === 'trainer')
+      ? 'trainer' : 'business',
+  );
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -150,6 +158,26 @@ function TeamMemberPanel({
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  /* The default-view save does NOT go through `run()`, and that is deliberate.
+     `run()` ends in `onChanged()`, which this page defines as
+     `setSelected(null); reload()` — it CLOSES the panel. That is right for
+     "Demote to client" and "Delete account", and it is why the "Saved." note on
+     line ~328 has never actually been visible for any control here: the panel
+     it renders in unmounts in the same tick. Changing that for every control is
+     a TeamPage change beyond this task (flagged in the report). This one control
+     stays put and confirms itself, because a setting you cannot see take effect
+     is a setting the owner will not trust. The roster row shows nothing derived
+     from this column, so there is nothing to reload. */
+  async function saveFocus() {
+    setBusy(true); setError(null); setNote(null);
+    try {
+      await setDashboardFocus(member.user_id, focus);
+      setNote(`Default view saved — this account will land on ${focus === 'trainer' ? 'Head Trainer' : 'Business Operations'}.`);
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not save the default view.'));
+    } finally { setBusy(false); }
+  }
 
   async function run(fn: () => Promise<void>, done?: string) {
     setBusy(true); setError(null); setNote(null);
@@ -207,6 +235,51 @@ function TeamMemberPanel({
                   {busy ? 'Saving…' : 'Save record'}
                 </button>
               </div>
+
+              {/* ── Default dashboard ── DASHBOARDBUILD §2.2 / D13.
+                  THE SETTINGS SCREEN the ruling asks for: *"we can set the
+                  primary view in the setting based on the email account used to
+                  login."* Stored on the account, edited here, and NOT written by
+                  the toggle on the dashboard itself — switching view to check
+                  something must not silently move where you land tomorrow.
+
+                  It is on Team rather than on a personal preferences page
+                  because both owners are on this roster and either may set the
+                  other's; `set_dashboard_focus` enforces self-or-admin, in this
+                  org, server-side. It changes NOTHING about permissions — D26 is
+                  explicit that the designation selects emphasis, never
+                  capability, and both views stay open to both accounts. */}
+              {!isSuper && (
+                <div className="flex flex-col gap-2 border-t border-green-800/10 pt-4">
+                  <p className="form-label">Default dashboard</p>
+                  <p className="text-xs text-muted">
+                    Which of the two views this account lands on at sign-in, and again after
+                    about thirty minutes away. Both views stay open to them either way — the
+                    toggle on the dashboard switches for that session only.
+                  </p>
+                  <div className="flex gap-2">
+                    <select
+                      className="form-input"
+                      value={focus}
+                      onChange={(e) => setFocus(e.target.value as 'trainer' | 'business')}
+                      aria-label="Default dashboard"
+                    >
+                      <option value="trainer">Head Trainer</option>
+                      <option value="business">Business Operations</option>
+                    </select>
+                    <button
+                      type="button"
+                      className="btn-secondary shrink-0"
+                      disabled={busy}
+                      onClick={() => void saveFocus()}
+                    >
+                      Save default
+                    </button>
+                  </div>
+                  {note && <p className="text-sm text-green-700">{note}</p>}
+                  {error && <p role="alert" className="form-error">{error}</p>}
+                </div>
+              )}
 
               {!isSuper && (
                 <>

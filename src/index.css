@@ -532,3 +532,117 @@
     color: #000;
   }
 }
+
+/* ═══ OWNER DASHBOARD — the visual layer (TASK-DASHBOARDBUILD §1B) ══════════
+ *
+ * The owner reviewed five design artifacts and ruled: build the zones, the data
+ * table and the phasing from `docs/design/DASHBOARDS-GROUND-UP-PLAN.md`'s own
+ * rendered mockup, and pull three named things in on top of it. This block is
+ * those three things and nothing else — a palette and polish overlay, per the
+ * ruling's own words, not a second design system.
+ *
+ * ⚠️ THE RULING NAMES TOKENS THIS REPO DOES NOT HAVE. It cites `--accent:#2E5B40`
+ * and `--tan:#96702F` and a serif called "Iowan Old Style", from a
+ * `visual-direction-board.html` that is not in the repository (only
+ * `dashboards-v2-preferred.html` is). The plan's OWN mockup — the one the ruling
+ * says is the basis, and the one that IS committed — uses this app's real brand
+ * tokens: green-800 #143321, gold-600 #ba9935, the cream page, and Libre Caslon
+ * Text. The ruling also says "layer, do not replace" and "it is already close in
+ * spirit", so the layering is done against the tokens that actually exist.
+ * Recorded in the report rather than silently reconciled.
+ *
+ *   1. A soft dawn glow (gold -> rose -> sky, low opacity) as ATMOSPHERE behind
+ *      the greeting and behind a progress ring. Never a background fill.
+ *   2. A brass hairline on the KPI tiles, in place of the flat grey line.
+ *   3. The serif reserved for the greeting and for large numerals. Never body.
+ */
+
+/* 1 · THE DAWN GLOW. Painted on a ::before so it sits UNDER the content and can
+ *     never take a border, a shadow or a click. `filter: blur()` is what keeps
+ *     it atmosphere: the three stops never resolve into readable bands. */
+.dash-dawn {
+  position: relative;
+  isolation: isolate;
+}
+.dash-dawn::before {
+  content: '';
+  position: absolute;
+  inset: -35% -10% -55% -10%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(46% 62% at 14% 34%, rgba(186, 153, 53, 0.30), transparent 68%),
+    radial-gradient(40% 56% at 47% 24%, rgba(203, 138, 122, 0.22), transparent 70%),
+    radial-gradient(52% 66% at 84% 44%, rgba(122, 160, 190, 0.20), transparent 72%);
+  filter: blur(26px);
+  opacity: 0.9;
+}
+
+/* 2 · THE BRASS HAIRLINE. One rule, so every KPI tile moves together — and so
+ *     the difference from a plain `border-green-800/15` card is deliberate and
+ *     greppable rather than an arbitrary value typed at eight call sites. */
+.dash-tile {
+  border: 1px solid rgba(186, 153, 53, 0.42);
+  background: #fff;
+  border-radius: 12px;
+  transition: border-color 320ms cubic-bezier(.32, .72, 0, 1),
+              box-shadow   320ms cubic-bezier(.32, .72, 0, 1);
+}
+.dash-tile:hover {
+  border-color: rgba(186, 153, 53, 0.72);
+  box-shadow: 0 2px 10px rgba(13, 33, 24, 0.07);
+}
+
+/* 3 · A zone card. Hover-lift is the one motion borrowed from the v4 mockup that
+ *     costs nothing and reads as depth rather than decoration. */
+.dash-card {
+  background: #fff;
+  border: 1px solid rgba(13, 33, 24, 0.09);
+  border-radius: 12px;
+  transition: transform 320ms cubic-bezier(.32, .72, 0, 1),
+              box-shadow 320ms cubic-bezier(.32, .72, 0, 1),
+              border-color 320ms cubic-bezier(.32, .72, 0, 1);
+}
+@media (hover: hover) {
+  .dash-card:hover {
+    transform: translateY(-1px);
+    border-color: rgba(20, 51, 33, 0.28);
+    box-shadow: 0 6px 18px rgba(13, 33, 24, 0.08);
+  }
+}
+
+/* 4 · STAGGERED FIRST PAINT. Capped at eight steps: past that the last zone
+ *     arrives late enough to read as a bug rather than as grace. The delay is
+ *     set inline as `--dash-i` by the zone list. */
+.dash-enter {
+  opacity: 0;
+  animation: dashEnter 440ms cubic-bezier(.32, .72, 0, 1) forwards;
+  animation-delay: calc(min(var(--dash-i, 0), 8) * 45ms);
+}
+@keyframes dashEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* 5 · THE STICKY DASHBOARD HEADER. The greeting, the KPI ribbon and the view
+ *     toggle stay reachable while the zones scroll under them. */
+.dash-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(250, 248, 244, 0.86);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-enter {
+    opacity: 1 !important;
+    animation: none !important;
+    transform: none !important;
+  }
+  .dash-card:hover,
+  .dash-tile:hover {
+    transform: none !important;
+  }
+}
