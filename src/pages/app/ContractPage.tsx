@@ -600,6 +600,39 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     if (!id) return;
     deliveredRef.current = true;
   }, [id]);
+
+  /* TASK DEALAUTO §2 — the bundle is sequenced right after the deciding
+     signature, "surfaced in sequence immediately after the signature is
+     captured on the contract" (owner, 2026-08-22).
+
+     The signature that executes the governing document is the LAST party
+     signature by definition, whoever fires it — no role is assumed here, and
+     none is assumed in the database either. On that event the server has
+     already generated everything each role still owes
+     (ensure_contract_role_documents) and sequenced it behind this document, so
+     the next step exists by the time this returns. The person clicks nothing
+     extra: they are taken to it.
+
+     `i_sign` / `i_signed` come from contract_signing_set and are resolved
+     against the signed-in contact, so staff who just completed the company's
+     seat are never pushed into a client's own paperwork — for them the numbered
+     strip and its "Continue to…" button are still there, unchanged. */
+  const signAndContinue = useCallback(async (role: string, typedName: string) => {
+    await lockAndSign(id!, role, typedName);
+    deliverExecutedCopy();
+    setNote('Signed.');
+    try {
+      const set = await contractSigningSet(id!);
+      if (!set.find((s) => s.document_id === id)?.executed) return;
+      const next = set.find((s) => !s.executed && s.i_sign && !s.i_signed);
+      if (!next) return;
+      const label = next.short_label?.trim() || next.title?.trim() || 'the next document';
+      setNote(`Signed. Next: ${label}.`);
+      navigate(`/app/contracts/${next.document_id}`);
+    } catch {
+      /* the numbered strip still offers the link; never strand the signature */
+    }
+  }, [id, deliverExecutedCopy, navigate]);
   const myRoles = detail?.my_roles ?? [];
   const state = doc?.workflow_state ?? 'editable';
   // A staff member can ALSO be a party on the contract (e.g. a barn admin who is
@@ -1143,6 +1176,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const curIdx = signingSet.findIndex((s) => s.document_id === id);
   const nextInSeq = curIdx >= 0 ? signingSet.slice(curIdx + 1).find((s) => !s.executed) : undefined;
   const allExecuted = inSet && signingSet.every((s) => s.executed);
+  /* TASK DEALAUTO §8 (the tell) — "my part is done" is not the same fact as
+     "the set is done". A lessee who has signed the lease and their whole bundle
+     is finished even while the horse owner's vet authorization is outstanding,
+     and telling them nothing at that point is what makes a person go looking
+     for a step that does not exist. The wording also states the delivery rule
+     they are about to experience: the email arrives when the LAST signature in
+     the set lands, not when theirs does. */
+  const myStepsLeft = signingSet.filter((s) => !s.executed && s.i_sign && !s.i_signed).length;
+  const iHaveSigningSteps = signingSet.some((s) => s.i_sign);
   const thisExecuted = doc.status === 'EXECUTED';
 
   /* max-w-5xl caps READING width — a contract is prose and should not run the
@@ -1194,6 +1236,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           {allExecuted ? (
             <p className="text-sm text-green-700 mt-3 inline-flex items-center gap-1.5">
               <CheckCircle2 size={16} aria-hidden="true" /> All documents in this set are signed.
+            </p>
+          ) : iHaveSigningSteps && myStepsLeft === 0 ? (
+            <p className="text-sm text-green-700 mt-3 inline-flex items-start gap-1.5">
+              <CheckCircle2 size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
+              <span>
+                You've signed everything that's yours here. We'll email you the complete
+                set — this agreement and every document with it — as soon as the last
+                signature is in.
+              </span>
             </p>
           ) : thisExecuted && nextInSeq ? (
             <button type="button" onClick={() => navigate(`/app/contracts/${nextInSeq.document_id}`)}
@@ -2184,10 +2235,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   placeholder="Full legal name"
                   className="px-3 py-2 rounded-lg border border-green-800/15 text-sm focus-ring w-64" />
                 <button type="button" className="btn-primary text-sm" disabled={!signName.trim()}
-                  onClick={() => void act(async () => {
-                    await lockAndSign(id!, myRoles[0], signName.trim());
-                    deliverExecutedCopy();   // no-op unless this signature executed the doc; idempotent
-                  }, 'Signed.')}>
+                  onClick={() => void act(() => signAndContinue(myRoles[0], signName.trim()))}>
                   <PenLine size={14} /> Sign
                 </button>
               </div>
@@ -2225,9 +2273,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                         placeholder={`${companyContactName}'s full legal name`}
                         className="px-3 py-2 rounded-lg border border-green-800/15 text-sm focus-ring w-64" />
                       <button type="button" className="btn-primary text-sm" disabled={!name.trim()}
-                        onClick={() => void act(
-                          async () => { await lockAndSign(id!, r, name.trim()); deliverExecutedCopy(); },
-                          `Signed as ${name.trim()}.`)}>
+                        onClick={() => void act(() => signAndContinue(r, name.trim()))}>
                         <PenLine size={14} /> Sign as {name.trim() || companyContactName}
                       </button>
                     </div>

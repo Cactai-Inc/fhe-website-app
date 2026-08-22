@@ -37,3 +37,6 @@ supabase/.temp/
 
 # browser-walk credentials — never commit
 .env.test
+
+# DEALAUTO browser-walk tooling + generated credentials — never commit
+dealauto-tooling/

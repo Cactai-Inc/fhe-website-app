@@ -365,6 +365,11 @@ export interface SigningSetDoc {
   sign_sequence: number;
   status: string;
   executed: boolean;
+  /** TASK DEALAUTO: is this step MINE to sign? Resolved server-side from
+   *  current_contact_id(), so a staff member looking at someone else's bundle
+   *  step is never advanced into it. */
+  i_sign?: boolean;
+  i_signed?: boolean;
 }
 /** The ordered set of documents to sign for this document's contract; [] when the
  *  document isn't part of a multi-doc sequenced set. */
