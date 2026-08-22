@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../lib/hooks';
 import { ContactDossierModal } from '../../components/app/ContactDossierModal';
 import {
@@ -11,6 +12,7 @@ import LessonsHubPage from './ops/hubs/LessonsHubPage';
 import DocumentsQueuePage from './ops/DocumentsQueuePage';
 import FilesRecordsPage from './ops/FilesRecordsPage';
 import DealsPage from './ops/DealsPage';
+import ArchivedAccountsPage from './ops/ArchivedAccountsPage';
 
 /**
  * RECORDS (/app/records) — TASK-RECORDS, owner ruling 2026-08-12: "directories
@@ -31,9 +33,9 @@ import DealsPage from './ops/DealsPage';
 
 type RecordsTab =
   | 'all' | 'leads' | 'clients' | 'partners' | 'vendors' | 'horses'
-  | 'lessons' | 'documents' | 'files' | 'deals';
+  | 'lessons' | 'documents' | 'files' | 'deals' | 'archived';
 
-const TABS: { id: RecordsTab; label: string }[] = [
+const TABS: { id: RecordsTab; label: string; adminOnly?: boolean }[] = [
   { id: 'all', label: 'All' },
   { id: 'leads', label: 'Leads' },
   { id: 'clients', label: 'Clients' },
@@ -49,6 +51,12 @@ const TABS: { id: RecordsTab; label: string }[] = [
   { id: 'documents', label: 'Documents' },
   { id: 'files', label: 'Files' },
   { id: 'deals', label: 'Deals' },
+  // TASK-ARCHIVE (2026-08-22): the deleted-accounts view is a Records tab and
+  // not its own nav row or ops route, because Records IS the people page and
+  // archiving happens from a Records row — the way out and the way back are one
+  // click apart. Last in the strip, and admin-only: it is the ONE place
+  // archived contacts surface (D11/D32).
+  { id: 'archived', label: 'Archived', adminOnly: true },
 ];
 const TAB_IDS = new Set<string>(TABS.map((t) => t.id));
 
@@ -58,10 +66,11 @@ const TAB_IDS = new Set<string>(TABS.map((t) => t.id));
  *  so the two layers never read as one control. */
 function RecordsTabStrip({ active }: { active: RecordsTab }) {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   return (
     <div className="border-b border-green-800/10 bg-cream-100/50">
       <nav className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-wrap gap-1.5 py-3" aria-label="Records">
-        {TABS.map((t) => (
+        {TABS.filter((t) => !t.adminOnly || isAdmin).map((t) => (
           <button
             key={t.id}
             type="button"
@@ -108,6 +117,7 @@ export default function RecordsPage() {
       {tab === 'documents' && <DocumentsQueuePage />}
       {tab === 'files' && <FilesRecordsPage />}
       {tab === 'deals' && <DealsPage />}
+      {tab === 'archived' && <ArchivedAccountsPage />}
 
       {crossContact && (
         <ContactDossierModal contactId={crossContact} onClose={() => setCrossContact(null)} />

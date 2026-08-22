@@ -87,6 +87,15 @@ export function ContactDossierModal({
   }, [onClose]);
 
   const c = (d?.contact ?? {}) as Record<string, unknown>;
+  /** TASK-ARCHIVE §3: contact_dossier now admits an archived contact so the
+   *  deleted-accounts view has a full record to click through to. The row it
+   *  returns carries deleted_at/deleted_by/deleted_reason, so this modal knows
+   *  on its own — no caller has to tell it, and no second record view exists.
+   *  Archived means READ-ONLY here: update_contact_record and the provisioning /
+   *  offering / standing-slot writes all refuse an archived contact at the DB,
+   *  and a control that can only fail is worse than no control. Restore the
+   *  account (Records › Archived) to edit it again. */
+  const archived = Boolean(c.deleted_at);
 
   async function save() {
     if (Object.keys(dirty).length === 0) return;
@@ -159,6 +168,19 @@ export function ContactDossierModal({
 
         {err && <p role="alert" className="form-error mx-5 mt-3">{err}</p>}
 
+        {archived && (
+          <div className="mx-5 mt-3 rounded-lg border border-gold-600/40 bg-gold-50/60 px-3 py-2.5">
+            <p className="text-[12.5px] font-medium text-gold-900">
+              Archived {new Date(String(c.deleted_at)).toLocaleString()} — read-only
+            </p>
+            <p className="text-[11.5px] text-secondary">
+              {(c.deleted_reason as string | null) ?? 'No reason recorded.'} Everything below is
+              exactly as it stood; nothing was removed to hide the account. Restore it from
+              Records › Archived to make changes.
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-1.5 px-5 py-3 border-b border-green-800/10">
           {TABS.map(([id, label, count]) => (
             <button key={id} type="button" onClick={() => setTab(id)}
@@ -187,7 +209,8 @@ export function ContactDossierModal({
                         ...(d.standing.contact_type === 'DIRECTORY' ? ['DIRECTORY' as const] : []),
                       ] as ContactType[]).map((t) => (
                         <button key={t} type="button" onClick={() => void file(t)}
-                          className={`text-[11px] px-2.5 py-1 rounded-full border focus-ring ${
+                          disabled={archived}
+                          className={`text-[11px] px-2.5 py-1 rounded-full border focus-ring disabled:opacity-50 disabled:cursor-not-allowed ${
                             d.standing.contact_type === t
                               ? 'border-green-700 bg-green-50 text-green-900 font-medium'
                               : 'border-green-800/25 text-green-800 hover:bg-green-800/10'}`}>
@@ -212,9 +235,11 @@ export function ContactDossierModal({
                             <label className="block text-[10px] uppercase tracking-wide text-muted mb-1" htmlFor={`f-${k}`}>{label}</label>
                             {k === 'notes' || k === 'riding_background' ? (
                               <textarea id={`f-${k}`} rows={2} className={`${input} resize-y`}
+                                disabled={archived}
                                 value={val(k)} onChange={(e) => set(k)(e.target.value)} />
                             ) : (
                               <input id={`f-${k}`} className={input}
+                                disabled={archived}
                                 type={k === 'date_of_birth' ? 'date' : 'text'}
                                 value={val(k)} onChange={(e) => set(k)(e.target.value)} />
                             )}
@@ -253,12 +278,14 @@ export function ContactDossierModal({
 
               {tab === 'documents' && (
                 <div className="flex flex-col gap-5">
-                  <div>
-                    <button type="button" className="btn-secondary text-sm"
-                      onClick={() => setAssigning(true)}>
-                      Assign a document or contract
-                    </button>
-                  </div>
+                  {!archived && (
+                    <div>
+                      <button type="button" className="btn-secondary text-sm"
+                        onClick={() => setAssigning(true)}>
+                        Assign a document or contract
+                      </button>
+                    </div>
+                  )}
                   <Section title="Documents">
                     {d.documents.length === 0 ? <Empty>None.</Empty>
                       : d.documents.map((x) => (
@@ -279,11 +306,15 @@ export function ContactDossierModal({
                       purchase item, so this is where it belongs: beside the orders
                       that carry it. Renders nothing for a contact with no weekly
                       purchase. */}
-                  <StaffStandingSlotSection
-                    contactId={contactId}
-                    personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
-                  />
-                  <AttachOfferingPanel contactId={contactId} onAttached={load} />
+                  {!archived && (
+                    <>
+                      <StaffStandingSlotSection
+                        contactId={contactId}
+                        personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
+                      />
+                      <AttachOfferingPanel contactId={contactId} onAttached={load} />
+                    </>
+                  )}
                   <Section title="Orders">
                   {d.orders.length === 0 ? <Empty>None.</Empty>
                     : d.orders.map((o) => (
@@ -305,10 +336,12 @@ export function ContactDossierModal({
                         surface as the agreed lesson below, deliberately adjacent and
                         deliberately distinct: that one books THE lesson agreed on the
                         call, this one sets THE WEEKLY TIME that is theirs. */}
-                    <StaffStandingSlotSection
-                      contactId={contactId}
-                      personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
-                    />
+                    {!archived && (
+                      <StaffStandingSlotSection
+                        contactId={contactId}
+                        personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
+                      />
+                    )}
                     <Section title="Account">
                       <Row main={d.account.display_name ?? '(no display name)'} sub={d.account.role ?? undefined}
                         badge={d.account.is_suspended ? 'suspended' : (d.account.member_status ?? undefined)} />
@@ -335,17 +368,23 @@ export function ContactDossierModal({
                     {/* SLOTREACH §2 — a contact can hold a weekly purchase before they
                         ever have a login (staff attach the offering, the invitation
                         follows). Their standing time is settable either way. */}
-                    <StaffStandingSlotSection
-                      contactId={contactId}
-                      personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
-                    />
+                    {!archived && (
+                      <StaffStandingSlotSection
+                        contactId={contactId}
+                        personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
+                      />
+                    )}
                     <Empty>
                       This person has no account — they have never signed in. That is
                       normal for a counterparty, a lead, or a minor on a parent&apos;s account.
                       Their contact record is complete in its own right; an account
                       simply adds a login.
                     </Empty>
-                    {invited ? (
+                    {archived ? (
+                      <p className="text-[11.5px] text-muted">
+                        Restore this account from Records › Archived before provisioning it.
+                      </p>
+                    ) : invited ? (
                       <p className="text-sm text-green-800">
                         Invitation sent to {String(c.email)}.
                       </p>
@@ -408,7 +447,7 @@ export function ContactDossierModal({
           <div className="ml-auto flex gap-2">
             <button type="button" className="btn-secondary text-sm" onClick={onClose}>Close</button>
             <button type="button" className="btn-primary text-sm"
-              disabled={saving || Object.keys(dirty).length === 0} onClick={() => void save()}>
+              disabled={archived || saving || Object.keys(dirty).length === 0} onClick={() => void save()}>
               {saving ? 'Saving…' : 'Save changes'}
             </button>
           </div>

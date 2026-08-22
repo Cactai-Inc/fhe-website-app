@@ -2363,15 +2363,59 @@ export async function staffContactDirectory(): Promise<DirectoryContact[]> {
   return (data ?? []) as DirectoryContact[];
 }
 
-/** Soft-delete a contact (admin RLS). Directory + pickers filter deleted rows;
- *  history that references the contact keeps working. */
-export async function deleteContact(id: string): Promise<void> {
-  const { data: auth } = await supabase.auth.getUser();
-  const { error } = await supabase
-    .from('contacts')
-    .update({ deleted_at: new Date().toISOString(), deleted_by: auth.user?.id ?? null })
-    .eq('id', id);
+/** Archive a contact: the account leaves every main view, and NOTHING it is
+ *  attached to changes (D11/D32, TASK-ARCHIVE).
+ *
+ *  This was a bare client-side UPDATE on contacts.deleted_at until 2026-08-22.
+ *  That wrote the flag with no protected-identity check (D1's denylist), no
+ *  reason (D19) and no way back, and it was the only thing in the codebase that
+ *  set the column — which is why archiving had never actually been built. It is
+ *  now `archive_contact`, the same shape as `staff_archive_horse`. */
+export async function archiveContact(id: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc('archive_contact', {
+    p_contact_id: id, p_reason: reason,
+  });
   if (error) throw error;
+}
+
+/** Put an archived contact back. Complete reversal — the row returns to every
+ *  listing it left, because nothing was destroyed to remove it. */
+export async function unarchiveContact(id: string): Promise<void> {
+  const { error } = await supabase.rpc('unarchive_contact', { p_contact_id: id });
+  if (error) throw error;
+}
+
+/** One archived account, as the deleted-accounts view shows it: who, when, by
+ *  whom, why — and what is still attached to them. */
+export interface ArchivedContact {
+  contact_id: string;
+  display_code: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+  contact_type: ContactType | null;
+  is_company: boolean;
+  archived_at: string;
+  archived_by: string | null;
+  archived_by_name: string | null;
+  reason: string | null;
+  had_login: boolean;
+  login_suspended: boolean;
+  document_count: number;
+  executed_document_count: number;
+  signature_count: number;
+  party_document_count: number;
+  order_count: number;
+  horse_count: number;
+}
+
+/** THE ONE read in the app that returns `deleted_at IS NOT NULL` contacts.
+ *  Admin-gated in the RPC; see ArchivedAccountsPage. */
+export async function archivedContacts(): Promise<ArchivedContact[]> {
+  const { data, error } = await supabase.rpc('archived_contacts');
+  if (error) throw error;
+  return (data ?? []) as ArchivedContact[];
 }
 
 // ─── Public catalog (website + app read the SAME offerings) ──────────────────

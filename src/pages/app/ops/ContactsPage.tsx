@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FileText, Handshake, Mail, MapPin, Phone, Trash2, UserPlus } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useAuth } from '../../../contexts/AuthContext';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { Modal, useAsync, useToast } from '../../../lib/ops';
 import {
-  createContact, updateContact, deleteContact, staffContactDirectory, type DirectoryContact,
+  createContact, updateContact, archiveContact, staffContactDirectory, type DirectoryContact,
   contactAddress, formatAddress, type ContactAddress,
   setContactType, CONTACT_TYPE_LABEL, type ContactType,
 } from '../../../lib/api';
@@ -166,6 +166,9 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
   const toast = useToast();
   const { isAdmin } = useAuth();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  /** D19: an archive states WHY. Empty is refused before the RPC is called. */
+  const [archiveReason, setArchiveReason] = useState('');
+  const [archiving, setArchiving] = useState(false);
   const [rows, setRows] = useState<DirectoryContact[] | null>(null);
   const [unfiled, setUnfiled] = useState<DirectoryContact[]>([]);
   /** The full record modal, keyed on contact so it opens for EVERYONE — the 13
@@ -180,7 +183,9 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
   // the dossier fetches the canonical contacts row on open. undefined = loading,
   // null = none on file.
   const [openAddress, setOpenAddress] = useState<ContactAddress | null | undefined>(undefined);
-  const setOpen = (r: DirectoryContact | null) => { setConfirmDelete(false); setOpenRaw(r); };
+  const setOpen = (r: DirectoryContact | null) => {
+    setConfirmDelete(false); setArchiveReason(''); setOpenRaw(r);
+  };
   useEffect(() => {
     if (!open) { setOpenAddress(undefined); return; }
     let active = true;
@@ -522,34 +527,68 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
               {/* Owner, 2026-08-15: "i need a delete function on the records
                   page" — built as an ARCHIVE (D11: nothing is purged, only
                   hidden from main views), everywhere on this shared directory
-                  — was leads-only + admin-only before. deleteContact() itself
-                  was already exactly this: a deleted_at soft-hide, never a
-                  hard DELETE ('documents' proves the pattern the same way —
-                  see deleteDocuments' own comment). Widened to every mode
-                  this component serves; still admin-gated, unchanged from
-                  before. */}
+                  — was leads-only + admin-only before.
+
+                  TASK-ARCHIVE (2026-08-22): this was the ONLY writer of
+                  contacts.deleted_at in the codebase, and it was a bare table
+                  UPDATE — it could archive a D1 protected identity, recorded no
+                  reason, and had nothing to undo it with. It now calls
+                  archive_contact, and the confirm step captures the reason the
+                  deleted-accounts view reads back. Still admin-gated. */}
               {isAdmin && (
                 <button type="button"
-                  onClick={async () => {
-                    if (!confirmDelete) { setConfirmDelete(true); return; }
-                    try {
-                      await deleteContact(open.id);
-                      toast.success('Archived.');
-                      setOpen(null);
-                      load();
-                    } catch {
-                      toast.error('Could not archive that record.');
-                    }
-                  }}
+                  onClick={() => { if (!confirmDelete) setConfirmDelete(true); }}
+                  disabled={confirmDelete}
                   className={`px-3.5 py-2 rounded-lg text-xs inline-flex items-center gap-1.5 focus-ring ml-auto ${
                     confirmDelete
-                      ? 'bg-red-600 text-white hover:bg-red-700'
+                      ? 'border border-red-300 text-red-400'
                       : 'border border-red-300 text-red-700 hover:bg-red-50'
                   }`}>
-                  <Trash2 size={13} /> {confirmDelete ? 'Really archive?' : 'Archive'}
+                  <Trash2 size={13} /> Archive
                 </button>
               )}
             </div>
+
+            {/* THE REACH, half one: where staff go to archive an account. */}
+            {isAdmin && confirmDelete && (
+              <div className="mt-4 border border-red-200 rounded-lg p-4 bg-red-50/40">
+                <p className="text-sm font-medium text-green-900">Archive this record</p>
+                <p className="text-[12px] text-muted mb-2">
+                  They leave Records, the pickers and every roster. Their documents,
+                  signatures, contracts and orders are untouched, and anyone sharing a
+                  document with them still sees it exactly as before. You can find them
+                  again — and put them back — in{' '}
+                  <Link to="/app/records/archived" className="underline">Archived accounts</Link>.
+                </p>
+                <label className="block text-[11px] uppercase tracking-wide text-muted mb-1"
+                  htmlFor="archive-reason">Reason (required)</label>
+                <textarea id="archive-reason" rows={2} value={archiveReason}
+                  onChange={(e) => setArchiveReason(e.target.value)}
+                  placeholder="Left the barn, duplicate record, test identity…"
+                  className="w-full px-3 py-2 rounded-lg border border-green-800/20 text-sm focus-ring mb-2" />
+                <div className="flex gap-2">
+                  <button type="button" disabled={archiveReason.trim() === '' || archiving}
+                    onClick={async () => {
+                      setArchiving(true);
+                      try {
+                        await archiveContact(open.id, archiveReason.trim());
+                        toast.success('Archived.');
+                        setOpen(null);
+                        load();
+                      } catch (e) {
+                        toast.error(toErrorMessage(e, 'Could not archive that record.'));
+                      } finally { setArchiving(false); }
+                    }}
+                    className="px-3.5 py-2 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 focus-ring disabled:opacity-40 disabled:cursor-not-allowed">
+                    {archiving ? 'Archiving…' : 'Archive'}
+                  </button>
+                  <button type="button" onClick={() => { setConfirmDelete(false); setArchiveReason(''); }}
+                    className="px-3.5 py-2 rounded-lg text-xs font-medium border border-green-800/20 text-green-800 hover:bg-white focus-ring">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Modal>

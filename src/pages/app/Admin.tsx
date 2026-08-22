@@ -903,12 +903,19 @@ export default function Admin() {
                 </div>
                 <div className="flex flex-wrap items-start justify-between gap-3 border-t border-red-200 pt-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-green-900">Soft delete — keep the data</p>
-                    <p className="text-[12px] text-muted">Removes them from the app but preserves all history and signed documents. Recoverable only at the database.</p>
+                    <p className="text-sm font-medium text-green-900">Archive — keep the data</p>
+                    {/* TASK-ARCHIVE (2026-08-22): this action used to sever
+                        profiles.contact_id for anyone with a login — the contact
+                        stayed fully visible and their account could no longer
+                        resolve to it, with no way back. It now calls
+                        archive_contact and suspends the login; "Reactivate"
+                        above unarchives. The copy said "Recoverable only at the
+                        database" and that is no longer true. */}
+                    <p className="text-[12px] text-muted">Hides them from Records, the pickers and every roster. All history, signed documents and orders are preserved and stay visible to anyone who shares them. Find them again — and restore them — in Records › Archived.</p>
                   </div>
                   <button type="button" onClick={() => void doRemove('soft')}
                     className="px-3.5 py-2 rounded-lg text-xs font-medium border border-red-300 text-red-700 hover:bg-white focus-ring shrink-0">
-                    Soft delete
+                    Archive
                   </button>
                 </div>
                 <div className="border-t border-red-200 pt-3">
