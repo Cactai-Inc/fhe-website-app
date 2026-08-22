@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Handshake, Loader2, X } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import {
   listDeals, createDeal, addDealDocument, dealLabel,
   DEAL_TYPE_LABEL, DEAL_ROLES, ROLE_LABEL,
@@ -91,7 +92,7 @@ function CreateDealModal({ onClose, onCreated }: {
       }
       onCreated(deal.deal_id);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not create the deal.');
+      setErr(toErrorMessage(e, 'Could not create the deal.'));
       setBusy(false);
     }
   }
@@ -218,7 +219,7 @@ export default function DealsPage() {
 
   const load = useCallback(() => {
     listDeals().then(setRows).catch((e) => {
-      setErr(e instanceof Error ? e.message : 'Could not load deals.');
+      setErr(toErrorMessage(e, 'Could not load deals.'));
       setRows([]);
     });
   }, []);

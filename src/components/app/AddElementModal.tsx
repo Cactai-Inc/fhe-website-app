@@ -6,6 +6,7 @@ import {
   type CompositionElement, type CompositionLine, type CompositionSpec,
   type ContractField, type FieldConditional, type TemplateStructure,
 } from '../../lib/contracts';
+import { toErrorMessage } from '../../lib/ops/errors';
 import { ClauseProse } from './ClauseDocument';
 
 /**
@@ -842,7 +843,7 @@ function AddElementModal({
       resetContent();
       onAdded();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not add that.');
+      setErr(toErrorMessage(e, 'Could not add that.'));
     } finally { setBusy(false); }
   }
 
@@ -860,7 +861,7 @@ function AddElementModal({
       setConfirmRemove(null);
       onAdded();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not remove that.');
+      setErr(toErrorMessage(e, 'Could not remove that.'));
     } finally { setBusy(false); }
   }
   /** Everything the author has already added, grouped the way the document

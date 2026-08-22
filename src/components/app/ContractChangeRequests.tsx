@@ -8,6 +8,7 @@ import {
   resolveChangeRequestThread, reopenChangeRequest,
   type ContractChangeRequestEntry, type SectionTreeNode,
 } from '../../lib/contracts';
+import { toErrorMessage } from '../../lib/ops/errors';
 import { ContractDrawer, DrawerRow } from './ContractDrawer';
 import { NotifyConfirmModal } from './NotifyConfirmModal';
 
@@ -93,7 +94,7 @@ function RequestInput({
       window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => setSaved(false), 1800);   // transient notice
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'That did not save.');
+      setErr(toErrorMessage(e, 'That did not save.'));
       setText(committed.current);
     } finally { setBusy(false); }
   };
@@ -422,7 +423,7 @@ export function ContractChangeRequests({
   async function run(fn: () => Promise<void>, msg?: string) {
     setBusy(true); setErr(null);
     try { await fn(); load(); onChanged?.(); if (msg) { setNote(msg); window.setTimeout(() => setNote(null), 3500); } }
-    catch (e) { setErr(e instanceof Error ? e.message : 'That action failed.'); }
+    catch (e) { setErr(toErrorMessage(e, 'That action failed.')); }
     finally { setBusy(false); }
   }
 

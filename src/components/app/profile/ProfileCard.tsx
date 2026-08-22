@@ -7,6 +7,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { upsertMyProfile, uploadMyAvatar, myContactPhone, updateMyContactPhone } from '../../../lib/api';
 import { fetchMemberProfile } from '../../../lib/community';
 import { supabase } from '../../../lib/supabase';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import {
   getMyContactPrefs, saveMyContactPrefs, type MyContactPrefs,
   PREFERRED_CONTACT_OPTIONS, preferredContactLabel,
@@ -148,7 +149,7 @@ export function ProfileCard() {
     try {
       setAvatarUrl(await uploadMyAvatar(blob, 'avatar.jpg'));
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed.');
+      setUploadError(toErrorMessage(err, 'Upload failed.'));
     } finally {
       setUploading(false);
     }

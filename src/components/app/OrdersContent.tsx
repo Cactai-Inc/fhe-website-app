@@ -6,6 +6,7 @@ import {
   payerCandidates, type PayerCandidate,
 } from '../../lib/api';
 import type { Order } from '../../lib/types';
+import { toErrorMessage } from '../../lib/ops/errors';
 
 /**
  * MY ORDERS — the shared subject content (TASK-ACCOUNTSURFACE §1/§3), rendered
@@ -102,14 +103,14 @@ function ManagePaymentModal({ order, onClose, onChanged }: {
   async function saveMethod() {
     setBusy(true); setErr(null);
     try { await updatePurchasePaymentMethod(order.id, method); onChanged(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Could not update the payment method.'); }
+    catch (e) { setErr(toErrorMessage(e, 'Could not update the payment method.')); }
     finally { setBusy(false); }
   }
   async function handOff() {
     if (!payer) return;
     setBusy(true); setErr(null);
     try { await transferPaymentResponsibility(order.id, payer); onChanged(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Could not transfer responsibility.'); }
+    catch (e) { setErr(toErrorMessage(e, 'Could not transfer responsibility.')); }
     finally { setBusy(false); }
   }
 

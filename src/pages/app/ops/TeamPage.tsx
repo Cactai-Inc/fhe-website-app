@@ -4,6 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import {
   GRANTABLE_SURFACES, listAllGrants, addGrant, removeGrant, type SurfaceGrant,
 } from '../../../lib/grants';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { X, ChevronRight } from 'lucide-react';
 import {
   adminListMembers, adminSetRole, adminSetSuspended, adminSendInvitation,
@@ -161,7 +162,7 @@ function TeamMemberPanel({
       setNote(done ?? null);
       onChanged();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'That action failed.');
+      setError(toErrorMessage(e, 'That action failed.'));
     } finally { setBusy(false); }
   }
 
@@ -298,7 +299,7 @@ function PromoteSection({
       setWho('');
       reload();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not change the role.');
+      setErr(toErrorMessage(e, 'Could not change the role.'));
     }
   }
 
@@ -344,7 +345,7 @@ function InstructorAccessSection({ instructors }: { instructors: AdminMemberRow[
       else await addGrant(key, who || null);
       load();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not update the grant.');
+      setErr(toErrorMessage(e, 'Could not update the grant.'));
     }
   }
 
@@ -409,7 +410,7 @@ function InviteStaffSection({ onSent }: { onSent: () => void }) {
       setFirstName(''); setLastName(''); setTitle(''); setEmail('');
       onSent(); // surface the new "Invited" row in the roster immediately
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not send the invitation.');
+      setErr(toErrorMessage(e, 'Could not send the invitation.'));
     } finally {
       setBusy(false);
     }

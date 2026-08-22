@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, FileText, PencilLine, X, Loader2, Printer, Download, Mail } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import {
   dealDetail, dealDocumentStatus, addDealDocument, dealRecordExport, dealActivity,
   updateDeal, voidDeal, dealLabel,
@@ -39,7 +40,7 @@ function DealRecordModal({ dealId, name, onClose }: {
 
   useEffect(() => {
     dealRecordExport(dealId).then(setBody)
-      .catch((e) => setErr(e instanceof Error ? e.message : 'Could not build the record.'));
+      .catch((e) => setErr(toErrorMessage(e, 'Could not build the record.')));
   }, [dealId]);
 
   function download() {
@@ -112,7 +113,7 @@ export default function DealPage() {
   const load = useCallback(() => {
     if (!dealId) return;
     dealDetail(dealId).then((d) => { setDeal(d); setTitleDraft(d.title ?? ''); })
-      .catch((e) => setErr(e instanceof Error ? e.message : 'Could not load this deal.'));
+      .catch((e) => setErr(toErrorMessage(e, 'Could not load this deal.')));
     dealDocumentStatus(dealId).then(setDocStatus).catch(() => setDocStatus([]));
     dealActivity(dealId).then(setActivity).catch(() => setActivity([]));
   }, [dealId]);
@@ -125,7 +126,7 @@ export default function DealPage() {
       const out = await addDealDocument(dealId, templateKey, posture);
       navigate(`/app/contracts/${out.document_id}`);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not add that document.');
+      setErr(toErrorMessage(e, 'Could not add that document.'));
       setAdding(false);
     }
   }, [dealId, navigate]);
@@ -134,7 +135,7 @@ export default function DealPage() {
     if (!deal) return;
     void updateDeal(deal.id, { title: titleDraft })
       .then(() => { setRenaming(false); load(); })
-      .catch((x) => setErr(x instanceof Error ? x.message : 'Could not rename this deal.'));
+      .catch((x) => setErr(toErrorMessage(x, 'Could not rename this deal.')));
   }, [deal, titleDraft, load]);
 
   if (err && !deal) return <p role="alert" className="form-error">{err}</p>;
@@ -299,7 +300,7 @@ export default function DealPage() {
           onClick={() => {
             if (!window.confirm('Void this deal? Signed documents inside it are kept.')) return;
             void voidDeal(deal.id).then(load)
-              .catch((e) => setErr(e instanceof Error ? e.message : 'Could not void the deal.'));
+              .catch((e) => setErr(toErrorMessage(e, 'Could not void the deal.')));
           }}>
           Void this deal
         </button>

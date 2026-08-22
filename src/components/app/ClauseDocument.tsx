@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
+import { toErrorMessage } from '../../lib/ops/errors';
 import {
   clauseConditionMet, removeContractComposition, resolvePendingComposition,
   updateContractComposition, withdrawPendingComposition,
@@ -683,13 +684,13 @@ function PendingCompositionBox({
   async function decide(decision: 'include' | 'reject') {
     setBusy(true); setErr(null);
     try { await resolvePendingComposition(pending.id, decision); onChanged?.(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'That failed.'); }
+    catch (e) { setErr(toErrorMessage(e, 'That failed.')); }
     finally { setBusy(false); }
   }
   async function withdraw() {
     setBusy(true); setErr(null);
     try { await withdrawPendingComposition(pending.id); onChanged?.(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'That failed.'); }
+    catch (e) { setErr(toErrorMessage(e, 'That failed.')); }
     finally { setBusy(false); }
   }
 
@@ -813,7 +814,7 @@ export function ClauseDocument({
       });
       setEditingKey(null);
       onChanged?.();
-    } catch (e) { setItemErr(e instanceof Error ? e.message : 'Could not save that.'); }
+    } catch (e) { setItemErr(toErrorMessage(e, 'Could not save that.')); }
     finally { setItemBusy(false); }
   }
   async function removeItem(f: ContractField) {
@@ -821,7 +822,7 @@ export function ClauseDocument({
       : f.custom_kind === 'header' ? 'Remove this item and everything under it?' : 'Remove this line?')) return;
     setItemBusy(true); setItemErr(null);
     try { await removeContractComposition(documentId, f.field_key); onChanged?.(); }
-    catch (e) { setItemErr(e instanceof Error ? e.message : 'Could not remove that.'); }
+    catch (e) { setItemErr(toErrorMessage(e, 'Could not remove that.')); }
     finally { setItemBusy(false); }
   }
   // Keep a duration UNIT's stored plurality in step with its paired number:

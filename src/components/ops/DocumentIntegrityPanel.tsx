@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Lock, RefreshCw, Trash2 } from 'lucide-react';
 import { Modal } from './kit/Modal';
 import { StatusBadge } from './kit/StatusBadge';
+import { toErrorMessage } from '../../lib/ops/errors';
 import {
   cleanupDocument,
   documentIntegrity,
@@ -67,7 +68,7 @@ export function DocumentIntegrityPanel() {
       setReason('');
       await load();
     } catch (e) {
-      setModalError(e instanceof Error ? e.message : 'Could not remove that document.');
+      setModalError(toErrorMessage(e, 'Could not remove that document.'));
     } finally {
       setBusy(false);
     }

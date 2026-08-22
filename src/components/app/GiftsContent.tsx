@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Gift as GiftIcon, ChevronRight } from 'lucide-react';
 import { listMyGifts, type MyGift } from '../../lib/api';
 import { redeemGift, giftClaimLink, giftReschedule, giftTransfer, giftMarkSent } from '../../lib/gifts';
+import { toErrorMessage } from '../../lib/ops/errors';
 
 /**
  * MY GIFTS — the shared subject content (TASK-ACCOUNTSURFACE §1/§3), rendered
@@ -100,7 +101,7 @@ function GiftDetail({ gift, onClose, onChanged }: {
         : result === 'awaiting_intro_call' ? 'This gift unlocks after your intro call.'
         : 'This gift could not be used.');
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not use this gift.');
+      setErr(toErrorMessage(e, 'Could not use this gift.'));
     } finally { setBusy(null); }
   }
 
@@ -130,7 +131,7 @@ function GiftDetail({ gift, onClose, onChanged }: {
         onChanged();
       }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not complete that.');
+      setErr(toErrorMessage(e, 'Could not complete that.'));
     } finally { setBusy(null); }
   }
 

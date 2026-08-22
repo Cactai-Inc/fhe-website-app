@@ -5,6 +5,7 @@ import { openGift, redeemGift, registerForGift, type GiftReveal as GiftRevealDat
 import { useAuth } from '../contexts/AuthContext';
 import GiftRevealBox from '../components/gift/GiftReveal';
 import Seo from '../components/Seo';
+import { toErrorMessage } from '../lib/ops/errors';
 
 type Phase = 'loading' | 'invalid' | 'wrapped' | 'opened';
 
@@ -75,7 +76,7 @@ export default function Redeem() {
       const result = await redeemGift(code);
       applyRedeemResult(result);
     } catch (err) {
-      setSignupError(err instanceof Error ? err.message : 'Could not create your account.');
+      setSignupError(toErrorMessage(err, 'Could not create your account.'));
     } finally {
       setSignupBusy(false);
     }

@@ -7,6 +7,7 @@ import {
   type RoleDocumentRequirement,
 } from '../../lib/contracts';
 import { contractPartyOptions, staffHorseRecords, type PartyOption, type StaffHorseRecord } from '../../lib/horses';
+import { toErrorMessage } from '../../lib/ops/errors';
 import { CaptureInfoModal } from './CaptureInfoModal';
 
 /**
@@ -79,7 +80,7 @@ export function PartiesHorseCard({
   async function reassign(role: string, contactId: string) {
     setBusy(true); setErr(null);
     try { await reassignDocumentParty(documentId, role, contactId); load(); onChanged(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Could not reassign.'); }
+    catch (e) { setErr(toErrorMessage(e, 'Could not reassign.')); }
     finally { setBusy(false); }
   }
   async function addByEmail(role: string) {
@@ -91,13 +92,13 @@ export function PartiesHorseCard({
       setEmailDraft((d) => ({ ...d, [role]: '' }));
       load(); onChanged();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not add that party.');
+      setErr(toErrorMessage(e, 'Could not add that party.'));
     } finally { setBusy(false); }
   }
   async function reassignHorse(horseId: string) {
     setBusy(true); setErr(null);
     try { await attachHorseToDocument(documentId, horseId); load(); onChanged(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Could not change the horse.'); }
+    catch (e) { setErr(toErrorMessage(e, 'Could not change the horse.')); }
     finally { setBusy(false); }
   }
 

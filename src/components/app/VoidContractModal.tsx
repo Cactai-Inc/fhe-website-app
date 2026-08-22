@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { voidDocument, setDocumentPartyHidden, emailVoidNotice } from '../../lib/contracts';
+import { toErrorMessage } from '../../lib/ops/errors';
 
 /**
  * VOID CONTRACT — the three-page modal that replaces the old hard-void.
@@ -47,7 +48,7 @@ export function VoidContractModal({
       try { await emailVoidNotice(documentId); } catch { /* notification landed */ }
       setPage(2);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not void this document.');
+      setErr(toErrorMessage(e, 'Could not void this document.'));
     } finally { setBusy(false); }
   }
 
@@ -60,7 +61,7 @@ export function VoidContractModal({
       setChoice(which);
       setPage(3);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not save that choice.');
+      setErr(toErrorMessage(e, 'Could not save that choice.'));
     } finally { setBusy(false); }
   }
 
@@ -182,7 +183,7 @@ export function VoidedKeepOrRemove({
       await setDocumentPartyHidden(documentId, which === 'remove');
       if (which === 'remove') onRemoved(); else onChosen();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not save that choice.');
+      setErr(toErrorMessage(e, 'Could not save that choice.'));
     } finally { setBusy(false); }
   }
 

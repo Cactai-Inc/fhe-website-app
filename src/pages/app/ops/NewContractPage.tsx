@@ -5,6 +5,7 @@ import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { startLeaseContract, startSaleContract, linkContractToPurchase, listLeaseTemplates } from '../../../lib/api';
 import type { ContractTemplate } from '../../../lib/ops/types';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import {
   claimDocumentOrigination, setPartyControls, assignHorseSection,
 } from '../../../lib/contracts';
@@ -185,7 +186,7 @@ export default function NewContractPage() {
       const setupFailures: string[] = [];
       const step = async (what: string, fn: () => Promise<unknown>) => {
         try { await fn(); } catch (e) {
-          setupFailures.push(`${what}: ${e instanceof Error ? e.message : 'failed'}`);
+          setupFailures.push(`${what}: ${toErrorMessage(e, 'failed')}`);
         }
       };
       // The company originates — never a party by assumption.
@@ -211,7 +212,7 @@ export default function NewContractPage() {
       navigate(`/app/contracts/${docId}`);
       return;
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not start the contract.');
+      setErr(toErrorMessage(e, 'Could not start the contract.'));
     } finally {
       setBusy(false);
     }

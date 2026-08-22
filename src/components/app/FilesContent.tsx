@@ -4,6 +4,7 @@ import {
   listMyFiles, uploadMyFile, removeMyFile, fileDownloadUrl, listFileLinks,
   MAX_FILE_BYTES, type FileRow, type FileLinkRow,
 } from '../../lib/files';
+import { toErrorMessage } from '../../lib/ops/errors';
 
 /**
  * MY FILES — the ONE account surface this task proves the upload spine on
@@ -56,7 +57,7 @@ export function FilesContent() {
       setLinks(Object.fromEntries(pairs));
     } catch (err) {
       setFiles([]);
-      setError(err instanceof Error ? err.message : 'Could not load your files.');
+      setError(toErrorMessage(err, 'Could not load your files.'));
     }
   }, []);
 
@@ -73,7 +74,7 @@ export function FilesContent() {
       setNote(`Uploaded ${picked.name}.`);
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not upload that file.');
+      setError(toErrorMessage(err, 'Could not upload that file.'));
     } finally {
       setBusy(false);
     }
@@ -96,7 +97,7 @@ export function FilesContent() {
       setNote(`Removed ${f.filename}.`);
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not remove that file.');
+      setError(toErrorMessage(err, 'Could not remove that file.'));
     } finally {
       setBusy(false);
     }

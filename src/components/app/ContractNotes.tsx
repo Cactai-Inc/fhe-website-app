@@ -4,6 +4,7 @@ import {
   contractNotes, createContractNote, renameContractNote, postContractNoteMessage,
   type ContractNote,
 } from '../../lib/contracts';
+import { toErrorMessage } from '../../lib/ops/errors';
 
 /**
  * CONTRACT COMMENTS — the third subheader drawer.
@@ -49,7 +50,7 @@ export function ContractNotes({
       setOpen((p) => new Set(p).add(id));
       load();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not add a comment.');
+      setErr(toErrorMessage(e, 'Could not add a comment.'));
     } finally { setBusy(false); }
   }
 

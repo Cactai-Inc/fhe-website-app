@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, X, Check, Loader2 } from 'lucide-react';
+import { toErrorMessage } from '../../lib/ops/errors';
 import {
   changesSinceSignature, postContractComment, type ChangeSinceSignature,
 } from '../../lib/contracts';
@@ -52,7 +53,7 @@ export function ReviewChangesModal({
 
   useEffect(() => {
     changesSinceSignature(documentId).then(setChanges)
-      .catch((e) => { setErr(e instanceof Error ? e.message : 'Could not load the changes.'); setChanges([]); });
+      .catch((e) => { setErr(toErrorMessage(e, 'Could not load the changes.')); setChanges([]); });
   }, [documentId]);
 
   const current = changes?.[i];
@@ -79,7 +80,7 @@ export function ReviewChangesModal({
       }
       advance(current.id, 'rejected');
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not save that comment.');
+      setErr(toErrorMessage(e, 'Could not save that comment.'));
     } finally { setBusy(false); }
   }
 

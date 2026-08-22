@@ -4,6 +4,7 @@ import {
   contactDossier, updateContactRecord, setContactType,
   CONTACT_TYPE_LABEL, type ContactDossier, type ContactType,
 } from '../../lib/api';
+import { toErrorMessage } from '../../lib/ops/errors';
 import {
   AssignDocumentsModal, ClientHorseRecordsCard, AttachOfferingPanel, PaperworkEditor,
 } from './ClientRecordActions';
@@ -75,7 +76,7 @@ export function ContactDossierModal({
   const load = useCallback(() => {
     contactDossier(contactId)
       .then((x) => { setD(x); setDirty({}); })
-      .catch((e) => setErr(e instanceof Error ? e.message : 'Could not load this record.'));
+      .catch((e) => setErr(toErrorMessage(e, 'Could not load this record.')));
   }, [contactId]);
   useEffect(load, [load]);
 
@@ -95,7 +96,7 @@ export function ContactDossierModal({
       setDirty({});
       onChanged?.();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not save.');
+      setErr(toErrorMessage(e, 'Could not save.'));
     } finally { setSaving(false); }
   }
 
@@ -111,7 +112,7 @@ export function ContactDossierModal({
   async function file(t: ContactType) {
     setErr(null);
     try { await setContactType(contactId, t); load(); onChanged?.(); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Could not file this contact.'); }
+    catch (e) { setErr(toErrorMessage(e, 'Could not file this contact.')); }
   }
 
   const val = (k: string) => {

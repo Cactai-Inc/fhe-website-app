@@ -8,6 +8,7 @@ import { listHorseBreeds, listHorseColors } from '../../lib/api';
 import { horseDeals, DEAL_TYPE_LABEL, type DealRow } from '../../lib/deals';
 import { usePropertyTerm } from '../../contexts/BrandProvider';
 import { withArticle } from '../../lib/propertyTerm';
+import { toErrorMessage } from '../../lib/ops/errors';
 import type { LookupCode } from '../../lib/ops/types';
 
 /**
@@ -62,7 +63,7 @@ export default function HorsePage() {
     if (!horseId) return;
     try { setDetail(await horsePageDetail(horseId)); setError(null); }
     catch (e) {
-      const raw = e instanceof Error ? e.message : '';
+      const raw = toErrorMessage(e, '');
       // 3d: never surface raw database denial text — a friendly state instead.
       setError(/not authorized|unknown horse/i.test(raw)
         ? `This horse record isn't available on your account. If you believe it should be, ask ${withArticle(propertyTerm)} to add you as a party on the record.`
@@ -82,7 +83,7 @@ export default function HorsePage() {
     if (!window.confirm('Remove this horse from your stable? This cannot be undone.')) return;
     setBusy(true);
     try { await deleteStableHorse(horseId); navigate('/app/account'); }
-    catch (e) { setError(e instanceof Error ? e.message : 'Could not remove the horse.'); setBusy(false); }
+    catch (e) { setError(toErrorMessage(e, 'Could not remove the horse.')); setBusy(false); }
   }
 
   if (error) return <div className="max-w-3xl mx-auto"><p role="alert" className="form-error">{error}</p></div>;
@@ -422,7 +423,7 @@ function RecordEditor({
       });
       onSaved();
     }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Could not save changes.'); setBusy(false); }
+    catch (e) { setErr(toErrorMessage(e, 'Could not save changes.')); setBusy(false); }
   }
 
   /** A lookup-backed select. Keeps an unrecognised current value as an option so

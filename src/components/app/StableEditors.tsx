@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { X, Loader2, Plus, Check } from 'lucide-react';
+import { toErrorMessage } from '../../lib/ops/errors';
 import {
   addStableHorse, addStableItem, addVendor, listVendors,
   type StableItemKind, type StableItemOwnerKind, type StableOwnership, type Vendor,
@@ -71,7 +72,7 @@ export function AddHorseModal({ onClose, onDone }: { onClose: () => void; onDone
     try {
       await addStableHorse({ ...f, ownership });
       onDone(); onClose();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Could not save.'); }
+    } catch (e) { setErr(toErrorMessage(e, 'Could not save.')); }
     finally { setBusy(false); }
   }
 
@@ -199,7 +200,7 @@ export function AddItemModal({
     try {
       await addStableItem(kind, { name: name.trim(), detail: detail || null, vendor_id: vendorId }, ownerKind);
       onDone(); onClose();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Could not save.'); }
+    } catch (e) { setErr(toErrorMessage(e, 'Could not save.')); }
     finally { setBusy(false); }
   }
 

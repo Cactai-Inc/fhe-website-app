@@ -32,6 +32,7 @@ import { Trash2 } from 'lucide-react';
 import { fromHere } from '../../../lib/linkOrigin';
 import { documentHref } from '../../../lib/documentHref';
 import { useAuth } from '../../../contexts/AuthContext';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { DataTable, StatusBadge } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
 import type { DocumentQueueRow } from '../../../lib/ops/types';
@@ -349,7 +350,7 @@ function DeleteSelectedBar({
       await onDelete();
       setConfirming(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not delete the selected documents.');
+      setError(toErrorMessage(e, 'Could not delete the selected documents.'));
     } finally {
       setBusy(false);
     }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { toErrorMessage } from '../../lib/ops/errors';
 import { KeyRound, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Mail } from 'lucide-react';
 
 /**
@@ -54,13 +55,13 @@ export default function VerifyEmailScreen({ seams }: { seams?: VerifyEmailSeams 
       await verifyPw(token, email.trim(), pw);  // ⇢ WIRE
       setDone(true);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'We couldn’t verify that. The link may have expired.');
+      setErr(toErrorMessage(e, 'We couldn’t verify that. The link may have expired.'));
     } finally { setBusy(false); }
   }
   async function submitGoogle() {
     setBusy(true); setErr(null);
     try { await verifyGoogle(token); setDone(true); }
-    catch (e) { setErr(e instanceof Error ? e.message : 'Google verification failed.'); }
+    catch (e) { setErr(toErrorMessage(e, 'Google verification failed.')); }
     finally { setBusy(false); }
   }
 

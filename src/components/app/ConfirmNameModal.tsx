@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { confirmMyLegalName, type NameConfirmationState } from '../../lib/api';
+import { toErrorMessage } from '../../lib/ops/errors';
 
 /**
  * CONFIRM YOUR LEGAL NAME — the soft gate.
@@ -39,7 +40,7 @@ export function ConfirmNameModal({
       await confirmMyLegalName(first.trim(), last.trim());
       onConfirmed();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not save your name.');
+      setErr(toErrorMessage(e, 'Could not save your name.'));
       setBusy(false);
     }
   }
