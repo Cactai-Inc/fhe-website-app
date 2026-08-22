@@ -706,3 +706,33 @@ reporting success.
   5. **`fhe-database-export.zip`** (2026-08-21, all 644 function bodies + full schema + RLS +
      triggers, pulled live from prod) **is the reference for what exists today** — read for
      inventory, not treated as a target to preserve.
+- **D31 — TAGS ENABLE. THEY DO NOT OBLIGATE. OBLIGATION IS COMPUTED FROM WHAT WAS PURCHASED
+  (owner, 2026-08-22).** Corrects the GUEST/RIDER/HORSE_OWNER category model itself, not just
+  the missing deal-party case. Owner: *"We need to back out of the guest/client paradigm and
+  just have accounts. then an account can get a tag that shows up as a badge as an identifier
+  that obligates or enables something in the system for that user. a person without the horse
+  owner tag doesnt have the option to sign a horse vet auth document, and a person with the tag
+  has the ability to sign it but isnt obligated to do so until they purchase something that puts
+  us in a position to need that authorization from them."*
+  **Two separate questions, currently conflated into one hardcoded bucket:**
+  1. **Eligibility** — can this account even be shown/offered a given document or action. A tag.
+  2. **Obligation** — must this account complete it now. **Computed from what was actually
+     purchased or what relationship currently exists, never from static category membership
+     alone.**
+  **The current `category_document_requirements` model conflates them** — picking a category
+  wholesale assigns a fixed document SET, whether or not anything yet requires it.
+  **The system already has the correct mechanism for HALF of this, underused:** the
+  purchase-triggered chain (`purchase_items` trigger → `promote_buyer_from_offering` →
+  `apply_affiliations` → `apply_category_documents`) already derives obligation from what was
+  bought, not from a static staff-picked bucket. **The rebuild's job is to make this the ONLY
+  path**, with the staff-picked "category" reduced to eligibility tags only.
+  **A null tag set is a real, intentional state, not a gap** — verified 2026-08-22:
+  `apply_category_documents` already no-ops safely on an empty category array, and the
+  email-only contract-party path (D22/PARTYEMAIL) already creates a party with zero categories
+  touched. **A person who owes nothing but a contract needs no new category — they need none at
+  all**, which the system already supports.
+  ⚠️ **Do not resolve this by adding more hardcoded tokens to `CLIENT_CATEGORIES`.** Every
+  addition (GUEST → RIDER → HORSE_OWNER → 'Deal client') has been exactly this pattern, and D30
+  already names the category/role model as first in line for the ground-up redesign. Stabilize
+  the current app by using the null-tag state where it already works (see the `TASK-STABILIZE`
+  deal-party resolution); do not extend the old paradigm to buy time.
