@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { FormField, StatusBadge, EmptyState, useAsync } from '../../../lib/ops';
 import { listDeliveries, recordDelivery } from '../../../lib/api';
 import { listDocumentPartyContacts } from '../../../lib/ops/api-documents';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { supabase } from '../../../lib/supabase';
 import type {
   DocumentDelivery,
@@ -78,7 +79,7 @@ export function DeliveryPanel({ documentId, status }: DeliveryPanelProps) {
     return listDeliveries(documentId)
       .then((rows) => setDeliveries(rows))
       .catch((err) => {
-        setLoadError(err instanceof Error ? err : new Error(String(err)));
+        setLoadError(new Error(toErrorMessage(err)));
       });
   }, [documentId]);
 
@@ -97,7 +98,7 @@ export function DeliveryPanel({ documentId, status }: DeliveryPanelProps) {
         if (!cancelled) setParties(rows);
       })
       .catch((err) => {
-        if (!cancelled) setPartiesError(err instanceof Error ? err : new Error(String(err)));
+        if (!cancelled) setPartiesError(new Error(toErrorMessage(err)));
       });
     return () => {
       cancelled = true;
@@ -157,7 +158,7 @@ export function DeliveryPanel({ documentId, status }: DeliveryPanelProps) {
       // The endpoint records document_deliveries itself — re-list the log.
       void loadLog();
     } catch (err) {
-      setBulkError(err instanceof Error ? err.message : String(err));
+      setBulkError(toErrorMessage(err));
     } finally {
       setBulkPending(false);
     }

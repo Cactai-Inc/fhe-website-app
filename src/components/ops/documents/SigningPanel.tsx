@@ -5,6 +5,7 @@ import {
 } from '../../../lib/api';
 import type { Signature } from '../../../lib/ops/types';
 import { EmptyState, StatusBadge } from '../../../lib/ops';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { SignPartyRow } from './SignPartyRow';
 
 /**
@@ -79,7 +80,7 @@ export function SigningPanel({
         }
       })
       .catch((err) => {
-        if (!cancelled) setLoadError(err instanceof Error ? err : new Error(String(err)));
+        if (!cancelled) setLoadError(new Error(toErrorMessage(err)));
       });
     return () => {
       cancelled = true;

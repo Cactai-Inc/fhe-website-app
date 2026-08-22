@@ -74,13 +74,13 @@ export function AssignDocumentsModal({
   useEffect(() => {
     if (fixedContactId) return;
     staffContactOptions().then(setContactOptions).catch((e) =>
-      setErr(e instanceof Error ? e.message : 'Could not load contacts.'));
+      setErr(toErrorMessage(e, 'Could not load contacts.')));
   }, [fixedContactId]);
 
   useEffect(() => {
     if (!contactId) return;
     staffAssignableTemplates(contactId).then(setTemplates).catch((e) =>
-      setErr(e instanceof Error ? e.message : 'Could not load templates.'));
+      setErr(toErrorMessage(e, 'Could not load templates.')));
   }, [contactId]);
 
   const toggle = (k: string) =>
@@ -93,7 +93,7 @@ export function AssignDocumentsModal({
       const r = await staffAssignDocuments(contactId, picked);
       setResult(r);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not assign.');
+      setErr(toErrorMessage(e, 'Could not assign.'));
     } finally { setBusy(false); }
   }
 
@@ -372,7 +372,7 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
       setOpen(false); setPicked([]); setPayStatus('unpaid'); setPartial('');
       onAttached();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not attach offering.');
+      setErr(toErrorMessage(e, 'Could not attach offering.'));
     } finally { setWorking(false); }
   }
 

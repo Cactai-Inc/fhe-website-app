@@ -3,6 +3,7 @@ import {
   X, Mail, KeyRound, ArrowRight, ArrowLeft, Check, Eye, EyeOff,
   Loader2, MailCheck, AlertCircle, Sparkles,
 } from 'lucide-react';
+import { toErrorMessage } from '../../lib/ops/errors';
 
 /**
  * EMAIL CHANGE — the full flow, styled. UI + state machine only; the marked seams
@@ -107,7 +108,7 @@ export function EmailChangeModal({
       await startGoogle(email.trim());   // ⇢ WIRE: opens Google re-auth, promotes on success
       onClose();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not verify with Google. Try again.');
+      setErr(toErrorMessage(e, 'Could not verify with Google. Try again.'));
     } finally { setBusy(false); }
   }
 
@@ -120,7 +121,7 @@ export function EmailChangeModal({
       await startPassword(email.trim(), pw);  // ⇢ WIRE: sets password, sends verification email
       setScreen('sent');
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not start the change. Try again.');
+      setErr(toErrorMessage(e, 'Could not start the change. Try again.'));
     } finally { setBusy(false); }
   }
 

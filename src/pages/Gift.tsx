@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { Gift as GiftIcon, ArrowRight } from 'lucide-react';
 import { requestGift } from '../lib/gifts';
 import { BRAND } from '../lib/brand';
+import { toErrorMessage } from '../lib/ops/errors';
 import Seo from '../components/Seo';
 
 /* Owner, 2026-08-16: "what is most common is a spouse or parent purchasing a
@@ -65,11 +66,7 @@ export default function Gift() {
       setSent(true);
       void sends.then((outcome) => setStaffAlerted(outcome.staff));
     } catch (err) {
-      setError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Something went wrong sending your gift request. Please try again or call us directly.',
-      );
+      setError(toErrorMessage(err, 'Something went wrong sending your gift request. Please try again or call us directly.'));
     } finally {
       setSending(false);
     }

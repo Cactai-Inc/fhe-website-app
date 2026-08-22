@@ -26,6 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, FileSignature, FileText } from 'lucide-react';
 import { documentTypeOptions } from '../../../lib/api';
 import type { DocumentTypeOption } from '../../../lib/ops/types';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { AssignDocumentsModal } from '../../app/ClientRecordActions';
 
 /** contract_kind → where authoring that kind actually starts. Only kinds
@@ -70,7 +71,7 @@ export function DocumentQueuePicker({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     documentTypeOptions().then(setOptions).catch((e) =>
-      setErr(e instanceof Error ? e.message : 'Could not load document types.'));
+      setErr(toErrorMessage(e, 'Could not load document types.')));
   }, []);
 
   const { contractCards, flatOptions } = useMemo(() => {

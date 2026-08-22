@@ -4,6 +4,7 @@ import { fetchOfferings, fetchServiceCategories, type ServiceCategory } from '..
 import { formatPrice } from '../lib/pricing';
 import { useCart } from '../contexts/CartContext';
 import type { Offering, PriceUnitDb } from '../lib/types';
+import { toErrorMessage } from '../lib/ops/errors';
 
 /**
  * OFFERING CATALOG — a category GRID that opens a modal per category to shop its
@@ -56,7 +57,7 @@ export function OfferingCatalog({ onCheckout, actionLabel = 'Add' }: { onCheckou
   useEffect(() => {
     Promise.all([fetchOfferings(), fetchServiceCategories()])
       .then(([offs, cats]) => { setOfferings(offs); setCategories(cats); })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Could not load the catalog.'));
+      .catch((e) => setError(toErrorMessage(e, 'Could not load the catalog.')));
   }, []);
 
   // offerings grouped by service_type; a category only appears if it has offerings.

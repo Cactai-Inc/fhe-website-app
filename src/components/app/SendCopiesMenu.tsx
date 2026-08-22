@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Send } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { myContactId } from '../../lib/ops/api-client';
+import { toErrorMessage } from '../../lib/ops/errors';
 import type { PartySummary } from '../../lib/contracts';
 
 /**
@@ -85,7 +86,7 @@ export function SendCopiesMenu({
       setResult({ tone: 'success', text });
       onSent?.();
     } catch (err) {
-      setResult({ tone: 'error', text: err instanceof Error ? err.message : String(err) });
+      setResult({ tone: 'error', text: toErrorMessage(err) });
     } finally {
       setPending(false);
     }

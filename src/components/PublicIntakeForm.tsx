@@ -4,6 +4,7 @@ import { submitRequest } from '../lib/api';
 import { fetchIntakeRequirements } from '../lib/ops/api-public';
 import { CATEGORY_FIELDS, PUBLIC_CATEGORY_OPTIONS } from '../lib/intakeCategoryFields';
 import { usePropertyTerm } from '../contexts/BrandProvider';
+import { toErrorMessage } from '../lib/ops/errors';
 import { withArticle, type PropertyTerm } from '../lib/propertyTerm';
 import type {
   RequestCategory,
@@ -230,11 +231,7 @@ export function PublicIntakeForm({
       // one place — and now the two paths that were missing it get it too.
       onSubmitted?.(requestId);
     } catch (err) {
-      setError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Something went wrong. Please email or call us directly.',
-      );
+      setError(toErrorMessage(err, 'Something went wrong. Please email or call us directly.'));
     } finally {
       setSending(false);
     }

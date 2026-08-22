@@ -6,6 +6,7 @@ import { validateInvitation, redeemInvitation, myOnboardingState } from '../lib/
 import { redeemContractInvitation } from '../lib/contracts';
 import { useDocumentTitle } from '../lib/hooks';
 import { useAuth } from '../contexts/AuthContext';
+import { toErrorMessage } from '../lib/ops/errors';
 
 type State = 'working' | 'done' | 'mismatch' | 'invalid' | 'failed';
 
@@ -99,7 +100,7 @@ export default function RegisterComplete() {
         // account is set up when it isn't.
         window.localStorage.removeItem('fhe-invite');
         if (active) {
-          setRedeemError(err instanceof Error ? err.message : 'We could not finish setting up your account.');
+          setRedeemError(toErrorMessage(err, 'We could not finish setting up your account.'));
           setState('failed');
         }
         return;

@@ -4,6 +4,7 @@ import { fromHere } from '../../../lib/linkOrigin';
 import { X, PencilLine, FileText, UserRound, Trash2, HeartPulse, Handshake } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import {
   staffHorseRecords, staffUpdateHorse, staffArchiveHorse, staffAssignHorseParty, staffContactOptions,
   type StaffHorseRecord, type ContactOption,
@@ -73,7 +74,7 @@ function EditableRecord({
       const n = await generateLeaseAvailability(r.id, 4);
       setOkMsg(n > 0 ? `Generated ${n} bookable slots on the calendar.` : 'No new slots (already generated or none due).');
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not generate availability.');
+      setErr(toErrorMessage(e, 'Could not generate availability.'));
     } finally { setBusy(false); }
   }
 
@@ -92,7 +93,7 @@ function EditableRecord({
       setPatch({});
       onSaved();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not save.');
+      setErr(toErrorMessage(e, 'Could not save.'));
     } finally {
       setBusy(false);
     }
@@ -108,7 +109,7 @@ function EditableRecord({
       await staffArchiveHorse(r.id);
       onSaved();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not archive.');
+      setErr(toErrorMessage(e, 'Could not archive.'));
       setConfirmArchive(false);
     } finally {
       setBusy(false);

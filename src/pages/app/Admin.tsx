@@ -13,6 +13,7 @@ import {
   type ClientAccountRow, type ClientItems,
 } from '../../lib/admin';
 import { contactAddress, formatAddress, type ContactAddress } from '../../lib/api';
+import { toErrorMessage } from '../../lib/ops/errors';
 import { docDisplay, docDisplayLabel } from '../../lib/documentStatus';
 import { documentHref } from '../../lib/documentHref';
 import { ProvisionClientForm } from '../../components/app/ProvisionClientForm';
@@ -407,7 +408,7 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
                   ? `Same link emailed again to ${r.email}. It keeps working.`
                   : `NOT emailed — ${r.emailError || 'no reason reported'}. Copy the link below and send it yourself.`);
                 setRefreshKey((k) => k + 1);
-              } catch (e) { setErr(e instanceof Error ? e.message : 'Could not resend the invitation.'); }
+              } catch (e) { setErr(toErrorMessage(e, 'Could not resend the invitation.')); }
               finally { setBusy(false); }
             })()}
             className="btn-primary text-xs">
@@ -428,7 +429,7 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
               setResult({ url: r.registerUrl, emailed: r.emailed, emailError: r.emailError });
               setRefreshKey((k) => k + 1);
               onSent();
-            } catch (e) { setErr(e instanceof Error ? e.message : 'Could not send the invitation.'); }
+            } catch (e) { setErr(toErrorMessage(e, 'Could not send the invitation.')); }
             finally { setBusy(false); }
           })()}
           className={live ? 'px-3.5 py-2 rounded-lg border border-gold-600/50 text-gold-800 text-xs hover:bg-gold-50 focus-ring'
@@ -739,7 +740,7 @@ export default function Admin() {
       setDangerOpen(false); setHardConfirm(''); setSelectedId(null);
       load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not delete the account.');
+      setError(toErrorMessage(e, 'Could not delete the account.'));
     }
   }
 

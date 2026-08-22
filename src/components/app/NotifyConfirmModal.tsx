@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Send, X } from 'lucide-react';
 import { pendingNotifySummary, type PendingNotifySummary } from '../../lib/contracts';
+import { toErrorMessage } from '../../lib/ops/errors';
 
 /**
  * NOTIFY — the confirmation modal (owner-final copy).
@@ -84,7 +85,7 @@ export function NotifyConfirmModal({
     let live = true;
     pendingNotifySummary(documentId)
       .then((s) => { if (live) setSummary(s); })
-      .catch((e) => { if (live) setErr(e instanceof Error ? e.message : 'Could not read this document.'); });
+      .catch((e) => { if (live) setErr(toErrorMessage(e, 'Could not read this document.')); });
     return () => { live = false; };
   }, [documentId]);
 

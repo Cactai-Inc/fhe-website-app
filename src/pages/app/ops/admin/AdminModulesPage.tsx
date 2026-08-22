@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { DataTable, AsyncButton, StatusBadge, useAsync, useToast } from '../../../../lib/ops';
 import { listModuleCatalog, setOrgModule, type ModuleCatalogRow } from '../../../../lib/api';
 import { getMyOrgId, listOrgModules, type OrgModuleRow } from '../../../../lib/ops/api-admin';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 
 /**
  * OPS-ADMIN-MODULES — the tenant entitlement panel (admin route: requireAdmin
@@ -60,7 +61,7 @@ export function AdminModulesPage() {
       toast.success(`${r.name} ${next ? 'enabled' : 'disabled'}`);
       await entitlements.run();
     } catch (err) {
-      const e = err instanceof Error ? err : new Error(String(err));
+      const e = new Error(toErrorMessage(err));
       toast.error(
         isPrivilegeError(e)
           ? 'Module changes are managed by the platform (SUPER_ADMIN / billing). Contact your platform operator to change your plan.'

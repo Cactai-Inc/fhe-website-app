@@ -3,6 +3,7 @@ import { Landmark, CreditCard, Copy, Check, Smartphone, Banknote } from 'lucide-
 import QRCode from 'qrcode';
 import { markAwaitingPayment, configValue, reportMyPayment } from '../../lib/api';
 import { startStripeCheckout } from '../../lib/payments';
+import { toErrorMessage } from '../../lib/ops/errors';
 import { BRAND } from '../../lib/brand';
 import type { Order, OrderItem, Payment, PaymentMethod } from '../../lib/types';
 
@@ -78,7 +79,7 @@ function ReportPaymentPanel({
       await reportMyPayment(orderId, method, method === 'zelle' ? reference : null);
       onChange();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not record that. Please try again.');
+      setError(toErrorMessage(e, 'Could not record that. Please try again.'));
     } finally {
       setBusy(null);
     }

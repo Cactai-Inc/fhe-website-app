@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { History, ChevronDown, ChevronUp } from 'lucide-react';
+import { toErrorMessage } from '../../lib/ops/errors';
 import {
   contractEventLog, contractNotificationLog,
   type ContractEventLogRow, type ContractNotificationLogRow,
@@ -51,7 +52,7 @@ export function ContractActivityCard({ documentId }: { documentId: string }) {
       setRows(await contractEventLog(documentId));
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load activity');
+      setError(toErrorMessage(e, 'Failed to load activity'));
     }
     try {
       setNlog(await contractNotificationLog(documentId));

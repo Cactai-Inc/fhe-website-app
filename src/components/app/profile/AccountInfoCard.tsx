@@ -4,6 +4,7 @@ import {
   getMyAccountInfo, saveMyAccountInfo, type MyAccountInfo,
   STAFF_PREFERRED_CONTACT_LABELS, type StaffPreferredContact,
 } from '../../../lib/contact';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import { SectionCard } from './SectionCard';
 
 type FieldKey = keyof Omit<MyAccountInfo, 'emergency_contact_1' | 'emergency_contact_2'>;
@@ -63,7 +64,7 @@ export function AccountInfoCard() {
     try {
       await saveMyAccountInfo({ [key]: value });
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not save that change.');
+      setErr(toErrorMessage(e, 'Could not save that change.'));
     }
   }
 

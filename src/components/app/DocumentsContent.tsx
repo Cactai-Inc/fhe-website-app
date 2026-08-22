@@ -10,6 +10,7 @@ import {
   signMyDocument,
   type SignableDocument,
 } from '../../lib/ops/api-client';
+import { toErrorMessage } from '../../lib/ops/errors';
 import type { SeedDocument } from '../../lib/seed';
 
 /**
@@ -74,7 +75,7 @@ function EmailMeACopyButton({ documentId, sentAt }: { documentId: string; sentAt
       setMessage(email ? `Sent to ${email}` : 'Sent.');
     } catch (err) {
       setState('error');
-      setMessage(err instanceof Error ? err.message : String(err));
+      setMessage(toErrorMessage(err));
     }
   };
 
@@ -225,7 +226,7 @@ function SelfSignRow({
     try {
       await onSign(item, trimmed);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(toErrorMessage(err));
     } finally {
       setPending(false);
     }
@@ -317,7 +318,7 @@ function SelfSignRow({
   );
 }
 
-const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+const errText = (e: unknown) => toErrorMessage(e);
 
 export function DocumentsContent() {
   const [rows, setRows] = useState<MyDocumentRow[]>([]);

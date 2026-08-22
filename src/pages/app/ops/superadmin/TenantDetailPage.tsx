@@ -4,6 +4,7 @@ import { ArrowLeft, Building2, Puzzle, Users } from 'lucide-react';
 import { useDocumentTitle } from '../../../../lib/hooks';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { supabase } from '../../../../lib/supabase';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 
 /**
  * TENANT MANAGEMENT (platform, /app/ops/superadmin/organizations/:id) — the one
@@ -67,7 +68,7 @@ export default function TenantDetailPage() {
       if (err) throw err;
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not update the module.');
+      setError(toErrorMessage(e, 'Could not update the module.'));
     } finally {
       setBusyKey(null);
     }
@@ -82,7 +83,7 @@ export default function TenantDetailPage() {
       if (err) throw err;
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not change the status.');
+      setError(toErrorMessage(e, 'Could not change the status.'));
     } finally {
       setBusyKey(null);
     }

@@ -8,6 +8,7 @@ import {
 } from '../../../lib/contentStore';
 import { adminListResources, adminSetResourcePublished } from '../../../lib/admin';
 import { uploadCompanyResource, fileDownloadUrl, FILES_BUCKET, MAX_FILE_BYTES } from '../../../lib/files';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import type { ContentResource } from '../../../lib/community-types';
 
 /**
@@ -183,7 +184,7 @@ function CompanyFiles() {
       setTitle(''); setDescription('');
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not upload that file.');
+      setError(toErrorMessage(err, 'Could not upload that file.'));
     } finally {
       setBusy(false);
     }
@@ -195,7 +196,7 @@ function CompanyFiles() {
       await adminSetResourcePublished(r.id, !r.published);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not change that file.');
+      setError(toErrorMessage(err, 'Could not change that file.'));
     } finally {
       setBusy(false);
     }

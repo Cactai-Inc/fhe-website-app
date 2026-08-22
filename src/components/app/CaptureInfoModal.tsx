@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
+import { toErrorMessage } from '../../lib/ops/errors';
 import { captureContactInfo, type PartyField, type PartySummary } from '../../lib/contracts';
 
 /**
@@ -96,7 +97,7 @@ export function CaptureInfoModal({
       await captureContactInfo(documentId, party.contact_id, patch);
       onSaved();
     } catch (err) {
-      setSubmitErr(err instanceof Error ? err.message : 'Could not save. Please try again.');
+      setSubmitErr(toErrorMessage(err, 'Could not save. Please try again.'));
     } finally {
       setBusy(false);
     }

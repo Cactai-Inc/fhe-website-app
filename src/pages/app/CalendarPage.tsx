@@ -182,7 +182,7 @@ export default function CalendarPage() {
     try {
       setData(await fetchCalendar(range.from.toISOString(), range.to.toISOString()));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load the calendar.');
+      setError(toErrorMessage(e, 'Could not load the calendar.'));
     } finally {
       setLoading(false);
     }
@@ -747,7 +747,7 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
       );
       onChanged();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
+      const msg = toErrorMessage(e, '');
       setError(msg.includes('FEE_CONFIRMATION_REQUIRED')
         ? 'Please tell us how you’re paying the change fee before we can submit this.'
         : toErrorMessage(e, 'Could not submit your request.'));

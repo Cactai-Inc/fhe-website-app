@@ -10,6 +10,7 @@ import { needsTranscode, transcodeToMp4 } from '../../lib/transcode';
 import { createThread, proposeEvent } from '../../lib/community';
 import { listListableHorses, type ListableHorse } from '../../lib/stable';
 import { useAuth } from '../../contexts/AuthContext';
+import { toErrorMessage } from '../../lib/ops/errors';
 import { usePropertyTerm } from '../../contexts/BrandProvider';
 import { titleCase } from '../../lib/propertyTerm';
 import { adminCreateAnnouncement } from '../../lib/admin';
@@ -175,7 +176,7 @@ function PostForm({ type, onClose }: { type: PostType; onClose: () => void }) {
       onClose();
       navigate(type === 'for_sale' ? '/app?filter=for_sale' : '/app');
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not post. Please try again.');
+      setErr(toErrorMessage(e, 'Could not post. Please try again.'));
     } finally {
       setBusy(false);
     }
@@ -346,7 +347,7 @@ function AnnounceForm({ onClose }: { onClose: () => void }) {
       onClose();
       navigate('/app');
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not publish the announcement.');
+      setErr(toErrorMessage(e, 'Could not publish the announcement.'));
     } finally {
       setBusy(false);
     }

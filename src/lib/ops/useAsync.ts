@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { toErrorMessage } from './errors';
 
 /**
  * The idle → pending → success/error state machine every ops form uses.
@@ -42,7 +43,7 @@ export function useAsync<T, A extends unknown[] = unknown[]>(
         setStatus('success');
         return result;
       } catch (err) {
-        const normalized = err instanceof Error ? err : new Error(String(err));
+        const normalized = err instanceof Error ? err : new Error(toErrorMessage(err));
         setError(normalized);
         setStatus('error');
         throw normalized;
