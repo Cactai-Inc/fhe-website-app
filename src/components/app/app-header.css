@@ -47,29 +47,23 @@
      marks sit on the same gutter as every page beneath it. */
   padding-left: calc(20px + env(safe-area-inset-left));
   padding-right: calc(20px + env(safe-area-inset-right));
-  /* Owner, 2026-08-08: FLAT AND OPAQUE, load through scroll. The public header
-     fades from transparent to a frosted tint as you scroll; the owner chose that
-     header for its simplicity and does not want the state change carried into
-     the app. One surface, always.
-     Bonus, and not incidental: with no backdrop-filter here the header cannot
-     re-composite on scroll, and it no longer creates a containing block that
-     would trap a position:fixed child. */
-  background-color: #f5f0e8;
-  /* UIO-001, owner 2026-08-10: "the line will look better [than the drop
-     shadow], and then we can use the drop shadow on the sidebar nav and
-     subheader... because the drop shadow over the sidebar coming down from the
-     header looks weird, like the nav and the content area are on the same
-     surface but they functionally are not since they scroll separately."
-
-     The header no longer casts anything — depth belongs on what actually
-     floats (the two rails, the contract subheader), not on the header itself.
-     The reserved 1px border (previously transparent, holding its space open so
-     a rule could be added without reflowing this fixed-height, border-box
-     header) becomes that visible rule. Value matches `task/uireview`'s own
-     resolution of this same edge — same weight as the subheader's and the
-     rail's own border (`border-green-800/15`), so all three boundaries read as
-     one plane system. */
-  border-bottom: 1px solid rgba(20, 51, 33, .15);
+  /* Owner, 2026-08-22: SUPERSEDES the 2026-08-08 note that used to sit here.
+     Port the public header's glass surface in — same recipe as Header.tsx's
+     `scrolled` state, `bg-green-900/10 backdrop-blur-md border-b
+     border-gold-600/25`, translated to plain CSS (green-900 #0d2118, gold-600
+     #ba9935). Only the BACKGROUND is ported: logo/wordmark placement and the
+     avatar are unchanged (see .oh-avatar below), and this header keeps its
+     own fixed height / no-scroll-minify behaviour — it is glass at rest, not
+     glass-that-becomes-glass-on-scroll.
+     Known tradeoff, flagged not solved: the file's prior note recorded that
+     the solid nav rail passing behind a blurred header could look wrong: watch
+     that seam once this ships and revert to the flat surface below if it does.
+     Prior flat value, kept here for a fast revert: background-color: #f5f0e8;
+     border-bottom: 1px solid rgba(20, 51, 33, .15); */
+  background-color: rgba(13, 33, 24, .10);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(186, 153, 53, .25);
   /* UIO-009, owner 2026-08-10: "add the drop shadow to the header again... the
      subheader is the issue, and why i opted for the full drop shadow from
      header instead of partial. if the nav gets it, the subheader does too...
@@ -231,7 +225,10 @@
 .oh-avatar {
   width: 42px; height: 42px; flex: none;
   display: grid; place-items: center;
-  border: 1px solid rgba(20, 51, 33, .40);    /* green-800/40 — as .oh-mono */
+  /* Owner, 2026-08-22: thickened from 1px — at 1px the ring read as
+     decorative, not as a pressable control. Intentionally heavier than
+     .oh-mono's 1px ring now: the mark is inert, the avatar is not. */
+  border: 2px solid rgba(20, 51, 33, .55);
   padding: 0; margin: 0;
   border-radius: 999px;
   font-size: 20px; line-height: 1;            /* UIO-002: 17px -> 20px, to match the logo mark's optical weight now that this mark carries a ring too */
