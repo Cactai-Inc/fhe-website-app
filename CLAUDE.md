@@ -683,3 +683,26 @@ reporting success.
   proposer can withdraw, but **there is no counter-offer.**
   **So the contract review area needs work in BOTH directions:** strip the explicit accept/reject
   from the CHANGE flow (D14), and build it for the PROPOSAL flow.
+- **D30 — THE REBUILD IS GROUND-UP: NEW APP, NEW DATABASE, DATA PORTED NOT MIGRATED (owner,
+  2026-08-21).** Owner: *"everything will be built anew and the data will be ported, not
+  migrated. We need to map the old data to the new app and db because they will for sure be
+  completely different. There is no chance that all of the tables and functions we have in the
+  current one are necessary for this app to function as required and that starts with the way
+  the records are constructed."*
+  **Consequences, binding on every thread that touches the refactor:**
+  1. **This is not an ALTER-forward migration.** The new schema is designed independently of the
+     current one. **No thread may propose "extend the existing table" as a shortcut** — the
+     existing schema is a reference for what data exists, not a constraint on what the new one
+     must look like.
+  2. **`supabase/migrations/` (852 files, 8.4MB, zero tracking table, 114+ non-replayable
+     in-place function rewrites) is ARCHIVED, not carried forward.** Tag `pre-refactor-migrations`
+     before removal. It documents history; it builds nothing.
+  3. **"Ported" means: extract from the current production DB, transform to fit the NEW schema
+     once designed, load into the NEW database.** This is a data-migration SCRIPT written after
+     the new schema exists, not a schema migration applied to the old one.
+  4. **The identity/records model is explicitly named as suspect and first in line for
+     redesign** — `contacts`/`profiles`/`groups`/hardcoded GUEST-RIDER-HORSE_OWNER categories,
+     the fragmented "Records → All" tab. **Do not assume any current table survives unchanged.**
+  5. **`fhe-database-export.zip`** (2026-08-21, all 644 function bodies + full schema + RLS +
+     triggers, pulled live from prod) **is the reference for what exists today** — read for
+     inventory, not treated as a target to preserve.
