@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FHE — Dashboard Mockups (Head Trainer · Business Operations)</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--cream:#faf8f4;--cream-100:#f5f0e8;--cream-200:#ede5d5;--panel:#fdfcfa;--green-900:#0d2118;--green-800:#143321;--green-700:#1a4429;--green-600:#215531;--green-400:#3d8f58;--green-100:#c3e5cc;--green-50:#edf7f0;--gold-800:#7a6421;--gold-600:#ba9935;--gold-200:#eedda5;--gold-100:#f5edcc;--gold-50:#fbf8ee;--muted:rgba(13,33,24,.6);--soft:rgba(13,33,24,.42);--line:rgba(13,33,24,.09)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--cream);color:var(--green-900);font:400 14px/1.5 Inter,system-ui,sans-serif;padding:clamp(1rem,3vw,2.4rem)}
+.intro{max-width:76rem;margin:0 auto 1.6rem}
+.eyebrow{font:600 .7rem/1 Inter;letter-spacing:.22em;text-transform:uppercase;color:var(--gold-800)}
+h1{font-family:'Libre Caslon Text',Georgia,serif;font-weight:400;font-size:clamp(1.5rem,3vw,2.1rem);margin:.3rem 0 .3rem}
+.intro p{color:var(--muted);max-width:64ch}
+.board{max-width:76rem;margin:0 auto 3rem;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:clamp(1rem,2.5vw,2rem);box-shadow:0 2px 8px rgba(13,33,24,.06)}
+.boardhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:.7rem 1rem;margin-bottom:1.4rem}
+.boardhead .who{font-family:'Libre Caslon Text',serif;font-size:1.5rem}
+.pill{font:600 .64rem/1 Inter;letter-spacing:.1em;text-transform:uppercase;padding:.35em .8em;border-radius:999px;background:var(--green-800);color:var(--gold-100)}
+.boardhead .date{color:var(--muted);font-size:.85rem;margin-left:auto}
+.zone{margin-bottom:1.5rem}
+.zlabel{display:flex;align-items:baseline;gap:.6rem;margin-bottom:.55rem}
+.zlabel h2{font:600 .72rem/1 Inter;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-800)}
+.zlabel .count{font:600 .68rem/1 Inter;background:var(--gold-100);color:var(--gold-800);border-radius:999px;padding:.25em .6em}
+.zlabel .hint{font-size:.72rem;color:var(--soft);margin-left:auto}
+.hero{display:grid;grid-template-columns:auto 1fr auto;gap:1.1rem;align-items:center;background:linear-gradient(135deg,var(--green-800),var(--green-700));color:#f2efe6;border-radius:14px;padding:1.1rem 1.3rem}
+.hero .time{text-align:center}
+.hero .time b{display:block;font-family:'Libre Caslon Text',serif;font-size:1.7rem;font-weight:400}
+.hero .time span{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-200)}
+.hero .what b{font:600 1.05rem Inter;display:block}
+.hero .what .sub{color:rgba(242,239,230,.8);font-size:.83rem;margin-top:.15rem}
+.hero .chips{display:flex;gap:.4rem;margin-top:.55rem;flex-wrap:wrap}
+.chip{font:500 .7rem Inter;border:1px solid rgba(242,239,230,.35);border-radius:999px;padding:.25em .7em;color:#f2efe6}
+.chip.gold{background:var(--gold-600);border-color:var(--gold-600);color:var(--green-900);font-weight:600}
+.hero .go{background:var(--gold-600);color:var(--green-900);font:600 .8rem Inter;border:0;border-radius:10px;padding:.7em 1.1em;white-space:nowrap}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.7rem}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:.8rem .95rem}
+.card .k{display:flex;align-items:baseline;gap:.5rem}
+.card .k b{font:600 .86rem Inter}
+.tag{font:600 .6rem/1 Inter;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:.28em .6em;white-space:nowrap}
+.t-urgent{background:#fbeaea;color:#7a2121}
+.t-today{background:var(--gold-100);color:var(--gold-800)}
+.t-new{background:var(--green-50);color:var(--green-700)}
+.t-standing{background:var(--cream-200);color:var(--muted)}
+.card p{color:var(--muted);font-size:.78rem;margin:.35rem 0 .55rem}
+.acts{display:flex;gap:.45rem;flex-wrap:wrap}
+.btn{font:600 .72rem Inter;border-radius:8px;padding:.45em .85em;border:1px solid var(--green-600);color:var(--green-700);background:#fff;cursor:default}
+.btn.pri{background:var(--green-800);border-color:var(--green-800);color:var(--gold-100)}
+.btn.ghost{border-color:var(--line);color:var(--muted)}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:.45rem}
+.day{background:#fff;border:1px solid var(--line);border-radius:10px;padding:.5rem .55rem;min-height:5.6rem}
+.day h4{font:600 .64rem Inter;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem}
+.day.today{border-color:var(--gold-600);background:var(--gold-50)}
+.slot{font:500 .68rem/1.35 Inter;background:var(--green-50);border-left:3px solid var(--green-400);border-radius:5px;padding:.25em .45em;margin-bottom:.3rem}
+.slot.stand{background:var(--cream-100);border-left-color:var(--gold-600)}
+.timeline{display:grid;gap:.45rem}
+.trow{display:grid;grid-template-columns:5.2rem 1fr auto;gap:.8rem;align-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:.55rem .8rem}
+.trow .t{font:600 .8rem Inter;color:var(--green-700)}
+.trow .t span{display:block;font:400 .66rem Inter;color:var(--soft)}
+.trow .d b{font:600 .84rem Inter}
+.trow .d span{display:block;font-size:.74rem;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:.7rem}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:.75rem .9rem}
+.kpi .n{font-family:'Libre Caslon Text',serif;font-size:1.5rem;line-height:1.1}
+.kpi .l{font:600 .66rem Inter;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:.2rem}
+.kpi .tr{font:500 .7rem Inter;margin-top:.25rem}
+.up{color:var(--green-600)}.dn{color:#7a2121}.fl{color:var(--soft)}
+.mirror{border:1px dashed var(--gold-600);border-radius:12px;padding:.8rem .95rem;background:var(--gold-50)}
+.mirror .mhead{font:600 .7rem Inter;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-800);margin-bottom:.5rem}
+.mrow{display:flex;gap:.6rem;flex-wrap:wrap;font-size:.78rem;color:var(--green-800)}
+.mrow b{font-weight:600}
+.sugg{display:flex;gap:.5rem;flex-wrap:wrap}
+.schip{display:flex;align-items:center;gap:.5rem;background:#fff;border:1px solid var(--green-100);border-radius:999px;padding:.4em .5em .4em .9em;font:500 .74rem Inter}
+.schip .why{color:var(--soft);font-size:.68rem}
+.schip .yes,.schip .no{font:600 .68rem Inter;border-radius:999px;padding:.3em .65em;border:0}
+.schip .yes{background:var(--green-800);color:var(--gold-100)}
+.schip .no{background:var(--cream-200);color:var(--muted)}
+.note{font-size:.72rem;color:var(--soft);margin-top:.4rem}
+@media (max-width:760px){.hero{grid-template-columns:1fr}.hero .go{justify-self:start}.week{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <div class="eyebrow">FHE Dashboards · design mockup · 2026-08-21</div>
+  <h1>Two owners, two boards, one system</h1>
+  <p>Zones render only when they hold something; order is overdue → today → this week → standing. Every card acts in place. Sample content throughout is illustrative.</p>
+</div>
+
+<section class="board">
+  <div class="boardhead">
+    <span class="who">Good morning, Claire</span>
+    <span class="pill">Owner · Head Trainer</span>
+    <span class="date">Friday, August 21 · 3 lessons · 2 decisions waiting</span>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>Next up</h2></div>
+    <div class="hero">
+      <div class="time"><b>9:00</b><span>in 40 min</span></div>
+      <div class="what">
+        <b>Riding Lesson — Sofia M. on Beau</b>
+        <div class="sub">Main arena · standing Friday slot · plan ready</div>
+        <div class="chips"><span class="chip gold">Plan ready</span><span class="chip">Client note: "nervous about cantering"</span><span class="chip">2 unread messages</span></div>
+      </div>
+      <button class="go">Open lesson workspace →</button>
+    </div>
+    <div class="note">Workspace drawer: plan · her note · your notes · thread · history · "Plan next lesson".</div>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>Needs a decision</h2><span class="count">2</span></div>
+    <div class="cards">
+      <div class="card"><div class="k"><b>Reschedule request — Ava R.</b><span class="tag t-urgent">Reply today</span></div><p>Tue 4:00 → asks for Thu 5:00. Slot is open.</p><div class="acts"><button class="btn pri">Accept Thu 5:00</button><button class="btn">Propose time</button><button class="btn ghost">Decline…</button></div></div>
+      <div class="card"><div class="k"><b>New booking request — first lesson</b><span class="tag t-new">New lead</span></div><p>Emma T., adult beginner, weekday mornings. From the website funnel.</p><div class="acts"><button class="btn pri">Offer times</button><button class="btn ghost">View inquiry</button></div></div>
+    </div>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>Money on the door</h2><span class="count">2</span><span class="hint">verification unblocks nothing — it gates the lesson happening</span></div>
+    <div class="cards">
+      <div class="card"><div class="k"><b>Zelle declared — $340, Ortiz</b><span class="tag t-today">Verify</span></div><p>PUR-000041 · memo key FHE-8127 · declared yesterday 6:12 PM.</p><div class="acts"><button class="btn pri">Mark verified</button><button class="btn ghost">Open purchase</button></div></div>
+      <div class="card"><div class="k"><b>New order — 4-Lesson Punch Card</b><span class="tag t-new">Order</span></div><p>Emma T. · $360 · placed 8:12 AM · awaiting payment.</p><div class="acts"><button class="btn ghost">Open order</button></div></div>
+    </div>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>Today</h2></div>
+    <div class="timeline">
+      <div class="trow"><div class="t">9:00<span>60 min</span></div><div class="d"><b>Sofia M. · Riding Lesson · Beau</b><span>Standing slot · plan ready</span></div><button class="btn">Workspace</button></div>
+      <div class="trow"><div class="t">11:00<span>60 min</span></div><div class="d"><b>Ava R. · Riding Lesson · Casper</b><span>Punch card · no plan yet</span></div><button class="btn pri">Plan now</button></div>
+      <div class="trow"><div class="t">3:30<span>45 min</span></div><div class="d"><b>Milo · Training ride</b><span>Owner away · leave note after</span></div><button class="btn">Workspace</button></div>
+    </div>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>This week</h2></div>
+    <div class="week">
+      <div class="day"><h4>Mon</h4><div class="slot stand">4:00 Lily K.</div></div>
+      <div class="day"><h4>Tue</h4><div class="slot">10:00 Eval — new rider</div><div class="slot stand">4:00 Ava R.</div></div>
+      <div class="day"><h4>Wed</h4></div>
+      <div class="day"><h4>Thu</h4><div class="slot stand">5:00 Ortiz kids ×2</div></div>
+      <div class="day today"><h4>Fri · today</h4><div class="slot stand">9:00 Sofia M.</div><div class="slot">11:00 Ava R.</div><div class="slot">3:30 Milo</div></div>
+      <div class="day"><h4>Sat</h4><div class="slot">9:00 Group ×3</div></div>
+      <div class="day"><h4>Sun</h4></div>
+    </div>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>Reach out</h2><span class="count">3</span></div>
+    <div class="sugg">
+      <div class="schip">Follow up with Lily K. <span class="why">first lesson was Tuesday</span><button class="yes">Add task</button><button class="no">Dismiss</button></div>
+      <div class="schip">Nudge Ortiz order <span class="why">unpaid 5 days</span><button class="yes">Add task</button><button class="no">Dismiss</button></div>
+      <div class="schip">Check on Casper's shoes <span class="why">farrier due this week</span><button class="yes">Add task</button><button class="no">Dismiss</button></div>
+    </div>
+    <div class="note">Suggestions come from rules today, AI later — same queue, every one states its reason.</div>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>The stable</h2><span class="count">2</span></div>
+    <div class="cards">
+      <div class="card"><div class="k"><b>Casper — farrier due</b><span class="tag t-today">This week</span></div><p>Last shod Jul 24 · used in 4 lessons this week.</p><div class="acts"><button class="btn">Open horse record</button></div></div>
+      <div class="card"><div class="k"><b>Shavings running low</b><span class="tag t-urgent">Reorder</span></div><p>Barn Ops: 6 bags left · burn rate ~5/week.</p><div class="acts"><button class="btn pri">Add reorder task</button><button class="btn ghost">Consumption log</button></div></div>
+    </div>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>This week's numbers</h2></div>
+    <div class="kpis">
+      <div class="kpi"><div class="n">11</div><div class="l">Lessons this week</div><div class="tr up">▲ 2 vs last week</div></div>
+      <div class="kpi"><div class="n">9</div><div class="l">Active clients</div><div class="tr fl">— steady</div></div>
+      <div class="kpi"><div class="n">$1,240</div><div class="l">Revenue · Aug</div><div class="tr up">▲ verified</div></div>
+      <div class="kpi"><div class="n">14</div><div class="l">Credits outstanding</div><div class="tr fl">3 expire Sep 1</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="board">
+  <div class="boardhead">
+    <span class="who">Good morning, CJ</span>
+    <span class="pill">Owner · Business Operations</span>
+    <span class="date">Friday, August 21 · 1 signature waiting · 2 payments to verify</span>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>Next decision</h2></div>
+    <div class="hero">
+      <div class="time"><b>1</b><span>signature</span></div>
+      <div class="what">
+        <b>Horse Lease — Thompson / "Beau" awaiting counter-signature</b>
+        <div class="sub">Sent Tuesday · viewed twice · counterparty has not signed</div>
+        <div class="chips"><span class="chip gold">Day 3</span><span class="chip">Delivery confirmed</span></div>
+      </div>
+      <button class="go">Open contract →</button>
+    </div>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>Deals &amp; documents</h2><span class="count">3</span></div>
+    <div class="cards">
+      <div class="card"><div class="k"><b>Change request — Lease §7</b><span class="tag t-urgent">Review</span></div><p>Thompson proposes revised care-cost split.</p><div class="acts"><button class="btn pri">Review &amp; respond</button></div></div>
+      <div class="card"><div class="k"><b>Deal: TB gelding trial</b><span class="tag t-today">Titer pending</span></div><p>Temperament cleared · strangles titer scheduled · bill of sale drafts after results.</p><div class="acts"><button class="btn ghost">Open deal</button></div></div>
+      <div class="card"><div class="k"><b>2 docs awaiting signature</b><span class="tag t-standing">Queue</span></div><p>Release (Ortiz guest) · Boarding addendum.</p><div class="acts"><button class="btn ghost">Documents queue</button></div></div>
+    </div>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>Money</h2></div>
+    <div class="kpis">
+      <div class="kpi"><div class="n">$1,240</div><div class="l">Revenue · Aug (verified)</div><div class="tr up">▲ 18% vs Jul</div></div>
+      <div class="kpi"><div class="n">$340</div><div class="l">Declared · unverified</div><div class="tr fl">1 claim</div></div>
+      <div class="kpi"><div class="n">$680</div><div class="l">Unpaid orders</div><div class="tr dn">2 aging &gt; 5 days</div></div>
+      <div class="kpi"><div class="n">14</div><div class="l">Obligations open</div><div class="tr fl">units unconsumed</div></div>
+    </div>
+    <div class="note">One computation: revenue_summary(). Verified is Revenue; declared shows beside it, never summed into it.</div>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>Growth</h2></div>
+    <div class="kpis">
+      <div class="kpi"><div class="n">6</div><div class="l">Open leads</div><div class="tr up">▲ 2 this week</div></div>
+      <div class="kpi"><div class="n">50%</div><div class="l">Lead → client · 30d</div><div class="tr up">▲</div></div>
+      <div class="kpi"><div class="n">3</div><div class="l">Activations · Aug</div><div class="tr fl">1 wall incomplete</div></div>
+      <div class="kpi"><div class="n">Lessons</div><div class="l">Top request source</div><div class="tr fl">then Horse Care</div></div>
+    </div>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>App &amp; platform</h2><span class="count">1</span></div>
+    <div class="cards">
+      <div class="card"><div class="k"><b>2 email sends unproven</b><span class="tag t-urgent">Rails</span></div><p>Digest cron has never stamped emailed_at · check Vercel cron log.</p><div class="acts"><button class="btn ghost">Send log</button></div></div>
+      <div class="card"><div class="k"><b>Support</b><span class="tag t-standing">Clear</span></div><p>No open app/website issues.</p></div>
+    </div>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>Claire's day — second set of eyes</h2></div>
+    <div class="mirror">
+      <div class="mhead">Mirrored, read-only</div>
+      <div class="mrow"><b>3 lessons today</b> · next 9:00 Sofia M. · <b>2 decisions</b> in her queue · <b>$340</b> to verify · stable: farrier + shavings</div>
+    </div>
+  </div>
+
+  <div class="zone">
+    <div class="zlabel"><h2>Tasks &amp; objectives</h2><span class="count">4</span></div>
+    <div class="cards">
+      <div class="card"><div class="k"><b>Today</b></div><p>Verify Ortiz Zelle · respond to lease change request.</p></div>
+      <div class="card"><div class="k"><b>This week</b></div><p>Titer results → draft bill of sale · prove one paid purchase end-to-end.</p></div>
+      <div class="card"><div class="k"><b>This month</b></div><p>Refactor Wave 0–1 landed · first proven client email.</p></div>
+      <div class="card"><div class="k"><b>Objective</b></div><p>Run the whole business from the app — zero outside tools.</p></div>
+    </div>
+    <div class="sugg" style="margin-top:.6rem">
+      <div class="schip">Ask Claire to confirm Sat group roster <span class="why">3 riders, 1 unconfirmed</span><button class="yes">Send</button><button class="no">Dismiss</button></div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
