@@ -344,6 +344,9 @@ export function ProvisionClientForm({
         ...(firstName?.trim() ? { firstName: firstName.trim() } : {}),
         ...(lastName?.trim() ? { lastName: lastName.trim() } : {}),
         categories: tokens,
+        // STABILIZE ITEM 2: this form ALWAYS creates a client account, including
+        // when staff deliberately tick no category (a contract-only party).
+        provisionClient: true,
         ...(offeringIds.length ? { offeringIds } : {}),
         ...(finalDocs ? { templateKeys: finalDocs } : {}),
         paymentStatus: payStatus,
@@ -408,6 +411,23 @@ export function ProvisionClientForm({
               </label>
             ))}
           </div>
+          {/* STABILIZE ITEM 2 — NO CATEGORY IS A CHOICE, NOT AN ERROR STATE.
+              Owner, 2026-08-22: "an account gets tags that ENABLE an action,
+              never OBLIGATE one on their own... For a party who signs nothing
+              but the contract: select ZERO categories, not a new one."
+              Until now the submit button was disabled while nothing was ticked,
+              so the one shape the owner needs — a person whose only relationship
+              to us is a contract — could not be created here at all. Leaving
+              them all unticked is now a sentence, not a silence. */}
+          {categories.length === 0 && (
+            <p className="text-[12.5px] text-secondary mt-2.5">
+              <strong className="font-medium text-green-800">No service category.</strong>{' '}
+              Leave these unticked when this person's only relationship with us is a
+              contract — they aren't visiting, riding or boarding a horse. They'll get
+              an account and no onboarding paperwork; the contract carries its own
+              signing gate.
+            </p>
+          )}
         </div>
 
         {categories.length > 0 && (
@@ -634,7 +654,7 @@ export function ProvisionClientForm({
         {/* NOSTRIP §4: the removal is gated, not merely announced — a reason is
             what makes the skip mark worth more than the delete it replaced. */}
         <button type="submit"
-          disabled={working || !email.trim() || categories.length === 0 || narrowingBlocked}
+          disabled={working || !email.trim() || narrowingBlocked}
           className="btn-primary">
           {working ? 'Sending…' : primaryLabel}
         </button>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import {
   categoryDocumentDefaults, setContactRequiredDocuments,
   getContactRequiredDocumentsState, skipRequiredDocument, unskipRequiredDocument,
@@ -15,6 +15,7 @@ import {
   type HorseIntakeRecord, type ContactOption,
 } from '../../lib/horses';
 import { fetchOfferings } from '../../lib/api';
+import { HorseIntakeForm } from './HorseIntakeForm';
 import { toErrorMessage } from '../../lib/ops/errors';
 import type { Offering } from '../../lib/types';
 
@@ -221,6 +222,12 @@ export function AssignDocumentsModal({
 export function ClientHorseRecordsCard({ contactId }: { contactId: string }) {
   const [horses, setHorses] = useState<HorseIntakeRecord[] | null>(null);
   const [taskSent, setTaskSent] = useState<Record<string, 'sending' | 'sent' | 'error'>>({});
+  /** STABILIZE ITEM 3 — adding a horse FOR a client, from the client's own record. */
+  const [adding, setAdding] = useState(false);
+
+  const load = useCallback(() => {
+    contactHorseRecords(contactId).then(setHorses).catch(() => setHorses([]));
+  }, [contactId]);
 
   useEffect(() => {
     let active = true;
@@ -240,10 +247,39 @@ export function ClientHorseRecordsCard({ contactId }: { contactId: string }) {
     }
   }
 
-  if (horses === null || horses.length === 0) return null;
+  /* STABILIZE ITEM 3 — THE CARD USED TO VANISH WHEN IT WAS MOST NEEDED.
+   *
+   *     if (horses === null || horses.length === 0) return null;
+   *
+   * A client with no horse yet is precisely the client staff need to add one
+   * for, and this line meant their record showed nothing at all — no list, and
+   * no way in. Verified in a browser against production first (STABILIZE rule):
+   * Overview, Bookings and Documents on a real client's dossier carry no
+   * add-horse control of any kind; the only creation path was the separate
+   * Horse Records page, which starts from the horse and not from the person.
+   *
+   * `null` is still returned while the first fetch is in flight, so the card
+   * doesn't flash an empty state over data that is about to arrive.
+   *
+   * ⚠️ NO NEW FUNCTIONS (D18). The button opens the SAME `HorseIntakeForm` the
+   * Horse Records page opens, with `ownerContactId` preset to this client —
+   * the one `create_horse_record` intake path, which already honours
+   * owner_contact_id for staff. */
+  if (horses === null) return null;
   return (
     <div className="mb-4 rounded-lg border border-green-800/10 bg-white p-4">
-      <p className="text-[11px] tracking-wide uppercase text-secondary/70 mb-2">Horse records</p>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <p className="text-[11px] tracking-wide uppercase text-secondary/70">Horse records</p>
+        <button type="button" onClick={() => setAdding(true)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-800 text-white text-xs font-medium hover:bg-green-700 focus-ring">
+          <Plus size={13} /> Add a horse
+        </button>
+      </div>
+      {horses.length === 0 && (
+        <p className="text-sm text-muted">
+          No horse on this client's record yet.
+        </p>
+      )}
       <div className="flex flex-col gap-2">
         {horses.map((h) => {
           const c = horseRecordCompleteness(h);
@@ -280,6 +316,23 @@ export function ClientHorseRecordsCard({ contactId }: { contactId: string }) {
           );
         })}
       </div>
+
+      {adding && (
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setAdding(false)}>
+          <div className="bg-cream w-full sm:max-w-2xl sm:rounded-2xl flex flex-col max-h-[92dvh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-green-800/10 shrink-0">
+              <h2 className="font-serif text-green-800 text-lg">Add a horse for this client</h2>
+              <button type="button" onClick={() => setAdding(false)} aria-label="Close"><X size={20} /></button>
+            </div>
+            <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain pb-8">
+              <HorseIntakeForm submitLabel="Add horse" ownerContactId={contactId}
+                onDone={() => { setAdding(false); load(); }} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

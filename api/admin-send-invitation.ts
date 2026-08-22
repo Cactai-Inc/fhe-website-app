@@ -184,7 +184,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? (body.paymentStatus as string)
       : (body.markPaid === true ? 'paid' : 'unpaid');
   const partialAmount = paymentStatus === 'partial' ? Number(body.partialAmount) || 0 : 0;
-  const provisioning = categories.length > 0 || offeringIds.length > 0;
+  // STABILIZE ITEM 2 — A CLIENT INVITE WITH NO CATEGORY IS STILL A CLIENT INVITE.
+  //
+  // Provisioning used to be INFERRED from "did they tick something?", which
+  // reads a deliberately empty category set as "not a client at all" and drops
+  // the invite into the plain branch: an invitations row with no contact, no
+  // clients row, no account to find in Records. That is exactly the shape the
+  // owner needs for a party whose only relationship with us is a contract
+  // (2026-08-22: "select ZERO categories, not a new one").
+  //
+  // `provisionClient` is sent ONLY by ProvisionClientForm — the surface whose
+  // whole purpose is creating a client account. The other zero-category callers
+  // are unchanged and still take the plain path: Admin.tsx re-mints a link for
+  // someone already provisioned, TeamPage invites staff.
+  const provisionClient = body.provisionClient === true;
+  const provisioning = categories.length > 0 || offeringIds.length > 0 || provisionClient;
   // Optional role for the account being provisioned (New account flow).
   const invitedRole =
     typeof body.role === 'string' && ['USER', 'MANAGER', 'ADMIN'].includes(body.role)
