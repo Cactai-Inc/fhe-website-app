@@ -8,6 +8,7 @@ import {
 } from '../lib/api';
 import { redeemContractInvitation } from '../lib/contracts';
 import { signInWithGoogle } from '../lib/auth';
+import { toErrorMessage } from '../lib/ops/errors';
 import { OAUTH_PROVIDERS } from '../lib/authConfig';
 import { authMethodForEmail } from '../lib/emailAuthMethod';
 import { supabase } from '../lib/supabase';
@@ -52,6 +53,15 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
   const [error, setError] = useState<string | null>(null);
+  /* STABILIZE ITEM 1 — THE DEAD-END RETRY.
+   *
+   * WALK4: the first attempt reported failure, and the retry answered "an
+   * account already exists for this email — sign in instead" on a page with no
+   * way to sign in. Every branch below that can only be reached by someone whose
+   * account DOES exist sets this, and the error box grows a real sign-in link —
+   * carrying the same `from` a contract party needs to land back on their
+   * document once they're in. */
+  const [offerSignIn, setOfferSignIn] = useState(false);
 
   const pwLongEnough = password.length >= 8;
   const pwMatch = password.length > 0 && password === password2;
@@ -147,6 +157,7 @@ export default function Register() {
     if (!invitation || !pwReady) return;
     setState('creating');
     setError(null);
+    setOfferSignIn(false);
 
     // Set the account's password server-side (creates the account if new, or
     // claims an existing one via the invite), pre-confirmed — the personal invite
@@ -159,6 +170,11 @@ export default function Register() {
     });
     if (!resp.ok) {
       const payload = await resp.json().catch(() => ({ error: '' }));
+      // 409 = the address already has an account we could not claim; 404 = the
+      // invitation is spent, which for someone standing on this form almost
+      // always means THEY spent it a moment ago. Both are "you already have an
+      // account", and neither is recoverable by typing the password again.
+      if (resp.status === 409 || resp.status === 404) setOfferSignIn(true);
       setError(payload.error || 'Could not activate your account. Please try again.');
       setState('ready');
       return;
@@ -184,7 +200,18 @@ export default function Register() {
     } catch (err) {
       // Don't mask a real failure as success. Surface it so nobody is misled
       // into thinking the account is ready when it isn't.
-      setError(err instanceof Error ? err.message : 'We could not finish activating your account.');
+      //
+      // ⚠️ STABILIZE ITEM 1 — `err instanceof Error` WAS ALWAYS FALSE HERE.
+      // Every lib wrapper does `if (error) throw error`, and PostgREST errors
+      // are plain `{ message, details, hint, code }` objects, not Error
+      // instances. So this branch could only ever print its own fallback, and
+      // the fallback is the exact sentence WALK4 photographed: "We could not
+      // finish activating your account." The real message — 'no profile for the
+      // signed-in user' — never reached the screen or the report.
+      setError(toErrorMessage(err, 'We could not finish activating your account.'));
+      // The password worked and we are signed in; whatever failed, the account
+      // itself exists. Never leave them on a screen with no way forward.
+      setOfferSignIn(true);
       setState('ready');
       return;
     }
@@ -336,6 +363,22 @@ export default function Register() {
           {error && (
             <div role="alert" className="bg-red-50 border border-red-200 text-red-700 text-sm font-sans px-4 py-3 mb-5">
               {error}
+              {offerSignIn && (
+                <p className="mt-2.5">
+                  If you've already set a password for{' '}
+                  <span className="font-medium">{invitation?.email}</span>, sign in instead —
+                  your account is there.{' '}
+                  <Link
+                    to="/login"
+                    state={isContractInvite
+                      ? { from: `/activate?token=${token}&kind=contract` }
+                      : undefined}
+                    className="underline underline-offset-2 font-medium"
+                  >
+                    Sign in
+                  </Link>
+                </p>
+              )}
             </div>
           )}
 

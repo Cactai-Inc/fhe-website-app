@@ -379,6 +379,22 @@ export async function adminSendInvitation(
     offeringIds?: string[]; offeringId?: string;
     /** Explicit onboarding doc set (template_keys); omit to derive from categories. */
     templateKeys?: string[];
+    /**
+     * STABILIZE ITEM 2 — "THIS IS A CLIENT ACCOUNT", SAID OUT LOUD.
+     *
+     * The endpoint decided whether to provision by INFERENCE: `categories.length
+     * > 0 || offeringIds.length > 0`. That inference is wrong for the one shape
+     * the owner asked for — a party whose only relationship with us is a
+     * contract, who therefore has no category and buys nothing. Such an invite
+     * fell into the PLAIN branch and created a bare `invitations` row with no
+     * contact and no clients row at all.
+     *
+     * ProvisionClientForm sets this. The other two zero-category callers must
+     * NOT: Admin.tsx re-mints a link for someone already provisioned, and
+     * TeamPage invites staff — neither is creating a client, and both keep the
+     * plain path they have always taken.
+     */
+    provisionClient?: boolean;
     /** Payment status; 'partial' reduces the balance shown to the invitee by `partialAmount`. */
     paymentStatus?: 'paid' | 'partial' | 'unpaid'; partialAmount?: number;
     markPaid?: boolean; paymentMethod?: string; notes?: string;
