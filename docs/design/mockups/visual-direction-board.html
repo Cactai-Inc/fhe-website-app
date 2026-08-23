@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FHE App — Visual Direction Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased}
+body{background:#fafafa;color:#1a1d1b;font:400 14px/1.5 Inter,system-ui,sans-serif;letter-spacing:-.01em;padding:clamp(1rem,3vw,3rem)}
+.intro{max-width:78rem;margin:0 auto 2.2rem}
+.k{font:600 11px Inter;letter-spacing:.16em;text-transform:uppercase;color:#8a8f8c}
+h1{font:500 clamp(1.6rem,3vw,2.3rem)/1.15 Fraunces,Georgia,serif;margin:.4rem 0 .5rem;letter-spacing:-.01em}
+.intro p{color:#5a605d;max-width:66ch}
+.dir{max-width:78rem;margin:0 auto 2.6rem;border-radius:22px;overflow:hidden;box-shadow:0 2px 6px rgba(10,14,12,.05),0 24px 60px rgba(10,14,12,.08)}
+.dhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 16px;padding:20px 26px 16px;background:#fff;border-bottom:1px solid #ececea}
+.dhead .tag{font:700 10.5px Inter;letter-spacing:.12em;padding:4px 10px;border-radius:99px}
+.dhead h2{font:500 1.35rem Fraunces,serif}
+.dhead p{flex-basis:100%;color:#5a605d;font-size:.86rem;max-width:78ch}
+.swatches{display:flex;gap:6px;margin-left:auto}
+.sw{width:26px;height:26px;border-radius:8px;border:1px solid rgba(0,0,0,.08)}
+.stage{padding:clamp(1.2rem,2.5vw,2rem);display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+.stage .col{display:grid;gap:14px;min-width:0}
+.pick{display:inline-flex;align-items:center;gap:8px;font:600 11px Inter;letter-spacing:.1em;text-transform:uppercase;color:#1a5c3a;background:#e7f4ec;border:1px solid #bfe0cc;border-radius:99px;padding:5px 12px}
+@media(max-width:900px){.stage{grid-template-columns:1fr}}
+
+.A{--canvas:#fbfbfc;--card:#ffffff;--ink:#232b27;--ink2:#5c6662;--ink3:#98a19c;--line:#eceeec;
+   --act:#1e6b45;--act2:#2e8f5e;--brass:#b98f3e;
+   --dawn:linear-gradient(115deg,#ffe9c4 0%,#ffd3c0 28%,#f4b8c9 55%,#c9c4ee 80%,#aacdf2 100%);
+   --dawn-soft:linear-gradient(115deg,rgba(255,233,196,.55),rgba(244,184,201,.4) 55%,rgba(170,205,242,.45));}
+.A .stage{background:var(--canvas)}
+.A .hero{position:relative;border-radius:18px;padding:22px 24px;background:var(--card);border:1px solid var(--line);overflow:hidden;box-shadow:0 1px 2px rgba(20,30,25,.04),0 14px 40px rgba(20,30,25,.06)}
+.A .hero .atmo{position:absolute;inset:-40% -20% auto;height:180%;background:var(--dawn);filter:blur(46px);opacity:.5;pointer-events:none}
+.A .hero>div{position:relative}
+.A .live{display:inline-flex;align-items:center;gap:7px;font:700 10.5px Inter;letter-spacing:.14em;text-transform:uppercase;color:#9a6b1f}
+.A .dot{width:8px;height:8px;border-radius:99px;background:var(--dawn);box-shadow:0 0 0 4px rgba(244,184,120,.25)}
+.A .hero h3{font:600 19px Inter;letter-spacing:-.02em;margin:.5rem 0 .2rem;color:var(--ink)}
+.A .hero .meta{color:var(--ink2);font-size:13px}
+.A .chips{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
+.A .chip{font:500 12px Inter;background:#fff;border:1px solid var(--line);border-radius:99px;padding:5px 12px;color:var(--ink2);box-shadow:0 1px 2px rgba(20,30,25,.04)}
+.A .chip.hot{border:1px solid transparent;background:linear-gradient(#fff,#fff) padding-box,var(--dawn) border-box;color:#7c4a12;font-weight:600}
+.A .cta{margin-top:16px;display:inline-flex;align-items:center;gap:8px;font:600 13px Inter;color:#fff;background:linear-gradient(135deg,var(--act2),var(--act));border-radius:12px;padding:10px 16px;box-shadow:0 6px 18px rgba(30,107,69,.28),inset 0 1px 0 rgba(255,255,255,.18)}
+.A .clock{position:absolute;top:20px;right:22px;text-align:right}
+.A .clock b{font:500 30px/1 Fraunces,serif;color:var(--ink)}
+.A .clock span{display:block;font:600 10px Inter;letter-spacing:.12em;color:#9a6b1f;text-transform:uppercase;margin-top:3px}
+.A .qc{display:grid;grid-template-columns:auto 1fr auto;gap:13px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:15px;padding:13px 15px;box-shadow:0 1px 2px rgba(20,30,25,.04)}
+.A .ic{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-size:15px}
+.A .ic.a{background:linear-gradient(140deg,#fff3dd,#ffe1d6);color:#a3611c}
+.A .ic.b{background:linear-gradient(140deg,#e3f2e9,#d2ecf4);color:#1e6b45}
+.A .qc b{font:600 13.5px Inter;color:var(--ink)}
+.A .qc p{font-size:12.5px;color:var(--ink2);margin-top:1px}
+.A .b1{font:600 12px Inter;background:linear-gradient(135deg,var(--act2),var(--act));color:#fff;border-radius:9px;padding:7px 13px;border:0;box-shadow:0 3px 10px rgba(30,107,69,.22)}
+.A .b2{font:600 12px Inter;background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px 12px;color:var(--ink2)}
+.A .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:0 1px 2px rgba(20,30,25,.04)}
+.A .panel h4{font:700 10.5px Inter;letter-spacing:.13em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px}
+.A .ring{display:flex;gap:16px;align-items:center}
+.A .ringviz{width:74px;height:74px;border-radius:99px;background:conic-gradient(from 220deg,#ffd3a0,#f4a8bc 40%,#a9c8f0 62%,#eceeec 62%);display:grid;place-items:center}
+.A .ringviz i{width:56px;height:56px;border-radius:99px;background:#fff;display:grid;place-items:center;font:500 17px Fraunces,serif;font-style:normal}
+.A .krow{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink2)}
+.A .krow:first-of-type{border:0;padding-top:0}
+.A .krow b{font:500 17px Fraunces,serif;color:var(--ink)}
+.A .up{color:#1e6b45;font:600 11px Inter}
+.A .brassline{height:2px;background:linear-gradient(90deg,var(--brass),transparent);border-radius:2px;margin:2px 0 10px;width:42px}
+
+.B{--canvas:#f7f5f2;--card:#fffdfb;--ink:#2b2320;--ink2:#6b5f58;--ink3:#a3968d;--line:#eae4dd;
+   --cognac:#a35a2a;--cognac2:#c47a3f;--ox:#5e2d26;--brass:#b98f3e;
+   --leather:linear-gradient(135deg,#c47a3f,#a35a2a 55%,#7c3b23)}
+.B .stage{background:var(--canvas)}
+.B .hero{position:relative;border-radius:16px;padding:22px 24px;color:#f7efe6;background:linear-gradient(140deg,#4a2b1f,#2e1b14 70%);overflow:hidden;box-shadow:0 16px 44px rgba(46,27,20,.35)}
+.B .hero .atmo{position:absolute;inset:auto -30% -70% auto;width:80%;height:160%;background:radial-gradient(closest-side,rgba(196,122,63,.55),transparent 70%);pointer-events:none}
+.B .hero>div{position:relative}
+.B .live{font:700 10.5px Inter;letter-spacing:.16em;text-transform:uppercase;color:#e2b072}
+.B .hero h3{font:500 20px Fraunces,serif;margin:.45rem 0 .2rem;letter-spacing:.005em}
+.B .hero .meta{color:rgba(247,239,230,.75);font-size:13px}
+.B .chips{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
+.B .chip{font:500 12px Inter;border:1px solid rgba(247,239,230,.25);border-radius:99px;padding:5px 12px;color:rgba(247,239,230,.92)}
+.B .chip.hot{background:var(--leather);border-color:transparent;font-weight:600}
+.B .cta{margin-top:16px;display:inline-block;font:600 13px Inter;color:#2e1b14;background:linear-gradient(#f3e3cd,#e2c9a4);border-radius:11px;padding:10px 16px;box-shadow:0 6px 16px rgba(0,0,0,.3),inset 0 1px 0 #fff}
+.B .clock{position:absolute;top:20px;right:22px;text-align:right}
+.B .clock b{font:500 30px/1 Fraunces,serif;color:#f3e3cd}
+.B .clock span{display:block;font:600 10px Inter;letter-spacing:.12em;color:#e2b072;text-transform:uppercase;margin-top:3px}
+.B .qc{display:grid;grid-template-columns:auto 1fr auto;gap:13px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:13px 15px;box-shadow:0 1px 3px rgba(46,27,20,.06)}
+.B .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:15px}
+.B .ic.a{background:#f6e7d6;color:#a35a2a}.B .ic.b{background:#efe6f0;color:#5e2d5e}
+.B .qc b{font:600 13.5px Inter;color:var(--ink)}
+.B .qc p{font-size:12.5px;color:var(--ink2);margin-top:1px}
+.B .b1{font:600 12px Inter;background:var(--leather);color:#fff;border-radius:9px;padding:7px 13px;border:0;box-shadow:0 3px 10px rgba(163,90,42,.3)}
+.B .b2{font:600 12px Inter;background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px 12px;color:var(--ink2)}
+.B .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 1px 3px rgba(46,27,20,.06)}
+.B .panel h4{font:700 10.5px Inter;letter-spacing:.13em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px}
+.B .krow{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink2)}
+.B .krow:first-of-type{border:0;padding-top:0}
+.B .krow b{font:500 17px Fraunces,serif;color:var(--ink)}
+.B .up{color:#1a6b45;font:600 11px Inter}
+.B .stitch{border-top:2px dashed #d9c6ad;margin:4px 0 10px;width:56px}
+
+.C{--canvas:#ffffff;--card:#ffffff;--ink:#101623;--ink2:#4c5568;--ink3:#98a0b0;--line:#e8eaef;
+   --ribbon:linear-gradient(120deg,#2646d8,#5e3ae0 55%,#8b34c9);--cobalt:#2646d8}
+.C .stage{background:linear-gradient(#fff,#f7f8fb)}
+.C .hero{position:relative;border-radius:14px;padding:22px 24px;background:#fff;border:1px solid var(--line);overflow:hidden;box-shadow:0 1px 2px rgba(16,22,35,.05),0 16px 44px rgba(38,70,216,.08)}
+.C .hero:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--ribbon)}
+.C .hero .atmo{position:absolute;right:-16%;top:-70%;width:55%;height:200%;background:radial-gradient(closest-side,rgba(94,58,224,.14),transparent 70%)}
+.C .hero>div{position:relative}
+.C .live{display:inline-flex;align-items:center;gap:7px;font:700 10.5px Inter;letter-spacing:.14em;text-transform:uppercase;background:var(--ribbon);-webkit-background-clip:text;background-clip:text;color:transparent}
+.C .hero h3{font:650 19px Inter;letter-spacing:-.025em;margin:.5rem 0 .2rem;color:var(--ink)}
+.C .hero .meta{color:var(--ink2);font-size:13px}
+.C .chips{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
+.C .chip{font:500 12px Inter;background:#f4f5f9;border-radius:8px;padding:5px 11px;color:var(--ink2)}
+.C .chip.hot{background:linear-gradient(120deg,#eef0ff,#f4ecfd);color:#3d34c9;font-weight:600}
+.C .cta{margin-top:16px;display:inline-block;font:600 13px Inter;color:#fff;background:var(--ribbon);border-radius:10px;padding:10px 16px;box-shadow:0 8px 20px rgba(62,52,224,.3)}
+.C .clock{position:absolute;top:20px;right:22px;text-align:right}
+.C .clock b{font:700 28px/1 Inter;letter-spacing:-.03em;color:var(--ink)}
+.C .clock span{display:block;font:600 10px Inter;letter-spacing:.12em;color:var(--ink3);text-transform:uppercase;margin-top:3px}
+.C .qc{display:grid;grid-template-columns:auto 1fr auto;gap:13px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;box-shadow:0 1px 2px rgba(16,22,35,.04)}
+.C .ic{width:36px;height:36px;border-radius:99px;display:grid;place-items:center;font-size:15px}
+.C .ic.a{background:#fff2e2;color:#b06a12}.C .ic.b{background:#eef0ff;color:#3d34c9}
+.C .qc b{font:600 13.5px Inter;color:var(--ink)}
+.C .qc p{font-size:12.5px;color:var(--ink2);margin-top:1px}
+.C .b1{font:600 12px Inter;background:var(--ink);color:#fff;border-radius:8px;padding:7px 13px;border:0}
+.C .b2{font:600 12px Inter;background:#f4f5f9;border-radius:8px;padding:7px 12px;color:var(--ink2);border:0}
+.C .panel{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,22,35,.04)}
+.C .panel h4{font:700 10.5px Inter;letter-spacing:.13em;text-transform:uppercase;color:var(--ink3);margin-bottom:12px}
+.C .krow{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink2)}
+.C .krow:first-of-type{border:0;padding-top:0}
+.C .krow b{font:700 17px Inter;letter-spacing:-.02em;color:var(--ink)}
+.C .bar{height:6px;border-radius:99px;background:#eef0f5;overflow:hidden;margin-top:6px}
+.C .bar i{display:block;height:100%;width:64%;background:var(--ribbon);border-radius:99px}
+.C .up{color:#0f8a54;font:600 11px Inter}
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <div class="k">FHE App · Visual direction board · pick one, I build everything in it</div>
+  <h1>Three ways this app can look — same components, three worlds</h1>
+  <p>Each direction renders the identical hero, decision card, and KPI panel so the comparison is honest. The marketing site keeps its heritage brand either way — this chooses the product's own language. Shape variety, gradients, and light are structural in all three; none of them is a wall of green rounded rectangles.</p>
+</div>
+
+<section class="dir A">
+  <div class="dhead">
+    <span class="tag" style="background:#e7f4ec;color:#1a5c3a">Direction A</span>
+    <h2>First Light</h2>
+    <span class="pick">★ My recommendation</span>
+    <div class="swatches"><span class="sw" style="background:#fbfbfc"></span><span class="sw" style="background:#232b27"></span><span class="sw" style="background:linear-gradient(135deg,#2e8f5e,#1e6b45)"></span><span class="sw" style="background:linear-gradient(115deg,#ffe9c4,#f4b8c9,#aacdf2)"></span><span class="sw" style="background:#b98f3e"></span></div>
+    <p>Dawn over the arena. Near-white canvas, deep pine kept only as the action color (re-tuned brighter, always as a gradient, never a flat slab), and the signature is atmospheric light: a dawn gradient — soft gold into rose into sky — that appears as glow behind heroes, gradient borders on what's live, and the progress rings. Brass replaces gold as a hairline accent. Serif (Fraunces) reserved for numerals and the greeting. Heritage survives as a thread; light does the sophistication.</p>
+  </div>
+  <div class="stage">
+    <div class="col">
+      <div class="hero"><div class="atmo"></div>
+        <div>
+          <span class="live"><span class="dot"></span>Next up · in 40 min</span>
+          <h3>Riding Lesson — Sofia M. on Beau</h3>
+          <div class="meta">Main arena · standing Friday slot</div>
+          <div class="chips"><span class="chip hot">Plan ready</span><span class="chip">Her note: "nervous about cantering"</span><span class="chip">2 unread</span></div>
+          <div><span class="cta">Open workspace →</span></div>
+        </div>
+        <div class="clock"><b>9:00</b><span>Fri · Aug 21</span></div>
+      </div>
+      <div class="qc"><div class="ic a">↻</div><div><b>Reschedule — Ava R.</b><p>Tue 4:00 → Thu 5:00 · the slot is open</p></div><div style="display:flex;gap:6px"><button class="b1">Accept</button><button class="b2">Propose</button></div></div>
+      <div class="qc"><div class="ic b">＋</div><div><b>First-lesson request — Emma T.</b><p>Adult beginner · weekday mornings</p></div><div style="display:flex;gap:6px"><button class="b1">Offer times</button><button class="b2">View</button></div></div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <h4>This week</h4><div class="brassline"></div>
+        <div class="ring"><div class="ringviz"><i>62%</i></div><div style="font-size:12.5px;color:#5c6662"><b style="font:500 15px Fraunces,serif;color:#232b27">11 of 18 units</b><br>fulfilled this week</div></div>
+      </div>
+      <div class="panel">
+        <h4>Numbers</h4>
+        <div class="krow"><span>Revenue · Aug</span><span><b>$1,240</b> <span class="up">▲ 18%</span></span></div>
+        <div class="krow"><span>Lessons</span><span><b>11</b> <span class="up">▲ 2</span></span></div>
+        <div class="krow"><span>Credits open</span><b>14</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="dir B">
+  <div class="dhead">
+    <span class="tag" style="background:#f6e7d6;color:#a35a2a">Direction B</span>
+    <h2>Tack Room</h2>
+    <div class="swatches"><span class="sw" style="background:#f7f5f2"></span><span class="sw" style="background:#2b2320"></span><span class="sw" style="background:linear-gradient(135deg,#c47a3f,#7c3b23)"></span><span class="sw" style="background:#5e2d26"></span><span class="sw" style="background:#b98f3e"></span></div>
+    <p>The horse world's own materials: saddle leather, oxblood, brass, porcelain. Warm without being parchment — espresso ink and deep leather gradients give it weight, stitched hairlines and warm shadow give it craft. The one direction where dark surfaces appear, and only in heroes, lit by a cognac glow instead of sitting flat. Richest, most unmistakably equestrian; the risk is warmth reading heavy if over-applied, so it lives on discipline.</p>
+  </div>
+  <div class="stage">
+    <div class="col">
+      <div class="hero"><div class="atmo"></div>
+        <div>
+          <span class="live">● Next up · in 40 min</span>
+          <h3>Riding Lesson — Sofia M. on Beau</h3>
+          <div class="meta">Main arena · standing Friday slot</div>
+          <div class="chips"><span class="chip hot">Plan ready</span><span class="chip">Her note: "nervous about cantering"</span><span class="chip">2 unread</span></div>
+          <div><span class="cta">Open workspace →</span></div>
+        </div>
+        <div class="clock"><b>9:00</b><span>Fri · Aug 21</span></div>
+      </div>
+      <div class="qc"><div class="ic a">↻</div><div><b>Reschedule — Ava R.</b><p>Tue 4:00 → Thu 5:00 · the slot is open</p></div><div style="display:flex;gap:6px"><button class="b1">Accept</button><button class="b2">Propose</button></div></div>
+      <div class="qc"><div class="ic b">＋</div><div><b>First-lesson request — Emma T.</b><p>Adult beginner · weekday mornings</p></div><div style="display:flex;gap:6px"><button class="b1">Offer times</button><button class="b2">View</button></div></div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <h4>This week</h4><div class="stitch"></div>
+        <div class="krow"><span>Units fulfilled</span><span><b>11 / 18</b></span></div>
+        <div class="krow"><span>Revenue · Aug</span><span><b>$1,240</b> <span class="up">▲ 18%</span></span></div>
+        <div class="krow"><span>Lessons</span><span><b>11</b> <span class="up">▲ 2</span></span></div>
+        <div class="krow"><span>Credits open</span><b>14</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="dir C">
+  <div class="dhead">
+    <span class="tag" style="background:#eef0ff;color:#3d34c9">Direction C</span>
+    <h2>Show Season</h2>
+    <div class="swatches"><span class="sw" style="background:#fff"></span><span class="sw" style="background:#101623"></span><span class="sw" style="background:linear-gradient(120deg,#2646d8,#8b34c9)"></span><span class="sw" style="background:#f4f5f9"></span><span class="sw" style="background:#0f8a54"></span></div>
+    <p>Competition-day crispness: pure white, graphite ink, and one vivid signature — the ribbon gradient, cobalt into violet, the colors of championship ribbons — carried as an edge stripe, live-state text, and data fills. All-Inter, tightest tracking, circles for people, bars for progress. The most contemporary-SaaS of the three and the furthest from the heritage brand; nothing about it is drab, and nothing about it is a barn either.</p>
+  </div>
+  <div class="stage">
+    <div class="col">
+      <div class="hero"><div class="atmo"></div>
+        <div>
+          <span class="live">● NEXT UP · IN 40 MIN</span>
+          <h3>Riding Lesson — Sofia M. on Beau</h3>
+          <div class="meta">Main arena · standing Friday slot</div>
+          <div class="chips"><span class="chip hot">Plan ready</span><span class="chip">Her note: "nervous about cantering"</span><span class="chip">2 unread</span></div>
+          <div><span class="cta">Open workspace →</span></div>
+        </div>
+        <div class="clock"><b>9:00</b><span>Fri · Aug 21</span></div>
+      </div>
+      <div class="qc"><div class="ic a">↻</div><div><b>Reschedule — Ava R.</b><p>Tue 4:00 → Thu 5:00 · the slot is open</p></div><div style="display:flex;gap:6px"><button class="b1">Accept</button><button class="b2">Propose</button></div></div>
+      <div class="qc"><div class="ic b">＋</div><div><b>First-lesson request — Emma T.</b><p>Adult beginner · weekday mornings</p></div><div style="display:flex;gap:6px"><button class="b1">Offer times</button><button class="b2">View</button></div></div>
+    </div>
+    <div class="col">
+      <div class="panel">
+        <h4>This week</h4>
+        <div class="krow"><span>Units fulfilled</span><span><b>11 / 18</b></span></div>
+        <div class="bar"><i></i></div>
+        <div class="krow" style="margin-top:6px"><span>Revenue · Aug</span><span><b>$1,240</b> <span class="up">▲ 18%</span></span></div>
+        <div class="krow"><span>Lessons</span><span><b>11</b> <span class="up">▲ 2</span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
