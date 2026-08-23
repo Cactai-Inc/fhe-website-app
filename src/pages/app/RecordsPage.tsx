@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../lib/hooks';
 import { ContactDossierModal } from '../../components/app/ContactDossierModal';
 import {
-  AllRecordsPage, LeadsPage, PartnersPage, VendorsPage,
+  LeadsPage, PartnersPage, VendorsPage,
 } from './ops/ContactsPage';
 import Admin from './Admin';
 import HorseRecordsPage from './ops/HorseRecordsPage';
@@ -32,11 +32,18 @@ import ArchivedAccountsPage from './ops/ArchivedAccountsPage';
  */
 
 type RecordsTab =
-  | 'all' | 'leads' | 'clients' | 'partners' | 'vendors' | 'horses'
+  | 'leads' | 'clients' | 'partners' | 'vendors' | 'horses'
   | 'lessons' | 'documents' | 'files' | 'deals' | 'archived';
 
 const TABS: { id: RecordsTab; label: string; adminOnly?: boolean }[] = [
-  { id: 'all', label: 'All' },
+  // Owner, 2026-08-23: the "All" tab that used to sit here showed only
+  // contact types (leads/clients/partners/vendors) -- never horses,
+  // documents, lessons, deals or files, which are its neighbors in this
+  // same strip. "Not showing all of the records defeats the purpose of
+  // calling it all... otherwise eliminate it entirely, its useless as is
+  // and serves only to make me click more." Removed rather than rebuilt
+  // into a real cross-record view -- that is a different feature, not
+  // named here, and not assumed.
   { id: 'leads', label: 'Leads' },
   { id: 'clients', label: 'Clients' },
   { id: 'partners', label: 'Partners' },
@@ -93,7 +100,7 @@ function RecordsTabStrip({ active }: { active: RecordsTab }) {
 export default function RecordsPage() {
   useDocumentTitle('Records');
   const { tab: tabParam } = useParams<{ tab?: string }>();
-  const tab: RecordsTab = (tabParam && TAB_IDS.has(tabParam) ? tabParam : 'all') as RecordsTab;
+  const tab: RecordsTab = (tabParam && TAB_IDS.has(tabParam) ? tabParam : 'clients') as RecordsTab;
 
   /** A horse's owner/lessee opens their full record in place — "a horse links
    *  to its people … without leaving the page." Lives here, one level above
@@ -107,7 +114,6 @@ export default function RecordsPage() {
     <div>
       <RecordsTabStrip active={tab} />
 
-      {tab === 'all' && <AllRecordsPage />}
       {tab === 'leads' && <LeadsPage />}
       {tab === 'clients' && <Admin />}
       {tab === 'partners' && <PartnersPage />}

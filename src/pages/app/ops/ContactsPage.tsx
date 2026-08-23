@@ -637,10 +637,6 @@ export function VendorsPage() {
 export function PartnersPage() {
   return <ContactDirectory mode="partners" />;
 }
-/** Every lead, client, partner and vendor, one flat list. Records "All" tab. */
-export function AllRecordsPage() {
-  return <ContactDirectory mode="all" />;
-}
 /** The people we serve: clients, members, horse owners, counterparties.
  *  Retired — see CONTACTS_PAGE_RETIRED. */
 export function ContactsPage() {
