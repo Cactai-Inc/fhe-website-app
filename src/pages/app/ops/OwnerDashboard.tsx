@@ -274,32 +274,46 @@ function renderZone(
 }
 
 /** Plan §2's four numbers. Week fill is the ring, because a fraction of capacity
- *  is the one figure here that is naturally a proportion. */
+ *  is the one figure here that is naturally a proportion.
+ *
+ *  Owner, 2026-08-23: "no KPI's should be shown, just like nothing else should
+ *  be shown, when the value is zero, the count list is null, theres nothing to
+ *  show." A zero-value tile is the same "nothing to act on" case a zone hides
+ *  for — so each tile renders only when its number is non-zero, and the whole
+ *  ribbon renders only when at least one does. */
 function TrainerRibbon({ k }: { k: TrainerKpis | null }) {
   if (!k) return null;
   const fill = k.week_capacity > 0 ? (k.week_booked / k.week_capacity) * 100 : 0;
-  return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-      <Tile label="Today" value={<CountUp value={k.today_lessons} />}
+  const tiles = [
+    k.today_lessons > 0 && (
+      <Tile key="today" label="Today" value={<CountUp value={k.today_lessons} />}
             sub={k.today_lessons === 1 ? 'session' : 'sessions'} to="/app/calendar" />
-      <div className="dash-tile flex items-center px-4 py-3">
+    ),
+    k.week_booked > 0 && (
+      <div key="week" className="dash-tile flex items-center px-4 py-3">
         <Ring pct={fill} label={`Week fill · ${k.week_booked}/${k.week_capacity}`} />
       </div>
-      <Tile label="Awaiting confirmation"
+    ),
+    k.awaiting_confirmation > 0 && (
+      <Tile key="awaiting" label="Awaiting confirmation"
             value={<CountUp value={k.awaiting_confirmation} format={usd} />}
-            sub="declared, not yet confirmed"
-            tone={k.awaiting_confirmation > 0 ? 'alert' : 'flat'}
-            to="/app/ops/payments/review" />
-      <Tile label="People waiting" value={<CountUp value={k.people_waiting} />}
-            sub={k.people_waiting > 0 ? `oldest ${ageLabel(k.people_oldest_hours)}` : 'nobody waiting'}
+            sub="declared, not yet confirmed" tone="alert" to="/app/ops/payments/review" />
+    ),
+    k.people_waiting > 0 && (
+      <Tile key="waiting" label="People waiting" value={<CountUp value={k.people_waiting} />}
+            sub={`oldest ${ageLabel(k.people_oldest_hours)}`}
             tone={k.people_oldest_hours > 24 ? 'alert' : 'flat'}
             to="/app/records/leads" />
-    </div>
-  );
+    ),
+  ].filter(Boolean);
+  if (tiles.length === 0) return null;
+  return <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{tiles}</div>;
 }
 
 /** Plan §3's ribbon. Revenue is `revenue_summary` and nothing else — the same
  *  function the calendar's money strip now calls (§5). */
+/** Same rule as TrainerRibbon: a zero-value tile does not render, and the
+ *  ribbon itself renders only if something in it is non-zero. */
 function BusinessRibbon({ k, revenue }: {
   k: BusinessKpis | null;
   revenue: { week: RevenueWindow; month: RevenueWindow } | null;
@@ -308,27 +322,35 @@ function BusinessRibbon({ k, revenue }: {
   const delta = (d: number, pct: number | null) =>
     d === 0 ? 'level with the period before'
       : `${d > 0 ? '▲' : '▼'} ${usd(Math.abs(d))}${pct === null ? '' : ` (${Math.abs(pct)}%)`} vs the period before`;
-  return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-      <Tile label="Revenue · this week"
+  const tiles = [
+    revenue.week.total > 0 && (
+      <Tile key="rev-week" label="Revenue · this week"
             value={<CountUp value={revenue.week.total} format={usd} />}
             sub={delta(revenue.week.delta, revenue.week.delta_pct)}
             tone={revenue.week.delta > 0 ? 'up' : revenue.week.delta < 0 ? 'down' : 'flat'}
             to="/app/ops/payments/review" />
-      <Tile label="Revenue · this month"
+    ),
+    revenue.month.total > 0 && (
+      <Tile key="rev-month" label="Revenue · this month"
             value={<CountUp value={revenue.month.total} format={usd} />}
             sub={delta(revenue.month.delta, revenue.month.delta_pct)}
             tone={revenue.month.delta > 0 ? 'up' : revenue.month.delta < 0 ? 'down' : 'flat'}
             to="/app/ops/payments/review" />
-      <Tile label="New clients this month" value={<CountUp value={k.new_clients_month} />}
+    ),
+    k.new_clients_month > 0 && (
+      <Tile key="new-clients" label="New clients this month" value={<CountUp value={k.new_clients_month} />}
             sub={`${k.converted_90d} of ${k.leads_90d} inquiries became clients (90 days)`}
             to="/app/records/clients" />
-      <Tile label="Open pipeline" value={<CountUp value={k.open_pipeline} format={usd} />}
+    ),
+    k.open_pipeline > 0 && (
+      <Tile key="pipeline" label="Open pipeline" value={<CountUp value={k.open_pipeline} format={usd} />}
             sub={k.declared_unconfirmed > 0
               ? `${usd(k.declared_unconfirmed)} declared, awaiting confirmation`
               : 'nothing declared and unconfirmed'}
             tone={k.declared_unconfirmed > 0 ? 'alert' : 'flat'}
             to="/app/ops/payments/review" />
-    </div>
-  );
+    ),
+  ].filter(Boolean);
+  if (tiles.length === 0) return null;
+  return <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{tiles}</div>;
 }
