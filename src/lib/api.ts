@@ -1518,25 +1518,7 @@ export interface CostAllocationRuleInput {
   share_pct?: number; effective_from?: string | null; effective_to?: string | null;
 }
 
-// Lessons (mod.lessons)
-export interface LessonPackage {
-  id: string; org_id: string; package_key: string; name: string;
-  price_value_key: string | null; credits: number; active: boolean;
-  created_at: string; updated_at: string;
-}
-export interface LessonPackageInput {
-  package_key: string; name: string; price_value_key?: string | null; credits?: number;
-}
-
-export interface LessonCredit {
-  id: string; org_id: string; client_id: string; package_key: string | null;
-  credits_total: number; credits_remaining: number; purchased_at: string;
-  created_at: string; updated_at: string;
-}
-export interface LessonCreditInput {
-  client_id: string; package_key?: string | null;
-  credits_total: number; credits_remaining?: number;
-}
+// Lessons (mod.lessons) — types + wrappers live in src/lib/ops/api-lessons.ts.
 
 // Records (mod.horserecords) — the ownership/rights ledger lives in
 // src/lib/ops/api-records.ts on the horse_relationships survivor (Stage 1i);
@@ -1839,58 +1821,10 @@ export async function resolveConsumptionBilling(period: string): Promise<number>
   return (data as number | null) ?? 0;
 }
 
-// ─── Lessons (mod.lessons) ──────────────────────────────────────────────────
-
-export async function listLessonPackages(): Promise<LessonPackage[]> {
-  const { data, error } = await supabase
-    .from('lesson_packages')
-    .select('*')
-    .is('deleted_at', null)
-    .order('name');
-  if (error) throw error;
-  return (data ?? []) as LessonPackage[];
-}
-
-export async function createLessonPackage(input: LessonPackageInput): Promise<LessonPackage> {
-  const { data, error } = await supabase
-    .from('lesson_packages')
-    .insert({
-      package_key: input.package_key,
-      name: input.name,
-      price_value_key: input.price_value_key ?? null,
-      credits: input.credits ?? 0,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as LessonPackage;
-}
-
-export async function listLessonCredits(clientId?: string): Promise<LessonCredit[]> {
-  let query = supabase
-    .from('lesson_credits')
-    .select('*')
-    .is('deleted_at', null);
-  if (clientId) query = query.eq('client_id', clientId);
-  const { data, error } = await query.order('purchased_at', { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as LessonCredit[];
-}
-
-export async function createLessonCredit(input: LessonCreditInput): Promise<LessonCredit> {
-  const { data, error } = await supabase
-    .from('lesson_credits')
-    .insert({
-      client_id: input.client_id,
-      package_key: input.package_key ?? null,
-      credits_total: input.credits_total,
-      credits_remaining: input.credits_remaining ?? input.credits_total,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as LessonCredit;
-}
+// ─── Lessons (mod.lessons) — the live wrappers are src/lib/ops/api-lessons.ts;
+// the duplicate suite that lived here (including its own raw-insert grant
+// function, unimported anywhere) was deleted by TASK-AUTHORITY (2026-08-22):
+// lesson_credits has one write path, the credit engine.
 
 // ─── Records (mod.horserecords) ──────────────────────────────────────────────
 // Ledger helpers live in src/lib/ops/api-records.ts (horse_relationships).

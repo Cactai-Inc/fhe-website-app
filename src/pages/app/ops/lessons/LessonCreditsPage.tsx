@@ -1,162 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toErrorMessage } from '../../../../lib/ops/errors';
-import type { FormEvent } from 'react';
-import { DataTable, FormField, Modal, ModuleGate, useAsync, useToast } from '../../../../lib/ops';
-import type { Column, RowAction } from '../../../../lib/ops';
+import { DataTable, ModuleGate } from '../../../../lib/ops';
+import type { Column } from '../../../../lib/ops';
 import { useModules } from '../../../../lib/ops/useModules';
 import {
   listLessonCredits,
-  createLessonCredit,
-  consumeLessonCredit,
   listLessonClients,
-  listLessonPackages,
   type LessonCredit,
   type LessonClientOption,
-  type LessonPackage,
 } from '../../../../lib/ops/api-lessons';
 
 /**
- * OPS-LESSON-CREDITS — per-client credits ledger (module mod.lessons).
+ * OPS-LESSON-CREDITS — the read-only credits ledger (module mod.lessons).
  *
- * Gated by ModuleGate('mod.lessons'); a lessons-OFF tenant sees the lock and no
- * fetch fires. Inside the gate: listLessonCredits() drives the ledger (client
- * name resolved via listLessonClients), a client filter re-queries WITH the
- * exact client_id, and the outstanding balance sums credits_remaining over the
- * visible rows. 'Grant credits' opens a Modal: pick a client + a package (the
- * pack's credit count pre-fills, editable) → createLessonCredit with the exact
- * insert shape ({ client_id, package_key, credits_total }). Each row's
- * 'Use 1 credit' action calls consumeLessonCredit(id) — the schema has no
- * bookings⇄credits linkage or consume RPC, so this guarded decrement IS the
- * real consumption path. Rejected grant keeps the modal open with the message;
- * a failed consume toasts the error.
+ * TASK-AUTHORITY (2026-08-22): this page used to write lesson_credits directly
+ * (a raw-insert grant modal, a read-modify-write consume row action) — a
+ * second write path beside the credit engine, with no offering, no purchase,
+ * no period, no expiry, no audit trail (D18/D19). Both are deleted.
+ * The ledger only reads now: listLessonCredits() drives the table (client name
+ * resolved via listLessonClients), a client filter re-queries WITH the exact
+ * client_id, and the outstanding balance sums credits_remaining over the
+ * visible rows. Credits are minted by purchases and consumed by completing a
+ * session on the Sessions page — the banner below says so and links there.
  */
-type DrawerState = { mode: 'closed' } | { mode: 'grant' };
-
-function GrantForm({
-  clients,
-  packages,
-  onSubmit,
-  onCancel,
-  submitting,
-  error,
-}: {
-  clients: LessonClientOption[];
-  packages: LessonPackage[];
-  onSubmit: (input: { client_id: string; package_key: string | null; credits_total: number }) => Promise<void>;
-  onCancel: () => void;
-  submitting?: boolean;
-  error?: string | null;
-}) {
-  const [clientId, setClientId] = useState('');
-  const [packageKey, setPackageKey] = useState('');
-  const [credits, setCredits] = useState('');
-  const [fieldError, setFieldError] = useState<string | null>(null);
-
-  const pickPackage = (key: string) => {
-    setPackageKey(key);
-    const pkg = packages.find((p) => p.package_key === key);
-    if (pkg) setCredits(String(pkg.credits));
-  };
-
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!clientId) {
-      setFieldError('Pick a client.');
-      return;
-    }
-    const creditsNum = Number(credits);
-    if (!Number.isInteger(creditsNum) || creditsNum <= 0) {
-      setFieldError('Credits must be a positive whole number.');
-      return;
-    }
-    setFieldError(null);
-    await onSubmit({
-      client_id: clientId,
-      package_key: packageKey || null,
-      credits_total: creditsNum,
-    });
-  }
-
-  return (
-    <form onSubmit={handleSubmit} noValidate>
-      <FormField label="Client" required>
-        {({ id, describedBy, errorClass }) => (
-          <select
-            id={id}
-            name="client_id"
-            className={`form-input ${errorClass}`}
-            aria-describedby={describedBy}
-            value={clientId}
-            onChange={(e) => setClientId(e.target.value)}
-            disabled={submitting}
-          >
-            <option value="">Select a client…</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        )}
-      </FormField>
-
-      <FormField label="Package" hint="Pre-fills the pack's credit count; leave blank for an ad-hoc grant.">
-        {({ id, describedBy, errorClass }) => (
-          <select
-            id={id}
-            name="package_key"
-            className={`form-input ${errorClass}`}
-            aria-describedby={describedBy}
-            value={packageKey}
-            onChange={(e) => pickPackage(e.target.value)}
-            disabled={submitting}
-          >
-            <option value="">No package (ad-hoc)</option>
-            {packages
-              .filter((p) => p.active)
-              .map((p) => (
-                <option key={p.id} value={p.package_key}>
-                  {p.name} ({p.credits} credits)
-                </option>
-              ))}
-          </select>
-        )}
-      </FormField>
-
-      <FormField label="Credits" required>
-        {({ id, describedBy, errorClass }) => (
-          <input
-            id={id}
-            name="credits_total"
-            type="number"
-            min={1}
-            step={1}
-            className={`form-input ${errorClass}`}
-            aria-describedby={describedBy}
-            value={credits}
-            onChange={(e) => setCredits(e.target.value)}
-            disabled={submitting}
-          />
-        )}
-      </FormField>
-
-      {(fieldError || error) && (
-        <p role="alert" className="form-error mb-4">
-          {fieldError ?? error}
-        </p>
-      )}
-
-      <div className="flex justify-end gap-3">
-        <button type="button" className="btn-secondary" onClick={onCancel} disabled={submitting}>
-          Cancel
-        </button>
-        <button type="submit" className="btn-primary" disabled={submitting} aria-busy={submitting}>
-          {submitting ? 'Granting…' : 'Grant credits'}
-        </button>
-      </div>
-    </form>
-  );
-}
 
 export function LessonCreditsPage() {
   const modules = useModules();
@@ -164,28 +31,21 @@ export function LessonCreditsPage() {
 
   const [rows, setRows] = useState<LessonCredit[]>([]);
   const [clients, setClients] = useState<LessonClientOption[]>([]);
-  const [packages, setPackages] = useState<LessonPackage[]>([]);
   const [clientFilter, setClientFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [drawer, setDrawer] = useState<DrawerState>({ mode: 'closed' });
-  const [formError, setFormError] = useState<string | null>(null);
 
-  const toast = useToast();
-
-  // Initial load: ledger + the client/package lookups the form and names need.
+  // Initial load: ledger + the client lookup the names need.
   const loadAll = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const [credits, clientRows, packageRows] = await Promise.all([
+      const [credits, clientRows] = await Promise.all([
         listLessonCredits(),
         listLessonClients(),
-        listLessonPackages(),
       ]);
       setRows(credits);
       setClients(clientRows);
-      setPackages(packageRows);
     } catch (err) {
       setLoadError(toErrorMessage(err, 'Could not load lesson credits.'));
     } finally {
@@ -222,38 +82,6 @@ export function LessonCreditsPage() {
     [rows],
   );
 
-  const grant = useAsync(createLessonCredit);
-
-  const handleGrant = async (input: {
-    client_id: string;
-    package_key: string | null;
-    credits_total: number;
-  }) => {
-    setFormError(null);
-    try {
-      const created = await grant.run(input);
-      // The new grant shows unless a different client filter hides it.
-      if (!clientFilter || clientFilter === created.client_id) {
-        setRows((prev) => [created, ...prev]);
-      }
-      toast.success('Credits granted.');
-      setDrawer({ mode: 'closed' });
-    } catch (err) {
-      // Error branch: keep the modal open, surface the message.
-      setFormError(toErrorMessage(err, 'Could not grant credits.'));
-    }
-  };
-
-  const handleConsume = async (row: LessonCredit) => {
-    try {
-      const updated = await consumeLessonCredit(row.id);
-      setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-      toast.success(`1 credit used — ${updated.credits_remaining} remaining.`);
-    } catch (err) {
-      toast.error(toErrorMessage(err, 'Could not use a credit.'));
-    }
-  };
-
   const columns: Column<LessonCredit>[] = [
     { key: 'client', header: 'Client', render: (r) => clientName(r.client_id) },
     {
@@ -279,32 +107,23 @@ export function LessonCreditsPage() {
     },
   ];
 
-  const rowActions: RowAction<LessonCredit>[] = [
-    { label: 'Use 1 credit', onClick: (row) => void handleConsume(row) },
-  ];
-
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-serif text-2xl text-green-900">Lesson credits</h1>
-          <p className="text-sm text-green-800/70">Per-client credit ledger and balances.</p>
-        </div>
-        {lessonsOn && (
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => {
-              setFormError(null);
-              setDrawer({ mode: 'grant' });
-            }}
-          >
-            Grant credits
-          </button>
-        )}
+      <div className="mb-6">
+        <h1 className="font-serif text-2xl text-green-900">Lesson credits</h1>
+        <p className="text-sm text-green-800/70">Per-client credit ledger and balances.</p>
       </div>
 
       <ModuleGate moduleKey="mod.lessons" modules={modules}>
+        <p className="mb-4 rounded bg-green-50 px-4 py-3 text-sm text-green-900">
+          This ledger is read-only. Credits are minted automatically by purchases and
+          consumed by completing a session on{' '}
+          <Link to="/app/ops/lessons/sessions" className="link-underline font-medium">
+            Sessions
+          </Link>
+          .
+        </p>
+
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
             <label htmlFor="credits-client-filter" className="form-label">
@@ -329,18 +148,6 @@ export function LessonCreditsPage() {
           </p>
         </div>
 
-        {toast.toasts.map((t) => (
-          <div
-            key={t.id}
-            role="status"
-            className={`mb-4 rounded px-4 py-2 text-sm ${
-              t.tone === 'error' ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-900'
-            }`}
-          >
-            {t.message}
-          </div>
-        ))}
-
         {loadError && (
           <p role="alert" className="form-error mb-4">
             {loadError}
@@ -352,28 +159,9 @@ export function LessonCreditsPage() {
           rows={rows}
           rowKey={(r) => r.id}
           loading={loading && rows.length === 0}
-          rowActions={rowActions}
           emptyTitle="No lesson credits yet"
-          emptyMessage="Grant credits from a package purchase to start a client's ledger."
+          emptyMessage="Credits appear here once a purchase mints them."
         />
-
-        <Modal
-          open={drawer.mode !== 'closed'}
-          onClose={() => setDrawer({ mode: 'closed' })}
-          title="Grant credits"
-          disableBackdropClose={grant.isPending}
-        >
-          {drawer.mode !== 'closed' && (
-            <GrantForm
-              clients={clients}
-              packages={packages}
-              onSubmit={handleGrant}
-              onCancel={() => setDrawer({ mode: 'closed' })}
-              submitting={grant.isPending}
-              error={formError}
-            />
-          )}
-        </Modal>
       </ModuleGate>
     </div>
   );
