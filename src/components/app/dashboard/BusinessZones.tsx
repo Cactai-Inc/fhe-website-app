@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type {
   MoneyHealthRow, MirrorRow, DealRow, ActivityRow, HygieneRow, PipelineRow,
@@ -204,10 +205,40 @@ const LEDGER_LABEL: Record<ActivityRow['ledger'], string> = {
   audit: 'Changed',
 };
 
+/** Owner, 2026-08-23: "the logs being visible is a nice touch but it needs
+ *  to be collapsed and i can expand to see them if i want." Collapsed by
+ *  default — a one-line summary with an expand control, not the raw feed. */
 export function ActivityZone({ items }: { items: ActivityRow[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const shown = items.slice(0, 12);
+
+  if (!expanded) {
+    return (
+      <div className="dash-card px-3.5 py-2.5">
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="flex w-full items-center justify-between text-left focus-ring"
+        >
+          <span className="text-[0.8rem] text-green-900">
+            {shown.length === 0 ? 'Nothing recent' : `${shown[0].what}${shown.length > 1 ? ` · ${shown.length - 1} more` : ''}`}
+          </span>
+          <span className="shrink-0 pl-3 text-[0.72rem] font-medium text-green-800/70">Show</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="dash-card divide-y divide-green-900/8 px-0 py-0">
-      {items.slice(0, 12).map((r, i) => (
+      <button
+        type="button"
+        onClick={() => setExpanded(false)}
+        className="block w-full px-3.5 py-2 text-left text-[0.76rem] font-medium text-green-800/70 focus-ring"
+      >
+        Hide
+      </button>
+      {shown.map((r, i) => (
         <div key={`${r.ledger}-${r.subject_id}-${i}`} className="grid grid-cols-[5.4rem_1fr_auto] items-baseline gap-3 px-3.5 py-2">
           <span className="text-[0.62rem] font-semibold uppercase tracking-wide text-gold-800">
             {LEDGER_LABEL[r.ledger]}
