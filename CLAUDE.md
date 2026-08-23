@@ -282,6 +282,26 @@ reporting success.
   templates, catalog structure, nav arrangement, field vocabularies — it must ship the
   surface that edits it, or explicitly name the follow-up that will. **Seeding content
   through a migration and leaving no UI is the pattern this decision exists to stop.**
+  ⚠️ **RECORDED EXCEPTION — A SELF-ARRANGING SURFACE NEEDS NO ARRANGEMENT EDITOR
+  (owner, 2026-08-22).** `TASK-DASHBOARDBUILD` shipped the two owner dashboards and flagged
+  the plan's `dashboard_prefs` (per-zone pin/hide/reorder) as **a D13 gap — "the owner cannot
+  rearrange his own board without a thread."** The owner ruled it is not one: *"The dashboard
+  doesn't need an editor in the traditional sense. Surfaces should be fluid and dynamic and
+  only shown when there is something to show."*
+  **The reasoning, and it generalises.** D13 exists because a tenant should never need a
+  developer to change something they own. **A surface that responds to its own data has already
+  solved that** — the zone framework renders a zone when it holds something and drops it when it
+  does not, so the board reorders itself as the day changes and there is nothing left to
+  arrange. An editor here would be **configuration for its own sake**: a second thing to
+  maintain, and a way for the owner to hide a zone that was about to matter.
+  **So the test is not "is this arrangeable?" but "does a person have a preference the DATA
+  cannot express?"** Zone order on a dashboard: no. Prices, copy, templates, document sets,
+  field vocabularies, business formulas: yes — D13 and D21 are undisturbed for all of them, and
+  this exception is about **dashboard/zone arrangement only**, not about content or rules.
+  **`dashboard_prefs` is ruled out, not deferred.** Do not re-open it as unfinished work, and
+  do not report a self-hiding surface as missing an editor. Recorded in
+  `docs/design/DASHBOARDS-GROUND-UP-PLAN.md` §5/§7, `src/lib/dashboard/registry.ts` and
+  `docs/reports/TASK-DASHBOARDBUILD-REPORT.md` §9.2.
 - **D14 — CHANGE REVIEW REPLACES THE LOCK. Signability is gated by COMPLETENESS, not
   by workflow state (owner, 2026-08-12).** Supersedes the orchestrator's recommendation
   to keep structural editing blocked during `in_review`. **The owner had already ruled;

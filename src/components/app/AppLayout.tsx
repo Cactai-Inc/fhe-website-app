@@ -18,6 +18,7 @@ import {
   Receipt, Eye, Library, NotebookPen,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useStaffLanding } from '../../lib/dashboard/landing';
 import { usePrefersReducedMotion } from '../../lib/hooks';
 import { useViewSurfaces } from '../../lib/surfaces';
 import { fetchMyGrantKeys } from '../../lib/grants';
@@ -1224,6 +1225,12 @@ export default function AppLayout() {
   const { profile, isAdmin, isStaff, isSuperAdmin, hasModule, signOut } = useAuth();
   const dmCount = useDmUnread();
   useViewSurfaces();
+  /* D26 — THE DASHBOARD IS THE LANDING SURFACE, not a page you navigate to.
+     Fresh arrival at /app, and a return after ~30 minutes away. Both guarded
+     against hijacking a deep link and against looping; the platform owner is
+     excluded because it is not a tenant identity (D1a) and has no dashboard.
+     See `lib/dashboard/landing.ts` for the two triggers and their fences. */
+  useStaffLanding(isStaff && !isSuperAdmin);
   const navigate = useNavigate();
   const unreadCount = useUnreadCount();
   const inboundCount = useInboundOpenCount(isStaff);

@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CalendarDays, CalendarClock, ChevronLeft, ChevronRight, X, Wallet, Settings } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
+import { weekWindow, monthWindow } from '../../lib/dashboard/windows';
+/* §7.4 — the same formatter the dashboard tile uses. The probe caught these
+   printing as `$1,510` and `$1510`: one number, rendered two ways, is exactly
+   the disagreement this task exists to remove. */
+import { usd } from '../../lib/dashboard/format';
 import { PageCreateButton } from '../../components/app/PageCreateButton';
 import {
   fetchCalendar,
@@ -133,8 +139,24 @@ function itemLabel(item: CalendarItem): string {
 
 export default function CalendarPage() {
   useDocumentTitle('Calendar');
+  /* TASK-DASHBOARDBUILD — THE REACH FOR EVERY SESSION ROW (D17).
+     The owner dashboard's Today zone, week strip and notes loop all point at a
+     specific session, and this page had no way to be addressed: no query
+     params, so the only possible link was "the calendar, somewhere". Two params
+     close that:
+       ?on=YYYY-MM-DD   open the week containing that date
+       ?item=<id>       open that session's panel once the range has loaded
+     Both are optional and independent; an id that is not in the loaded range
+     simply does not open, which is the honest behaviour for a stale link. */
+  const [params] = useSearchParams();
+  const wantItem = params.get('item');
+  const wantOn = params.get('on');
   const [view, setView] = useState<ViewMode>('week');
-  const [anchor, setAnchor] = useState<Date>(() => new Date());
+  const [anchor, setAnchor] = useState<Date>(() => {
+    const on = new URLSearchParams(window.location.search).get('on');
+    if (on && /^\d{4}-\d{2}-\d{2}$/.test(on)) return new Date(`${on}T12:00:00`);
+    return new Date();
+  });
   const [data, setData] = useState<CalendarView | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -232,21 +254,42 @@ export default function CalendarPage() {
   // staff revenue (this week + this month) + credits roster
   useEffect(() => {
     if (!isStaff) return;
-    const now = new Date();
-    const wkFrom = startOfWeek(now);
-    const wkTo = addDays(wkFrom, 7);
-    const moFrom = new Date(now.getFullYear(), now.getMonth(), 1);
-    const moTo = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    /* TASK-DASHBOARDBUILD §7.4 — the SAME bounds the dashboard ribbon passes,
+       from the same helper, so the two surfaces cannot print two figures. */
+    const wk = weekWindow();
+    const mo = monthWindow();
     Promise.all([
-      fetchRevenue(wkFrom.toISOString(), wkTo.toISOString()),
-      fetchRevenue(moFrom.toISOString(), moTo.toISOString()),
+      fetchRevenue(wk.from, wk.to),
+      fetchRevenue(mo.from, mo.to),
     ])
       .then(([wk, mo]) => setMoney({ week: wk.total, month: mo.total }))
       .catch(() => setMoney(null));
     fetchCreditsRoster().then(setRoster).catch(() => setRoster([]));
   }, [isStaff, data]);
 
-  const items = data?.items ?? [];
+  /* Memoized because the ?item= effect below depends on it: a fresh array
+     identity every render would re-run that effect on every render. */
+  const items = useMemo(() => data?.items ?? [], [data]);
+
+  /* ?on= — re-anchor when the param changes within the session (the initial
+     value is read in useState above, for the very first render). */
+  useEffect(() => {
+    if (!wantOn || !/^\d{4}-\d{2}-\d{2}$/.test(wantOn)) return;
+    setAnchor(new Date(`${wantOn}T12:00:00`));
+  }, [wantOn]);
+
+  /* ?item= — open that session once its range has loaded. Fires once per id:
+     re-opening the panel every time the calendar refetches would fight the
+     person who just closed it. */
+  const openedItem = useRef<string | null>(null);
+  useEffect(() => {
+    if (!wantItem || !data || openedItem.current === wantItem) return;
+    const hit = items.find((x) => x.id === wantItem);
+    if (!hit) return;
+    openedItem.current = wantItem;
+    if (data.role === 'staff') setEditing({ item: hit });
+    else setSelected(hit);
+  }, [wantItem, data, items]);
 
   function onItemClick(it: CalendarItem) {
     if (isStaff) setEditing({ item: it });
@@ -345,11 +388,17 @@ export default function CalendarPage() {
 
       {isStaff && money && (
         <div className="flex flex-wrap items-center gap-4 mb-3 text-sm">
+          {/* TASK-DASHBOARDBUILD §5 — the SAME figure the dashboard's revenue
+              tile shows, from the same `revenue_summary` call, because they are
+              two renderings of one number (D18). Labelled "paid" because that
+              is now what it means: money received, on the day it was received.
+              It used to be scheduled value and was reading roughly ten times
+              high. */}
           <span className="inline-flex items-center gap-1.5 text-green-900">
             <Wallet size={15} className="text-gold-ink" aria-hidden="true" />
-            This week <strong>${money.week.toFixed(0)}</strong>
+            Paid this week <strong>{usd(money.week)}</strong>
           </span>
-          <span className="text-green-900">This month <strong>${money.month.toFixed(0)}</strong></span>
+          <span className="text-green-900">Paid this month <strong>{usd(money.month)}</strong></span>
           {roster && roster.length > 0 && (
             <button type="button" className="text-green-800 underline underline-offset-2" onClick={() => setRosterOpen((o) => !o)}>
               {roster.length} with credits
