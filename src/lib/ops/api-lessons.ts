@@ -9,9 +9,13 @@
  *                     credits_total, credits_remaining, purchased_at).
  *
  * RLS is the authoritative fence (org boundary + has_module('mod.lessons') +
- * staff access); these wrappers stay thin and throw on error. NOTE: the schema
- * has NO bookings⇄credits linkage and no consume RPC — consumption is a staff
- * decrement of credits_remaining (optimistic-concurrency-guarded below).
+ * staff access); these wrappers stay thin and throw on error.
+ *
+ * TASK-AUTHORITY (2026-08-22): lesson_credits has ONE write path — the credit
+ * engine (_mint_credits_for_purchase_item, _refund_booking_credit,
+ * complete_lesson_session). The raw-insert grant function and the
+ * read-modify-write consume function that used to live here are deleted, not
+ * deprecated — LessonCreditsPage is read-only now.
  */
 import { supabase } from '../supabase';
 import { contactName } from './types';
@@ -49,14 +53,6 @@ export interface LessonCredit {
   purchased_at: string;
   created_at: string;
   updated_at: string;
-}
-
-export interface LessonCreditInput {
-  client_id: string;
-  package_key?: string | null;
-  credits_total: number;
-  /** Defaults to credits_total (a fresh grant starts unspent). */
-  credits_remaining?: number;
 }
 
 /** A client option for the grant form / ledger display: the clients row with
@@ -246,52 +242,6 @@ export async function listLessonCredits(clientId?: string): Promise<LessonCredit
   const { data, error } = await query.order('purchased_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as LessonCredit[];
-}
-
-/** Grant credits (a package purchase landing on the ledger). */
-export async function createLessonCredit(input: LessonCreditInput): Promise<LessonCredit> {
-  const { data, error } = await supabase
-    .from('lesson_credits')
-    .insert({
-      client_id: input.client_id,
-      package_key: input.package_key ?? null,
-      credits_total: input.credits_total,
-      credits_remaining: input.credits_remaining ?? input.credits_total,
-    })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as LessonCredit;
-}
-
-/** Consume `count` credits from a ledger row (a lesson taught). Read-modify-write
- *  with an optimistic guard on the previous remaining value, so two concurrent
- *  consumes cannot double-spend the same credit.
- *
- *  This is the MANUAL staff decrement, for a lesson taught outside the booking
- *  flow. It is no longer the only consumption path: book_open_slot debits the
- *  credit and records it on the booking, and the booking claims its fulfillment
- *  unit from there. Do not call this for a lesson that already has a booking —
- *  it would double-debit. */
-export async function consumeLessonCredit(id: string, count = 1): Promise<LessonCredit> {
-  const { data: row, error: readError } = await supabase
-    .from('lesson_credits')
-    .select('*')
-    .eq('id', id)
-    .single();
-  if (readError) throw readError;
-  const current = (row as LessonCredit).credits_remaining;
-  if (current < count) throw new Error('No credits remaining on this grant.');
-
-  const { data, error } = await supabase
-    .from('lesson_credits')
-    .update({ credits_remaining: current - count })
-    .eq('id', id)
-    .eq('credits_remaining', current) // optimistic guard: fail (0 rows) on a race
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as LessonCredit;
 }
 
 // ─── lesson_sessions — the confirmed-booking spine ───────────────────────────
