@@ -14,6 +14,15 @@ import { serviceLabel } from '../serviceCatalog';
  *   THE ORDER. Plan §2: time -> money -> people waiting -> record hygiene ->
  *   stable -> documents -> FYI. Change it here and both views move together.
  *
+ *   ⚠️ AND IT DOES NOT NEED A PER-USER EDITOR. Owner, 2026-08-22: *"The dashboard
+ *   doesn't need an editor in the traditional sense. Surfaces should be fluid and
+ *   dynamic and only shown when there is something to show."* The plan's
+ *   `dashboard_prefs` (per-zone pin/hide/reorder) is RULED OUT, not deferred:
+ *   a zone that renders only when it holds something already reorders the board
+ *   as the day changes, and there is nothing left for a person to arrange. This
+ *   list is a design decision, not tenant configuration, so D13 does not bite.
+ *   Do not re-open this as unfinished work.
+ *
  *   THE REACH (D17). Every zone header is a link to the surface that owns its
  *   work, and every row type resolves to a real route. URLs are built in this
  *   file rather than in SQL because the route table lives in the app — a link

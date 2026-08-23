@@ -252,10 +252,16 @@ and deserves its own task. **None of it was half-built** — §6's trap was obse
   params. The assembly page — plan · thread · her notes · the client's form answers · post-lesson
   notes from both sides · checklist · photos · *"plan the next lesson"* — is the next thing to
   build, and C1 is already pointed where it will live.
-- **`dashboard_prefs` (per-zone pin / hide / reorder).** Not built, per §3. The order lives in
-  `registry.ts`; making it per-user is a table and an overlay on `zonesFor()`. **Under D13 the
-  zone ORDER currently has no editor** — the owner cannot rearrange his own board without a
-  thread. Stated plainly rather than called shipped.
+- ~~**`dashboard_prefs` (per-zone pin / hide / reorder).**~~ **WITHDRAWN — this was flagged as a
+  D13 gap and the owner ruled it is not one** (2026-08-22, on reading this report):
+  *"The dashboard doesn't need an editor in the traditional sense. Surfaces should be fluid and
+  dynamic and only shown when there is something to show."*
+  **The zone framework already IS the arrangement mechanism.** A zone renders when it holds
+  something and is absent when it does not, so the board reorders itself as the day changes and
+  there is nothing left for a person to arrange. D13 exists to stop a tenant needing a developer
+  to change a thing they own — and a surface that responds to its own data does not have that
+  problem. **`dashboard_prefs` is not scheduled, not deferred, and not a gap.** Recorded against
+  D13 in `CLAUDE.md` and in `registry.ts` so it is not re-proposed as unfinished work.
 - **Retiring `OpsDashboard` / `InstructorHome` into the new shell.** Plan §7 says *"no second
   dashboard left standing beside it"*. `/app/dashboard` is now the staff dashboard and
   `/app/ops` has **no nav row and no link** — but it is still routed and still renders the

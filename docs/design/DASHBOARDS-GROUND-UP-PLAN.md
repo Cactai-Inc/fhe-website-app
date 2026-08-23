@@ -133,8 +133,13 @@ The one genuinely new subsystem, and the enabler for half the zones:
   progress is computed, never typed. **`kpi_daily`** — nightly snapshot rows so
   growth trends survive data churn (written by the app on first dashboard load of a
   day — NOT by a cron, per X1; a cron can take over once proven).
-- **`dashboard_prefs`** — per-user zone pin/hide/reorder + quiet-zone demotion
-  (D13: arrangement is owner-editable in-app).
+- ~~**`dashboard_prefs`** — per-user zone pin/hide/reorder + quiet-zone demotion
+  (D13: arrangement is owner-editable in-app).~~ ⚠️ **RULED OUT 2026-08-22, after
+  Phase 1 shipped.** Owner: *"The dashboard doesn't need an editor in the
+  traditional sense. Surfaces should be fluid and dynamic and only shown when
+  there is something to show."* The self-hiding zone framework IS the
+  arrangement. Not deferred — not wanted. See CLAUDE.md, D13's recorded
+  exception.
 
 ## 6. Revenue, correctly (root cause found)
 
@@ -157,7 +162,9 @@ under its own name later if wanted — it just can't be called revenue.
   on the Team page by the owner (D13). Never read by any permission check.
 - **Zone framework:** a zone registry in code (the proven `pageRegistry` idiom):
   key, title, reader RPC, render component, default order per designation, priority
-  class. Zones self-hide at zero. `dashboard_prefs` overlays user arrangement.
+  class. Zones self-hide at zero. ~~`dashboard_prefs` overlays user
+  arrangement.~~ ⚠️ **Self-hiding at zero is the WHOLE mechanism** — the overlay
+  was ruled out 2026-08-22 (see §5).
 - **One reader per zone** — each zone's RPC returns its rows + count in one call;
   the dashboard issues them in parallel; KPI RPCs are shared with every other
   surface showing the same number.
