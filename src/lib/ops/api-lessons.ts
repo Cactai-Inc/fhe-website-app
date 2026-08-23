@@ -16,6 +16,13 @@
  * complete_lesson_session). The raw-insert grant function and the
  * read-modify-write consume function that used to live here are deleted, not
  * deprecated — LessonCreditsPage is read-only now.
+ *
+ * TASK-CREDITGRANT (2026-08-23): ORIGINATION comes back, and it does NOT come
+ * back as a table write. `grantLessonCredit` calls an RPC that writes a
+ * staff-initiated purchases + purchase_items pair; the existing mint trigger
+ * makes the credit, exactly as a real checkout does. Nothing below touches
+ * lesson_credits, and `creditLedger` is a READ. The three modes differ only in
+ * price and payment state — see the migration's own header.
  */
 import { supabase } from '../supabase';
 import { contactName } from './types';
@@ -242,6 +249,195 @@ export async function listLessonCredits(clientId?: string): Promise<LessonCredit
   const { data, error } = await query.order('purchased_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as LessonCredit[];
+}
+
+// ─── TASK-CREDITGRANT — origination, the other half of the ledger ────────────
+
+/** Where a credit came from. `purchase` is a real client checkout; `handwrite`,
+ *  `comp` and `bill` are the staff modes; `change` is the compensating row a
+ *  cancelled standing slot leaves behind; `unknown` is a credit with no line and no
+ *  order behind it (the orphan shape TASK-AUTHORITY found). The ledger must never
+ *  render them identically (§4). */
+export type CreditOrigin = 'purchase' | 'handwrite' | 'comp' | 'bill' | 'change' | 'unknown';
+
+/** One row of `credit_ledger()` — the ONE named query behind the credits page. */
+export interface CreditLedgerRow {
+  id: string;
+  client_id: string;
+  client_name: string | null;
+  package_key: string | null;
+  offering_id: string | null;
+  offering_name: string | null;
+  credits_total: number;
+  credits_remaining: number;
+  purchased_at: string;
+  expires_at: string | null;
+  period_start: string | null;
+  origin: CreditOrigin;
+  /** Why staff granted it. Null on a real client purchase. */
+  reason: string | null;
+  granted_by: string | null;
+  quantity: number;
+  /** The list price of ONE unit, as captured at grant time. */
+  list_price: number | null;
+  /** What the whole line was worth at list — the figure the ledger shows. */
+  list_value: number | null;
+  line_amount: number | null;
+  purchase_id: string | null;
+  display_code: string | null;
+  order_status: string | null;
+  payment_status: string | null;
+  amount: number | null;
+  amount_due: number | null;
+  /** Mirrors revoke_lesson_credit_grant's own refusals, so the page never offers
+   *  an undo that would throw. */
+  can_undo: boolean;
+  undo_blocked: string | null;
+}
+
+/** A service staff can actually grant: scheduled, with credit units. Recurring SKUs
+ *  are standing slots, not credit balances (D23), so they are not offered. */
+export interface GrantableOffering {
+  id: string;
+  name: string;
+  segment: string;
+  unit_count: number;
+  price_amount: number;
+  active: boolean;
+}
+
+export interface GrantCreditInput {
+  clientId: string;
+  offeringId: string;
+  quantity: number;
+  mode: Exclude<CreditOrigin, 'purchase'>;
+  /** Required. No reason, no grant (D19). */
+  reason: string;
+  /** handwrite only — what staff attest was received. */
+  paymentMethod?: string | null;
+}
+
+/** What a grant did, straight back from the RPC — the confirmation the page shows. */
+export interface GrantCreditResult {
+  purchase_id: string;
+  display_code: string | null;
+  item_id: string;
+  credit_id: string;
+  credits: number;
+  mode: string;
+  reason: string;
+  list_price: number;
+  amount: number;
+  comp_value: number;
+  offering_name: string;
+  client_id: string;
+}
+
+export interface RevokeGrantResult {
+  purchase_id: string;
+  display_code: string | null;
+  mode: string;
+  credits_revoked: number;
+  items_voided: number;
+  reason: string;
+}
+
+/** The dollar value of credits comped in a period, from the list price captured at
+ *  comp time — never re-derived from `offerings`, whose price is editable. */
+export interface CompedValue {
+  from: string;
+  to: string;
+  comp_count: number;
+  credits_comped: number;
+  list_value: number;
+  by_service: { service: string; comp_count: number; credits: number; list_value: number }[];
+}
+
+export async function creditLedger(clientId?: string): Promise<CreditLedgerRow[]> {
+  const { data, error } = await supabase.rpc('credit_ledger', {
+    p_client_id: clientId ?? null,
+  });
+  if (error) throw error;
+  return (data ?? []) as CreditLedgerRow[];
+}
+
+export async function listGrantableOfferings(): Promise<GrantableOffering[]> {
+  const { data, error } = await supabase.rpc('grantable_offerings');
+  if (error) throw error;
+  return (data ?? []) as GrantableOffering[];
+}
+
+/** Hand-write / comp / bill. Writes an ORDER; the mint trigger makes the credit. */
+export async function grantLessonCredit(input: GrantCreditInput): Promise<GrantCreditResult> {
+  const { data, error } = await supabase.rpc('grant_lesson_credit', {
+    p_client_id: input.clientId,
+    p_offering_id: input.offeringId,
+    p_quantity: input.quantity,
+    p_mode: input.mode,
+    p_reason: input.reason,
+    p_payment_method: input.paymentMethod ?? null,
+  });
+  if (error) throw error;
+  return data as GrantCreditResult;
+}
+
+/** The undo (D19.4). Refuses a spent grant or a settled payment, server-side. */
+export async function revokeCreditGrant(
+  purchaseId: string,
+  reason: string,
+): Promise<RevokeGrantResult> {
+  const { data, error } = await supabase.rpc('revoke_lesson_credit_grant', {
+    p_purchase_id: purchaseId,
+    p_reason: reason,
+  });
+  if (error) throw error;
+  return data as RevokeGrantResult;
+}
+
+export async function compedCreditValue(from?: string, to?: string): Promise<CompedValue> {
+  const { data, error } = await supabase.rpc('comped_credit_value', {
+    p_from: from ?? null,
+    p_to: to ?? null,
+  });
+  if (error) throw error;
+  return data as CompedValue;
+}
+
+export interface RequestPaymentResult {
+  requested: boolean;
+  amountDue: number;
+  /** Whether the email actually went. False is not a failure of the request — the
+   *  notification and the timeline entry stand either way — but staff are told. */
+  sent: boolean;
+  reason?: string;
+}
+
+/** Ask a client, once, for a balance they owe. The server half raises the app's
+ *  existing unpaid-balance notification pair, writes the order timeline, and sends
+ *  ONE email whose every attempt lands in `payment_request_sends`. Nothing schedules
+ *  a second one — there is no dunning loop (D9). */
+export async function requestGrantPayment(
+  purchaseId: string,
+  note?: string | null,
+): Promise<RequestPaymentResult> {
+  const { data: sess } = await supabase.auth.getSession();
+  const bearer = sess?.session?.access_token;
+  if (!bearer) throw new Error('You need to be signed in.');
+  const res = await fetch('/api/order-request-payment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
+    body: JSON.stringify({ purchaseId, note: note ?? null }),
+  });
+  const body = (await res.json().catch(() => ({}))) as Partial<RequestPaymentResult> & {
+    error?: string;
+  };
+  if (!res.ok) throw new Error(body.error || 'Could not request payment.');
+  return {
+    requested: body.requested ?? false,
+    amountDue: Number(body.amountDue ?? 0),
+    sent: body.sent ?? false,
+    reason: body.reason,
+  };
 }
 
 // ─── lesson_sessions — the confirmed-booking spine ───────────────────────────
@@ -610,7 +806,7 @@ export async function cancelLessonSession(
 // ─── Clients (for the grant form / ledger names) ─────────────────────────────
 
 /** In-tenant clients with their contact name flattened (clients.contact_id →
- *  contacts), for the grant-credits picker and ledger display. */
+ *  contacts), for the grant form's client picker and the ledger filter. */
 export async function listLessonClients(): Promise<LessonClientOption[]> {
   const { data, error } = await supabase
     .from('clients')

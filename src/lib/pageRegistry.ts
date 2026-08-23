@@ -171,6 +171,12 @@ export const PAGE_REGISTRY: PageEntry[] = [
   // opposite of this (a routed page with no registry row, which the owner
   // concluded did not exist).
   { key: 'lessons.plans', path: '/app/ops/lessons/plans', label: 'Lesson plans', group: 'management', module: 'mod.lessons', parent: 'lessons.hub' },
+  // TASK-CREDITGRANT — the credits ledger is no longer read-only: it is where
+  // staff hand-write, comp and bill a credit, and where they undo one. D17 was
+  // written about exactly this shape (a value-moving surface reachable only as a
+  // small link on a hub KPI card, which the owner concluded did not exist), so it
+  // gets its own nav row like every other child here.
+  { key: 'lessons.credits', path: '/app/ops/lessons/credits', label: 'Lesson credits', group: 'management', module: 'mod.lessons', parent: 'lessons.hub' },
 
   { key: 'boarding.hub', path: '/app/ops/boarding', label: 'Boarding', group: 'modules', module: 'mod.boarding' },
   { key: 'boarding.facilities', path: '/app/ops/boarding/facilities', label: 'Facilities & stalls', group: 'modules', module: 'mod.boarding', parent: 'boarding.hub' },
