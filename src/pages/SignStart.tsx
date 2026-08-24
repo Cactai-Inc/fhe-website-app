@@ -101,27 +101,58 @@ function normalizePath(raw: string | undefined): SignPath | null {
   return (VALID_PATHS as string[]).includes(decoded) ? (decoded as SignPath) : null;
 }
 
-/* ⚠️ THE vCARD IS GONE — IT COULD NOT BE MADE TO DO WHAT IT PROMISED.
-   Owner, 2026-08-24: "the button for 'add us to your contacts' it downloads a
-   file, not sure what to do with that and that isnt very helpful... we either
-   need to make it do more so it actually adds us as a contact in their mail
-   client or remove that button."
+/* THE vCARD — MOBILE ONLY, DELIBERATELY.
+   Owner, 2026-08-24: first "it downloads a file... that isnt very helpful", then,
+   told why it cannot be made to actually write to a mail client: "well keep it
+   mobile only then. device dependent is better than not at all."
 
-   It cannot be made to do more. **No browser lets a web page write to an address
-   book or a mail client** — there is no API, on any platform, by design. A .vcf
-   download is the only mechanism that exists: on a phone it opens a contact card
-   and offers to save it, and on a desktop it lands in Downloads as a file most
-   people have never seen before. So the button promised an action it could only
-   perform on some devices, and on the rest it produced exactly the confusion the
-   owner hit.
+   No browser lets a web page write to an address book — there is no API, on any
+   platform, by design. A .vcf is the only mechanism that exists, and it behaves
+   completely differently by device: on a phone it opens a contact card and offers
+   to save it, which is exactly the promised action; on a desktop it lands in
+   Downloads as a file most people have never seen. So it is offered where it
+   works and withheld where it does not, and the copy-the-address control is there
+   for everyone either way. */
+function buildVcf(name: string, phone: string, email: string): string {
+  const lines = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `FN:${name}`,
+    `ORG:${name}`,
+    `TEL;TYPE=CELL:${phone}`,
+    `EMAIL;TYPE=INTERNET:${email}`,
+    'END:VCARD',
+  ];
+  return lines.join('\r\n') + '\r\n';
+}
 
-   What the panel is actually FOR is deliverability — the first email from a new
-   sender lands in spam, and the fix is for the reader to recognise the address.
-   So it now hands them the address in the one form that works everywhere: copied
-   to the clipboard, ready to paste wherever their own mail client keeps contacts. */
+/** Coarse pointer = a touch device, where a .vcf opens the contact card rather
+ *  than dropping a file into a folder. Read once on mount: it decides which
+ *  control to offer, not a layout that must react to a resize. */
+function useIsTouchDevice(): boolean {
+  const [touch, setTouch] = useState(false);
+  useEffect(() => {
+    setTouch(window.matchMedia?.('(pointer: coarse)').matches ?? false);
+  }, []);
+  return touch;
+}
 
 function DeliverabilityPanel({ brand }: { brand: ReturnType<typeof useBrand> }) {
   const [copied, setCopied] = useState(false);
+  const isTouch = useIsTouchDevice();
+
+  function downloadVcf() {
+    const vcf = buildVcf(brand.shortName, brand.phoneDisplay, brand.email);
+    const blob = new Blob([vcf], { type: 'text/vcard' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${brand.shortName.replace(/\s+/g, '-')}.vcf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
 
   function copyEmail() {
     void navigator.clipboard.writeText(brand.email).then(() => {
@@ -140,9 +171,18 @@ function DeliverabilityPanel({ brand }: { brand: ReturnType<typeof useBrand> }) 
       </ul>
       <p className="text-sm text-green-900 font-medium mb-1">{brand.email}</p>
       <p className="text-sm text-green-900/80 mb-4">{brand.phoneDisplay}</p>
-      <button type="button" onClick={copyEmail} className="btn-outline-gold">
-        {copied ? 'Copied' : 'Copy our email address'}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        {/* On a phone this genuinely adds the contact. On a desktop it would only
+            produce a file, so it is not offered there. */}
+        {isTouch && (
+          <button type="button" onClick={downloadVcf} className="btn-primary">
+            Add us to your contacts
+          </button>
+        )}
+        <button type="button" onClick={copyEmail} className="btn-outline-gold">
+          {copied ? 'Copied' : 'Copy our email address'}
+        </button>
+      </div>
     </div>
   );
 }
