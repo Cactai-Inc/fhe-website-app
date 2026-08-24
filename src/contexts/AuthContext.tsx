@@ -6,6 +6,7 @@ import { myModules, myPropertyTerm, myHiddenPages } from '../lib/api';
 import type { Profile } from '../lib/types';
 import type { Member } from '../lib/community-types';
 import { DEFAULT_PROPERTY_TERM, resolvePropertyTerm, type PropertyTerm } from '../lib/propertyTerm';
+import { clearLandingFlags } from '../lib/dashboard/landing';
 
 export type AppRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE' | 'USER';
 
@@ -136,7 +137,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
+      // D26/TASK-DASHBOARDBUILD, owner 2026-08-23: the dashboard's "land fresh
+      // on login" flag lives in sessionStorage, which is scoped to the TAB, not
+      // the login — a tab reused across a sign-out/sign-in already had it set.
+      // SIGNED_IN is the one point every sign-in path (password, MFA, Google)
+      // actually passes through, so it is the one place to reset it.
+      if (event === 'SIGNED_IN') clearLandingFlags();
       setSession(newSession);
       loadProfile(newSession?.user?.id);
     });
