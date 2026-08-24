@@ -58,11 +58,13 @@ await page.waitForTimeout(4000);
 say(`1 · landed at ${new URL(page.url()).pathname}`);
 say(`   §2.2 landing rule: ${new URL(page.url()).pathname === '/app/dashboard' ? 'PASS — fresh login lands on the dashboard' : 'landed elsewhere'}`);
 
-const pill = async () => (await page.locator('header span:has-text("Owner ·")').first().textContent())?.trim();
-say(`2 · default view pill: ${await pill()}`);
-const caption = async () =>
-  (await page.locator('text=/This is your default view|Switched for this session/').first().textContent())?.trim();
-say(`   toggle caption: ${await caption()}`);
+// 2026-08-23: the rolepill and the "This is your default view" caption were
+// both removed (owner: too much chrome for a tertiary action). The toggle is
+// now one small button whose own label carries the state — "Show X's
+// Dashboard" at home, an X to return once peeking. Reading its label is now
+// the single source for both what pill()/caption() used to report.
+const toggleLabel = async () => (await page.locator('[data-testid="dash-view-toggle"]').first().textContent())?.trim();
+say(`2 · toggle label: ${await toggleLabel()}`);
 await shot('01-cj-lands-on-business-operations');
 
 /* zones present in the business view */
@@ -77,11 +79,10 @@ const revMonthTile = page.locator('a:has-text("Revenue · this month")').first()
 const revMonth = (await revMonthTile.textContent())?.match(/\$[\d,]+/)?.[0] ?? null;
 say(`4 · dashboard revenue tile · this month = ${revMonth}`);
 
-/* ── 2 · toggle to the trainer view ─────────────────────────────────────── */
-await page.click('[data-testid="dash-view-trainer"]');
+/* ── 2 · toggle to the trainer view (peek — one button, now reads as X) ──── */
+await page.click('[data-testid="dash-view-toggle"]');
 await page.waitForTimeout(3500);
-say(`5 · after toggle, pill: ${await pill()}`);
-say(`   caption now: ${await caption()}`);
+say(`5 · after toggle, label: ${await toggleLabel()}`);
 say(`   trainer zones rendered: ${(await zoneKeys()).join(', ')}`);
 const quiet2 = await page.locator('p:has-text("All quiet:")').last().innerText().catch(() => null);
 say(`   all-quiet footer: ${quiet2 ? quiet2.trim() : '(none)'}`);
@@ -90,11 +91,10 @@ await shot('02-toggled-to-head-trainer');
 /* ── 3 · the session choice survives a reload; the default does not move ── */
 await page.reload({ waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(4000);
-say(`6 · after reload, pill: ${await pill()}`);
-say(`   caption: ${await caption()}`);
+say(`6 · after reload, label: ${await toggleLabel()}`);
 
 /* ── 4 · toggle back, then read the calendar's revenue strip ────────────── */
-await page.click('[data-testid="dash-view-business"]');
+await page.click('[data-testid="dash-view-toggle"]');
 await page.waitForTimeout(3000);
 await page.goto(`${BASE}/app/calendar`, { waitUntil: 'domcontentloaded' });
 await page.waitForTimeout(5000);

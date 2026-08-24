@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
 import type { ZoneDef, DashboardView } from '../../../lib/dashboard/registry';
 import { VIEW_LABEL } from '../../../lib/dashboard/registry';
 
@@ -208,40 +208,38 @@ export function QuietFooter({ absent, view }: { absent: ZoneDef[]; view: Dashboa
 }
 
 /**
- * THE VIEW TOGGLE (§2.1). Visible on the dashboard itself, always, for both
+ * THE VIEW TOGGLE (§2.1). Reachable on the dashboard itself, always, for both
  * accounts — neither view is gated by identity, because D26 rules that the
  * designation selects emphasis and never capability.
  *
  * It does NOT write the stored default (§2.3) — switching over to check
- * something must not silently change where you land next time. Owner,
- * 2026-08-23: the line explaining that, and the shortcut link to the
- * settings control, were both dropped as chrome the dashboard doesn't need
- * to carry — the setting itself still lives in Team, exactly where it did.
+ * something must not silently change where you land next time; the setting
+ * itself lives in Team.
+ *
+ * Owner, 2026-08-23: rebuilt from a two-option segmented control into one
+ * small peek button — "it's not even a secondary action... it doesn't need
+ * to be a full size UI element." At home it reads "Show {the other
+ * person}'s Dashboard"; clicking it switches and the same button becomes a
+ * plain X to return. One element throughout, never two, so it can stay
+ * genuinely small — including on mobile, where the header row wraps it
+ * below the greeting rather than growing it.
  */
 export function ViewToggle({
-  value, onChange,
-}: { value: DashboardView; onChange: (v: DashboardView) => void }) {
+  value, home, onChange,
+}: { value: DashboardView; home: DashboardView; onChange: (v: DashboardView) => void }) {
+  const other: DashboardView = home === 'trainer' ? 'business' : 'trainer';
+  const peeking = value !== home;
+
   return (
-    <div
-      className="inline-flex rounded-full border border-gold-600/40 bg-white p-0.5"
-      role="group"
-      aria-label="Dashboard view"
+    <button
+      type="button"
+      onClick={() => onChange(peeking ? home : other)}
+      aria-label={peeking ? `Return to your own dashboard` : `Show ${VIEW_LABEL[other]}`}
+      data-testid="dash-view-toggle"
+      className="shrink-0 inline-flex items-center rounded-full border border-green-800/25 px-2.5 py-1 text-[0.68rem] font-medium text-green-800/70 transition-colors duration-320 ease-glide hover:border-green-800/40 hover:text-green-900 focus-ring"
     >
-      {(['trainer', 'business'] as DashboardView[]).map((v) => (
-        <button
-          key={v}
-          type="button"
-          onClick={() => onChange(v)}
-          aria-pressed={value === v}
-          data-testid={`dash-view-${v}`}
-          className={`rounded-full px-3.5 py-1 text-[0.72rem] font-semibold transition-colors duration-320 ease-glide focus-ring ${
-            value === v ? 'bg-green-800 text-gold-100' : 'text-green-800/70 hover:text-green-900'
-          }`}
-        >
-          {VIEW_LABEL[v]}
-        </button>
-      ))}
-    </div>
+      {peeking ? <X size={13} aria-hidden="true" /> : `Show ${VIEW_LABEL[other]}`}
+    </button>
   );
 }
 

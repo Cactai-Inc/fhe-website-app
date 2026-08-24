@@ -189,7 +189,7 @@ export default function OwnerDashboard() {
             <h1 className="font-serif text-[1.7rem] leading-tight text-green-900">
               Good {DAYPART[timeOfDayWord()]}{firstName ? `, ${firstName}` : ''}
             </h1>
-            <ViewToggle value={view} onChange={chooseView} />
+            <ViewToggle value={view} home={storedDefault} onChange={chooseView} />
           </div>
           <p className="mt-4 font-serif text-[1.25rem] text-green-800/70">
             {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
