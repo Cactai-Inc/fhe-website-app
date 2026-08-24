@@ -188,56 +188,89 @@ what was reported, and it needs to be found, not assumed away.
 > when i do and i save the new record it should close the modal and the lessor field in the card
 > above the horse card should show the lessor's name."
 
-**"The original process was already very nice" is a strong signal to check history before
-building anything new** — `git log`/`git blame` on `HorseGate`, `ContractPage.tsx`'s horse
-section, and `HorseIntakeForm.tsx` for a prior modal-based version, before assuming this is
-greenfield. If it regressed (a navigation replaced a modal, a wizard got flattened), restoring the
-real shape is very likely cheaper and more correct than redesigning from nothing.
+**Correction, owner, same conversation, right after the above was written:** the task is **not**
+to redesign whatever currently renders inside the contract's horse-card section. **Delete that
+code entirely.** Whatever is producing the plain-input experience (§"What was already checked"
+above names it as an unfound fourth path — find it, then remove it, don't repair it in place).
+The button that replaces it is **"Add a new horse"** (not "Record it now" — that was this spec's
+placeholder wording, not the owner's). Clicking it opens a modal containing **the horse intake
+form already in use elsewhere** (`HorseIntakeForm.tsx`) — reused exactly as it exists, not a
+second implementation, not a trimmed variant. D18 applies to UI, not just RPCs: one horse-intake
+form, one place its logic lives.
 
-**The exact target, whether restored or built fresh:**
-1. A "Record it now" action on the horse card, inside the lease-contract-creation page — opens
-   `HorseIntakeForm` **as a modal**, not a page navigation. (This is `HorseGate`'s current
-   "+ Add a different horse" link, which today navigates away to `/app/horse-intake` — that has
-   to become an in-place modal instead, or a modal-capable sibling of it, without duplicating the
-   form's logic.)
-2. **Saving with only the name filled in creates the horse record immediately.** Every other field
-   stays editable/completable afterward — `HorseIntakeForm` already has an autosave-on-blur mode
-   for reviewing an existing record (`?horse=<id>`, "your changes save as you go") — reuse that
-   pattern rather than inventing a second save discipline.
-3. **The new record is associated with the LESSOR**, not left owner-less.
-4. **If the lessor hasn't been added to the deal/contract yet**, the modal must also present a
-   lessor picker (a dropdown of contacts) right there, so staff can establish the lessor inline
-   without leaving the modal to go add a party first.
-5. **On save, the modal closes**, and **the lessor field on the card above the horse card updates
-   immediately** to show the name just picked in the modal — real state propagation from the
-   modal back to the parent contract view, not a value that only appears after a manual reload.
+**Then trace the wiring, don't assume it.** Follow `HorseIntakeForm`'s save path all the way
+through: does it reliably create a real `horses` row, associate it with the correct person's
+account, and — when opened from inside a contract — actually attach the resulting horse to that
+contract? Confirm each link in that chain against the live schema and a real save, the same
+discipline this spec used to find the field defs in the first place. If any link is thin or
+missing, that's the fix; if the chain is already sound, say so and move on to the sync behavior
+below.
+
+**The exact target — lessor and horse stay in sync through the modal, in both directions:**
+1. **"Add a new horse"**, inside the lease-contract-creation page, opens `HorseIntakeForm` as a
+   modal — not a navigation away from the contract.
+2. **Saving with only the name filled in creates the horse record immediately**; every other field
+   stays completable afterward. `HorseIntakeForm` already has an autosave-on-blur mode for
+   reviewing an existing record (`?horse=<id>`, "your changes save as you go") — reuse that
+   pattern, don't invent a second save discipline.
+3. **If no lessor is selected on the contract yet**, the modal asks the user to pick the horse's
+   owner account (a dropdown) — and that selection becomes the contract's lessor.
+4. **If a lessor is already selected on the contract**, that lessor is auto-set as the new horse's
+   owner — the modal does not ask again for something already known.
+5. **On save, the modal closes, and the contract page updates in one motion**: the new horse
+   becomes the contract's selected horse, and the lessor (whichever direction it was resolved —
+   pre-existing or just chosen in the modal) shows correctly on the card above the horse card. No
+   manual reload, no second step to attach either record.
 
 ### The rulings to build to, once the actual path is found
 
-1. **Free text: horse name, microchip number, registration number, farrier name/phone, vet
-   name/phone/business/address.** Farrier and vet are people/practices with no fixed taxonomy to
-   pick from — free text is correct for them, confirmed against the live `HORSE_LEASE_V2` field
-   defs, which already have them as `input_kind='text'`. **Everything else horse-identifying is
-   selection-based** — pick from recognized/existing values, not hand-typed, so the same value
-   displays consistently everywhere the contract merges it in. This already exists correctly for
-   breed/color/sex in both places checked above — if the path Pamela hit doesn't have it, converge
-   it onto the same lookup mechanism (`horse_breeds` etc.), don't invent a second one.
-2. **No nickname/barn-name field on the contract.** Already true for `HORSE_LEASE_V2`'s field
+**Correction, owner, 2026-08-23 — the earlier draft of rule 1 below overreached.** "Everything
+except name/microchip/registration must be a dropdown" is not the actual rule. The real test,
+verbatim:
+
+> "the real goal is to match whe the system needs with input fields the way the system needs the
+> data to be input. It expected certain things to be 100% matching but offered free text input
+> fields, those fields need to be changed to show lists and i think the intake form for adding a
+> horse has been updated already, the task is to check the fields against what the system wants,
+> if it wants something that it can match against, it needs to provide a list, and if it just
+> displays whatever is written it has to choose if adding a list of options to pick from is faster
+> and better for the user than an open text as the primary input, we can always offer free text as
+> a fallback when the choices arent sufficient for a given user."
+
+1. **The test per field is: does the system need this value to MATCH something (a foreign key, a
+   canonical lookup, a value merged consistently elsewhere) — or does it just display whatever was
+   typed?** If it needs to match, a list is not optional — free text that's supposed to resolve to
+   a `horses_breed_fkey`-style reference cannot actually be stored on the record (this exact
+   failure mode is already handled correctly for breed/color in `HorseIntakeForm.tsx` — read how,
+   and use the same mechanism, don't invent a second). If it does NOT need to match — the value is
+   just displayed as typed — **it's a judgment call, not an automatic conversion**: is a picklist
+   of common values genuinely faster and better for the user as the PRIMARY input than an open
+   text box? If yes, make the list primary with free text as an explicit fallback for when the
+   list doesn't cover a given user's case. If no, leave it free text — farrier/vet name and phone
+   are the clear example (no fixed taxonomy of farriers exists to pick from; free text is correct
+   there and was never the problem).
+2. **Audit before converting anything — the intake form may already be fixed.** The owner's own
+   read: "i think the intake form for adding a horse has been updated already." Check
+   `HorseIntakeForm.tsx`'s current field-by-field state against the matching test above before
+   assuming any specific field is still broken. Report which fields needed a list and got one
+   already, which still need converting, and which are correctly free text and should stay that
+   way — don't reflexively convert fields that were never the complaint.
+3. **No nickname/barn-name field on the contract.** Already true for `HORSE_LEASE_V2`'s field
    defs — verify it stays true for whatever path is actually broken, and don't reintroduce it.
    Nickname stays a horse-*record* field (`HorseIntakeForm` keeps asking for it there); it just
    never becomes a `HORSE.*` contract token.
-3. **`horses.home_barn` / `current_barn` vs `nickname` — these are three different columns and
+4. **`horses.home_barn` / `current_barn` vs `nickname` — these are three different columns and
    the owner has flagged confusion between them before.** Read how "barn name" is actually
    labeled wherever Pamela saw it (grep for the literal string "Barn name" in whatever component
    is actually rendering her 8 fields) and report exactly which column it write to. If a UI label
    is asking for `home_barn`/`current_barn` under wording that reads like nickname (or vice
    versa), fix the label to match the column it actually writes — don't merge the columns without
    understanding why both exist first (a horse can board somewhere other than its home barn).
-4. **Farrier and vet fields must be present** wherever a horse gets added/edited in the contract
+5. **Farrier and vet fields must be present** wherever a horse gets added/edited in the contract
    flow. Already true for both paths checked — if Pamela's path lacks them, that's the gap to
    close, reusing the same field set already defined for `HORSE_LEASE_V2` rather than inventing a
    new one.
-5. **Medications/supplements live on the horse record** (`horse_medications`, `kind` discriminates
+6. **Medications/supplements live on the horse record** (`horse_medications`, `kind` discriminates
    `MEDICATION` vs whatever supplement value is in use — confirm the actual kind values live, no
    separate supplements table exists). **Not required in every contract** — only when the lessor
    is obligating the lessee to manage specific ones on a schedule. When a contract needs to name
@@ -250,22 +283,27 @@ real shape is very likely cheaper and more correct than redesigning from nothing
 
 ### THE TEST
 
-1. Reproduce Pamela's actual 8-field experience live, and name in the report exactly which
-   component/route it was — this is the single most important finding, everything else follows
-   from it.
-2. Every horse-identifying field except name/microchip/registration/farrier/vet is
-   selection-based, sourced from the same recognized-values mechanism `HorseIntakeForm` already
-   uses. Farrier and vet fields stay free text.
+1. Reproduce Pamela's actual 8-field experience live, name exactly which component/route it was,
+   and confirm it has been **deleted**, not repaired — the report states this plainly.
+2. Every field in `HorseIntakeForm.tsx` is checked against the matching test (§"The rulings to
+   build to" rule 1) and the report says, field by field, which needed a list and already has one,
+   which needed a list and got one in this task, and which are correctly free text and were left
+   alone. No field is converted just because it's not name/microchip/registration.
 3. No nickname/barn-name token reaches contract text; the record-level field (whichever column it
    actually is) is labeled correctly for what it writes.
-4. Farrier and vet fields are present and save correctly on whatever path Pamela hit.
+4. Farrier and vet fields are present, stay free text, and save correctly.
 5. A contract clause that names a medication/supplement obligation offers the horse's own
    `horse_medications` rows as a picker before falling back to free text.
-6. **"Record it now" opens a modal**, not a navigation. Saving with only the name filled creates
-   the horse record immediately, associated with the lessor. If no lessor is on the deal yet, the
-   modal offers a lessor picker inline. On save, the modal closes and the lessor's name appears on
-   the card above the horse card without a manual reload.
-7. `npm run typecheck` / `npm run lint` → 0 errors.
+6. **"Add a new horse" opens a modal containing the real `HorseIntakeForm`** — not a navigation,
+   not a rebuilt/trimmed variant. Saving with only the name filled creates the horse record
+   immediately. If no lessor is on the contract yet, the modal asks for the horse's owner and that
+   selection becomes the lessor; if a lessor is already on the contract, it's auto-set as the new
+   horse's owner with no extra question. On save, the modal closes and **both** the new horse and
+   the lessor show as selected on the contract page, with no manual reload.
+7. The save path is traced end to end — a real horse record is created, correctly owned, and
+   actually attached to the contract it was opened from — and the report says so with what was
+   checked, not just "it works."
+8. `npm run typecheck` / `npm run lint` → 0 errors.
 
 ---
 
