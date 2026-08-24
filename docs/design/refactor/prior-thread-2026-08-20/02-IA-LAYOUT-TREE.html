@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FHE — Proposed Information Architecture &amp; Layout Tree</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#faf8f4; --cream-100:#f5f0e8; --panel:#fdfcfa;
+    --green-950:#0a1a0f; --green-900:#0d2118; --green-800:#143321; --green-600:#215531; --green-400:#3d8f58; --green-100:#c3e5cc; --green-50:#edf7f0;
+    --gold-800:#7a6421; --gold-600:#ba9935; --gold-100:#f5edcc; --gold-50:#fbf8ee;
+    --ink:#0d2118; --muted:rgba(13,33,24,.62);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--cream);color:var(--ink);font:400 15px/1.6 Inter,system-ui,sans-serif;padding:clamp(1rem,3vw,2.5rem)}
+  header.doc{max-width:70rem;margin:0 auto 2rem}
+  .eyebrow{font:600 .72rem/1 Inter;letter-spacing:.22em;text-transform:uppercase;color:var(--gold-800)}
+  h1{font-family:'Libre Caslon Text',Georgia,serif;font-weight:400;font-size:clamp(1.6rem,3vw,2.2rem);margin:.35rem 0 .5rem}
+  header.doc p{color:var(--muted);max-width:60ch}
+  .legend{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1rem}
+  .badge{display:inline-block;font:600 .66rem/1 Inter;letter-spacing:.06em;text-transform:uppercase;padding:.28em .6em;border-radius:999px;white-space:nowrap}
+  .b-rebuild{background:var(--gold-100);color:var(--gold-800);border:1px solid var(--gold-600)}
+  .b-convert{background:var(--green-50);color:var(--green-800);border:1px solid var(--green-400)}
+  .b-merge{background:#eef3f7;color:#2b4a63;border:1px solid #7fa3bd}
+  .b-expose{background:var(--green-800);color:#f5edcc;border:1px solid var(--green-800)}
+  .b-new{background:#fff;color:var(--green-800);border:1px dashed var(--green-600)}
+  .b-retire{background:var(--cream-100);color:var(--muted);border:1px solid rgba(13,33,24,.2)}
+  .b-keep{background:#fff;color:var(--green-600);border:1px solid var(--green-100)}
+  .b-ruling{background:#fbeaea;color:#7a2121;border:1px solid #c98383}
+  main{max-width:70rem;margin:0 auto;display:grid;gap:1.4rem}
+  .persona{background:var(--panel);border:1px solid rgba(13,33,24,.1);border-radius:14px;padding:1.2rem 1.4rem;box-shadow:0 1px 2px rgba(13,33,24,.05)}
+  .persona>h2{font-family:'Libre Caslon Text',serif;font-weight:400;font-size:1.3rem;margin:.15rem 0 .1rem}
+  .persona>.sub{color:var(--muted);font-size:.85rem;margin-bottom:.8rem}
+  details{border-top:1px solid rgba(13,33,24,.08);padding:.55rem 0}
+  details:last-child{border-bottom:0}
+  summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"▸";color:var(--gold-600);font-size:.8rem;transition:transform .2s}
+  details[open]>summary::before{transform:rotate(90deg)}
+  .area{font:600 1rem Inter;color:var(--green-800)}
+  .why{color:var(--muted);font-size:.83rem;flex-basis:100%;padding-left:1.15rem}
+  ul.tree{list-style:none;margin:.5rem 0 .2rem 1.1rem;border-left:2px solid var(--green-100);padding-left:1rem;display:grid;gap:.42rem}
+  ul.tree ul.tree{margin-top:.42rem;border-left-color:var(--gold-100)}
+  li .node{display:flex;align-items:baseline;gap:.55rem;flex-wrap:wrap}
+  .name{font-weight:500}
+  .path{font:400 .74rem/1.4 ui-monospace,Menlo,monospace;color:var(--muted);background:var(--cream-100);padding:.1em .45em;border-radius:5px}
+  .note{color:var(--muted);font-size:.8rem;flex-basis:100%;line-height:1.45}
+  .rail{font:600 .7rem Inter;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-800);margin:.9rem 0 .2rem}
+</style>
+</head>
+<body>
+<header class="doc">
+  <div class="eyebrow">FHE Refactor · Deliverable 2 · 2026-08-20</div>
+  <h1>The proposed architecture, and where every current surface lands</h1>
+  <p>Every one of the 122 rendered surfaces from SURFACE-INVENTORY.md is placed below. Badges say what happens to the current code; the tree says what the person sees. Daily paths sit at the top of each rail, one click deep.</p>
+  <div class="legend">
+    <span class="badge b-rebuild">Rebuild</span><span class="badge b-convert">Convert to primitives</span>
+    <span class="badge b-merge">Merge into</span><span class="badge b-expose">Expose (built, unreachable)</span>
+    <span class="badge b-new">New surface</span><span class="badge b-keep">Keep as-is for now</span>
+    <span class="badge b-retire">Retire</span><span class="badge b-ruling">Needs your ruling</span>
+  </div>
+</header>
+<main>
+
+<section class="persona">
+  <h2>Staff &amp; Admin — the business runs here</h2>
+  <div class="sub">One rail, seven areas. The maze collapses: no hub-page-only links, no URL-only dashboards, every daily surface is a rail row.</div>
+
+  <details open><summary><span class="area">Today</span> <span class="badge b-expose">Expose</span><span class="why">The role-adaptive dashboard that already works (OpsDashboard / InstructorHome) finally gets a nav row — first row in the rail. Absorbs the needs-attention queue.</span></summary>
+    <ul class="tree">
+      <li><div class="node"><span class="name">Today (dashboard)</span> <span class="path">/app/ops</span> <span class="badge b-expose">Expose</span><span class="badge b-convert">Convert</span><div class="note">KPIs, needs-attention (pending bookings, unsigned docs, payment claims, inbound signups — F2/F3's missing staff visibility lands here), upcoming schedule strip.</div></div></li>
+      <li><div class="node"><span class="name">Activity ledger</span> <span class="path">/app/ops/activity</span> <span class="badge b-convert">Convert</span><div class="note">The one page that already reads a ledger. Becomes the LedgerList reference and moves from Community to Today.</div></div></li>
+    </ul>
+  </details>
+
+  <details open><summary><span class="area">Schedule</span> <span class="badge b-rebuild">Rebuild</span><span class="why">The missing Booking area (flow-map F5). Calendar, booking queue, and completion become one area; availability becomes cell background, never an item.</span></summary>
+    <ul class="tree">
+      <li><div class="node"><span class="name">Calendar</span> <span class="path">/app/calendar</span> <span class="badge b-rebuild">Rebuild</span><div class="note">Full-day range rendering (the midnight-booking class dies), items labeled person · service · horse from row data, click = open item in every view, month view interactive.</div></div></li>
+      <li><div class="node"><span class="name">Bookings</span> <span class="path">/app/ops/lessons/sessions → /app/ops/bookings</span> <span class="badge b-convert">Convert</span><div class="note">Renamed from "Sessions" (D17 name-check). The central list: pending / scheduled / completed, complete-with-credit-debit inline (Commit tier 1), refusal becomes a stated, notified decline — X5's silent DELETE dies.</div></div></li>
+      <li><div class="node"><span class="name">Availability &amp; hours</span> <span class="path">calendar settings panel</span> <span class="badge b-convert">Convert</span><div class="note">business_hours + open-slot management as configuration, not 275 green pseudo-bookings on the grid.</div></div></li>
+    </ul>
+  </details>
+
+  <details open><summary><span class="area">People</span> <span class="badge b-convert">Convert</span><span class="why">Records, person-first. Full CRUD standard on every tab; the dossier gains the timeline that answers "what does this client see."</span></summary>
+    <ul class="tree">
+      <li><div class="node"><span class="name">Clients · Leads · Partners · Vendors</span> <span class="path">/app/records/:tab</span> <span class="badge b-convert">Convert</span><div class="note">Records shell kept; every tab gets the §8 CRUD standard. Mixed-inquiry filter derives from order lines (pending ruling #2, recommendation c).</div></div></li>
+      <li><div class="node"><span class="name">Contact dossier + Timeline</span> <span class="path">drawer on any person row</span> <span class="badge b-new">New</span><div class="note">LedgerList over notifications + deliveries + status events + audit for that person. X3's answer, everywhere a person appears.</div></div></li>
+      <li><div class="node"><span class="name">Invite an account</span> <span class="path">/app/ops/accounts/new</span> <span class="badge b-convert">Convert</span></div></li>
+      <li><div class="node"><span class="name">ContactsPage / IntakePage / Admin.tsx (dead + retired components)</span> <span class="badge b-retire">Retire</span><div class="note">Absorbed by Records long ago; Admin.tsx has zero imports. Deletion per retirement rules, decisions named.</div></div></li>
+    </ul>
+  </details>
+
+  <details open><summary><span class="area">Horses</span> <span class="badge b-convert">Convert</span><span class="why">One horse area: records, health, parties, boarding agreements — currently split across Records tab, two orphan sub-pages, and the Boarding module.</span></summary>
+    <ul class="tree">
+      <li><div class="node"><span class="name">Horse records</span> <span class="path">/app/records/horses</span> <span class="badge b-convert">Convert</span></div></li>
+      <li><div class="node"><span class="name">Health · Parties</span> <span class="path">…/horses/:id/health · /parties</span> <span class="badge b-convert">Convert</span><div class="note">Become dossier tabs on the horse record instead of link-chained pages; health events get Commit tier 2 + audit.</div></div></li>
+      <li><div class="node"><span class="name">Boarding agreements</span> <span class="path">/app/ops/boarding/agreements</span> <span class="badge b-merge">Merge</span><div class="note">Reads contract data about horses — lives with horses, not in a module silo.</div></div></li>
+    </ul>
+  </details>
+
+  <details open><summary><span class="area">Money</span> <span class="badge b-rebuild">Rebuild</span><span class="why">The commerce area that exists in the database and nowhere in the nav: payments, purchases, credits, obligations, evaluations delivery.</span></summary>
+    <ul class="tree">
+      <li><div class="node"><span class="name">Payment review</span> <span class="path">/app/ops/payments/review</span> <span class="badge b-convert">Convert</span><div class="note">Claims decisions become Commit tier 1 with send-log read-back.</div></div></li>
+      <li><div class="node"><span class="name">Purchases &amp; orders</span> <span class="path">new list over purchases</span> <span class="badge b-new">New</span><div class="note">Staff view of every purchase, payment state, receipt sends. X2's unpaid-deadlock becomes visible instead of invisible.</div></div></li>
+      <li><div class="node"><span class="name">Credits ledger</span> <span class="path">/app/ops/lessons/credits</span> <span class="badge b-convert">Convert</span><div class="note">Read-only per TASK-AUTHORITY; links to Bookings for consumption. Grant/consume raw writes are already ruled dead.</div></div></li>
+      <li><div class="node"><span class="name">Obligations</span> <span class="path">new — fulfillment_units ledger</span> <span class="badge b-new">New</span><div class="note">The spine that crosses zero areas today (F13/F14) gets its routed home: every outstanding unit, its purchase, its consumption state.</div></div></li>
+      <li><div class="node"><span class="name">Evaluations</span> <span class="path">/app/ops/evaluations</span> <span class="badge b-merge">Merge</span><div class="note">Moves out of Community (flow-map F11: "wrong area by taxonomy") — it is fulfilment.</div></div></li>
+      <li><div class="node"><span class="name">Packages &amp; pricing</span> <span class="path">/app/ops/lessons/packages + D21 editor</span> <span class="badge b-rebuild">Rebuild</span><div class="note">Package CRUD to standard; the D21 pricing-rule editor (bands, multipliers, preview, draft/publish lifecycle) lives here.</div></div></li>
+    </ul>
+  </details>
+
+  <details open><summary><span class="area">Documents &amp; Deals</span> <span class="badge b-convert">Convert</span><span class="why">The best-built area in the app — ContractPage and DealPage are the D19 references. They convert to primitives without redesign of their flows.</span></summary>
+    <ul class="tree">
+      <li><div class="node"><span class="name">Documents queue</span> <span class="path">/app/records/documents</span> <span class="badge b-convert">Convert</span></div></li>
+      <li><div class="node"><span class="name">Contract page (dual-view)</span> <span class="path">/app/contracts/:id</span> <span class="badge b-convert">Convert</span><div class="note">Flow untouched (DUAL_IDENTITY_TRACE; ClauseDocument stays stop-and-propose). Skin + primitives only.</div></div></li>
+      <li><div class="node"><span class="name">New contract · Deals</span> <span class="path">/app/ops/contracts/new · deals</span> <span class="badge b-convert">Convert</span></div></li>
+      <li><div class="node"><span class="name">Document viewer</span> <span class="path">/app/ops/documents/:id</span> <span class="badge b-merge">Merge</span><div class="note">Second body renderer (MergedBodyView) folds into the one renderer — the "never two implementations" rule applied to display.</div></div></li>
+    </ul>
+  </details>
+
+  <details><summary><span class="area">Operations</span> <span class="badge b-convert">Convert</span><span class="why">The physical-plant modules, one group: Boarding facilities/charges, Barn Ops, Employees. Heavy raw-write lanes get Commit + engine triage.</span></summary>
+    <ul class="tree">
+      <li><div class="node"><span class="name">Boarding — facilities · stalls · charges</span> <span class="badge b-convert">Convert</span></div></li>
+      <li><div class="node"><span class="name">Barn Ops — resources · consumption · allocation rules</span> <span class="badge b-convert">Convert</span><div class="note">Allocation-rule delete (no counterpart today) becomes archive.</div></div></li>
+      <li><div class="node"><span class="name">Employees — schedule · time</span> <span class="badge b-convert">Convert</span><div class="note">StaffPage retires into Team per D20; one suspended-boolean survives.</div></div></li>
+    </ul>
+  </details>
+
+  <details><summary><span class="area">Settings</span> <span class="badge b-convert">Convert</span><span class="why">Everything the owner edits without a developer (D13/D21), one place: Team, Branding, Catalog &amp; Products, Forms, Templates, Pages, Pricing rules.</span></summary>
+    <ul class="tree">
+      <li><div class="node"><span class="name">Team</span> <span class="path">/app/ops/team</span> <span class="badge b-convert">Convert</span></div></li>
+      <li><div class="node"><span class="name">Branding · Products · Forms · Templates · Page visibility</span> <span class="badge b-convert">Convert</span><div class="note">Template editor keeps its draft/publish lifecycle — it's already the D12 reference.</div></div></li>
+      <li><div class="node"><span class="name">Settings/Modules card pages</span> <span class="path">/app/ops/settings · /modules</span> <span class="badge b-merge">Merge</span><div class="note">The cards-vs-sidebar double presentation collapses; Settings becomes a rail group like any other.</div></div></li>
+    </ul>
+  </details>
+
+  <details><summary><span class="area">Review section</span> <span class="badge b-retire">Retire</span> <span class="badge b-ruling">Ruling</span><span class="why">Five routes, dead nav, one of them writing to a real production contact. W13 says the teardown is a separate decision — this tree proposes taking it now.</span></summary>
+    <ul class="tree">
+      <li><div class="node"><span class="name">/app/ops/review/* (5 routes) + reviewSection.ts</span> <span class="badge b-retire">Retire</span><div class="note">contact-dossier mount has live production writes today — retire first regardless of the rest.</div></div></li>
+    </ul>
+  </details>
+</section>
+
+<section class="persona">
+  <h2>Member — client-facing app</h2>
+  <div class="sub">Rail stays warm and short. Care/Deal dashboards become contextual cards on Home instead of parallel homes.</div>
+  <ul class="tree">
+    <li><div class="node"><span class="name">Home (Community feed + my cards)</span> <span class="path">/app</span> <span class="badge b-convert">Convert</span><div class="note">CareHome/DealHome fold in as presence-gated cards; the /horse-care dead link dies with them.</div></div></li>
+    <li><div class="node"><span class="name">My Schedule</span> <span class="path">/app/calendar (+ /app/schedule merged)</span> <span class="badge b-merge">Merge</span><div class="note">Schedule.tsx (rail-less today) merges into the member calendar view.</div></div></li>
+    <li><div class="node"><span class="name">My Lessons &amp; credits</span> <span class="path">/app/lessons</span> <span class="badge b-convert">Convert</span><div class="note">Shows the same credit rows staff see — one truth, two audiences.</div></div></li>
+    <li><div class="node"><span class="name">Orders &amp; payments</span> <span class="path">/app/orders · /order/:id</span> <span class="badge b-rebuild">Rebuild</span><div class="note">The buyer-visible payment state the flow map says is missing (F10): what's owed, how to pay, what happened.</div></div></li>
+    <li><div class="node"><span class="name">My Documents</span> <span class="path">/app/documents</span> <span class="badge b-convert">Convert</span></div></li>
+    <li><div class="node"><span class="name">My Stable + horse pages + intake</span> <span class="path">/app/stable · /app/horses/:id · /app/horse-intake</span> <span class="badge b-convert">Convert</span></div></li>
+    <li><div class="node"><span class="name">My Gifts</span> <span class="path">/app/gifts</span> <span class="badge b-expose">Expose</span><div class="note">The ninth orphan gets its nav presence-gated row; the AccountHub accordion mount goes.</div></div></li>
+    <li><div class="node"><span class="name">Messages · My Posts · Catalog · Checkout · Onboarding · Account · Evaluations</span> <span class="badge b-convert">Convert</span><div class="note">App catalog/checkout rebuilt to primitives (your "app catalog is trash" ruling); public shopping untouched.</div></div></li>
+  </ul>
+</section>
+
+<section class="persona">
+  <h2>Public site — untouched except the seams</h2>
+  <div class="sub">Per your ruling: the website shopping experience is acceptable for now. Only admin-reaching-outward seams change.</div>
+  <ul class="tree">
+    <li><div class="node"><span class="name">Landing · Story · Lessons · Horse · Acquisition · Gift · Contact · FAQ · funnels · Checkout</span> <span class="badge b-keep">Keep</span></div></li>
+    <li><div class="node"><span class="name">/sign/* kiosk &amp; /release</span> <span class="badge b-convert">Convert</span><div class="note">Signing surfaces re-skinned with the system (they're what admins send outward) + staff alert seam added (F2/F3).</div></div></li>
+    <li><div class="node"><span class="name">/book/rider (orphan)</span> <span class="badge b-retire">Retire</span> <span class="badge b-ruling">Ruling</span><div class="note">Contradicts the no-questions-page ruling and nothing links in. Retire behind flag.</div></div></li>
+    <li><div class="node"><span class="name">Shop.tsx (unrouted by design)</span> <span class="badge b-keep">Keep</span></div></li>
+  </ul>
+</section>
+
+<section class="persona">
+  <h2>Superadmin — platform</h2>
+  <ul class="tree">
+    <li><div class="node"><span class="name">Organizations · Tenant detail · Provision · Feature flags · Registry</span> <span class="badge b-convert">Convert</span><div class="note">Tenant suspend / module flip becomes Commit tier 1 (pending ruling #9 — recommended yes).</div></div></li>
+  </ul>
+</section>
+
+</main>
+</body>
+</html>

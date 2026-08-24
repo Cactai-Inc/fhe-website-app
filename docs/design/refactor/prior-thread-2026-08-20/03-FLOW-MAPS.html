@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FHE — Flow Maps by Persona (target architecture)</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#faf8f4;--cream-100:#f5f0e8;--panel:#fdfcfa;--green-900:#0d2118;--green-800:#143321;--green-600:#215531;--green-400:#3d8f58;--green-100:#c3e5cc;--green-50:#edf7f0;--gold-800:#7a6421;--gold-600:#ba9935;--gold-100:#f5edcc;--muted:rgba(13,33,24,.6)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--cream);color:var(--green-900);font:400 15px/1.55 Inter,system-ui,sans-serif;padding:clamp(1rem,3vw,2.5rem)}
+  .wrap{max-width:72rem;margin:0 auto}
+  .eyebrow{font:600 .72rem/1 Inter;letter-spacing:.22em;text-transform:uppercase;color:var(--gold-800)}
+  h1{font-family:'Libre Caslon Text',Georgia,serif;font-weight:400;font-size:clamp(1.6rem,3vw,2.2rem);margin:.35rem 0 .4rem}
+  .lede{color:var(--muted);max-width:62ch;margin-bottom:1.6rem}
+  .persona{background:var(--panel);border:1px solid rgba(13,33,24,.1);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1.4rem;box-shadow:0 1px 2px rgba(13,33,24,.05)}
+  .persona h2{font-family:'Libre Caslon Text',serif;font-weight:400;font-size:1.3rem}
+  .persona .sub{color:var(--muted);font-size:.85rem;margin:.15rem 0 1rem}
+  .flow{margin:.9rem 0 0}
+  .flow h3{font:600 .92rem Inter;color:var(--green-800);display:flex;gap:.5rem;align-items:baseline;flex-wrap:wrap}
+  .tag{font:600 .62rem/1 Inter;letter-spacing:.08em;text-transform:uppercase;padding:.26em .55em;border-radius:999px}
+  .t-daily{background:var(--green-800);color:var(--gold-100)}
+  .t-fix{background:var(--gold-100);color:var(--gold-800);border:1px solid var(--gold-600)}
+  .t-new{background:#fff;color:var(--green-800);border:1px dashed var(--green-600)}
+  .chain{display:flex;flex-wrap:wrap;align-items:stretch;gap:.4rem;margin:.5rem 0 .15rem}
+  .step{background:#fff;border:1px solid var(--green-100);border-radius:9px;padding:.45rem .7rem;min-width:8.5rem;flex:0 1 auto}
+  .step b{display:block;font:600 .8rem Inter;color:var(--green-800)}
+  .step span{display:block;font:400 .72rem Inter;color:var(--muted);line-height:1.35}
+  .step.sys{border-style:dashed;background:var(--green-50)}
+  .step.commit{border-color:var(--gold-600);background:var(--gold-50,#fbf8ee)}
+  .arrow{align-self:center;color:var(--gold-600);font-size:1rem;line-height:1}
+  .was{font-size:.76rem;color:#7a2121;background:#fbeaea;border:1px solid #e3bcbc;border-radius:8px;padding:.4rem .65rem;margin-top:.35rem;max-width:64ch}
+  .was b{font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">FHE Refactor · Deliverable 3 · 2026-08-20</div>
+  <h1>How each person moves through the new app</h1>
+  <p class="lede">Target-state flows, one map per persona, built from FLOW-MAP.md F1–F20. Solid boxes are surfaces, dashed are system actors, gold-bordered are Commit (tier-1) moments. Red notes record what the old flow did wrong — kept only so the fix is checkable, not as a design input.</p>
+
+  <section class="persona">
+    <h2>Staff / Admin — you and Claire</h2>
+    <div class="sub">The five daily paths, assumed from the flow map pending your own list: run the day · manage bookings · complete &amp; get paid · people &amp; records · documents.</div>
+
+    <div class="flow"><h3>Run the day <span class="tag t-daily">daily</span> <span class="tag t-fix">was URL-only</span></h3>
+      <div class="chain">
+        <div class="step"><b>Today</b><span>rail row 1 — KPIs + needs-attention</span></div><div class="arrow">→</div>
+        <div class="step"><b>Queue item</b><span>pending booking · claim · unsigned doc · inbound signup</span></div><div class="arrow">→</div>
+        <div class="step"><b>Acts in place</b><span>drawer opens on the item's own surface</span></div>
+      </div>
+      <div class="was"><b>Was:</b> /app/ops routed with zero links in; needs-attention scattered across five pages; kiosk signups alerted nobody (F2).</div>
+    </div>
+
+    <div class="flow"><h3>Manage bookings <span class="tag t-daily">daily</span></h3>
+      <div class="chain">
+        <div class="step"><b>Schedule → Calendar</b><span>every hour with content renders; items say person · service · horse</span></div><div class="arrow">→</div>
+        <div class="step"><b>Item drawer</b><span>confirm · propose time · decline (stated + notified)</span></div><div class="arrow">→</div>
+        <div class="step commit"><b>Commit</b><span>states effect · reason · reference</span></div><div class="arrow">→</div>
+        <div class="step sys"><b>Notification + ledger</b><span>member sees it; timeline records it</span></div>
+      </div>
+      <div class="was"><b>Was:</b> midnight bookings unreachable, month view read-only, refusal was a silent DELETE (X5), every lesson labeled "Booking".</div>
+    </div>
+
+    <div class="flow"><h3>Complete a lesson &amp; consume the credit <span class="tag t-daily">daily</span></h3>
+      <div class="chain">
+        <div class="step"><b>Schedule → Bookings</b><span>renamed from "Sessions"</span></div><div class="arrow">→</div>
+        <div class="step commit"><b>Complete</b><span>"debits 1 credit from A's Oct allotment" · engine RPC</span></div><div class="arrow">→</div>
+        <div class="step sys"><b>complete_lesson_session</b><span>oldest credit debited · unit consumed</span></div><div class="arrow">→</div>
+        <div class="step"><b>Money → Credits</b><span>read-only ledger agrees</span></div>
+      </div>
+      <div class="was"><b>Was:</b> 0 completions ever; the credits page decremented the table raw beside the engine (D18's worst instance).</div>
+    </div>
+
+    <div class="flow"><h3>People &amp; records <span class="tag t-daily">daily</span> <span class="tag t-new">timeline new</span></h3>
+      <div class="chain">
+        <div class="step"><b>People → tab</b><span>full CRUD standard on every tab</span></div><div class="arrow">→</div>
+        <div class="step"><b>Dossier drawer</b><span>record · relationships · docs</span></div><div class="arrow">→</div>
+        <div class="step"><b>Timeline tab</b><span>notifications · emails · status · audit, one feed</span></div>
+      </div>
+      <div class="was"><b>Was:</b> "virtually no CRUD in Records"; four ledgers written, none readable; "what is she seeing?" unanswerable (X3).</div>
+    </div>
+
+    <div class="flow"><h3>Documents &amp; deals <span class="tag t-daily">daily</span></h3>
+      <div class="chain">
+        <div class="step"><b>Documents queue</b><span>or from a dossier</span></div><div class="arrow">→</div>
+        <div class="step"><b>Contract page</b><span>flows untouched — already the D19 reference</span></div><div class="arrow">→</div>
+        <div class="step sys"><b>Delivery + send log</b><span>per-attempt outcomes visible inline</span></div>
+      </div>
+    </div>
+
+    <div class="flow"><h3>Get paid <span class="tag t-fix">unproven chain</span></h3>
+      <div class="chain">
+        <div class="step"><b>Money → Purchases</b><span>every order, its payment state, its keys</span></div><div class="arrow">→</div>
+        <div class="step"><b>Payment review</b><span>claims</span></div><div class="arrow">→</div>
+        <div class="step commit"><b>Confirm claim</b><span>Commit tier 1</span></div><div class="arrow">→</div>
+        <div class="step sys"><b>mark_purchase_paid</b><span>receipts · month-roll mints unfreeze (X2)</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="persona">
+    <h2>Instructor (non-admin staff)</h2>
+    <div class="sub">Same rail, fewer rows (role-gated): Today shows their teaching day.</div>
+    <div class="flow">
+      <div class="chain">
+        <div class="step"><b>Today</b><span>InstructorHome — finally reachable</span></div><div class="arrow">→</div>
+        <div class="step"><b>Schedule</b><span>their bookings</span></div><div class="arrow">→</div>
+        <div class="step commit"><b>Complete / note</b><span>same Commit path as admin</span></div>
+      </div>
+      <div class="was"><b>Was:</b> the instructor home existed and had no way in.</div>
+    </div>
+  </section>
+
+  <section class="persona">
+    <h2>Member / Client</h2>
+    <div class="sub">Warm, short rail. Everything staff does to them shows up somewhere they can see.</div>
+    <div class="flow"><h3>Book &amp; attend</h3>
+      <div class="chain">
+        <div class="step"><b>My Schedule</b><span>open slots as background, mine as items</span></div><div class="arrow">→</div>
+        <div class="step"><b>Request slot</b><span>summary before submit · withdrawable</span></div><div class="arrow">→</div>
+        <div class="step sys"><b>Staff confirm</b><span>notification lands</span></div><div class="arrow">→</div>
+        <div class="step"><b>My Lessons</b><span>credits: same rows staff sees</span></div>
+      </div>
+    </div>
+    <div class="flow"><h3>Pay <span class="tag t-fix">rebuild</span></h3>
+      <div class="chain">
+        <div class="step"><b>Orders &amp; payments</b><span>what's owed, one place (F10's missing buyer view)</span></div><div class="arrow">→</div>
+        <div class="step"><b>Pay</b><span>Zelle memo key · Stripe fallback</span></div><div class="arrow">→</div>
+        <div class="step sys"><b>Receipt</b><span>provable send, visible to both sides</span></div>
+      </div>
+    </div>
+    <div class="flow"><h3>Sign &amp; onboard</h3>
+      <div class="chain">
+        <div class="step"><b>Invitation email</b><span>the welcome, per D9</span></div><div class="arrow">→</div>
+        <div class="step"><b>Activate</b><span>/activate</span></div><div class="arrow">→</div>
+        <div class="step"><b>Onboarding wall</b><span>docs · horses · profile</span></div><div class="arrow">→</div>
+        <div class="step"><b>Home</b><span>community + my cards</span></div>
+      </div>
+    </div>
+    <div class="flow"><h3>Gifts <span class="tag t-fix">was orphan</span></h3>
+      <div class="chain">
+        <div class="step"><b>My Gifts</b><span>rail row, presence-gated</span></div><div class="arrow">→</div>
+        <div class="step"><b>Redeem / send</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="persona">
+    <h2>Visitor / Lead</h2>
+    <div class="sub">Public site kept as-is by your ruling; the seams into staff now exist.</div>
+    <div class="flow">
+      <div class="chain">
+        <div class="step"><b>Site funnels</b><span>/lessons · /horse · /acquisition · /contact · /gift</span></div><div class="arrow">→</div>
+        <div class="step"><b>Request / checkout</b></div><div class="arrow">→</div>
+        <div class="step sys"><b>Staff alerted</b><span>Today queue + send log — F2/F3's missing seam built</span></div><div class="arrow">→</div>
+        <div class="step"><b>People → Leads</b><span>convert → invite (F16 → F1)</span></div>
+      </div>
+    </div>
+    <div class="flow"><h3>Visit-day kiosk</h3>
+      <div class="chain">
+        <div class="step"><b>/release QR</b><span>re-skinned, same flow</span></div><div class="arrow">→</div>
+        <div class="step"><b>Sign</b></div><div class="arrow">→</div>
+        <div class="step sys"><b>Delivery + staff visibility</b><span>signed release appears in Today</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="persona">
+    <h2>Superadmin (platform)</h2>
+    <div class="flow">
+      <div class="chain">
+        <div class="step"><b>Organizations</b></div><div class="arrow">→</div>
+        <div class="step"><b>Tenant detail</b></div><div class="arrow">→</div>
+        <div class="step commit"><b>Suspend / module flip</b><span>Commit tier 1 — currently no confirmation at tenant-wide blast radius</span></div>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>
