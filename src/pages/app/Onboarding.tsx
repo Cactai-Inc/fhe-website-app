@@ -275,6 +275,11 @@ export default function Onboarding() {
   // the step, and the step machine below honours it whatever the paperwork says.
   const [searchParams] = useSearchParams();
   const wantsSlots = searchParams.get('step') === 'slots';
+  /* THE REACH for the first-lesson shop (owner, 2026-08-24): the dashboard card
+     links here, so somebody who closed the shop mid-flow can pick it back up.
+     Same idiom as `?step=slots` — one query parameter, honoured over whatever the
+     paperwork would otherwise choose. */
+  const wantsShop = searchParams.get('step') === 'shop';
   const { hasModule } = useAuth();
   const propertyTerm = usePropertyTerm();
   // I6 — the app-overview modal's page list now mirrors AppLayout's canonical
@@ -571,7 +576,8 @@ export default function Onboarding() {
         // Asking for the step by name wins over everything; an unchosen slot wins
         // over "nothing to do".
         const slotOutstanding = sl.some((x) => !x.chosen);
-        if (wantsSlots && sl.length > 0) setStep('slots');
+        if (wantsShop) setStep('shop');
+        else if (wantsSlots && sl.length > 0) setStep('slots');
         else if (!s.needed) setStep(slotOutstanding ? 'slots' : 'done');
         // §C9 — the order screen comes FIRST when there is an order to show.
         else if (s.purchase?.purchase_id) setStep('order');

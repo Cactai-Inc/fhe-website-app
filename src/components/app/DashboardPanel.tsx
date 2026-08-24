@@ -4,7 +4,8 @@ import { fromHere } from '../../lib/linkOrigin';
 import { X, Hand, MailWarning } from 'lucide-react';
 import {
   myNotifications, consumeNotification, markNotificationRead, myProfileCompletion,
-  type AppNotification, type ProfileCompletion,
+  myFirstLessonState,
+  type AppNotification, type ProfileCompletion, type FirstLessonState,
 } from '../../lib/api';
 import { sayHiBack } from '../../lib/communityFeed';
 import { timeOfDayWord } from '../../lib/formatDateTime';
@@ -195,6 +196,13 @@ export function DashboardPanel() {
   const [comingUp, setComingUp] = useState<Tile[]>([]);
   const [checklist, setChecklist] = useState<ChecklistRow[]>([]);
   const [suggestBooking, setSuggestBooking] = useState(false);
+  /* ⚠️ THE FIRST LESSON, RECOVERABLE (owner, 2026-08-24). The onboarding shop can
+     be closed or navigated away from; this is where it comes back. Derived, not a
+     notification row — dismissing a notification would lose the prompt for good,
+     and "recoverable" is the whole request. It disappears on its own the moment
+     they buy, which is D13's self-hiding surface rather than a tile anyone has to
+     tidy up. */
+  const [firstLesson, setFirstLesson] = useState<FirstLessonState | null>(null);
   const [pendingChanges, setPendingChanges] = useState(0);
   const [horse, setHorse] = useState<HorseOnboardingState | null>(null);
   const [acqIntake, setAcqIntake] = useState<AcquisitionIntakeState | null>(null);
@@ -257,6 +265,7 @@ export function DashboardPanel() {
       // paperwork done + nothing on the calendar → the suggested first action
       const hasUpcoming = sessions.some((x) => x.status === 'SCHEDULED' && new Date(x.starts_at).getTime() > Date.now());
       setSuggestBooking(cl.length > 0 && !anyPending && !hasUpcoming);
+      myFirstLessonState().then(setFirstLesson).catch(() => setFirstLesson(null));
       if (!active) return;
       const now = Date.now();
 
@@ -390,7 +399,11 @@ export function DashboardPanel() {
   // pending-changes is the member's own live state; still session-hideable.
   const showPending = pendingChanges > 0 && !hidden.has('pending-changes');
 
-  const hasAttention = attention.length > 0 || checklist.length > 0 || suggestBooking
+  /** A rider who has never bought a lesson. Riders only — a boarder or a pure
+   *  contract party is not failing to do anything by never buying one. */
+  const needsFirstLesson = Boolean(
+    firstLesson && firstLesson.is_rider && !firstLesson.has_lesson_purchase);
+  const hasAttention = attention.length > 0 || checklist.length > 0 || suggestBooking || needsFirstLesson
     || showPending || !!horseTile || !!acqTile || !!profileTile;
   // Empty state: nothing needs attention and nothing's coming up → a warm all-clear
   // greeting (owner directive) instead of hiding the panel entirely.
@@ -486,7 +499,18 @@ export function DashboardPanel() {
                 cta: 'View on calendar', to: '/app/calendar',
               }} onDismiss={() => hide('pending-changes')} />
             )}
-            {suggestBooking && (
+            {/* Before anything else in this zone: you cannot book a NEXT lesson
+                until you have had a first one, so this supersedes the generic
+                booking nudge below rather than sitting beside it. */}
+            {needsFirstLesson && (
+              <TileCard tile={{
+                id: 'first-lesson', kind: 'suggestion', gold: true,
+                title: 'Book your evaluation lesson',
+                sub: 'Everyone starts with an evaluation lesson — it’s how we get to know your riding.',
+                cta: 'Choose your lesson', to: '/app/onboarding?step=shop',
+              }} />
+            )}
+            {suggestBooking && !needsFirstLesson && (
               <TileCard tile={{
                 id: 'book-first', kind: 'suggestion', gold: true,
                 title: 'Book your next lesson',

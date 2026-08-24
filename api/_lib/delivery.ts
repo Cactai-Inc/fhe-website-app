@@ -131,7 +131,8 @@ export async function buildPartyCopyEmail(
   const attachments: EmailAttachment[] = [];
   if (pdfBytes) {
     attachments.push({
-      filename: partyPdfFileName(doc.title, recipientFirstName, recipientLastName, executedAt),
+      filename: partyPdfFileName(doc.title, recipientFirstName, recipientLastName, executedAt,
+        identity.fromName),
       content: pdfBytes,
       contentType: 'application/pdf',
     });

@@ -741,6 +741,27 @@ export async function emailMyDocumentCopy(documentId: string): Promise<{ email: 
 }
 
 /** Stage 3f: the signing-wall state for the signed-in person. */
+/**
+ * OFFERINGDOCS/INTAKE — "have they ever bought a riding lesson?"
+ *
+ * Owner, 2026-08-24: the first-lesson prompt must be RECOVERABLE — "they can
+ * close out of it, navigate away from it, but it lives on the dashboard." So it
+ * is derived from the purchases, not written as a notification row: a
+ * notification is a one-shot record and dismissing it would lose the prompt for
+ * good. This appears while it is true and stops the moment they buy.
+ */
+export interface FirstLessonState {
+  has_lesson_purchase: boolean;
+  /** Only riders are prompted — a boarder is not failing to do anything. */
+  is_rider: boolean;
+}
+
+export async function myFirstLessonState(): Promise<FirstLessonState> {
+  const { data, error } = await supabase.rpc('my_first_lesson_state');
+  if (error) throw error;
+  return (data ?? { has_lesson_purchase: true, is_rider: false }) as FirstLessonState;
+}
+
 export interface WallState {
   pending: number;
   wall: boolean;
