@@ -9,6 +9,7 @@ import {
 import { contractPartyOptions, staffHorseRecords, type PartyOption, type StaffHorseRecord } from '../../lib/horses';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { CaptureInfoModal } from './CaptureInfoModal';
+import { AddHorseModal } from './AddHorseModal';
 
 /**
  * PARTIES & HORSE — a compact summary card at the top of the contract showing who
@@ -52,6 +53,10 @@ export function PartiesHorseCard({
   const [capture, setCapture] = useState<{ party: PartySummary; fields?: PartyField[] } | null>(null);
   // PARTYEMAIL: the email typed into a role's "add by email" box, keyed by role.
   const [emailDraft, setEmailDraft] = useState<Record<string, string>>({});
+  // TASK-PAMELA §B: "Add a new horse" opens the real intake form here too — the
+  // horse picker could only ever offer records that already existed, so a horse
+  // the owner had just been told about on the phone had nowhere to go.
+  const [intakeOpen, setIntakeOpen] = useState(false);
 
   /** TASK-ROLEBUNDLE: what each role owes on THIS contract. Empty on error —
    *  a panel that cannot load must not imply nobody owes anything, so it simply
@@ -76,6 +81,10 @@ export function PartiesHorseCard({
   // (Lessee / Buyer), then anything else. The horse block renders after all parties.
   const roleRank = (r: string) => r === 'LESSOR' || r === 'SELLER' ? 0
     : r === 'LESSEE' || r === 'BUYER' ? 1 : 2;
+  // The horse-owning side of this instrument: the Lessor on a lease, the Seller
+  // on a sale. A new horse added here belongs to them.
+  const ownerParty = summary.parties.find((p) => p.party_role === 'LESSOR' || p.party_role === 'SELLER');
+  const ownerRole = ownerParty?.party_role;
 
   async function reassign(role: string, contactId: string) {
     setBusy(true); setErr(null);
@@ -100,6 +109,25 @@ export function PartiesHorseCard({
     try { await attachHorseToDocument(documentId, horseId); load(); onChanged(); }
     catch (e) { setErr(toErrorMessage(e, 'Could not change the horse.')); }
     finally { setBusy(false); }
+  }
+
+  /** The intake modal saved. Attach the horse, and — when the OWNER side of this
+   *  contract is still empty — put the account the horse was assigned to into that
+   *  role. Both directions of one rule (owner, 2026-08-23): whichever of horse and
+   *  owner is already known supplies the other, and the card shows both without a
+   *  reload. */
+  async function horseSaved(horseId: string, ownerContactId?: string) {
+    setIntakeOpen(false);
+    setBusy(true); setErr(null);
+    try {
+      await attachHorseToDocument(documentId, horseId);
+      if (ownerContactId && ownerRole && !ownerParty?.contact_id) {
+        await reassignDocumentParty(documentId, ownerRole, ownerContactId);
+      }
+      load(); onChanged();
+    } catch (e) {
+      setErr(toErrorMessage(e, 'The horse was saved, but it could not be attached to this contract.'));
+    } finally { setBusy(false); }
   }
 
   return (
@@ -203,16 +231,31 @@ export function PartiesHorseCard({
         <div>
           <dt className="text-[11px] uppercase tracking-wide text-muted">Horse</dt>
           {editing && canEdit ? (
-            <select className="form-input mt-0.5" disabled={busy} value={summary.horse_id ?? ''}
-              onChange={(e) => void reassignHorse(e.target.value)}>
-              {!summary.horse_id && <option value="">Select…</option>}
-              {horses.map((h) => <option key={h.id} value={h.id}>{h.registered_name || h.nickname || 'Horse'}</option>)}
-            </select>
+            <div className="mt-0.5 flex flex-col gap-1.5">
+              <select className="form-input" disabled={busy} value={summary.horse_id ?? ''}
+                onChange={(e) => void reassignHorse(e.target.value)}>
+                {!summary.horse_id && <option value="">Select…</option>}
+                {horses.map((h) => <option key={h.id} value={h.id}>{h.registered_name || h.nickname || 'Horse'}</option>)}
+              </select>
+              <button type="button" className="btn-outline-gold text-xs px-2.5 py-1 self-start"
+                disabled={busy} onClick={() => setIntakeOpen(true)}>
+                <Plus size={12} /> Add a new horse
+              </button>
+              <p className="text-[11px] text-muted">
+                {ownerParty?.contact_id
+                  ? `The record is created for the ${roleLabel(ownerRole ?? '').toLowerCase()} and attached here.`
+                  : `Pick who owns it in the form — they become this contract’s ${roleLabel(ownerRole ?? 'LESSOR').toLowerCase()}.`}
+              </p>
+            </div>
           ) : (
             <dd className="mt-0.5 text-green-900 font-medium">{summary.horse_name ?? '—'}</dd>
           )}
         </div>
       </dl>
+
+      <AddHorseModal open={intakeOpen} onClose={() => setIntakeOpen(false)}
+        ownerContactId={ownerParty?.contact_id ?? undefined}
+        onSaved={(horseId, owner) => void horseSaved(horseId, owner)} />
 
       {capture && (
         <CaptureInfoModal

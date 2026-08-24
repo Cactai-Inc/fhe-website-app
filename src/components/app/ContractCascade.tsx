@@ -1,8 +1,28 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Info, MessageSquarePlus } from 'lucide-react';
 import { clauseConditionMet, type ContractField, type FieldStructured, type PartyChoice } from '../../lib/contracts';
 import { fieldSourceTip } from '../../lib/fieldSources';
+import { listHorseMedications, type HorseMedication } from '../../lib/horses';
 import { ExplainTip } from './ExplainTip';
+
+/**
+ * THE HORSE THIS DOCUMENT IS ABOUT — TASK-PAMELA §B rule 6.
+ *
+ * Owner, 2026-08-23: *"they should still be at least accessible as options to
+ * select from the horse record before resorting to hand writing things in."*
+ * The medication builder is the one control in this file that needs a fact from
+ * OUTSIDE the field it renders, and threading a horse id through
+ * ClauseDocument → InlineFieldControl → FieldControl → MedicationBuilder would put
+ * an optional prop on four signatures that have nothing else to do with horses.
+ * Context instead: `ContractPage` provides it once, one consumer reads it, and a
+ * document with no horse simply reads null and the picker does not render.
+ */
+const ContractHorseContext = createContext<string | null>(null);
+export function ContractHorseProvider(
+  { horseId, children }: { horseId: string | null; children: ReactNode },
+) {
+  return <ContractHorseContext.Provider value={horseId}>{children}</ContractHorseContext.Provider>;
+}
 
 /* ── U5 / F1-F2: insurance responsibility elections ────────────────────────────
  * Each insurance section (GL / MORT / MED) resolves to exactly one end-state
@@ -578,6 +598,23 @@ function MedicationBuilder({
   const { draft, setLocal, commit, beginEdit, flush } = useStructuredDraft(f, onSaveStructured);
   const items = draft.medItems ?? [];
   const add = () => commit({ ...draft, medItems: [...items, { name: '', dose: '', schedule: '', party: '' }] });
+  /* ⚠️ THE HORSE'S OWN RECORD IS THE FIRST PLACE TO LOOK (PAMELA §B rule 6).
+     Medications and supplements live on `horse_medications`, entered once through
+     the intake form. Naming one in the contract meant retyping its name, dose and
+     schedule from memory — the same failure mode breed/color already solved with a
+     list, applied to the table that never had one. Hand-typing stays available: the
+     picker seeds the three fields and every one of them is still editable, because
+     a contract obligation may well differ from the standing regimen. */
+  const horseId = useContext(ContractHorseContext);
+  const [onRecord, setOnRecord] = useState<HorseMedication[]>([]);
+  useEffect(() => {
+    if (!horseId) { setOnRecord([]); return; }
+    let active = true;
+    listHorseMedications(horseId)
+      .then((rows) => { if (active) setOnRecord(rows.filter((r) => (r.name ?? '').trim())); })
+      .catch(() => { if (active) setOnRecord([]); });
+    return () => { active = false; };
+  }, [horseId]);
   // text edits: local only (commit on blur). the party select commits immediately.
   const editLocal = (i: number, patch: Partial<NonNullable<FieldStructured['medItems']>[number]>) =>
     setLocal({ ...draft, medItems: items.map((it, j) => (j === i ? { ...it, ...patch } : it)) });
@@ -596,6 +633,30 @@ function MedicationBuilder({
                 onClick={() => remove(i)} title="Remove">✕</button>
             )}
           </div>
+          {onRecord.length > 0 && !disabled && (
+            <label className="flex flex-col gap-0.5 text-[11px] text-muted mb-2">
+              From this horse’s record
+              <select className={cell}
+                value={onRecord.some((m) => m.name === it.name) ? (it.name ?? '') : ''}
+                onChange={(e) => {
+                  const picked = onRecord.find((m) => m.name === e.target.value);
+                  if (!picked) return;
+                  editNow(i, {
+                    name: picked.name ?? '',
+                    dose: picked.dosage ?? '',
+                    schedule: picked.instructions ?? '',
+                  });
+                }}>
+                <option value="">Choose one on file, or type it below…</option>
+                {onRecord.map((m, k) => (
+                  <option key={m.id ?? k} value={m.name ?? ''}>
+                    {m.name}{m.kind === 'SUPPLEMENT' ? ' (supplement)' : ''}
+                    {m.dosage ? ` — ${m.dosage}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div className="grid sm:grid-cols-3 gap-2">
             <label className="flex flex-col gap-0.5 text-[11px] text-muted">Name
               <input className={cell} disabled={disabled} value={it.name ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { name: e.target.value })} /></label>

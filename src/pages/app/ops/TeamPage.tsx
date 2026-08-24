@@ -479,7 +479,7 @@ function InviteStaffSection({ onSent }: { onSent: () => void }) {
         email: email.trim(), role, expiresInDays: 7,
         firstName: firstName.trim(), lastName: lastName.trim(), title: title.trim(),
       });
-      setResult({ url: r.registerUrl, emailed: r.emailed, emailError: r.emailError, email: email.trim() });
+      setResult({ url: r.registerUrl ?? '', emailed: r.emailed, emailError: r.emailError, email: email.trim() });
       setFirstName(''); setLastName(''); setTitle(''); setEmail('');
       onSent(); // surface the new "Invited" row in the roster immediately
     } catch (e) {

@@ -95,6 +95,23 @@ function Field({
 
 const OTHER = '__other__';
 
+/** HEIGHT IN HANDS — a closed UNIT vocabulary, generated, not configured.
+ *  A hand is four inches, so the only valid fractions are .0–.3 and the practical
+ *  range for a horse or pony is 8–19 hands. Free text produced "16.2hh",
+ *  "16.2 hands", "16'2" and "1.68m" for one fact; a list makes the stored value
+ *  canonical without needing a lookup table (nothing here is a tenant's to edit —
+ *  see D13 — so it deliberately does NOT become a fourth `lookup_options` key). */
+const HEIGHT_OPTIONS: { value: string; label: string }[] = (() => {
+  const out: { value: string; label: string }[] = [];
+  for (let h = 8; h <= 19; h += 1) {
+    for (let i = 0; i <= 3; i += 1) {
+      const v = `${h}.${i} hh`;
+      out.push({ value: v, label: v });
+    }
+  }
+  return out;
+})();
+
 /** SELECT-OR-OTHER: a dropdown of known options plus an "Other" escape that reveals
  *  a free-text box. When the user types an "Other" value it's stored as the value AND
  *  captured (record_lookup_suggestion) so the barn can promote frequent entries into
@@ -107,7 +124,10 @@ function SelectOrOther({
   value?: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
-  lookupKey: string;
+  /** The vocabulary an "Other" entry is queued against for the barn to promote
+   *  later. OMITTED for a generated unit list (height in hands) — there is no
+   *  tenant vocabulary behind it, so there is nothing to suggest an addition to. */
+  lookupKey?: string;
   placeholder?: string;
   span?: boolean;
   showError?: boolean;
@@ -151,7 +171,7 @@ function SelectOrOther({
       {(otherOpen || isOther) && !na && (
         <input className={`${cls} mt-1.5`} disabled={na} value={isKnown ? '' : (value ?? '')} placeholder={placeholder ?? 'Type the value'}
           onChange={(e) => onChange(e.target.value)}
-          onBlur={(e) => { const v = e.target.value.trim(); if (v) recordLookupSuggestion(lookupKey, v).catch(() => {}); }} />
+          onBlur={(e) => { const v = e.target.value.trim(); if (v && lookupKey) recordLookupSuggestion(lookupKey, v).catch(() => {}); }} />
       )}
       {hint && <p className="text-[10px] text-muted mt-1">{hint}</p>}
     </div>
@@ -302,11 +322,23 @@ function LocationEntry({
   onChange: (v: HorseLocationDetail) => void;
   showError?: boolean;
   required?: boolean;
-  nameOptions: { value: string; label: string }[];
+  /** The places already on file. `address` rides along so PICKING one fills the
+   *  address too — see the matching note below. */
+  nameOptions: { value: string; label: string; address?: string | null }[];
 }) {
   const set = (patch: Partial<HorseLocationDetail>) => onChange({ ...v, ...patch });
-  const listId = `loc-names-${title.replace(/\s+/g, '-')}`;
   const bad = showError && !filled(v.name);
+  /* ⚠️ THE LOCATION NAME IS A MATCHED VALUE, SO THE LIST IS PRIMARY (PAMELA §B
+     rule 1). `set_horse_locations` → `_resolve_location` matches the typed name
+     against `locations` and CREATES a row when nothing matches — so "Carmel Creek
+     Ranch" and "Carmel Creek ranch " become two places, and the horse is filed at
+     the one nobody else uses. That is a match failure that never raises, which is
+     worse than the breed/color FK error, not better. Same mechanism as
+     SelectOrOther: the known list is the control, free text is the named escape. */
+  const known = nameOptions.filter((o) => o.value.trim());
+  const isKnown = !!v.name && known.some((o) => o.value === v.name);
+  const [otherOpen, setOtherOpen] = useState(!!v.name && !isKnown);
+  const showOther = otherOpen || (!!v.name && !isKnown) || known.length === 0;
   const L = ({ children }: { children: React.ReactNode }) => (
     <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{children}</label>
   );
@@ -316,9 +348,30 @@ function LocationEntry({
       {heading && <p className="text-[10px] text-muted mb-2.5">{heading}</p>}
       <div className="grid sm:grid-cols-2 gap-2">
         <div className="sm:col-span-2"><L>Location name{required ? ' *' : ''}</L>
-          <input list={listId} className={`${input}${bad ? ' border-red-400' : ''}`} value={v.name ?? ''}
-            placeholder="e.g. Carmel Creek Ranch" onChange={(e) => set({ name: e.target.value })} />
-          <datalist id={listId}>{nameOptions.map((o) => <option key={o.value} value={o.value} />)}</datalist>
+          {known.length > 0 && (
+            <select className={`${input}${bad ? ' border-red-400' : ''}`}
+              value={showOther ? OTHER : (isKnown ? v.name! : '')}
+              onChange={(e) => {
+                if (e.target.value === OTHER) { setOtherOpen(true); set({ name: '' }); return; }
+                setOtherOpen(false);
+                const picked = known.find((o) => o.value === e.target.value);
+                // Picking a place on file brings its address with it — the point
+                // of the list is that the same place is the same row every time.
+                set({
+                  name: e.target.value,
+                  ...(picked?.address && !filled(v.address_line1) ? { address_line1: picked.address } : {}),
+                });
+              }}>
+              <option value="">Select…</option>
+              {known.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              <option value={OTHER}>Other (enter manually)…</option>
+            </select>
+          )}
+          {showOther && (
+            <input className={`${input}${known.length > 0 ? ' mt-1.5' : ''}${bad ? ' border-red-400' : ''}`}
+              value={isKnown ? '' : (v.name ?? '')}
+              placeholder="e.g. Carmel Creek Ranch" onChange={(e) => set({ name: e.target.value })} />
+          )}
         </div>
         <div className="sm:col-span-2"><L>Street address</L>
           <input className={input} value={v.address_line1 ?? ''} placeholder="123 Ranch Rd" onChange={(e) => set({ address_line1: e.target.value })} /></div>
@@ -440,10 +493,17 @@ const PATCHABLE_KEYS: (keyof HorseIntakePayload)[] = [
 const TYPED_KEYS = new Set<keyof HorseIntakePayload>(HORSE_SENTINEL_UNSAFE_KEYS);
 
 export function HorseIntakeForm({
-  onDone, submitLabel = 'Add horse', ownerContactId, horseId, prefill,
+  onDone, submitLabel = 'Add horse', ownerContactId, horseId, prefill, createEarly = false,
 }: {
-  /** Fires on created OR match_found (both attach an id); pending-review shows in-form. */
-  onDone: (horseId: string) => void;
+  /**
+   * Fires on created OR match_found (both attach an id); pending-review shows in-form.
+   *
+   * PAMELA §B — the second argument is the CONTACT this record was assigned to.
+   * A caller that opened this form without knowing whose horse it is (the contract
+   * modal, when no lessor is picked yet) learns it here: the staff account picker
+   * below is the ask, and its answer is what the contract's lessor becomes.
+   */
+  onDone: (horseId: string, ownerContactId?: string) => void;
   submitLabel?: string;
   /** Optional PRESET of the owning account (e.g. a staff page that already knows the
    *  client). Staff can still change it via the in-form account picker; ignored for
@@ -464,6 +524,23 @@ export function HorseIntakeForm({
    *  corrected in place if we got it wrong. Ignored in EDIT mode: a record on
    *  file is a stronger source than an inquiry. */
   prefill?: Partial<HorseIntakePayload>;
+  /**
+   * PAMELA §B rule 2 — CREATE ON THE NAME, COMPLETE AFTERWARDS.
+   *
+   * Owner, 2026-08-23: *"filling in even just the name should add the new record
+   * for that horse."* The answer-or-N/A completeness gate exists so the two horse
+   * ONBOARDING documents never render a silently-blank field — but a lease author
+   * capturing a horse mid-contract is not generating those documents, and holding
+   * the record hostage to a fair-market value and a vet phone is what sent the
+   * owner looking for a shortcut in the first place.
+   *
+   * It is not a second save discipline: the record is created by the SAME
+   * `create_horse_record` call, and the autosave-on-blur path this form already
+   * runs in edit mode takes over the moment it exists, so every remaining field
+   * persists as it is filled. Only the SUBMIT GATE moves — `create_horse_record`
+   * itself requires exactly a name.
+   */
+  createEarly?: boolean;
 }) {
   const { isStaff } = useAuth();
   const propertyTerm = usePropertyTerm();
@@ -658,7 +735,7 @@ export function HorseIntakeForm({
   const colorOpts = toOpts(colors);
   const accountLabel = (a: ClientAccountRow) =>
     a.display_name || [a.first_name, a.last_name].filter(Boolean).join(' ') || a.email || 'Account';
-  const locationNameOpts = locations.map((l) => ({ value: l.name, label: l.name }));
+  const locationNameOpts = locations.map((l) => ({ value: l.name, label: l.name, address: l.address }));
   // Known locations for the temporary-location picker: the horse's own entries (home,
   // lease) + any location records from the system, MINUS the current lease location
   // (offering the current location as a "temporary" choice is meaningless). Each carries
@@ -722,7 +799,7 @@ export function HorseIntakeForm({
   };
   const missingRequired = (): string[] => {
     const out: string[] = [];
-    if (!hasRealName || !nameAnswered) out.push('Name (registered or barn)');
+    if (!hasRealName || !nameAnswered) out.push('Name (nickname or registered)');
     for (const k of [...alwaysKeys, ...condKeys]) {
       if (!answered(f[k] as string | undefined)) {
         out.push(HORSE_DOC_REQUIRED_LABELS[k as string] ?? CONDITIONAL_LABELS[k as string] ?? String(k));
@@ -762,18 +839,24 @@ export function HorseIntakeForm({
       return;
     }
     if (!hasRealName) {
-      reject('Give the horse at least a registered or barn name (N/A can’t apply to both).');
+      reject('Give the horse a nickname or a registered name (N/A can’t apply to both).');
       return;
     }
-    if (!euthanasiaAnswered) {
-      reject('Please choose an emergency euthanasia authorization (Option A or B).');
-      return;
-    }
-    if (!complete) {
-      const missing = missingRequired();
-      reject('Please answer every required field — fill it in or mark it N/A.'
-        + (missing.length ? ` Still needed: ${missing.join(', ')}.` : ''));
-      return;
+    /* createEarly: the record is created on the name alone and everything below
+       keeps saving as it is filled (autosave-on-blur, same as edit mode). The
+       euthanasia + answer-or-N/A gates still apply on every OTHER caller, where
+       this submit is also the moment the horse's onboarding documents get made. */
+    if (!createEarly) {
+      if (!euthanasiaAnswered) {
+        reject('Please choose an emergency euthanasia authorization (Option A or B).');
+        return;
+      }
+      if (!complete) {
+        const missing = missingRequired();
+        reject('Please answer every required field — fill it in or mark it N/A.'
+          + (missing.length ? ` Still needed: ${missing.join(', ')}.` : ''));
+        return;
+      }
     }
     const unlisted = unlistedVocab();
     if (unlisted) {
@@ -820,7 +903,7 @@ export function HorseIntakeForm({
         lastSavedRef.current = { ...f };
         await linkLocations(editingId);
         await linkMeds(editingId);
-        onDone(editingId);
+        onDone(editingId, assignTo || ownerContactId || undefined);
         return;
       }
       // ONE path. Staff assigning to a client passes owner_contact_id; the backend
@@ -833,7 +916,8 @@ export function HorseIntakeForm({
       else {
         recordIdRef.current = out.horse_id;
         lastSavedRef.current = { ...f };
-        await linkLocations(out.horse_id); await linkMeds(out.horse_id); onDone(out.horse_id);
+        await linkLocations(out.horse_id); await linkMeds(out.horse_id);
+        onDone(out.horse_id, assignTo || ownerContactId || undefined);
       }
     } catch (e) {
       // The database's own message — see DbError in lib/horses.ts. Before that
@@ -886,10 +970,20 @@ export function HorseIntakeForm({
       )}
 
       <p className="text-xs text-muted mb-1">
-        Fields marked <strong>*</strong> feed your horse’s legal documents and are
-        required — fill them in or mark them <strong>N/A</strong>. Everything else is
-        optional but welcome. Your progress saves as you go — you can leave and pick
-        this up later.
+        {createEarly ? (
+          <>
+            A <strong>nickname or registered name</strong> is all it takes to create the
+            record — everything below can be completed now or later, and saves as you go.
+            Fields marked <strong>*</strong> are the ones the horse’s legal documents merge.
+          </>
+        ) : (
+          <>
+            Fields marked <strong>*</strong> feed your horse’s legal documents and are
+            required — fill them in or mark them <strong>N/A</strong>. Everything else is
+            optional but welcome. Your progress saves as you go — you can leave and pick
+            this up later.
+          </>
+        )}
       </p>
 
       <Section title="Location">
@@ -1024,7 +1118,12 @@ export function HorseIntakeForm({
             { value: 'COLT', label: 'Colt' },
           ]} />
         <Field label="Date of birth" type="date" value={f.date_of_birth} onChange={set('date_of_birth')} showError={showError} required />
-        <Field label="Height" value={f.height} onChange={set('height')} placeholder="e.g. 16.2 hh" showError={showError} required />
+        {/* Height: display-only (there is no HORSE.HEIGHT contract token), so this
+            is the judgement half of PAMELA §B rule 1 — a list is FASTER and gives
+            one canonical spelling, with free text kept for the unusual case. */}
+        <SelectOrOther label="Height" value={f.height} onChange={set('height')} showError={showError} required
+          options={HEIGHT_OPTIONS} placeholder="e.g. 16.2 hh"
+          hint="Hands and inches — pick from the list, or enter it your own way." />
       </Section>
 
       <Section title="History">

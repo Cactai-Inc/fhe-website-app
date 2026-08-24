@@ -9,8 +9,8 @@ import { toErrorMessage } from '../../../lib/ops/errors';
 import {
   claimDocumentOrigination, setPartyControls, assignHorseSection,
 } from '../../../lib/contracts';
-import { staffHorseRecords, contractPartyOptions, createHorseRecord, contactHorseRecords, type StaffHorseRecord, type PartyOption, type HorseIntakeRecord } from '../../../lib/horses';
-import { HorseIntakeForm } from '../../../components/app/HorseIntakeForm';
+import { staffHorseRecords, contractPartyOptions, contactHorseRecords, type StaffHorseRecord, type PartyOption, type HorseIntakeRecord } from '../../../lib/horses';
+import { AddHorseModal } from '../../../components/app/AddHorseModal';
 import {
   PartyControlsCard, DEFAULT_PARTY_CONTROLS, roleLabel,
   type PartyControlValues,
@@ -21,8 +21,19 @@ import {
  *   1. Type — lease or purchase & sale.
  *   2. BOTH parties are SELECTED from existing accounts/contacts — never
  *      created here. Add the person first (New client), then come back.
- *   3. Horse — from records (autofills HORSE.*) or ASSIGNED to one of the
- *      parties to fill in. Never "decide later".
+ *   3. Horse — from records (autofills HORSE.*), ADDED here through the real
+ *      intake form in a modal, or ASSIGNED to one of the parties to fill in.
+ *      Never "decide later".
+ *
+ * ⚠️ TASK-PAMELA §B — THE "RECORD IT NOW" GRID IS GONE, NOT REPAIRED.
+ * This page used to offer a third horse mode that rendered eight bare text inputs
+ * (registered name, "Barn name", breed, color, sex, height, microchip,
+ * registration #). It was the surface the owner hit: free text where `horses.breed`
+ * and `horses.color` are FOREIGN KEYS into the reference vocabularies (so a typed
+ * value cannot be stored at all), no farrier and no vet anywhere, and a "Barn name"
+ * label writing the `nickname` column — the exact word the owner has rejected twice.
+ * It has been DELETED. "Add a new horse" opens `HorseIntakeForm` in a modal, which
+ * is the same form every other horse-intake door already opens.
  *   4. Document controls PER PARTY, set now: add their own information, edit
  *      deal terms, suggest changes. Acting on behalf of a party = fill their
  *      fields yourself and switch their controls off; the invitation language
@@ -57,9 +68,7 @@ export default function NewContractPage() {
 
   const [partyA, setPartyA] = useState('');   // lessee / buyer contact id
   const [partyB, setPartyB] = useState('');   // lessor / seller contact id
-  const [horseMode, setHorseMode] = useState<'pick' | 'record' | 'party'>('pick');
-  // inline record: owned by the horse-owning party (lessor in a lease)
-  const [newHorse, setNewHorse] = useState<Record<string, string>>({});
+  const [horseMode, setHorseMode] = useState<'pick' | 'party'>('pick');
   const [horseId, setHorseId] = useState('');
   const [horseParty, setHorseParty] = useState<string>('');  // which party fills HORSE.*
   /* THE COUNTERPARTY HOLDS "can edit deal terms" BY DEFAULT (TASK-CONTRACTSEND
@@ -74,7 +83,8 @@ export default function NewContractPage() {
   const [controlsB, setControlsB] = useState<Controls>({ ...DEFAULT_CONTROLS, can_edit_deal: true });
   const [amount, setAmount] = useState('');
   const [deposit, setDeposit] = useState('');
-  // sale: the horse step is a dropdown of the SELLER's horses + add-new (modal)
+  // Both types: the horse step is a dropdown of the horse-owning party's horses
+  // + "Add a new horse" (the intake form, in a modal).
   const [sellerHorses, setSellerHorses] = useState<HorseIntakeRecord[]>([]);
   const [intakeOpen, setIntakeOpen] = useState(false);
   // (The "responsible for authoring the terms" party selector was removed — the
@@ -117,8 +127,10 @@ export default function NewContractPage() {
   }, []);
   useEffect(() => { setHorseParty(roleB); }, [roleB]);
   useEffect(() => {
-    // sale: the horse dropdown lists the chosen seller's horses
-    if (type === 'purchase' && partyB) {
+    // The horse-owning party is partyB on both types (LESSOR / SELLER), so the
+    // dropdown lists THEIR horses on both. Previously only the sale did this and
+    // the lease offered every horse in the barn.
+    if (partyB) {
       contactHorseRecords(partyB).then(setSellerHorses).catch(() => setSellerHorses([]));
     } else {
       setSellerHorses([]);
@@ -126,9 +138,23 @@ export default function NewContractPage() {
     setHorseId('');
   }, [type, partyB]);
 
+  /** The modal saved: adopt the horse, and — when the horse-owning party was not
+   *  chosen yet — adopt the OWNER it was assigned to as that party (owner,
+   *  2026-08-23: "when i do and i save the new record it should close the modal and
+   *  the lessor field in the card above the horse card should show the lessor's
+   *  name"). Both directions of the same rule: whichever of the two is known
+   *  supplies the other, and nobody is asked twice. */
+  function handleHorseSaved(newHorseId: string, ownerContactId?: string) {
+    setIntakeOpen(false);
+    setHorseId(newHorseId);
+    const owner = ownerContactId || partyB;
+    if (!partyB && ownerContactId) setPartyB(ownerContactId);
+    if (owner) contactHorseRecords(owner).then(setSellerHorses).catch(() => {});
+  }
+
   const ready = !!partyA && !!partyB && (type === 'purchase'
     ? !!horseId
-    : horseMode === 'pick' ? !!horseId : horseMode === 'record' ? !!(newHorse.registered_name || newHorse.nickname) : !!horseParty);
+    : horseMode === 'pick' ? !!horseId : !!horseParty);
 
   async function create() {
     setErr(null);
@@ -148,17 +174,9 @@ export default function NewContractPage() {
     }
     setBusy(true);
     try {
-      let chosenHorse = (type === 'purchase' || horseMode === 'pick') ? horseId : undefined;
-      if (type === 'lease' && horseMode === 'record') {
-        // the horse's owner is the horse-owning party: lessor / seller = partyB.
-        // Single intake path: create_horse_record honors owner_contact_id for staff.
-        const out = await createHorseRecord({ ...newHorse, owner_contact_id: partyB });
-        if (out.outcome === 'match_pending_review') {
-          setErr('That horse may already be on file — a review was opened. Pick it from records instead.');
-          setBusy(false); return;
-        }
-        chosenHorse = out.horse_id;
-      }
+      // The horse is either picked/added above (both write a real `horses` row
+      // through the one intake path) or deliberately left to a party to fill in.
+      const chosenHorse = (type === 'purchase' || horseMode === 'pick') ? horseId : undefined;
       const result = type === 'lease'
         ? await startLeaseContract(partyA, partyB, chosenHorse, leaseTemplateKey || undefined)
         : await startSaleContract(
@@ -302,7 +320,7 @@ export default function NewContractPage() {
           <p className="text-[12px] text-muted mb-3">
             {partyB
               ? 'The seller’s horses. Not on file yet? Add it — the intake opens right here.'
-              : 'Choose the seller first — their horses list here.'}
+              : 'Pick the seller and their horses list here — or add the horse now and we’ll take the seller from it.'}
           </p>
           <div className="flex gap-2 items-start flex-wrap">
             <select className="form-input flex-1 min-w-52" value={horseId} disabled={!partyB}
@@ -318,32 +336,11 @@ export default function NewContractPage() {
                 </option>
               ))}
             </select>
-            <button type="button" disabled={!partyB} onClick={() => setIntakeOpen(true)}
-              className="px-3.5 py-2 rounded-lg text-xs font-sans bg-green-800/10 text-green-800 hover:bg-green-800/20 focus-ring disabled:opacity-50">
+            <button type="button" onClick={() => setIntakeOpen(true)}
+              className="px-3.5 py-2 rounded-lg text-xs font-sans bg-green-800/10 text-green-800 hover:bg-green-800/20 focus-ring">
               Add a new horse
             </button>
           </div>
-          {intakeOpen && (
-            <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto overscroll-contain p-4"
-              role="dialog" aria-modal="true" aria-label="Add a new horse"
-              onClick={(e) => { if (e.target === e.currentTarget) setIntakeOpen(false); }}>
-              <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-8 p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-serif text-green-900 text-lg">Add a new horse</h3>
-                  <button type="button" className="text-sm text-muted hover:text-green-800 focus-ring"
-                    onClick={() => setIntakeOpen(false)}>
-                    Close
-                  </button>
-                </div>
-                <HorseIntakeForm submitLabel="Add horse" ownerContactId={partyB}
-                  onDone={(id) => {
-                    setIntakeOpen(false);
-                    setHorseId(id);
-                    if (partyB) contactHorseRecords(partyB).then(setSellerHorses).catch(() => {});
-                  }} />
-              </div>
-            </div>
-          )}
         </section>
       )}
 
@@ -355,7 +352,7 @@ export default function NewContractPage() {
           to one of the parties to fill in.
         </p>
         <div className="flex gap-1.5 mb-3 flex-wrap">
-          {([['pick', 'From records'], ['record', 'Record it now'], ['party', 'A party fills it in']] as ['pick' | 'record' | 'party', string][]).map(([m, l]) => (
+          {([['pick', 'From records'], ['party', 'A party fills it in']] as ['pick' | 'party', string][]).map(([m, l]) => (
             <button key={m} type="button" onClick={() => setHorseMode(m)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-sans focus-ring ${
                 horseMode === m ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'
@@ -365,28 +362,36 @@ export default function NewContractPage() {
           ))}
         </div>
         {horseMode === 'pick' && (
-          <select className="form-input" value={horseId} onChange={(e) => setHorseId(e.target.value)} aria-label="Horse">
-            <option value="">{horses.length === 0 ? 'No horse records yet' : 'Choose a horse…'}</option>
-            {horses.map((h) => (
-              <option key={h.id} value={h.id}>
-                {[h.nickname || h.registered_name, h.breed, h.owner_name || h.owner_name_text].filter(Boolean).join(' · ')}
-              </option>
-            ))}
-          </select>
-        )}
-        {horseMode === 'record' && (
-          <div className="grid sm:grid-cols-2 gap-3">
-            <p className="text-[12px] text-muted sm:col-span-2">
-              Creates the record now, owned by the {roleLabel(roleB).toLowerCase()} ({roleB === 'LESSOR' ? 'the horse\u2019s owner' : 'seller'}). It autofills the contract and lives in your horse records.
+          <>
+            <p className="text-[12px] text-muted mb-2">
+              {partyB
+                ? `The ${roleLabel(roleB).toLowerCase()}’s horses. Not on file yet? Add it — the intake opens right here.`
+                : `Pick the ${roleLabel(roleB).toLowerCase()} and their horses list here — or add the horse now and we’ll take the ${roleLabel(roleB).toLowerCase()} from it.`}
             </p>
-            {([['registered_name','Registered name'],['nickname','Barn name'],['breed','Breed'],['color','Color'],['sex','Sex'],['height','Height'],['microchip_id','Microchip'],['registration_number','Registration #']] as [string,string][]).map(([k,label]) => (
-              <div key={k}>
-                <span className="form-label">{label}{k==='registered_name' ? ' *' : ''}</span>
-                <input className="form-input" value={newHorse[k] ?? ''}
-                  onChange={(e) => setNewHorse((h) => ({ ...h, [k]: e.target.value }))} />
-              </div>
-            ))}
-          </div>
+            <div className="flex gap-2 items-start flex-wrap">
+              <select className="form-input flex-1 min-w-52" value={horseId}
+                onChange={(e) => setHorseId(e.target.value)} aria-label="Horse">
+                <option value="">
+                  {partyB
+                    ? (sellerHorses.length === 0 ? 'No horses on file for this party' : 'Choose a horse…')
+                    : (horses.length === 0 ? 'No horse records yet' : 'Choose a horse…')}
+                </option>
+                {/* Scoped to the horse-owning party once one is chosen; every horse
+                    record otherwise, so the picker is never empty before then. */}
+                {(partyB ? sellerHorses.map((h) => ({
+                  id: String(h.id),
+                  label: [String(h.nickname ?? '') || String(h.registered_name ?? ''), String(h.breed ?? '')].filter(Boolean).join(' · ') || String(h.id),
+                })) : horses.map((h) => ({
+                  id: h.id,
+                  label: [h.nickname || h.registered_name, h.breed, h.owner_name || h.owner_name_text].filter(Boolean).join(' · '),
+                }))).map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+              <button type="button" onClick={() => setIntakeOpen(true)}
+                className="px-3.5 py-2 rounded-lg text-xs font-sans bg-green-800/10 text-green-800 hover:bg-green-800/20 focus-ring">
+                Add a new horse
+              </button>
+            </div>
+          </>
         )}
         {horseMode === 'party' && (
           <div className="flex gap-1.5">
@@ -445,6 +450,12 @@ export default function NewContractPage() {
         Add the parties and the horse above, then Get started — the full contract
         opens for you to fill.
       </p>
+
+      {/* ONE modal for both contract types. When the horse-owning party is already
+          chosen it is passed in and never asked for again; when it is not, the
+          form's own account picker is the ask and its answer becomes that party. */}
+      <AddHorseModal open={intakeOpen} onClose={() => setIntakeOpen(false)}
+        ownerContactId={partyB || undefined} onSaved={handleHorseSaved} />
     </PageLayout>
   );
 }

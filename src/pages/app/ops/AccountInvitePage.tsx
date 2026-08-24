@@ -30,9 +30,8 @@ export default function AccountInvitePage() {
         Configure the account and send the invitation. We only need their email —
         they'll add their name and details when they activate the account.
       </p>
-      <ProvisionClientForm source="new" agreedLesson={agreed}>
-        <AgreedLessonSection onAgreedChange={setAgreed} />
-      </ProvisionClientForm>
+      <ProvisionClientForm source="new" agreedLesson={agreed}
+        scheduling={<AgreedLessonSection onAgreedChange={setAgreed} />} />
     </div>
   );
 }

@@ -38,13 +38,14 @@ import { subscribeToContract, useContractPresence } from '../../lib/contractReal
 import { ConfirmNameModal } from '../../components/app/ConfirmNameModal';
 import { CaptureInfoModal } from '../../components/app/CaptureInfoModal';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
-import { ContractCascade, ContractBody } from '../../components/app/ContractCascade';
+import { ContractCascade, ContractBody, ContractHorseProvider } from '../../components/app/ContractCascade';
 import { AddElementButton } from '../../components/app/AddElementModal';
 import { PartyControlsCard, type PartyControlValues } from '../../components/app/PartyControlsCard';
 import { ContractChangeRequests } from '../../components/app/ContractChangeRequests';
 import { ContractChangeHistory } from '../../components/app/ContractChangeHistory';
 import { VoidContractModal, VoidedKeepOrRemove } from '../../components/app/VoidContractModal';
 import { PartiesHorseCard } from '../../components/app/PartiesHorseCard';
+import { AddHorseModal } from '../../components/app/AddHorseModal';
 import { ClauseDocument } from '../../components/app/ClauseDocument';
 import { SendCopiesMenu } from '../../components/app/SendCopiesMenu';
 import { ContractActivityCard } from '../../components/app/ContractActivityCard';
@@ -115,6 +116,11 @@ function HorseGate({ documentId, onAttached }: { documentId: string; onAttached:
   const [horses, setHorses] = useState<StableHorse[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  // TASK-PAMELA §B: adding a horse from inside a contract is a MODAL, not a
+  // navigation. "+ Add a different horse" used to link to /app/horse-intake,
+  // which left the contract the author was in the middle of — and the trip back
+  // depended on the ?contract= round-trip landing correctly.
+  const [intakeOpen, setIntakeOpen] = useState(false);
 
   useEffect(() => {
     listStableHorses().then(setHorses).catch(() => setHorses([]));
@@ -152,12 +158,16 @@ function HorseGate({ documentId, onAttached }: { documentId: string; onAttached:
               </span>
             </button>
           ))}
-          <Link to={`/app/horse-intake?contract=${documentId}`}
+          <button type="button" onClick={() => setIntakeOpen(true)}
             className="flex items-center justify-center gap-2 border border-dashed border-green-800/30 rounded-lg px-4 py-3 text-sm text-green-800 hover:bg-white focus-ring">
-            + Add a different horse
-          </Link>
+            + Add a new horse
+          </button>
         </div>
       )}
+      {/* Saving attaches it to THIS contract in the same motion — no reload, no
+          second step, no leaving the page. */}
+      <AddHorseModal open={intakeOpen} onClose={() => setIntakeOpen(false)}
+        onSaved={(horseId) => { setIntakeOpen(false); void attach(horseId); }} />
     </section>
   );
 }
@@ -1217,6 +1227,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      host, which supplies its own spacing. */
   const bodyWidth = embedded ? '' : 'max-w-5xl mx-auto pb-24';
   return (
+    /* PAMELA §B rule 6 — the horse this document is about, published once for the
+       controls that need it (the medication builder offers the horse's own
+       `horse_medications` rows before free text). Null on a document with no
+       horse, which those controls read as "nothing to offer". */
+    <ContractHorseProvider horseId={doc?.horse_id ?? null}>
     <div>
       {inSet && (
         <div className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
@@ -2418,5 +2433,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
       </div>
     </div>
+    </ContractHorseProvider>
   );
 }

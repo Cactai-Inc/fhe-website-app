@@ -114,6 +114,8 @@ export function ContactDossierModal({
      is the natural next step from the screen where you just reviewed them,
      rather than a separate hunt through another page. */
   const [assigning, setAssigning] = useState(false);
+  /* PAMELA §A: only a SEND ends this surface's job. A SAVE leaves the form open,
+     because the whole point of saving is that staff mean to come back to it. */
   const [invited, setInvited] = useState(false);
   // CLOSEOUT §3.5: the agreed-time panel's derived slot, fed into provisioning.
   const [agreedLesson, setAgreedLesson] = useState<AgreedLesson | null>(null);
@@ -405,12 +407,12 @@ export function ContactDossierModal({
                         firstName={(c.first_name as string | null) ?? undefined}
                         lastName={(c.last_name as string | null) ?? undefined}
                         agreedLesson={agreedLesson}
-                        onProvisioned={() => { setInvited(true); onChanged?.(); }}>
-                        {/* CLOSEOUT §3.5: a lesson agreed on the phone folds into
-                            the same act on every provisioning surface, not just
-                            the lead drawer. */}
-                        <AgreedLessonSection onAgreedChange={setAgreedLesson} />
-                      </ProvisionClientForm>
+                        onProvisioned={(r) => { if (r.inviteStatus !== 'draft') setInvited(true); onChanged?.(); }}
+                        /* CLOSEOUT §3.5: a lesson agreed on the phone folds into
+                           the same act on every provisioning surface, not just the
+                           lead drawer. PAMELA §A: shown only for a rider or a
+                           scheduling-shaped order. */
+                        scheduling={<AgreedLessonSection onAgreedChange={setAgreedLesson} />} />
                     )}
                   </div>
                 )

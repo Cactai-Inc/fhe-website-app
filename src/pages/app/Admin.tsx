@@ -360,6 +360,12 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
   const live = sent && !expired;
   // Never invited → provision this existing contact via the shared form.
   const neverInvited = !row.invite_id && !row.invite_status;
+  /* PAMELA §A — SAVED, NOT SENT. A draft is an account that exists and whose claim
+     link has never been delivered, so the editable provisioning form is still the
+     right surface: staff came back to change something, not to resend. The
+     resend / expire / regenerate controls below are about a link somebody is
+     holding, and a draft is not one. */
+  const isDraft = row.invite_status === 'draft';
 
   // Pull the invitation's lifecycle timeline (sent → resent → redeemed /
   // redeemed-unsuccessful+reason / superseded). Surfaced below the controls so
@@ -369,19 +375,25 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
     entityStatusLog('account', row.invite_id).then(setLog).catch(() => setLog([]));
   }, [row.invite_id]);
 
-  if (neverInvited && row.contact_id) {
+  if ((neverInvited || isDraft) && row.contact_id) {
     return (
       <section className="bg-white border border-gold-600/40 rounded-xl p-4 mt-4">
-        <h3 className="font-serif text-green-800 text-base mb-1">Provision & invite</h3>
+        <h3 className="font-serif text-green-800 text-base mb-1">
+          {isDraft ? 'Account & invitation' : 'Create the account'}
+        </h3>
         <p className="text-[12px] text-muted mb-4">
-          Assign their category, paperwork, and any offerings, then send the activation invite.
+          {isDraft
+            ? 'Their account exists and nothing has been emailed. Change any of it, or send the invitation now.'
+            : 'Assign their category, paperwork, and any offerings. Saving creates the account; sending the invitation is a separate step you can take whenever you like.'}
         </p>
         <ProvisionClientForm source="contact" contactId={row.contact_id} email={row.email ?? undefined}
-          agreedLesson={agreedLesson} onProvisioned={onSent}>
-          {/* CLOSEOUT §3.5: a lesson agreed on the phone folds into the same
-              provisioning act here too, not just on the lead path. */}
-          <AgreedLessonSection onAgreedChange={setAgreedLesson} />
-        </ProvisionClientForm>
+          agreedLesson={agreedLesson} onProvisioned={onSent}
+          /* CLOSEOUT §3.5: a lesson agreed on the phone folds into the same
+             provisioning act here too, not just on the lead path. PAMELA §A moves
+             it to the `scheduling` slot, which renders it only for a rider or a
+             scheduling-shaped order — the "huge section" the owner met on a
+             contact who is neither. */
+          scheduling={<AgreedLessonSection onAgreedChange={setAgreedLesson} />} />
       </section>
     );
   }
@@ -426,7 +438,7 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
               const r = await adminSendInvitation({
                 email: row.email!, mode: live ? 'regenerate' : 'new',
               });
-              setResult({ url: r.registerUrl, emailed: r.emailed, emailError: r.emailError });
+              setResult({ url: r.registerUrl ?? '', emailed: r.emailed, emailError: r.emailError });
               setRefreshKey((k) => k + 1);
               onSent();
             } catch (e) { setErr(toErrorMessage(e, 'Could not send the invitation.')); }

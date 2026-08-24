@@ -343,8 +343,18 @@ export async function adminSetResourcePublished(id: string, published: boolean):
 
 // ─── Invitations (admin creates token + sends email) ─────────────────────────
 export interface AdminInviteResult {
-  registerUrl: string;
+  /**
+   * The claim link. Present on a SEND. On a SAVE (`sendInvitation: false`) it is
+   * null: the token exists on the draft, but nothing has been issued to anybody
+   * and handing staff a URL to copy would be exactly the thing they just chose
+   * not to do.
+   */
+  registerUrl: string | null;
   emailed: boolean;
+  /** PAMELA §A — true when this call PROVISIONED without sending. */
+  saved?: boolean;
+  /** The invitation's lifecycle state: 'draft' (saved, never delivered) or 'sent'. */
+  inviteStatus?: 'draft' | 'sent';
   /** Why delivery failed. Present iff `emailed` is false — never a bare false. */
   emailError?: string;
   invitationId?: string;
@@ -422,6 +432,20 @@ export async function adminSendInvitation(
      * link again is NOT this call — that is `adminResendInvitation`.
      */
     mode?: 'new' | 'regenerate';
+    /**
+     * PAMELA §A — SAVING AND SENDING ARE TWO ACTS.
+     *
+     * Owner, 2026-08-23: *"i can create the account but my changes dont get saved
+     * until i send her the invite… i want to wait until the contract is created,
+     * then i will send her the activation email."*
+     *
+     * `false` runs the whole provisioning spine — contact, clients row,
+     * categories, onboarding documents, the order — and writes the invitation as
+     * a DRAFT with nothing emailed and no prior link retired. Sending later
+     * promotes that same draft and delivers ITS token. Omitted/true is what every
+     * existing caller does and is byte-identical to the previous behaviour.
+     */
+    sendInvitation?: boolean;
   },
 ): Promise<AdminInviteResult> {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -688,6 +712,40 @@ export interface ClientAccountRow {
   services: Record<string, number>;
 }
 
+/**
+ * PAMELA §A — THE SAVED-BUT-UNSENT PROVISIONING, READ BACK.
+ *
+ * A `draft` invitation IS the account's saved configuration: `categories`,
+ * `offering_ids` and `template_keys` are its own columns and `derive_affiliations`
+ * already reads them. Without this, "Save" would persist to a place the form could
+ * not re-open, and a reload would look identical to nothing having been done.
+ *
+ * `token` is deliberately NOT selected. Nothing on the provisioning screen needs a
+ * live credential, and a draft's link has by definition never been issued.
+ */
+export interface ProvisioningDraft {
+  id: string;
+  email: string;
+  categories: string[] | null;
+  offering_ids: string[] | null;
+  template_keys: string[] | null;
+  created_at: string;
+}
+
+export async function contactProvisioningDraft(contactId: string): Promise<ProvisioningDraft | null> {
+  const { data, error } = await supabase
+    .from('invitations')
+    .select('id, email, categories, offering_ids, template_keys, created_at')
+    .eq('contact_id', contactId)
+    .eq('status', 'draft')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data ?? null) as ProvisioningDraft | null;
+}
+
 // ─── Invitation history (staff support view) ────────────────────────────────
 /**
  * EVERY invitation ever issued to one person — not just the live one. The
@@ -721,11 +779,15 @@ const INVITATION_HISTORY_COLUMNS =
   'id, email, token, status, invited_role, categories, created_at, expires_at, '
   + 'redeemed_at, superseded_by, resend_of, failure_reason, deleted_at';
 
-/** What the row IS, right now — the four words the owner needs on the phone. */
-export type InviteLinkState = 'current' | 'retired' | 'expired' | 'redeemed';
+/** What the row IS, right now — the words the owner needs on the phone.
+ *  PAMELA §A adds 'draft': provisioned, never delivered. Without it a draft fell
+ *  through to the `return 'retired'` at the bottom, and the panel told the owner a
+ *  link had been retired when it had never been issued. */
+export type InviteLinkState = 'draft' | 'current' | 'retired' | 'expired' | 'redeemed';
 
 export function inviteLinkState(row: InvitationHistoryRow): InviteLinkState {
   if (row.status === 'redeemed' || row.status === 'accepted') return 'redeemed';
+  if (row.status === 'draft' && !row.deleted_at) return 'draft';
   if (row.deleted_at || row.status === 'revoked' || row.status === 'superseded') return 'retired';
   if (row.status === 'redeemed_unsuccessful') return 'retired';
   if (row.status === 'expired' || new Date(row.expires_at) <= new Date()) return 'expired';
@@ -736,6 +798,7 @@ export function inviteLinkState(row: InvitationHistoryRow): InviteLinkState {
 /** Why a link stopped working, in the words staff would use out loud. */
 export function inviteRetiredReason(row: InvitationHistoryRow): string | null {
   if (row.deleted_at) return 'deleted by staff';
+  if (row.status === 'draft') return 'saved — this link has never been sent to anyone';
   if (row.status === 'revoked') return 'revoked by staff';
   if (row.status === 'superseded') return 'replaced by a newer invitation';
   if (row.status === 'redeemed_unsuccessful') {
