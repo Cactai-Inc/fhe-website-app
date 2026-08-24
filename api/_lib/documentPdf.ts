@@ -80,6 +80,20 @@ function wrap(text: string, font: import('pdf-lib').PDFFont, size: number, maxWi
 }
 
 /** Render one document body to a PDF, returned as bytes (Uint8Array). */
+/** An unsigned body still carries its literal {{SIG.*}} tokens — generate_document
+ *  leaves `kind = 'signature'` alone because a signature is written when somebody
+ *  signs. The working-copy PDF is exactly that document, so it gets the same
+ *  treatment the on-screen renderer gives it: the date is a fact we know, the
+ *  signature is the one thing we must not invent. */
+function resolveUnsignedSignatureTokens(body: string): string {
+  const stamp = new Date().toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric',
+  });
+  return body
+    .replace(/\{\{SIG\.[A-Z_]+\.DATE\}\}/g, stamp)
+    .replace(/\{\{SIG\.[A-Z_]+\.(?!DATE)[A-Z_]+\}\}/g, '');
+}
+
 export async function renderDocumentPdf(title: string, body: string): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.TimesRoman);
@@ -181,7 +195,7 @@ export async function renderDocumentPdf(title: string, body: string): Promise<Ui
     return -1;
   })();
 
-  const sourceLines = body.replace(/\r\n/g, '\n').split('\n');
+  const sourceLines = resolveUnsignedSignatureTokens(body).replace(/\r\n/g, '\n').split('\n');
   for (let i = 0; i < sourceLines.length; i += 1) {
     const raw = sourceLines[i];
     if (raw.trim() === '') {

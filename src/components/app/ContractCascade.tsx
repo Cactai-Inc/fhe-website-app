@@ -263,6 +263,34 @@ const NEEDS_RE = /⟦NEEDS:(.*?)⟧(.*?)⟧/g;
 // A signature line: "Signature: Jane Doe" / "By (signature): Jane Doe". Matched per
 // line (no /g). The label passes through; the typed name gets the script face.
 const SIGNATURE_LINE_RE = /^(Signature|By \(signature\)):\s*(.+)$/m;
+/* ⚠️ AN UNSIGNED DOCUMENT MUST NOT SHOW ITS SIGNATURE TOKENS.
+   Owner, 2026-08-24: "on the signable docs we dont need to show the date token we
+   should show the actual date and we shouldnt show anything in the signature
+   space its showing the signature token there."
+
+   `generate_document` substitutes every token EXCEPT `kind = 'signature'` — on
+   purpose: a signature is written by `record_signature` at the moment somebody
+   signs, not composed in advance. So an unsigned body carries the literal
+   {{SIG.CLIENT.NAME}} and {{SIG.CLIENT.DATE}} until then, and the reader was
+   being shown the machinery.
+
+   Two different answers, because they are two different things:
+     · the DATE is a fact we already know — this document is being signed today —
+       so it renders as today's date, in the same "August 24, 2026" shape
+       generate_document produces, so nothing changes appearance on execution;
+     · the SIGNATURE is the one thing we must NOT invent. It renders as empty
+       space, which is what an unsigned signature line is.
+
+   Only ever touches tokens that are still literal. Once signed, the body holds
+   the real name and date and there is nothing here left to match. */
+const UNSIGNED_SIG_DATE = /\{\{SIG\.[A-Z_]+\.DATE\}\}/g;
+const UNSIGNED_SIG_NAME = /\{\{SIG\.[A-Z_]+\.(?!DATE)[A-Z_]+\}\}/g;
+
+export function resolveUnsignedSignatureTokens(body: string, today = new Date()): string {
+  const stamp = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  return body.replace(UNSIGNED_SIG_DATE, stamp).replace(UNSIGNED_SIG_NAME, '');
+}
+
 export function ContractBody({
   body, onSelectSpan,
 }: {
@@ -288,6 +316,10 @@ export function ContractBody({
   };
 
   if (!body) return null;
+  // Every frame that shows a document body comes through here — the flat
+  // renderer, the read-only frame and the executed frame — so resolving the
+  // unsigned tokens once, here, covers all of them and cannot drift between them.
+  body = resolveUnsignedSignatureTokens(body);
   const nodes: ReactNode[] = [];
   let last = 0; let m: RegExpExecArray | null; let i = 0;
   NEEDS_RE.lastIndex = 0;
