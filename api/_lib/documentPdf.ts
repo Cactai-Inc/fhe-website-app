@@ -123,8 +123,27 @@ export async function renderDocumentPdf(title: string, body: string): Promise<Ui
     y -= LINE_H + 2;
   };
 
+  /* ⚠️ KEEP A HEADING WITH ITS CONTENT (owner, 2026-08-24).
+     "facility rules doc page 2 has section 11 title on the page but the content
+     is on page 3", and earlier the same for sections 8 and 15 of the participant
+     release.
+
+     The renderer only ever broke when it RAN OUT of room — `y < MARGIN + LINE_H`
+     — so a heading that happened to fit on the last line of a page took it, and
+     its first sentence started the next one. Nothing was wrong with any
+     individual section; it is where the text happened to fall.
+
+     Nudging one heading would just move the orphan somewhere else, which is why
+     the owner's follow-up question ("then check to see if that affected section
+     19") is the right one to ask and the wrong one to have to ask. So this is a
+     RULE: before drawing a heading, look ahead at what follows it and break
+     FIRST unless the heading and the opening of its content fit together. Every
+     section is covered, including ones nobody has looked at yet. */
+  const KEEP_LINES_WITH_HEADING = 2;
+
   const sourceLines = body.replace(/\r\n/g, '\n').split('\n');
-  for (const raw of sourceLines) {
+  for (let i = 0; i < sourceLines.length; i += 1) {
+    const raw = sourceLines[i];
     if (raw.trim() === '') {
       y -= LINE_H * 0.5; // blank line = half-line of vertical space
       continue;
@@ -137,7 +156,28 @@ export async function renderDocumentPdf(title: string, body: string): Promise<Ui
     const heading = isHeading(raw);
     const size = heading ? HEADING_SIZE : FONT_SIZE;
     const useFont = heading ? bold : font;
-    for (const wrapped of wrap(raw, useFont, size, maxWidth)) {
+    const headingLines = wrap(raw, useFont, size, maxWidth);
+
+    if (heading) {
+      // The next non-blank source line is this heading's content. Measure the
+      // opening of it, wrapped exactly as it will be drawn — an estimate would
+      // be wrong for precisely the long headings that cause the problem.
+      let j = i + 1;
+      while (j < sourceLines.length && sourceLines[j].trim() === '') j += 1;
+      const followLines = j < sourceLines.length && !isHeading(sourceLines[j])
+        ? wrap(sourceLines[j], font, FONT_SIZE, maxWidth) : [];
+      const keep = Math.min(KEEP_LINES_WITH_HEADING, followLines.length);
+      const needed = headingLines.length * (LINE_H + 2)
+        + keep * LINE_H
+        + (j > i + 1 ? LINE_H * 0.5 : 0);   // the blank line between them
+      // Break BEFORE the heading rather than after it.
+      if (keep > 0 && y - needed < MARGIN) {
+        page = pdf.addPage([PAGE_W, PAGE_H]);
+        y = PAGE_H - MARGIN;
+      }
+    }
+
+    for (const wrapped of headingLines) {
       drawLine(wrapped, useFont, size);
     }
   }
