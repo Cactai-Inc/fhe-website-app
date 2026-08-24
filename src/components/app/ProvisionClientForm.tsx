@@ -66,7 +66,12 @@ import type { Offering } from '../../lib/types';
 // unchanged until the owner decides otherwise.
 const INVITE_HIDDEN_OFFERING_IDS = new Set<string>([
   '62f29124-826a-4e7b-bf8c-53d223d97854', // 3x Weekly (riding lessons)
-  '85cab901-959c-43ac-b2bf-dd3b7dec9f64', // Evaluation Lesson — the first lesson IS the evaluation now
+  /* ⚠️ THE EVALUATION LESSON IS NO LONGER HIDDEN (owner, 2026-08-24).
+     It was withheld here in July on the reading that "the first lesson IS the
+     evaluation now" — i.e. it was folded into a Single Lesson rather than sold.
+     Today's ruling reverses that: it is a distinct offering, it is the FIRST
+     purchase, and the self-onboarding shop refuses to sell anything else until it
+     is added. Staff could not offer the one thing every new rider must buy. */
 ]);
 
 // The owner's note shown wherever lessons are offered on this page.
