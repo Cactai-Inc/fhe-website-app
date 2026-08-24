@@ -523,13 +523,19 @@ export function PaperworkEditor({ contactId }: { contactId: string }) {
     setSending(true); setError(null); setSentNote(null);
     try {
       const r = await requestDocumentsFromContact(contactId, outstanding, disposition);
+      const n = `${r.count} document${r.count === 1 ? '' : 's'}`;
+      // ⚠️ NEVER REPORT AN EMAIL THAT DID NOT GO. The requirement and the
+      // notification are committed before the mailer runs, so "asked" and
+      // "emailed" are separate facts and this says which is which.
       setSentNote(
-        r.has_account
-          ? `Asked for ${r.count} document${r.count === 1 ? '' : 's'} — a notification is on their dashboard`
-            + ` and rides the next email digest. They'll see ${r.count === 1 ? 'it' : 'them'} at every`
-            + ` sign-in until signed.`
-          : `Set on their record. They have no login yet, so nothing was sent —`
-            + ` ${r.count === 1 ? 'it' : 'they'} will be waiting when they activate.`);
+        !r.has_account
+          ? `Set on their record. They have no login yet, so nothing was sent — `
+            + `${r.count === 1 ? 'it' : 'they'} will be waiting when they activate.`
+          : r.emailed
+            ? `Asked for ${n}. Email sent to ${r.email}, and it's on their dashboard — `
+              + `they'll see ${r.count === 1 ? 'it' : 'them'} at every sign-in until signed.`
+            : `Asked for ${n} — it's on their dashboard, but the email did NOT send`
+              + `${r.emailError ? `: ${r.emailError}` : '.'}`);
       loadState();
     } catch (e) {
       setError(toErrorMessage(e, 'Could not ask them for those documents.'));

@@ -177,6 +177,20 @@ function emit(nodes: Node[], vars: TokenMap, item: unknown, missing: Set<string>
 
 /** Render one template string. Exported for the subject line and for the
  *  byte-identity harness, which renders without touching the database. */
+/**
+ * HTML-escape a value before it goes into a rendered template.
+ *
+ * ⚠️ THIS IS THE THIRD COPY OF THESE THREE REPLACEMENTS in api/ — the other two
+ * are private functions in `notifications-nudge.ts` and `paymentRequest.ts`. It
+ * is exported from here, beside the renderer every caller already imports, so a
+ * fourth is never needed. The two incumbents are left alone deliberately: they
+ * are byte-identical and rewriting a working mail path to save six lines is not
+ * worth the risk. Point new callers here.
+ */
+export function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 export function renderTemplateString(src: string, vars: TokenMap): { text: string; missing: string[] } {
   const missing = new Set<string>();
   const text = emit(parse(src), vars, undefined, missing);

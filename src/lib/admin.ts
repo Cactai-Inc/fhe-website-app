@@ -780,14 +780,44 @@ export const DISPOSITION_LABEL: Record<DocumentDisposition, string> = {
   WHEN_READY: 'When they’re ready',
 };
 
+export interface DocumentsRequestedResult {
+  count: number;
+  titles: string[];
+  email: string | null;
+  has_account: boolean;
+  /** True when the email actually left. Never a bare false — `emailError` says why. */
+  emailed: boolean;
+  emailError?: string;
+  emailSkipped?: string;
+}
+
+/**
+ * ⚠️ THROUGH THE ENDPOINT, NOT THE RPC — the email must leave NOW.
+ *
+ * Owner, 2026-08-24: "We need to use the manual email trigger so it sends when an
+ * event happens." Calling the RPC from the browser writes the requirement and
+ * raises the in-app notification, and that is where it used to stop: the email
+ * rode NOTIFICATION_DIGEST, a daily cron that has never run on this project. The
+ * endpoint holds the mail transport, so the whole act lives there — requirement,
+ * notification and email, in that order, with the email best-effort on top of a
+ * commit that already happened.
+ */
 export async function requestDocumentsFromContact(
   contactId: string, templateKeys: string[], disposition: DocumentDisposition,
-): Promise<{ count: number; titles: string[]; email: string | null; has_account: boolean }> {
-  const { data, error } = await supabase.rpc('request_documents_from_contact', {
-    p_contact_id: contactId, p_template_keys: templateKeys, p_disposition: disposition,
+): Promise<DocumentsRequestedResult> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
+  const res = await fetch('/api/documents-requested', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({ contactId, templateKeys, disposition }),
   });
-  if (error) throw error;
-  return data as { count: number; titles: string[]; email: string | null; has_account: boolean };
+  const payload = await res.json().catch(() => null) as (DocumentsRequestedResult & { error?: string }) | null;
+  if (!res.ok) throw new Error(payload?.error || `Could not ask for those documents (HTTP ${res.status}).`);
+  return payload as DocumentsRequestedResult;
 }
 
 /** The derived tags standing on a contact — display only; nothing here obligates. */
