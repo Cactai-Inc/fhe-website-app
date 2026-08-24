@@ -19,7 +19,7 @@ const isFeedView = (v: string | null): v is FeedView =>
   !!v && FEED_VIEWS.some((f) => f.key === v);
 
 export default function Home() {
-  const { surfaces, loading: surfacesLoading } = useViewSurfaces();
+  const { surfaces } = useViewSurfaces();
   const { isSuperAdmin } = useAuth();
   const [params] = useSearchParams();
   const createModal = useCreateModalTrigger();
@@ -34,12 +34,24 @@ export default function Home() {
   // The PLATFORM operator belongs to no tenant — land on Organizations.
   if (isSuperAdmin) return <Navigate to="/app/ops/superadmin/organizations" replace />;
 
-  // Deal/care-only members have their own purpose-built home (no community feed).
-  if (!surfacesLoading && !hasFeed) {
-    if (surfaces.surfaces.includes('deal_dashboard')) return <Navigate to="/app/deal" replace />;
-    if (surfaces.surfaces.includes('care_dashboard')) return <Navigate to="/app/care" replace />;
-    return <Navigate to="/app/dashboard" replace />;
-  }
+  /* ⚠️ THE REDIRECT AWAY FROM THE FEED IS GONE (owner, 2026-08-24: "Everyone gets
+     the feed remove the guard").
+
+     This sent anyone without a 'riding' category to /app/deal, /app/care or the
+     dashboard — and since `has_feed` required a rider PURCHASE, that included a
+     rider who had signed all four releases and simply not bought a lesson yet.
+     Both halves of what the owner reported were this one line: "it takes me to
+     the dashboard" and "the community feed isnt even accessible" are the same
+     redirect seen from two directions.
+
+     D8 already said so: "Community access is gated by ACCOUNT, not documents —
+     any account holder views and participates." `my_view_surfaces` now grants
+     feed + community to every member, so this could only ever be dead code; it is
+     removed rather than left to read as though it still guards something.
+
+     Deal and care members keep their purpose-built dashboards — they are in the
+     nav and reachable directly. What they no longer do is get bounced out of the
+     community to reach them. */
 
   return (
     <div>

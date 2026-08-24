@@ -1,6 +1,5 @@
 import { Navigate } from 'react-router-dom';
 import { useDocumentTitle } from '../../lib/hooks';
-import { useViewSurfaces } from '../../lib/surfaces';
 import { useAuth } from '../../contexts/AuthContext';
 import { DashboardPanel } from '../../components/app/DashboardPanel';
 import OwnerDashboard from './ops/OwnerDashboard';
@@ -30,7 +29,6 @@ const DAYPART_LABEL: Record<ReturnType<typeof timeOfDayWord>, string> = {
 };
 
 export default function DashboardHome() {
-  const { surfaces, loading: surfacesLoading } = useViewSurfaces();
   const { profile, isSuperAdmin, isStaff } = useAuth();
   useDocumentTitle('Dashboard');
   const firstName = profile?.first_name || profile?.display_name || null;
@@ -42,11 +40,10 @@ export default function DashboardHome() {
   // zones. Members keep the priority-actions panel below.
   if (isStaff) return <OwnerDashboard />;
 
-  // Deal/care members have their own purpose-built dashboard.
-  if (!surfacesLoading && !surfaces.has_feed) {
-    if (surfaces.surfaces.includes('deal_dashboard')) return <Navigate to="/app/deal" replace />;
-    if (surfaces.surfaces.includes('care_dashboard')) return <Navigate to="/app/care" replace />;
-  }
+  /* The same dead guard as Home's (owner, 2026-08-24 — everyone gets the feed).
+     It bounced a member off their own dashboard toward a purpose-built one on the
+     strength of `has_feed`, which is now true for every account. Those dashboards
+     are still routed and still in the nav; nobody is pushed to them. */
 
   return (
     <div>
