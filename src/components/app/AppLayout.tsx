@@ -1413,6 +1413,12 @@ export default function AppLayout() {
   // hold the member at an explicit retryable state rather than letting them
   // through unverified.
   const [wallError, setWallError] = useState(false);
+  /* OFFERINGDOCS §12 — dismissed for THIS SESSION only. Declared here with the
+     other hooks rather than beside the banner it controls: the signing wall
+     below returns early, and a hook after an early return is a hook that does
+     not run on every render. */
+  const [waitingDismissed, setWaitingDismissed] = useState(
+    () => sessionStorage.getItem('fhe.docsAskedDismissed') === '1');
   useEffect(() => {
     let active = true;
     setWallError(false);
@@ -1574,6 +1580,25 @@ export default function AppLayout() {
     );
   }
 
+  /* ⚠️ OFFERINGDOCS §12 — ASKED FOR, NOT DEMANDED.
+     Owner, 2026-08-24: "on their login the docs are shown to them and they can
+     skip and sign later if they want but every login the docs are surfaced for
+     signing until they sign them."
+
+     The app had exactly two strengths and nothing between them: a WALL that
+     redirects and will not let you past, or an assignment that sits on the
+     onboarding page and is never mentioned again. This is the middle — it never
+     blocks, it can be dismissed, and the dismissal lives in sessionStorage so it
+     is back at the next sign-in and stays back until the documents are signed.
+
+     Deliberately AFTER the wall's early return: somebody who is walled is
+     already going to /app/onboarding, and stacking a second prompt on top of a
+     redirect would be noise. */
+  const waitingCount = wall?.waiting ?? 0;
+  const waitingTitles = wall?.waiting_titles ?? [];
+  const showWaiting = waitingCount > 0 && !waitingDismissed
+    && location.pathname !== '/app/onboarding';
+
   // A3 auto-open — strictly after the wall check above: an unseen tour only
   // opens once the member is past any gating documents (the wall returns early,
   // so this line is unreachable while a wall is pending). The onboarding route
@@ -1683,6 +1708,36 @@ export default function AppLayout() {
     <div className="min-h-screen bg-cream">
       {/* Staff belt-and-suspenders: never hard-walled — a persistent banner
           links to the flow instead (ops must stay reachable). */}
+      {showWaiting && (
+        <div className="bg-gold-50 border-b border-gold-500/40 px-4 py-3">
+          <div className="max-w-5xl mx-auto flex flex-wrap items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[13.5px] text-gold-900 font-medium">
+                {waitingCount === 1
+                  ? 'There’s a document waiting for your signature'
+                  : `There are ${waitingCount} documents waiting for your signature`}
+              </p>
+              <p className="text-[12.5px] text-gold-900/80 mt-0.5">
+                {waitingTitles.join(' · ')} — you can do this whenever suits you.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link to="/app/onboarding" className="btn-primary text-xs py-1.5 px-3">
+                Review &amp; sign
+              </Link>
+              {/* Not "dismiss forever" — dismiss for now. It returns next sign-in. */}
+              <button type="button" className="text-xs text-gold-900/70 hover:text-gold-900 px-2 focus-ring"
+                onClick={() => {
+                  sessionStorage.setItem('fhe.docsAskedDismissed', '1');
+                  setWaitingDismissed(true);
+                }}>
+                Not now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {wall?.staff_banner && (
         <div className="bg-gold-50 border-b border-gold-600/40 px-4 py-2 text-sm text-gold-900 text-center">
           You have documents awaiting your signature.{' '}

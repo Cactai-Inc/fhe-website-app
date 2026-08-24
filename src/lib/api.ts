@@ -734,6 +734,12 @@ export interface WallState {
   wall: boolean;
   staff_banner?: boolean;
   staff: boolean;
+  /** OFFERINGDOCS §12 — documents ASKED for, not demanded. These never wall;
+   *  they are surfaced at every login until signed, and can be dismissed for the
+   *  session. A hard gate and a standing request are different things and the
+   *  app now distinguishes them. */
+  waiting?: number;
+  waiting_titles?: string[];
 }
 /** THE SIGNING WALL — FAILS CLOSED (2026-07-29).
  *

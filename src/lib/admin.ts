@@ -765,6 +765,31 @@ export async function serviceTypeDocumentDefaults(): Promise<ServiceTypeDocDefau
   return (data ?? []) as ServiceTypeDocDefault[];
 }
 
+/**
+ * OFFERINGDOCS §11 — ASK someone for documents, and TELL them.
+ *
+ * `set_contact_required_documents` writes an audit row and nothing else, so
+ * ticking a box was silent: the person owed something and had no way to find out.
+ * This assigns with an explicit disposition AND raises the in-app notification.
+ */
+export type DocumentDisposition = 'AT_LOGIN' | 'WITH_CONTRACT' | 'WHEN_READY';
+
+export const DISPOSITION_LABEL: Record<DocumentDisposition, string> = {
+  AT_LOGIN: 'Before they can get in',
+  WITH_CONTRACT: 'With their contract',
+  WHEN_READY: 'When they’re ready',
+};
+
+export async function requestDocumentsFromContact(
+  contactId: string, templateKeys: string[], disposition: DocumentDisposition,
+): Promise<{ count: number; titles: string[]; email: string | null; has_account: boolean }> {
+  const { data, error } = await supabase.rpc('request_documents_from_contact', {
+    p_contact_id: contactId, p_template_keys: templateKeys, p_disposition: disposition,
+  });
+  if (error) throw error;
+  return data as { count: number; titles: string[]; email: string | null; has_account: boolean };
+}
+
 /** The derived tags standing on a contact — display only; nothing here obligates. */
 export const TAG_LABEL: Record<string, string> = {
   GUEST: 'Guest', RIDER: 'Rider', HORSE_OWNER: 'Horse owner',
