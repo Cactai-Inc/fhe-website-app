@@ -120,7 +120,11 @@ function EditableRecord({
     <div className="border-t border-green-800/10 pt-4 mt-3">
       <div className="grid sm:grid-cols-3 gap-3 mb-3">
         {field('registered_name', 'Registered name')}
-        {field('nickname', 'Barn name')}
+        {/* ORCH4: the label is Nickname, not "Barn name" — the owner has ruled twice
+           that barn name is the wrong word for this column, and HorseIntakeForm
+           (the incumbent) already labels it Nickname. horses.home_barn /
+           current_barn are the actual barn columns and are a different thing. */}
+        {field('nickname', 'Nickname')}
         {field('breed', 'Breed', lookupName(breeds, r.breed))}
         {field('color', 'Color', lookupName(colors, r.color))}
         {field('markings', 'Markings')}
