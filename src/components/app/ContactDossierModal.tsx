@@ -9,6 +9,7 @@ import {
   AssignDocumentsModal, ClientHorseRecordsCard, AttachOfferingPanel, PaperworkEditor,
 } from './ClientRecordActions';
 import { ProvisionClientForm } from './ProvisionClientForm';
+import { TAG_LABEL, TAG_REASON } from '../../lib/admin';
 import { AgreedLessonSection, type AgreedLesson } from './AgreedLessonPanel';
 import { StaffStandingSlotSection } from './StandingSlotPicker';
 
@@ -222,8 +223,19 @@ export function ContactDossierModal({
                       {d.standing.is_client && (
                         <span className="text-[11px] px-2.5 py-1 rounded-full bg-green-800 text-white">Client</span>
                       )}
+                      {/* ⚠️ DERIVED TAGS, AND THEY SAY WHY (OFFERINGDOCS 2026-08-24).
+                          These are applied automatically — by a purchase, a horse,
+                          a file, or a contract — and never ticked by anyone. They
+                          used to render as raw tokens (HORSE_OWNER, and now
+                          DEAL_PARTY), which reads as a system value rather than a
+                          fact about a person. The reason rides in the tooltip
+                          because a tag nobody can account for is a tag nobody
+                          trusts — the same rule CATEGORISE applied to prefills. */}
                       {d.standing.groups.map((g) => (
-                        <span key={g} className="text-[11px] px-2.5 py-1 rounded-full bg-cream-100 text-secondary border border-green-800/10">{g}</span>
+                        <span key={g} title={TAG_REASON[g] ?? 'derived from their record'}
+                          className="text-[11px] px-2.5 py-1 rounded-full bg-cream-100 text-secondary border border-green-800/10 cursor-help">
+                          {TAG_LABEL[g] ?? g}
+                        </span>
                       ))}
                     </div>
                   </div>

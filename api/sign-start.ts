@@ -295,6 +295,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await db.rpc('fill_claimant_details', {
           p_contact_id: out.contact_id, ...claimantDetails,
         });
+        /* ⚠️ OFFERINGDOCS 2026-08-24 — THE DOOR ASSIGNS THE PAPERWORK NOW.
+           `p_categories` above is still sent and still recorded, but a category
+           no longer writes a single document: `_ensure_client_account` stopped
+           calling `apply_category_documents`, because a tag describing somebody
+           is not why they owe anything. Each self-service door carries its own
+           set in `sign_path_document_requirements` — owner-editable, seeded with
+           exactly what each path assigned via its category before.
+
+           This is also where GUEST is answered. A visitor has no purchase, no
+           horse, no contract and no file, so nothing can DERIVE the tag for them
+           — which means the tag cannot be what requires their documents. The
+           VISIT is the trigger: /sign/guest assigns the visitor set here, and
+           GUEST stays derived from the executed release exactly as before. */
+        const { error: docErr } = await db.rpc('apply_sign_path_documents', {
+          p_contact_id: out.contact_id, p_path: path,
+        });
+        // Never blocks the invitation — but never silent either: a visitor who
+        // arrives owing nothing because this failed is an ops problem.
+        if (docErr) console.error('sign-start: path documents not assigned', path, docErr);
       }
 
       const origin = req.headers.origin || `https://${req.headers.host}`;

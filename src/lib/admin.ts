@@ -746,6 +746,40 @@ export async function contactProvisioningDraft(contactId: string): Promise<Provi
   return (data ?? null) as ProvisioningDraft | null;
 }
 
+/**
+ * TASK-OFFERINGDOCS §1 — WHAT EACH SERVICE REQUIRES.
+ *
+ * The mapping that replaced category→document. Keyed on `service_type`, so a new
+ * SKU inherits its paperwork instead of arriving with none, and owner-editable
+ * (D13/D21) rather than a list inside a function body — three of these rules used
+ * to be hardcoded in `generate_my_onboarding_documents` and friends.
+ */
+export interface ServiceTypeDocDefault { service_type: string; template_key: string }
+
+export async function serviceTypeDocumentDefaults(): Promise<ServiceTypeDocDefault[]> {
+  const { data, error } = await supabase
+    .from('service_type_document_requirements')
+    .select('service_type, template_key')
+    .eq('active', true);
+  if (error) throw error;
+  return (data ?? []) as ServiceTypeDocDefault[];
+}
+
+/** The derived tags standing on a contact — display only; nothing here obligates. */
+export const TAG_LABEL: Record<string, string> = {
+  GUEST: 'Guest', RIDER: 'Rider', HORSE_OWNER: 'Horse owner',
+  PARENT_GUARDIAN: 'Parent / guardian', DEAL_PARTY: 'Deal party',
+};
+
+/** Why each tag is on the record — tags are DERIVED, so each one has a cause. */
+export const TAG_REASON: Record<string, string> = {
+  GUEST: 'signed the visitor release',
+  RIDER: 'bought lessons, or signed the participant release',
+  HORSE_OWNER: 'owns a horse on file, or bought horse services',
+  PARENT_GUARDIAN: 'a minor on file is linked to them',
+  DEAL_PARTY: 'named on a contract',
+};
+
 // ─── Invitation history (staff support view) ────────────────────────────────
 /**
  * EVERY invitation ever issued to one person — not just the live one. The
