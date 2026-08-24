@@ -101,32 +101,33 @@ function normalizePath(raw: string | undefined): SignPath | null {
   return (VALID_PATHS as string[]).includes(decoded) ? (decoded as SignPath) : null;
 }
 
-/** Build a minimal vCard 3.0 from the resolved brand identity. */
-function buildVcf(name: string, phone: string, email: string): string {
-  const lines = [
-    'BEGIN:VCARD',
-    'VERSION:3.0',
-    `FN:${name}`,
-    `ORG:${name}`,
-    `TEL;TYPE=WORK,VOICE:${phone}`,
-    `EMAIL;TYPE=INTERNET:${email}`,
-    'END:VCARD',
-  ];
-  return lines.join('\r\n') + '\r\n';
-}
+/* ⚠️ THE vCARD IS GONE — IT COULD NOT BE MADE TO DO WHAT IT PROMISED.
+   Owner, 2026-08-24: "the button for 'add us to your contacts' it downloads a
+   file, not sure what to do with that and that isnt very helpful... we either
+   need to make it do more so it actually adds us as a contact in their mail
+   client or remove that button."
+
+   It cannot be made to do more. **No browser lets a web page write to an address
+   book or a mail client** — there is no API, on any platform, by design. A .vcf
+   download is the only mechanism that exists: on a phone it opens a contact card
+   and offers to save it, and on a desktop it lands in Downloads as a file most
+   people have never seen before. So the button promised an action it could only
+   perform on some devices, and on the rest it produced exactly the confusion the
+   owner hit.
+
+   What the panel is actually FOR is deliverability — the first email from a new
+   sender lands in spam, and the fix is for the reader to recognise the address.
+   So it now hands them the address in the one form that works everywhere: copied
+   to the clipboard, ready to paste wherever their own mail client keeps contacts. */
 
 function DeliverabilityPanel({ brand }: { brand: ReturnType<typeof useBrand> }) {
-  function downloadVcf() {
-    const vcf = buildVcf(brand.shortName, brand.phoneDisplay, brand.email);
-    const blob = new Blob([vcf], { type: 'text/vcard' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${brand.shortName.replace(/\s+/g, '-')}.vcf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const [copied, setCopied] = useState(false);
+
+  function copyEmail() {
+    void navigator.clipboard.writeText(brand.email).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => { /* the address is on screen either way */ });
   }
 
   return (
@@ -135,15 +136,12 @@ function DeliverabilityPanel({ brand }: { brand: ReturnType<typeof useBrand> }) 
       <ul className="text-sm text-green-900/80 space-y-1.5 mb-4 list-disc pl-5">
         <li>Use a Gmail address if you have one.</li>
         <li>First-time emails often land in spam — check there if you don&apos;t see it.</li>
+        <li>Adding our address to your contacts keeps the next one out of spam.</li>
       </ul>
-      <p className="text-sm text-green-900/80 mb-1">
-        Add us as a contact so calls, texts and emails reach you.
-      </p>
-      <p className="text-sm text-green-900 font-medium mb-4">
-        {brand.email} · {brand.phoneDisplay}
-      </p>
-      <button type="button" onClick={downloadVcf} className="btn-outline-gold">
-        Add us to your contacts
+      <p className="text-sm text-green-900 font-medium mb-1">{brand.email}</p>
+      <p className="text-sm text-green-900/80 mb-4">{brand.phoneDisplay}</p>
+      <button type="button" onClick={copyEmail} className="btn-outline-gold">
+        {copied ? 'Copied' : 'Copy our email address'}
       </button>
     </div>
   );
@@ -532,12 +530,29 @@ export default function SignStart() {
                 <input
                   id="sign-confirm-email"
                   type="email"
-                  className="form-input"
+                  className={`form-input${
+                    confirmEmail.trim() && !emailsMatch ? ' border-red-400' : ''}`}
                   required
                   value={confirmEmail}
                   onChange={(e) => setConfirmEmail(e.target.value)}
                   autoComplete="email"
+                  aria-invalid={Boolean(confirmEmail.trim()) && !emailsMatch}
+                  aria-describedby="sign-confirm-email-note"
                 />
+                {/* Live, at the field, and only once they have typed something —
+                    flagging "these don't match" against an empty box is noise. */}
+                {confirmEmail.trim() && !emailsMatch && (
+                  <p id="sign-confirm-email-note" role="alert" className="form-error mt-1 text-sm">
+                    {email.trim() && !emailValid
+                      ? 'That email address doesn’t look right yet.'
+                      : 'These two email addresses don’t match.'}
+                  </p>
+                )}
+                {confirmEmail.trim() && emailsMatch && (
+                  <p id="sign-confirm-email-note" className="text-sm text-green-700 mt-1">
+                    Addresses match.
+                  </p>
+                )}
               </div>
               {/* The fourth value (D22 §0). It lands on the contact record, and the
                   contract composes {{...ADDRESS}} from it — nothing types an address
@@ -624,7 +639,16 @@ export default function SignStart() {
               )}
               <button
                 type="submit"
-                disabled={submitting || !firstName || !lastName || !phone || !email || !confirmEmail
+                /* ⚠️ `emailsMatch` WAS COMPUTED AND NEVER USED HERE. It gated the
+                   submit HANDLER (which rejects) and the server rejects too, so
+                   nothing bad got through — but the button stayed enabled on a
+                   mismatch, invited the click, and answered with a message
+                   instead of pointing at the field. Owner, 2026-08-24: "i changed
+                   one to a different email and it doesnt flag it... didnt refuse
+                   to proceed." A confirm field that does not visibly confirm is
+                   worse than no confirm field: it buys trust it has not earned. */
+                disabled={submitting || !firstName || !lastName || !phone
+                  || !emailsMatch
                   || (addressRequired && !addressFilled)}
                 className="btn-primary w-full justify-center"
               >
