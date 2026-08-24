@@ -100,7 +100,7 @@ function RecordsTabStrip({ active }: { active: RecordsTab }) {
 export default function RecordsPage() {
   useDocumentTitle('Records');
   const { tab: tabParam } = useParams<{ tab?: string }>();
-  const tab: RecordsTab = (tabParam && TAB_IDS.has(tabParam) ? tabParam : 'clients') as RecordsTab;
+  const tab: RecordsTab = (tabParam && TAB_IDS.has(tabParam) ? tabParam : 'leads') as RecordsTab;
 
   /** A horse's owner/lessee opens their full record in place — "a horse links
    *  to its people … without leaving the page." Lives here, one level above

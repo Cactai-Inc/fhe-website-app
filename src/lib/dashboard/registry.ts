@@ -96,15 +96,12 @@ export function zonesFor(view: DashboardView): ZoneDef[] {
   return ZONES.filter((z) => z.view === view).sort((a, b) => a.order - b.order);
 }
 
+/** Owner, 2026-08-23: named by person, not by role — "They should just say
+ *  Claire's Dashboard, CJ's Dashboard." D26's designation still selects the
+ *  emphasis; only the label changed. */
 export const VIEW_LABEL: Record<DashboardView, string> = {
-  trainer: 'Head Trainer',
-  business: 'Business Operations',
-};
-
-/** D26's two roles, as the header pill reads them. */
-export const VIEW_PILL: Record<DashboardView, string> = {
-  trainer: 'Owner · Head Trainer',
-  business: 'Owner · Business Operations',
+  trainer: "Claire's Dashboard",
+  business: "CJ's Dashboard",
 };
 
 /**

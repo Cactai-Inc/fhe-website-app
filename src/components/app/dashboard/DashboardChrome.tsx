@@ -212,40 +212,35 @@ export function QuietFooter({ absent, view }: { absent: ZoneDef[]; view: Dashboa
  * accounts — neither view is gated by identity, because D26 rules that the
  * designation selects emphasis and never capability.
  *
- * It does NOT write the stored default (§2.3). Switching over to check something
- * must not silently change where you land next time; only the settings control
- * does that, and the line under this control says so.
+ * It does NOT write the stored default (§2.3) — switching over to check
+ * something must not silently change where you land next time. Owner,
+ * 2026-08-23: the line explaining that, and the shortcut link to the
+ * settings control, were both dropped as chrome the dashboard doesn't need
+ * to carry — the setting itself still lives in Team, exactly where it did.
  */
 export function ViewToggle({
-  value, onChange, isDefault,
-}: { value: DashboardView; onChange: (v: DashboardView) => void; isDefault: boolean }) {
+  value, onChange,
+}: { value: DashboardView; onChange: (v: DashboardView) => void }) {
   return (
-    <div className="flex flex-col items-start gap-1">
-      <div
-        className="inline-flex rounded-full border border-gold-600/40 bg-white p-0.5"
-        role="group"
-        aria-label="Dashboard view"
-      >
-        {(['trainer', 'business'] as DashboardView[]).map((v) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => onChange(v)}
-            aria-pressed={value === v}
-            data-testid={`dash-view-${v}`}
-            className={`rounded-full px-3.5 py-1 text-[0.72rem] font-semibold transition-colors duration-320 ease-glide focus-ring ${
-              value === v ? 'bg-green-800 text-gold-100' : 'text-green-800/70 hover:text-green-900'
-            }`}
-          >
-            {VIEW_LABEL[v]}
-          </button>
-        ))}
-      </div>
-      <span className="text-[0.68rem] text-green-800/45">
-        {isDefault
-          ? 'This is your default view.'
-          : 'Switched for this session — your default is unchanged.'}
-      </span>
+    <div
+      className="inline-flex rounded-full border border-gold-600/40 bg-white p-0.5"
+      role="group"
+      aria-label="Dashboard view"
+    >
+      {(['trainer', 'business'] as DashboardView[]).map((v) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => onChange(v)}
+          aria-pressed={value === v}
+          data-testid={`dash-view-${v}`}
+          className={`rounded-full px-3.5 py-1 text-[0.72rem] font-semibold transition-colors duration-320 ease-glide focus-ring ${
+            value === v ? 'bg-green-800 text-gold-100' : 'text-green-800/70 hover:text-green-900'
+          }`}
+        >
+          {VIEW_LABEL[v]}
+        </button>
+      ))}
     </div>
   );
 }

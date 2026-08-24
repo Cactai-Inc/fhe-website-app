@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
@@ -13,7 +12,7 @@ import {
 import { fetchRevenue } from '../../../lib/ops/api-calendar';
 import { weekWindow, monthWindow } from '../../../lib/dashboard/windows';
 import {
-  zonesFor, VIEW_PILL, type DashboardView,
+  zonesFor, type DashboardView,
 } from '../../../lib/dashboard/registry';
 import {
   Zone, Tile, Ring, CountUp, ViewToggle, QuietFooter, ZoneError,
@@ -186,26 +185,15 @@ export default function OwnerDashboard() {
 
       <header className="dash-sticky -mx-4 mb-5 px-4 pb-3 pt-1 sm:-mx-6 sm:px-6">
         <div className="dash-dawn pb-3 pt-2">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <h1 className="font-serif text-[1.7rem] leading-tight text-green-900">
               Good {DAYPART[timeOfDayWord()]}{firstName ? `, ${firstName}` : ''}
             </h1>
-            <span className="rounded-full bg-green-800 px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-wide text-gold-100">
-              {VIEW_PILL[view]}
-            </span>
-            <span className="ml-auto text-[0.8rem] text-green-800/55">
-              {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
-            </span>
+            <ViewToggle value={view} onChange={chooseView} />
           </div>
-          <div className="mt-2.5 flex flex-wrap items-end justify-between gap-3">
-            <ViewToggle value={view} onChange={chooseView} isDefault={view === storedDefault} />
-            <Link
-              to="/app/ops/team"
-              className="text-[0.7rem] font-medium text-green-800/60 underline underline-offset-2 focus-ring"
-            >
-              Change my default view
-            </Link>
-          </div>
+          <p className="mt-4 font-serif text-[1.25rem] text-green-800/70">
+            {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
         </div>
 
         <div className="mt-3">
