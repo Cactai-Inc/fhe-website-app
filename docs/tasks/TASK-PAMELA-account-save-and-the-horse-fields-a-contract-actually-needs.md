@@ -61,6 +61,37 @@ mislabeling her — it's the *entire* from-scratch provisioning UI (every catego
 every document choice) rendering unconditionally, because nothing about her being an established
 client, a deal party, or a horse owner is taken into account before showing it.
 
+### The show/hide rule for the scheduling-heavy content (owner, 2026-08-23)
+
+> "the huge provision form is mostly content that matters for one of two reasons, A) they are a
+> rider - these accounts only exist so they can take a lesson and most of the provisioning is
+> around lesson scheduling and availability, B) they have an order created for them that involves
+> scheduling in some capacity. The provisioning form should match what is required based on what
+> category tag the account carries and/or what they have purchased. If they are not a rider, it
+> shouldnt be shown to me, if they dont have an order with offering that requires scheduling it
+> shouldnt be shown to me. If they are being setup with an order with an offering that requires
+> scheduling or they are tagged as a rider, then it can be shown and if i have any of the info from
+> them already I can add it in this section."
+
+**This narrows §3 below into an exact, testable rule, not a "use judgment" call.** The
+scheduling/availability content shows **only** when: **(A)** the account carries (or is being
+given) the RIDER category tag, **or** **(B)** an order attached to this provisioning has at least
+one `offering` whose `config_kind` requires scheduling (`scheduled` or `recurring` — read
+`CLAUDE.md`'s catalog section, don't guess which kinds those are). **Neither condition true →
+the section does not render at all**, not collapsed, not present-but-empty. When it does render,
+pre-fill it from whatever the contact record / order already carries — don't ask staff to
+re-type what's already known.
+
+**Also worth doing, named explicitly as in-scope, not a maybe:** review this section's field set
+against what the two **client-facing** intake flows actually ask for — (1) the invitation a staff
+member sends by email, and (2) the self-service flow at `/sign/*` that a visitor reaches from the
+website. Find both (the `/sign/*` family is in `App.tsx`'s routes; the staff-sent one is whatever
+`adminSendInvitation` leads the client to). **Report where the three field sets — staff
+provisioning form, staff-invited intake, self-service `/sign/*` intake — agree and where they
+diverge**, and reconcile drift toward one set of questions asked once, not three forms quietly
+disagreeing about what a rider needs to answer. Reconciling the exact field-by-field list is real
+scope here, not a footnote.
+
 ### What to build
 
 1. **The account becomes real when staff create it — that is the activation, per the owner's
@@ -88,6 +119,11 @@ client, a deal party, or a horse owner is taken into account before showing it.
 - Open Pamela's record, change something in the provisioning form, click Save. Reload the page —
   the change is still there. No email was sent (verify in whatever email/notification log exists).
 - Click Send invitation afterward — it sends, using the saved state.
+- A contact with no RIDER tag and no scheduling-requiring order attached: the scheduling section
+  is absent. Tag them RIDER, or attach a `scheduled`/`recurring`-kind offering: it appears,
+  pre-filled from what's already on file.
+- The report states plainly where the three field sets (provisioning form, staff-invited intake,
+  `/sign/*` self-service intake) agree and diverge.
 - `npm run typecheck` / `npm run lint` → 0 errors.
 
 ---
@@ -142,14 +178,50 @@ specifically (search near where the comment says clause-model horse fields rende
 legacy flat-grouping block) — there is a real discrepancy here between what the data says and
 what was reported, and it needs to be found, not assumed away.
 
+### The record-it-now flow (owner, 2026-08-23 — this is the target shape, build to it)
+
+> "honestly the original process was already very nice, if I click the button to 'record it now'
+> on the horse card in the lease contract creation page, it should open the intake form as a
+> modal, filling in even just the name should add the new record for that horse and it should be
+> associated with the lessor, if the lessor hasnt been added to the deal yet the horse record
+> intake form shown in the modal should ask for me to pick the lessor from a dropdown menu and
+> when i do and i save the new record it should close the modal and the lessor field in the card
+> above the horse card should show the lessor's name."
+
+**"The original process was already very nice" is a strong signal to check history before
+building anything new** — `git log`/`git blame` on `HorseGate`, `ContractPage.tsx`'s horse
+section, and `HorseIntakeForm.tsx` for a prior modal-based version, before assuming this is
+greenfield. If it regressed (a navigation replaced a modal, a wizard got flattened), restoring the
+real shape is very likely cheaper and more correct than redesigning from nothing.
+
+**The exact target, whether restored or built fresh:**
+1. A "Record it now" action on the horse card, inside the lease-contract-creation page — opens
+   `HorseIntakeForm` **as a modal**, not a page navigation. (This is `HorseGate`'s current
+   "+ Add a different horse" link, which today navigates away to `/app/horse-intake` — that has
+   to become an in-place modal instead, or a modal-capable sibling of it, without duplicating the
+   form's logic.)
+2. **Saving with only the name filled in creates the horse record immediately.** Every other field
+   stays editable/completable afterward — `HorseIntakeForm` already has an autosave-on-blur mode
+   for reviewing an existing record (`?horse=<id>`, "your changes save as you go") — reuse that
+   pattern rather than inventing a second save discipline.
+3. **The new record is associated with the LESSOR**, not left owner-less.
+4. **If the lessor hasn't been added to the deal/contract yet**, the modal must also present a
+   lessor picker (a dropdown of contacts) right there, so staff can establish the lessor inline
+   without leaving the modal to go add a party first.
+5. **On save, the modal closes**, and **the lessor field on the card above the horse card updates
+   immediately** to show the name just picked in the modal — real state propagation from the
+   modal back to the parent contract view, not a value that only appears after a manual reload.
+
 ### The rulings to build to, once the actual path is found
 
-1. **Free text only for:** horse name, microchip number, registration number. **Everything else
-   horse-identifying is selection-based** — pick from recognized/existing values, not hand-typed,
-   so the same value displays consistently everywhere the contract merges it in. This already
-   exists correctly for breed/color/sex in both places checked above — if the path Pamela hit
-   doesn't have it, converge it onto the same lookup mechanism (`horse_breeds` etc.), don't invent
-   a second one.
+1. **Free text: horse name, microchip number, registration number, farrier name/phone, vet
+   name/phone/business/address.** Farrier and vet are people/practices with no fixed taxonomy to
+   pick from — free text is correct for them, confirmed against the live `HORSE_LEASE_V2` field
+   defs, which already have them as `input_kind='text'`. **Everything else horse-identifying is
+   selection-based** — pick from recognized/existing values, not hand-typed, so the same value
+   displays consistently everywhere the contract merges it in. This already exists correctly for
+   breed/color/sex in both places checked above — if the path Pamela hit doesn't have it, converge
+   it onto the same lookup mechanism (`horse_breeds` etc.), don't invent a second one.
 2. **No nickname/barn-name field on the contract.** Already true for `HORSE_LEASE_V2`'s field
    defs — verify it stays true for whatever path is actually broken, and don't reintroduce it.
    Nickname stays a horse-*record* field (`HorseIntakeForm` keeps asking for it there); it just
@@ -181,14 +253,19 @@ what was reported, and it needs to be found, not assumed away.
 1. Reproduce Pamela's actual 8-field experience live, and name in the report exactly which
    component/route it was — this is the single most important finding, everything else follows
    from it.
-2. Every horse-identifying field except name/microchip/registration is selection-based, sourced
-   from the same recognized-values mechanism `HorseIntakeForm` already uses.
+2. Every horse-identifying field except name/microchip/registration/farrier/vet is
+   selection-based, sourced from the same recognized-values mechanism `HorseIntakeForm` already
+   uses. Farrier and vet fields stay free text.
 3. No nickname/barn-name token reaches contract text; the record-level field (whichever column it
    actually is) is labeled correctly for what it writes.
 4. Farrier and vet fields are present and save correctly on whatever path Pamela hit.
 5. A contract clause that names a medication/supplement obligation offers the horse's own
    `horse_medications` rows as a picker before falling back to free text.
-6. `npm run typecheck` / `npm run lint` → 0 errors.
+6. **"Record it now" opens a modal**, not a navigation. Saving with only the name filled creates
+   the horse record immediately, associated with the lessor. If no lessor is on the deal yet, the
+   modal offers a lessor picker inline. On save, the modal closes and the lessor's name appears on
+   the card above the horse card without a manual reload.
+7. `npm run typecheck` / `npm run lint` → 0 errors.
 
 ---
 
