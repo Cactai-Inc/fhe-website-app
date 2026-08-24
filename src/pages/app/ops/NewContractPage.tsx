@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, UserPlus } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { startLeaseContract, startSaleContract, linkContractToPurchase, listLeaseTemplates } from '../../../lib/api';
@@ -237,16 +237,6 @@ export default function NewContractPage() {
         className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
         <ArrowLeft size={14} /> Documents
       </Link>
-
-      {/* both parties must exist as accounts/contacts first */}
-      <div className="bg-gold-50 border border-gold-600/40 rounded-lg px-4 py-3 mb-5 flex items-start gap-2.5">
-        <UserPlus size={15} className="text-gold-800 mt-0.5 shrink-0" />
-        <p className="text-[12.5px] text-gold-900">
-          Both parties are <strong>selected</strong>, never created here. If someone isn't in the
-          list yet, <Link to="/app/ops/accounts/new" className="underline font-medium">add them as an account first</Link>,
-          then come back and pick them.
-        </p>
-      </div>
 
       {/* contract type — buttons desktop, dropdown mobile */}
       <div className="hidden sm:flex gap-1.5 mb-2">
