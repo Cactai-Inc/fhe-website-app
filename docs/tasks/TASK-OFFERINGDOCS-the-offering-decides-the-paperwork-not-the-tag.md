@@ -44,20 +44,39 @@ because they bought nothing. Nothing was built on that framing; the branch carri
 > they would be in scenario 2, since the offering they purchased is independent of the lease
 > agreement."
 
+> "those tags are auto set by the purchase, the existence of a file, or the existence of a record.
+> so in the case that a person is added, i dont check any boxes for their tagging they just exist as
+> an account. I add a horse and a contract and the deal party and horse owner tags are applied to
+> them, **this can prompt me to decide if the docs should be added to their contract, required on
+> first login, or not added at all**, and in the future if i want to send them docs to sign i can
+> select them from a list by checking them off for the ones i want to send them to have them sign
+> and **they get an email notification, a dashboard notification, and on their login the docs are
+> shown to them and they can skip and sign later if they want but every login the docs are surfaced
+> for signing until they sign them.**"
+
 ---
 
 ## THE MODEL, IN FIVE RULES
 
 1. **The account is the spine.** No tag is required for an account to exist. *(Already true —
    see §1.1.)*
-2. **A tag describes; it does not obligate.** Rider and Horse owner say what relationship someone
-   has with us. Neither creates a document requirement.
+2. **A tag describes; it does not obligate — and staff never tick one.** Tags are **derived**, from
+   a purchase, a file, a record (a horse), or a contract. *"i dont check any boxes for their tagging
+   they just exist as an account."* The category checkbox section leaves the provisioning form
+   entirely.
 3. **GUEST IS THE ONE EXCEPTION.** Ticking Guest **does** require the visitor set immediately,
    because the obligation is *being on the property*, and a visitor buys nothing. **An account with
    no offering is NOT thereby a guest** — no designation is the normal state.
-4. **Every other document requirement comes from an OFFERING**, and is signed **at the point the
-   offering is processed**. A comped, zero-priced offering counts — the price is irrelevant, the
-   service is what carries the paperwork.
+4. **A PURCHASE obligates by itself; a TAG only proposes.**
+   - **Offering purchased** → its document set is required, signed **at the point the offering is
+     processed**. A comped, zero-priced offering counts — the price is irrelevant, the service is
+     what carries the paperwork. No staff decision.
+   - **A tag arriving from a horse, a contract or a file** → obligates nothing. It **prompts staff
+     to choose a disposition**: *add them to their contract* · *require them at first login* ·
+     *not at all*. Nothing is assigned until that choice is made.
+   - **Any time later**, staff may tick documents from a list and **send** them. The member gets an
+     **email**, a **dashboard notification**, and the documents **surfaced at login** — skippable,
+     and **re-surfaced every login until signed**.
 5. **Ordering — an offering supersedes the contract.**
    - **Offering present** → its documents are signed **before** the contract is opened. They are
      emailed as their own set when the last one is signed. The contract is emailed separately
@@ -155,6 +174,62 @@ after the governing document executes. LESSEE's two rows were already deactivate
 Horse Emergency Vet, General Release, Horse-Care Release) and SELLER two (Company Policies,
 General Release) — **automatically**. The owner has ruled: by default, none.
 
+### 1.9 The send-list already exists. It is missing the SEND.
+
+`PaperworkEditor` (`ClientRecordActions.tsx:421`) is already *"select them from a list by checking
+them off"*: every onboarding template, checkboxes, writing through
+`set_contact_required_documents`. PARTYROLE §4c already widened it past the category defaults
+precisely so it could reach a Lessor or a Seller — *"the one surface that can apply a document to a
+counterparty offered none."*
+
+**What it does not do is tell the person.** `set_contact_required_documents` writes an
+`audit_logs` row and nothing else — no email, no notification. Ticking a box today is silent.
+
+### 1.10 Half the auto-tagging already works; the other half cannot exist yet
+
+- **Horse → HORSE_OWNER: works.** Trigger `horses_apply_affiliations` on
+  `horses.current_owner_contact_id` calls `apply_affiliations`. Proven live in TASK-PAMELA:
+  creating a horse for a contact gave them HORSE_OWNER immediately.
+- **Contract → DEAL_PARTY: does not exist.** `groups_group_type_check` admits exactly
+  `GUEST · RIDER · HORSE_OWNER · PARENT_GUARDIAN`, and `derive_affiliations` has no contract-party
+  branch at all. The tag has to be added to both.
+
+⚠️ D31 warns against adding tokens to this list, having watched GUEST → RIDER → HORSE_OWNER →
+'Deal client' each arrive that way. **This one is admissible for the reason D31 itself gives:** it
+is *derived from holding a contract role*, not picked at account creation — which is exactly the
+shape D31 said the deal-party badge should have.
+
+### 1.11 THREE COLLISIONS WITH DELIBERATE PRIOR DECISIONS — read before building §5, §9, §10
+
+1. **"Required on first login" cannot be decided per person today.** `wall_gating` is a column on
+   `contract_templates` — a property of the TEMPLATE, not of the assignment. Ten templates carry
+   it. So a document is gating for everyone or for nobody, and the disposition *"require them at
+   first login"* has nowhere to live. **It needs to move onto the assignment**
+   (`contact_required_documents`), which is the row that knows who and why.
+
+2. **"Email + dashboard notification" reverses an explicit design note.** `AppLayout.tsx:1537`:
+   *"The wall IS the prompt — no dashboard notification."* That was a decision, not an oversight.
+   The ruling now asks for both, plus an email. Fine — but it is a reversal and it is recorded here
+   as one.
+
+3. **"Skip and sign later, re-surfaced every login" is a THIRD mode that does not exist.** Today
+   there are two: **gating** (hard redirect to `/app/onboarding`, cannot be skipped) and
+   **non-gating** (sits on the onboarding page, never re-surfaced, never mentioned again). The
+   ruling describes a soft-but-persistent middle — shown every login, dismissable, never forgotten.
+   ⚠️ Not to be confused with `skip_required_document`, which is STAFF excusing somebody with a
+   reason. This is the MEMBER deferring, and it must not write a skip mark.
+
+### 1.12 The one place the rulings do not yet agree — GUEST
+
+Rule 3 says ticking Guest requires the visitor set. Rule 2 says staff never tick anything. **Both
+cannot be true of the same control.** A visitor is precisely the person with no purchase, no horse,
+no contract and no file, so nothing derives the tag for them.
+
+**Unresolved — the owner's call.** Either Guest stays the one tag staff may set by hand (and the
+form keeps exactly one checkbox), or the visit itself sets it — D8 already says RELEASE_GENERAL is
+signed *at the visit*, kiosk-style, which would make Guest a description of someone who has been
+here rather than something anyone assigns. **Do not build §2's Guest branch until this is answered.**
+
 ---
 
 ## 2. WHAT TO BUILD
@@ -210,11 +285,37 @@ Default: none. Retire them the way LESSEE's were, with the reason on the row.
 failure. The natural home is the "paperwork this deal carries" panel on `PartiesHorseCard`, which
 already lists exactly these rows.
 
-### §8 — The provisioning form follows the offering
+### §8 — The provisioning form follows the offering, and loses its category checkboxes
 
 Auto-selected documents come from the chosen offerings, not the category. **Staff can still
 uncheck them** — owner: *"in the manual provisioning its possible to uncheck the auto selected
 docs."* The mechanism exists (`docChecked` → explicit `templateKeys`); only its source changes.
+
+**The Account category checkbox block is removed** (rule 2) — subject to §1.12's Guest answer.
+`CLIENT_CATEGORIES`, `CATEGORY_TOKEN` and the 'Deal client' label go with it.
+
+### §9 — DEAL_PARTY becomes a derived tag
+
+Widen `groups_group_type_check`; add the contract-role branch to `derive_affiliations`; trigger
+`apply_affiliations` when a party is placed on a contract. Derived only — never picked (§1.10).
+
+### §10 — The disposition prompt
+
+When a tag arrives from a horse, a contract or a file, staff are asked once: **add to their
+contract · require at first login · not at all.** Nothing is assigned until answered, and "not at
+all" is a real, recorded answer rather than an unanswered prompt.
+Requires §1.11.1 — move gating onto the assignment row.
+
+### §11 — Sending documents actually tells the person
+
+`PaperworkEditor` gains a **Send** act (it is otherwise already the list — §1.9): email +
+dashboard notification (`notify_user`) + surfaced at login.
+
+### §12 — The soft persistent surface
+
+The third mode from §1.11.3: shown at every login, dismissable for that session, re-surfaced until
+signed. Never writes a staff skip mark. This is where D19 applies — the member can see what they
+are being asked for and why, and deferring is recorded as deferring, not as refusal.
 
 ---
 
@@ -250,7 +351,10 @@ person who purchased the offering?** The comment flipping the boolean back is al
 - A deal party with no offering: account exists, **zero documents**, straight to the contract.
 - The same person with a comped horse-care offering: signs its documents first, gets them emailed,
   **then** sees the contract.
-- Ticking Rider assigns nothing. Ticking Guest assigns the visitor set immediately.
+- Adding a horse tags them HORSE_OWNER and **asks** what to do about the horse documents; choosing
+  "not at all" assigns nothing and is recorded as the answer it is.
+- Staff tick two documents and send: an email arrives, a dashboard notification appears, and the
+  documents are on screen at the next login — dismissable, and back the login after that.
 
 ## Constraints
 
