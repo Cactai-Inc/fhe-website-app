@@ -2,16 +2,16 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { toErrorMessage } from '../../lib/ops/errors';
 import {
   adminSendInvitation, categoryDocumentDefaults, suggestedCategoryForContact,
-  onboardingTemplateOptions, matchesCategoryToken, requestOnboardingCategories,
-  getContactRequiredDocumentsState, narrowContactRequiredDocuments,
-  contactProvisioningDraft,
-  CLIENT_CATEGORIES, CATEGORY_TOKEN, type CategoryDocDefault,
+  onboardingTemplateOptions, getContactRequiredDocumentsState,
+  narrowContactRequiredDocuments, contactProvisioningDraft,
+  serviceTypeDocumentDefaults, TAG_LABEL, TAG_REASON,
+  type CategoryDocDefault, type ServiceTypeDocDefault,
   type AdminInviteResult, type RequiredDocumentState,
 } from '../../lib/admin';
 import { fetchOfferings, contactDossier, updateContactRecord } from '../../lib/api';
 import { InviteResultPanel } from './InviteResultPanel';
 import type { AgreedLesson } from './AgreedLessonPanel';
-import type { Offering, Segment } from '../../lib/types';
+import type { Offering } from '../../lib/types';
 
 /**
  * ⚠️ TASK-PAMELA §A — THE ACCOUNT IS REAL WHEN IT IS SAVED, NOT WHEN IT IS SENT.
@@ -52,21 +52,13 @@ import type { Offering, Segment } from '../../lib/types';
  * file is shown as complete (not re-requested).
  */
 
-// Category (display) → offering segments it may purchase (union when stacked).
-const CATEGORY_SEGMENTS: Record<string, Segment[]> = {
-  Guest: ['acquisition'],
-  Rider: ['rider', 'acquisition'],
-  'Horse owner': ['horse', 'acquisition'],
-  // CAREPATH §C10a — a DEAL CLIENT buys acquisition services and nothing that
-  // needs a horse on our records. Offering them a horse-care SKU here would
-  // create the very order that summons the paperwork this category exists to
-  // avoid.
-  'Deal client': ['acquisition'],
-};
-// Standing token → display label (reverse of CATEGORY_TOKEN) for preselection.
-const TOKEN_TO_DISPLAY: Record<string, string> = {
-  GUEST: 'Guest', RIDER: 'Rider', HORSE_OWNER: 'Horse owner',
-};
+/* ⚠️ OFFERINGDOCS 2026-08-24 — THE CATEGORY MAPS ARE GONE.
+   `CATEGORY_SEGMENTS` filtered the purchasable offerings by whichever boxes were
+   ticked, and `TOKEN_TO_DISPLAY` fed the preselect. Both are removed with the
+   checkbox block itself: staff no longer tick a tag, so a tag can no longer
+   decide what they are allowed to sell. Every purchasable offering is offered.
+   Owner: "i dont check any boxes for their tagging they just exist as an
+   account." */
 
 // Offerings the owner removed from INVITE selection (2026-07-28). They stay
 // active in the DB because the public catalog still lists them (zero purchases /
@@ -74,7 +66,12 @@ const TOKEN_TO_DISPLAY: Record<string, string> = {
 // unchanged until the owner decides otherwise.
 const INVITE_HIDDEN_OFFERING_IDS = new Set<string>([
   '62f29124-826a-4e7b-bf8c-53d223d97854', // 3x Weekly (riding lessons)
-  '85cab901-959c-43ac-b2bf-dd3b7dec9f64', // Evaluation Lesson — the first lesson IS the evaluation now
+  /* ⚠️ THE EVALUATION LESSON IS NO LONGER HIDDEN (owner, 2026-08-24).
+     It was withheld here in July on the reading that "the first lesson IS the
+     evaluation now" — i.e. it was folded into a Single Lesson rather than sold.
+     Today's ruling reverses that: it is a distinct offering, it is the FIRST
+     purchase, and the self-onboarding shop refuses to sell anything else until it
+     is added. Staff could not offer the one thing every new rider must buy. */
 ]);
 
 // The owner's note shown wherever lessons are offered on this page.
@@ -163,8 +160,12 @@ export function ProvisionClientForm({
   const [draftId, setDraftId] = useState<string | null>(null);
   /** Which act the last submit was. Drives the confirmation, not the button. */
   const [savedOnly, setSavedOnly] = useState(false);
+  /* The categories the invitation still RECORDS. Never ticked by staff any more —
+     kept as state only so a saved draft round-trips unchanged. */
   const [categories, setCategories] = useState<string[]>([]);
   const [defaults, setDefaults] = useState<CategoryDocDefault[]>([]);
+  /** OFFERINGDOCS §1 — service_type → the documents that service requires. */
+  const [serviceDocs, setServiceDocs] = useState<ServiceTypeDocDefault[]>([]);
   const [docChecked, setDocChecked] = useState<Set<string> | null>(null);
   /** Every document staff MAY apply — not only what the categories suggest. */
   const [allTemplates, setAllTemplates] = useState<{ template_key: string; title: string }[]>([]);
@@ -181,9 +182,7 @@ export function ProvisionClientForm({
     { url: string; emailed: boolean; emailError?: string; email: string } | null>(null);
   // Already-signed templates (kiosk walk-in) — shown as complete, not re-requested.
   const [signedTemplates, setSignedTemplates] = useState<string[]>([]);
-  /** CATEGORISE §2 — the categories this inquiry's CART implied, for the note
-   *  that tells staff why the boxes below are ticked. */
-  const [derivedCategories, setDerivedCategories] = useState<string[]>([]);
+
   /** NOSTRIP §4 — what this person ALREADY owes. Without it this screen could
    *  not name what a narrower category selection was about to take away, and
    *  for most of this system's life it took it away silently. */
@@ -193,42 +192,18 @@ export function ProvisionClientForm({
 
   useEffect(() => {
     categoryDocumentDefaults().then(setDefaults).catch(() => setDefaults([]));
+    serviceTypeDocumentDefaults().then(setServiceDocs).catch(() => setServiceDocs([]));
     onboardingTemplateOptions().then(setAllTemplates).catch(() => setAllTemplates([]));
     fetchOfferings().then(setOfferings).catch(() => setOfferings([]));
   }, []);
 
-  // ⚠️ CATEGORISE §2 — THE CART DECIDES THE CATEGORY, NOT THE FUNNEL.
-  //
-  // The category selects the LEGAL DOCUMENT SET this person must execute before
-  // they arrive. Until now the only signal on this screen was whatever a staff
-  // member remembered to tick, and the inquiry itself was filed under
-  // `state.funnel` — the page the visitor happened to be standing on. Someone
-  // who bought a lesson AND horse clipping in one cart was filed under one of
-  // them and signed one of the two sets.
-  //
-  // `request_onboarding_categories` reads the cart lines and answers with EVERY
-  // category they touch, already unioned with whatever this contact holds today
-  // (the RPC does that half — a derived default must never be able to strip a
-  // boarder's horse paperwork). It is a PREFILL: staff untick freely, and a
-  // phone call still beats a cart.
-  //
-  // Runs once per request. Re-ticking a box a staff member deliberately cleared
-  // would be worse than not prefilling at all.
-  const prefilledFor = useRef<string | null>(null);
-  useEffect(() => {
-    if (!requestId || prefilledFor.current === requestId) return;
-    prefilledFor.current = requestId;
-    requestOnboardingCategories(requestId, contactId)
-      .then((cats) => {
-        if (cats.length === 0) return;
-        setDerivedCategories(cats);
-        setCategories((prev) => {
-          const wanted = new Set([...prev, ...cats]);
-          return CLIENT_CATEGORIES.filter((c) => wanted.has(c));
-        });
-      })
-      .catch(() => { /* the checkboxes still work by hand */ });
-  }, [requestId, contactId]);
+  /* ⚠️ THE CART-DERIVED CATEGORY PREFILL IS REMOVED (OFFERINGDOCS).
+     CATEGORISE built it because the category decided the document set and the
+     only other signal was whichever funnel a visitor happened to submit from.
+     The cart was the better guess — but it was still a guess feeding a tag that
+     then created a legal obligation. The cart's OFFERINGS now decide the
+     documents directly (`service_type_document_requirements`), so there is
+     nothing left for a derived category to inform. */
 
   // NOSTRIP §4 — the paperwork already standing on this person's record, so the
   // screen can SAY, by name, what a narrower selection would remove, BEFORE the
@@ -240,25 +215,14 @@ export function ProvisionClientForm({
     getContactRequiredDocumentsState(contactId).then(setHeld).catch(() => setHeld([]));
   }, [contactId]);
 
-  // Signed-contact detection: preselect category from what they've already signed.
-  //
-  // ⚠️ AND ONLY FROM WHAT THEY HAVE SIGNED. `suggested_category_for_contact`
-  // returns 'GUEST' as its ELSE branch — for a contact with no executed documents
-  // at all, which is every fresh one. This screen read that as a decision and
-  // ticked "Guest", which unfolded the paperwork, offerings and payment sections
-  // for someone nobody had chosen a category for. That is a large part of why the
-  // owner met "a huge section" on a contact who is only ever going to be a
-  // contract party, and it contradicts STABILIZE ITEM 2 outright: no category is
-  // a choice, and this was making it silently impossible to leave it unmade.
+  // Which templates they have already EXECUTED — shown as complete rather than
+  // re-requested. (The category preselect this used to drive is gone: a tag no
+  // longer decides paperwork, so guessing one from signed documents decides
+  // nothing.)
   useEffect(() => {
     if (!contactId) return;
     suggestedCategoryForContact(contactId)
-      .then((r) => {
-        setSignedTemplates(r.executed_templates ?? []);
-        if ((r.executed_templates ?? []).length === 0) return;   // no evidence, no guess
-        const display = TOKEN_TO_DISPLAY[r.suggested];
-        if (display) setCategories((prev) => (prev.length ? prev : [display]));
-      })
+      .then((r) => setSignedTemplates(r.executed_templates ?? []))
       .catch(() => {});
   }, [contactId]);
 
@@ -278,11 +242,9 @@ export function ProvisionClientForm({
       .then((d) => {
         if (!d) return;
         setDraftId(d.id);
-        const cats = (d.categories ?? []).filter(Boolean);
-        if (cats.length) {
-          const wanted = new Set(cats);
-          setCategories(CLIENT_CATEGORIES.filter((c) => wanted.has(CATEGORY_TOKEN[c])));
-        }
+        // Carried through untouched — a draft's recorded categories are history,
+        // not a control. Nothing on this screen sets or reads them any more.
+        setCategories((d.categories ?? []).filter(Boolean));
         if (d.template_keys) setDocChecked(new Set(d.template_keys));
         if (d.offering_ids?.length) setOfferingIds(d.offering_ids);
       })
@@ -305,27 +267,22 @@ export function ProvisionClientForm({
       .catch(() => setStandingGroups([]));
   }, [contactId]);
 
-  // ⚠️ PARTYROLE §R1 — THE SCREEN RESOLVES DOCUMENTS THE WAY THE RPC DOES.
-  //
-  // This used to match `d.category === c` on the DISPLAY label, while
-  // `apply_category_documents` matches on the TOKEN the submit below sends. For
-  // 'Deal client' — the one label whose token is not its own name — the two
-  // disagreed: the form promised the single 'Deal client' requirements row while
-  // the database resolved GUEST and wrote Guest's three. Going through
-  // CATEGORY_TOKEN makes the disagreement structurally impossible rather than
-  // fixing one instance of it, so a future label that reuses a token cannot
-  // reintroduce the bug. (The dead 'Deal client' row itself is retired in
-  // migration 20260817T1800; the owner ruled the three CORRECT — a deal client is
-  // your client, arriving at the property.)
+  /* ⚠️ OFFERINGDOCS — THE SCREEN RESOLVES DOCUMENTS THE WAY THE DATABASE DOES.
+     It used to walk the ticked CATEGORIES through `category_document_requirements`,
+     which is the same walk `apply_category_documents` made — the two agreed, and
+     both were wrong, because a ticked box is not why anybody owes a document.
+     Now both sides read `service_type_document_requirements` against the SERVICE
+     of each selected offering, which is what `apply_offering_documents` does on
+     the purchase trigger. Same source, same answer, no tag in between. */
   const derivedDocKeys = useMemo(() => {
     const keys = new Set<string>();
-    for (const c of categories) {
-      const token = CATEGORY_TOKEN[c];
-      if (!token) continue;
-      for (const d of defaults) if (matchesCategoryToken(d.category, token)) keys.add(d.template_key);
-    }
+    const chosen = new Set(
+      offerings.filter((o) => offeringIds.includes(o.id))
+        .map((o) => o.service_type).filter(Boolean) as string[]);
+    for (const r of serviceDocs) if (chosen.has(r.service_type)) keys.add(r.template_key);
     return keys;
-  }, [defaults, categories]);
+  }, [serviceDocs, offerings, offeringIds]);
+
   const titleFor = (key: string) =>
     defaults.find((d) => d.template_key === key)?.title
     ?? allTemplates.find((t) => t.template_key === key)?.title
@@ -367,51 +324,24 @@ export function ProvisionClientForm({
     [allTemplates, shownDocKeys],
   );
 
-  const allowedSegments = useMemo(() => {
-    const s = new Set<Segment>();
-    for (const c of categories) (CATEGORY_SEGMENTS[c] ?? []).forEach((seg) => s.add(seg));
-    return s;
-  }, [categories]);
-  // Flat SKUs: a purchasable offering is one in the allowed segment that isn't an
-  // inquire-only / parent grouping row (config_kind='inquire' or no price). The
-  // tier layer was removed 2026-07-08 — each offering IS the purchasable item.
-  // "(With your horse)" lesson variants (RIDING_LESSON with horse_included=false —
-  // the rider brings their own horse) only make sense for horse owners, so they
-  // appear only when the Horse owner category is checked.
-  const horseOwnerChecked = categories.includes('Horse owner');
+  /* EVERY purchasable offering. The segment filter was driven by the ticked
+     categories, so unticking a box could hide a service staff were about to
+     sell — a tag deciding what the business may offer. Inquire-only rows and
+     price-less grouping rows are still excluded: they are not purchasable. */
   const visibleOfferings = offerings.filter(
-    (o) => allowedSegments.has(o.segment)
-      && o.config_kind !== 'inquire'
+    (o) => o.config_kind !== 'inquire'
       && o.price_amount != null
-      && !INVITE_HIDDEN_OFFERING_IDS.has(o.id)
-      && !(o.service_type === 'RIDING_LESSON' && o.horse_included === false && !horseOwnerChecked));
+      && !INVITE_HIDDEN_OFFERING_IDS.has(o.id));
 
-  // If a category toggle hides an already-checked offering (e.g. unchecking
-  // Horse owner while a "(With your horse)" lesson is selected), drop it so the
-  // invitation can never carry an offering the form no longer shows.
-  useEffect(() => {
-    const visible = new Set(visibleOfferings.map((o) => o.id));
-    setOfferingIds((prev) => {
-      const next = prev.filter((id) => visible.has(id));
-      return next.length === prev.length ? prev : next;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories, offerings]);
-
-  /* ⚠️ THE SCHEDULING SECTION'S EXACT, TESTABLE CONDITION (owner, 2026-08-23).
-     (A) the account carries — or is being given — the RIDER tag, or
-     (B) an offering attached to this provisioning needs scheduling, which the
-         catalog states in DATA: `config_kind` is 'scheduled' (credits the client
-         spends and books) or 'recurring' (a standing weekly slot — D23). The
-         other four kinds (intake_finder, intake_evaluation, document_transaction,
-         inquire) schedule nothing.
-     Neither → it does not render. Not collapsed, not present-but-empty. */
+  /* THE SCHEDULING SECTION'S EXACT CONDITION (owner): the RIDER tag — now the
+     DERIVED one, since nothing is ticked — or a selected offering whose
+     config_kind schedules something. Neither → it does not render at all. */
   const schedulingNeeded = useMemo(() => {
-    if (categories.includes('Rider') || standingGroups.includes('RIDER')) return true;
+    if (standingGroups.includes('RIDER')) return true;
     return offerings.some(
       (o) => offeringIds.includes(o.id)
         && (o.config_kind === 'scheduled' || o.config_kind === 'recurring'));
-  }, [categories, standingGroups, offerings, offeringIds]);
+  }, [standingGroups, offerings, offeringIds]);
 
   const offeringTotal = useMemo(() => {
     let t = 0;
@@ -420,19 +350,6 @@ export function ProvisionClientForm({
     return t;
   }, [offerings, offeringIds]);
 
-  function toggleCategory(c: string) {
-    setCategories((prev) => {
-      const next = prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c];
-      setDocChecked(null);
-      const segs = new Set<Segment>();
-      for (const cat of next) (CATEGORY_SEGMENTS[cat] ?? []).forEach((s) => segs.add(s));
-      setOfferingIds((ids) => ids.filter((id) => {
-        const seg = offerings.find((o) => o.id === id)?.segment;
-        return seg ? segs.has(seg) : false;
-      }));
-      return next;
-    });
-  }
   function toggleDoc(key: string) {
     setDocChecked((prev) => {
       const base = prev ?? new Set(derivedDocKeys);
@@ -452,7 +369,10 @@ export function ProvisionClientForm({
     e.preventDefault();
     setWorking(true); setPending(send ? 'send' : 'save'); setError(null); setResult(null);
     try {
-      const tokens = categories.map((c) => CATEGORY_TOKEN[c]).filter(Boolean);
+      /* The invitation still CARRIES categories (a saved draft round-trips them),
+         but nothing on this screen sets them any more and they no longer decide
+         a single document. Tags are derived — see `apply_affiliations`. */
+      const tokens = categories;
       const finalDocs = docChecked ? Array.from(effectiveDocs) : undefined;
 
       // ⚠️ NOSTRIP §2 — REMOVAL IS ITS OWN ACT, AND IT SKIPS RATHER THAN DELETES.
@@ -581,8 +501,11 @@ export function ProvisionClientForm({
               aria-label="First name" onChange={(e) => setIdentField('first_name')(e.target.value)} />
             <input className="form-input" value={ident.last_name} placeholder="Last name"
               aria-label="Last name" onChange={(e) => setIdentField('last_name')(e.target.value)} />
-            <input type="tel" inputMode="tel" className="form-input" value={ident.phone} placeholder="Phone"
-              aria-label="Phone" onChange={(e) => setIdentField('phone')(e.target.value)} />
+            {/* If staff have it now, the onboarding form stops asking — and if
+                they don't, it asks (INTAKE 2026-08-24: my_onboarding_state now
+                surfaces on an incomplete profile, not only on unsigned docs). */}
+            <input type="tel" inputMode="tel" className="form-input" value={ident.phone} placeholder="Mobile number"
+              aria-label="Mobile number" onChange={(e) => setIdentField('phone')(e.target.value)} />
             <input className="form-input" value={ident.address_line1} placeholder="Street address"
               aria-label="Street address" onChange={(e) => setIdentField('address_line1')(e.target.value)} />
             <input className="form-input" value={ident.city} placeholder="City"
@@ -602,61 +525,61 @@ export function ProvisionClientForm({
           </p>
         </div>
 
+        {/* ⚠️ TAGS ARE DERIVED. THERE IS NOTHING TO TICK.
+            Owner, 2026-08-24: "those tags are auto set by the purchase, the
+            existence of a file, or the existence of a record... i dont check any
+            boxes for their tagging they just exist as an account."
+
+            What stood here was four checkboxes — Guest / Rider / Horse owner /
+            Deal client — and ticking one wrote that category's document set onto
+            the person, whether or not they had bought, visited or agreed to
+            anything. That edge is cut in the database too (`_ensure_client_account`
+            no longer calls `apply_category_documents`), so this is not a screen
+            hiding a control that still works: there is no longer anything for it
+            to do. This shows what the record ALREADY says, and why. */}
         <div className="mb-6">
-          <span className="form-label">Account category</span>
-          <p className="text-sm text-muted mb-2.5">What kind of client — check everything that applies.</p>
-          {/* CATEGORISE §6 (THE REACH) — staff SEE that the cart chose these, and
-              can see it was the cart and not a guess. A prefill nobody can
-              account for is a prefill nobody trusts. */}
-          {derivedCategories.length > 0 && (
-            <p className="text-[12.5px] text-green-800/80 mb-2.5">
-              Prefilled from what they asked for: <strong className="font-medium">{derivedCategories.join(' + ')}</strong>.
-              {' '}This decides the paperwork below — change it if the conversation said otherwise.
+          <span className="form-label">What we know about them</span>
+          {standingGroups.length === 0 ? (
+            <p className="text-sm text-muted mt-1">
+              Nothing yet — and that is a normal, finished state. Tags appear on their
+              own when there is a reason: a purchase, a horse, a file, or a contract.
+              An account needs none of them to exist.
             </p>
-          )}
-          <div className="flex flex-wrap gap-3">
-            {CLIENT_CATEGORIES.map((c) => (
-              <label key={c}
-                className={`flex items-center gap-2.5 px-4 py-3 rounded-lg border cursor-pointer text-[15px] ${
-                  categories.includes(c) ? 'border-green-700 bg-green-50 text-green-900 font-medium'
-                    : 'border-green-800/15 text-secondary hover:bg-green-50/50'}`}>
-                <input type="checkbox" className="accent-green-700 w-[18px] h-[18px]"
-                  checked={categories.includes(c)} onChange={() => toggleCategory(c)} />
-                {c}
-              </label>
-            ))}
-          </div>
-          {/* STABILIZE ITEM 2 — NO CATEGORY IS A CHOICE, NOT AN ERROR STATE.
-              Owner, 2026-08-22: "an account gets tags that ENABLE an action,
-              never OBLIGATE one on their own... For a party who signs nothing
-              but the contract: select ZERO categories, not a new one."
-              Until now the submit button was disabled while nothing was ticked,
-              so the one shape the owner needs — a person whose only relationship
-              to us is a contract — could not be created here at all. Leaving
-              them all unticked is now a sentence, not a silence. */}
-          {categories.length === 0 && (
-            <p className="text-[12.5px] text-secondary mt-2.5">
-              <strong className="font-medium text-green-800">No service category.</strong>{' '}
-              Leave these unticked when this person's only relationship with us is a
-              contract — they aren't visiting, riding or boarding a horse. They'll get
-              an account and no onboarding paperwork; the contract carries its own
-              signing gate.
-            </p>
+          ) : (
+            <>
+              <p className="text-sm text-muted mb-2.5">
+                Applied automatically, from what is on their record. These describe the
+                relationship — none of them requires paperwork by itself.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {standingGroups.map((g) => (
+                  <span key={g}
+                    className="inline-flex flex-col px-3 py-2 rounded-lg border border-green-800/15 bg-cream-100/60">
+                    <span className="text-[14px] text-green-900 font-medium">{TAG_LABEL[g] ?? g}</span>
+                    <span className="text-[11.5px] text-muted">{TAG_REASON[g] ?? 'derived from their record'}</span>
+                  </span>
+                ))}
+              </div>
+            </>
           )}
         </div>
 
-        {categories.length > 0 && (
+        {(
+
           <>
             <div className="mb-6">
               <span className="form-label">First-login paperwork</span>
               <p className="text-sm text-muted mb-2.5">
-                What they'll review and sign when they activate. Category picks prefill
-                this — adjust as needed; the invitation email lists it.
+                What they'll review and sign when they activate. <strong>The offerings you
+                chose prefill this</strong> — adjust as needed; the invitation email lists
+                it. Choose no offerings and nothing is required, which is the right answer
+                for a contract party.
               </p>
               {shownDocKeys.length === 0 ? (
                 <p className="text-sm text-muted">
                   Nothing will be assigned — they'll activate straight into whatever
-                  they were invited for. Add a document below if this one needs it.
+                  they were invited for. That is correct for someone who has bought
+                  nothing. Add a document below if this one needs it.
                 </p>
               ) : (
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -769,14 +692,14 @@ export function ProvisionClientForm({
             <div className="mb-6">
               <span className="form-label">Offerings (optional)</span>
               <p className="text-sm text-muted mb-2.5">
-                What they're purchasing — their first order. Each is its own item; the
-                mechanics (single, pack, or recurring) are shown per line.
+                What they're purchasing — their first order. <strong>This is what decides
+                their paperwork</strong>: each service carries its own documents, and the
+                list below fills in from whatever you pick here. A comped, zero-priced
+                offering counts the same as a paid one.
               </p>
               {visibleOfferings.length === 0 ? (
                 <p className="text-sm text-muted">
-                  {categories.length === 0
-                    ? 'Choose a category above to see its offerings.'
-                    : 'No purchasable offerings for this category.'}
+                  No purchasable offerings are published.
                 </p>
               ) : (
                 <div className="space-y-4 border border-green-800/15 rounded-lg p-4">

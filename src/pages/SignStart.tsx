@@ -101,21 +101,46 @@ function normalizePath(raw: string | undefined): SignPath | null {
   return (VALID_PATHS as string[]).includes(decoded) ? (decoded as SignPath) : null;
 }
 
-/** Build a minimal vCard 3.0 from the resolved brand identity. */
+/* THE vCARD — MOBILE ONLY, DELIBERATELY.
+   Owner, 2026-08-24: first "it downloads a file... that isnt very helpful", then,
+   told why it cannot be made to actually write to a mail client: "well keep it
+   mobile only then. device dependent is better than not at all."
+
+   No browser lets a web page write to an address book — there is no API, on any
+   platform, by design. A .vcf is the only mechanism that exists, and it behaves
+   completely differently by device: on a phone it opens a contact card and offers
+   to save it, which is exactly the promised action; on a desktop it lands in
+   Downloads as a file most people have never seen. So it is offered where it
+   works and withheld where it does not, and the copy-the-address control is there
+   for everyone either way. */
 function buildVcf(name: string, phone: string, email: string): string {
   const lines = [
     'BEGIN:VCARD',
     'VERSION:3.0',
     `FN:${name}`,
     `ORG:${name}`,
-    `TEL;TYPE=WORK,VOICE:${phone}`,
+    `TEL;TYPE=CELL:${phone}`,
     `EMAIL;TYPE=INTERNET:${email}`,
     'END:VCARD',
   ];
   return lines.join('\r\n') + '\r\n';
 }
 
+/** Coarse pointer = a touch device, where a .vcf opens the contact card rather
+ *  than dropping a file into a folder. Read once on mount: it decides which
+ *  control to offer, not a layout that must react to a resize. */
+function useIsTouchDevice(): boolean {
+  const [touch, setTouch] = useState(false);
+  useEffect(() => {
+    setTouch(window.matchMedia?.('(pointer: coarse)').matches ?? false);
+  }, []);
+  return touch;
+}
+
 function DeliverabilityPanel({ brand }: { brand: ReturnType<typeof useBrand> }) {
+  const [copied, setCopied] = useState(false);
+  const isTouch = useIsTouchDevice();
+
   function downloadVcf() {
     const vcf = buildVcf(brand.shortName, brand.phoneDisplay, brand.email);
     const blob = new Blob([vcf], { type: 'text/vcard' });
@@ -129,22 +154,35 @@ function DeliverabilityPanel({ brand }: { brand: ReturnType<typeof useBrand> }) 
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  function copyEmail() {
+    void navigator.clipboard.writeText(brand.email).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => { /* the address is on screen either way */ });
+  }
+
   return (
     <div className="border border-green-800/10 bg-white p-6">
       <h3 className="heading-card text-green-800 mb-3">Getting your email</h3>
       <ul className="text-sm text-green-900/80 space-y-1.5 mb-4 list-disc pl-5">
         <li>Use a Gmail address if you have one.</li>
         <li>First-time emails often land in spam — check there if you don&apos;t see it.</li>
+        <li>Adding our address to your contacts keeps the next one out of spam.</li>
       </ul>
-      <p className="text-sm text-green-900/80 mb-1">
-        Add us as a contact so calls, texts and emails reach you.
-      </p>
-      <p className="text-sm text-green-900 font-medium mb-4">
-        {brand.email} · {brand.phoneDisplay}
-      </p>
-      <button type="button" onClick={downloadVcf} className="btn-outline-gold">
-        Add us to your contacts
-      </button>
+      <p className="text-sm text-green-900 font-medium mb-1">{brand.email}</p>
+      <p className="text-sm text-green-900/80 mb-4">{brand.phoneDisplay}</p>
+      <div className="flex flex-wrap gap-2">
+        {/* On a phone this genuinely adds the contact. On a desktop it would only
+            produce a file, so it is not offered there. */}
+        {isTouch && (
+          <button type="button" onClick={downloadVcf} className="btn-primary">
+            Add us to your contacts
+          </button>
+        )}
+        <button type="button" onClick={copyEmail} className="btn-outline-gold">
+          {copied ? 'Copied' : 'Copy our email address'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -504,7 +542,9 @@ export default function SignStart() {
                 </div>
               </div>
               <div className="mb-5">
-                <label className="form-label" htmlFor="sign-phone">Phone *</label>
+                {/* The number we call AND text. "Phone" read as a landline-era
+                    question; the column is unchanged (INTAKE 2026-08-24). */}
+                <label className="form-label" htmlFor="sign-phone">Mobile number *</label>
                 <input
                   id="sign-phone"
                   type="tel"
@@ -532,12 +572,29 @@ export default function SignStart() {
                 <input
                   id="sign-confirm-email"
                   type="email"
-                  className="form-input"
+                  className={`form-input${
+                    confirmEmail.trim() && !emailsMatch ? ' border-red-400' : ''}`}
                   required
                   value={confirmEmail}
                   onChange={(e) => setConfirmEmail(e.target.value)}
                   autoComplete="email"
+                  aria-invalid={Boolean(confirmEmail.trim()) && !emailsMatch}
+                  aria-describedby="sign-confirm-email-note"
                 />
+                {/* Live, at the field, and only once they have typed something —
+                    flagging "these don't match" against an empty box is noise. */}
+                {confirmEmail.trim() && !emailsMatch && (
+                  <p id="sign-confirm-email-note" role="alert" className="form-error mt-1 text-sm">
+                    {email.trim() && !emailValid
+                      ? 'That email address doesn’t look right yet.'
+                      : 'These two email addresses don’t match.'}
+                  </p>
+                )}
+                {confirmEmail.trim() && emailsMatch && (
+                  <p id="sign-confirm-email-note" className="text-sm text-green-700 mt-1">
+                    Addresses match.
+                  </p>
+                )}
               </div>
               {/* The fourth value (D22 §0). It lands on the contact record, and the
                   contract composes {{...ADDRESS}} from it — nothing types an address
@@ -624,7 +681,16 @@ export default function SignStart() {
               )}
               <button
                 type="submit"
-                disabled={submitting || !firstName || !lastName || !phone || !email || !confirmEmail
+                /* ⚠️ `emailsMatch` WAS COMPUTED AND NEVER USED HERE. It gated the
+                   submit HANDLER (which rejects) and the server rejects too, so
+                   nothing bad got through — but the button stayed enabled on a
+                   mismatch, invited the click, and answered with a message
+                   instead of pointing at the field. Owner, 2026-08-24: "i changed
+                   one to a different email and it doesnt flag it... didnt refuse
+                   to proceed." A confirm field that does not visibly confirm is
+                   worse than no confirm field: it buys trust it has not earned. */
+                disabled={submitting || !firstName || !lastName || !phone
+                  || !emailsMatch
                   || (addressRequired && !addressFilled)}
                 className="btn-primary w-full justify-center"
               >

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Plus, X } from 'lucide-react';
 import {
   categoryDocumentDefaults, setContactRequiredDocuments,
+  requestDocumentsFromContact, DISPOSITION_LABEL, type DocumentDisposition,
   getContactRequiredDocumentsState, skipRequiredDocument, unskipRequiredDocument,
   onboardingTemplateOptions,
   adminAttachOfferings, staffAssignableTemplates, staffAssignDocuments,
@@ -426,6 +427,12 @@ export function PaperworkEditor({ contactId }: { contactId: string }) {
   // on the record (who/when/why) but stops blocking and is never asked.
   const [skipInfo, setSkipInfo] = useState<Map<string, RequiredDocumentState>>(new Map());
   const [saved, setSaved] = useState(true);
+  /* OFFERINGDOCS §11 — ticking a box was SILENT. set_contact_required_documents
+     writes an audit row and nothing else, so a person could owe four documents
+     and have no way to discover it. This is the act that tells them. */
+  const [disposition, setDisposition] = useState<DocumentDisposition>('WHEN_READY');
+  const [sending, setSending] = useState(false);
+  const [sentNote, setSentNote] = useState<string | null>(null);
   // NOSTRIP: this editor's save can now be REFUSED — executed paperwork is
   // evidence and is never removed. A refusal that lands in an empty catch is
   // indistinguishable from a save, so it is shown.
@@ -506,6 +513,35 @@ export function PaperworkEditor({ contactId }: { contactId: string }) {
     }
   }
 
+  /** The assigned, unsigned, unskipped set — what asking them is actually about. */
+  const outstanding = Array.from(checked).filter((k) => {
+    const st = skipInfo.get(k);
+    return !st?.satisfied && !st?.skipped_at;
+  });
+
+  async function askThem() {
+    setSending(true); setError(null); setSentNote(null);
+    try {
+      const r = await requestDocumentsFromContact(contactId, outstanding, disposition);
+      const n = `${r.count} document${r.count === 1 ? '' : 's'}`;
+      // ⚠️ NEVER REPORT AN EMAIL THAT DID NOT GO. The requirement and the
+      // notification are committed before the mailer runs, so "asked" and
+      // "emailed" are separate facts and this says which is which.
+      setSentNote(
+        !r.has_account
+          ? `Set on their record. They have no login yet, so nothing was sent — `
+            + `${r.count === 1 ? 'it' : 'they'} will be waiting when they activate.`
+          : r.emailed
+            ? `Asked for ${n}. Email sent to ${r.email}, and it's on their dashboard — `
+              + `they'll see ${r.count === 1 ? 'it' : 'them'} at every sign-in until signed.`
+            : `Asked for ${n} — it's on their dashboard, but the email did NOT send`
+              + `${r.emailError ? `: ${r.emailError}` : '.'}`);
+      loadState();
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not ask them for those documents.'));
+    } finally { setSending(false); }
+  }
+
   return (
     <section className="bg-white border border-green-800/10 rounded-xl p-5 mt-4">
       <div className="flex items-center justify-between mb-1">
@@ -517,6 +553,45 @@ export function PaperworkEditor({ contactId }: { contactId: string }) {
         {' '}Signed paperwork stays on the record — it is the evidence they were asked and agreed.
       </p>
       {error && <p className="form-error mb-3" role="alert">{error}</p>}
+
+      {/* ⚠️ ASKING IS ITS OWN ACT, AND IT SAYS WHEN (OFFERINGDOCS §10/§11).
+          Owner: "if i want to send them docs to sign i can select them from a
+          list by checking them off... and they get an email notification, a
+          dashboard notification, and on their login the docs are shown to them."
+          The list is the checkboxes below — this is the part that was missing.
+          `disposition` is the three-way decision, and it now lives on the
+          ASSIGNMENT rather than on the template, so the same document can be
+          demanded of one person and merely asked of another. */}
+      {outstanding.length > 0 && (
+        <div className="rounded-lg border border-gold-600/40 bg-gold-50/50 p-3 mb-3">
+          <p className="text-[13px] text-green-900 mb-2">
+            <strong className="font-medium">{outstanding.length} outstanding.</strong>{' '}
+            When do they need to sign?
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <select className="form-input w-auto text-sm" value={disposition}
+              aria-label="When this paperwork is due"
+              onChange={(e) => setDisposition(e.target.value as DocumentDisposition)}>
+              {(['WHEN_READY', 'AT_LOGIN', 'WITH_CONTRACT'] as DocumentDisposition[]).map((d) => (
+                <option key={d} value={d}>{DISPOSITION_LABEL[d]}</option>
+              ))}
+            </select>
+            <button type="button" className="btn-primary text-xs py-1.5 px-3"
+              disabled={sending} onClick={() => void askThem()}>
+              {sending ? 'Asking…' : 'Ask them to sign'}
+            </button>
+          </div>
+          <p className="text-[11.5px] text-muted mt-1.5">
+            {disposition === 'AT_LOGIN'
+              ? 'They can’t use the app until these are signed.'
+              : disposition === 'WITH_CONTRACT'
+                ? 'Held back until their contract executes, then signed with it.'
+                : 'Shown at every sign-in until signed — they can leave it for later.'}
+          </p>
+          {sentNote && <p className="text-[12.5px] text-green-800 mt-2">{sentNote}</p>}
+        </div>
+      )}
+
       <div className="grid sm:grid-cols-2 gap-2.5">
         {templates.map((t) => (
           <label key={t.key}

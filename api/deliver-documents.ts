@@ -44,7 +44,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
 import type { EmailAttachment } from './_lib/email.js';
-import { renderDocumentPdf, pdfFileName } from './_lib/documentPdf.js';
+import { renderDocumentPdf, partyPdfFileName } from './_lib/documentPdf.js';
 import { resolveMinorRecipient, notifyMinorRecipientsSkipped } from './_lib/delivery.js';
 import type { GuardianRecipient } from './_lib/delivery.js';
 import { renderEmailTemplate } from './_lib/emailTemplates.js';
@@ -165,18 +165,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 2. Render each document to a PDF once (party version = rules-tail stripped).
-    const pdfs: Array<{ docId: string; attachment: EmailAttachment }> = [];
+    /* ⚠️ THE BYTES ARE SHARED; THE FILENAME IS NOT (owner, 2026-08-24: "we lost
+       the file name personalization, the names are generic, it doesnt have our
+       company name nor the persons name").
+
+       This built ONE attachment list with `pdfFileName(title)` — title only — and
+       handed the same list to every recipient. The single-document path has had
+       signer-attributed names since 2026-08-02; the SET path, which is what a
+       new member actually receives, never got them. Rendering stays once per
+       document — only the name is now built per person. */
+    const pdfs: Array<{ docId: string; title: string; bytes: Uint8Array }> = [];
     for (const d of docs) {
       const text = stripFacilityRulesTail(d.merged_body ?? '');
       const bytes = await renderDocumentPdf(d.title, text);
-      pdfs.push({
-        docId: d.id,
-        attachment: { filename: pdfFileName(d.title), content: bytes, contentType: 'application/pdf' },
-      });
+      pdfs.push({ docId: d.id, title: d.title, bytes });
     }
-    // the whole set, in one list — the company file copy's attachments. Party
-    // copies are scoped per recipient inside the loop below.
-    const allAttachments = pdfs.map((p) => p.attachment);
+    const sentAt = new Date();
+    /** One document, named for the person receiving it. */
+    const attachmentFor = (
+      x: { title: string; bytes: Uint8Array },
+      first: string | null | undefined,
+      last: string | null | undefined,
+    ): EmailAttachment => ({
+      filename: partyPdfFileName(x.title, first, last, sentAt, identity.fromName),
+      content: x.bytes,
+      contentType: 'application/pdf',
+    });
 
     // 3. Recipients: default = union of all documents' parties, grouped by
     // contact. Targeted = only the requested contacts (resolved straight from
@@ -252,7 +266,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const pendingIds = new Set(pending.map((d) => d.id));
       // Attach exactly what is being delivered now: nothing that is not theirs,
       // and nothing they have already been sent.
-      const attachments = pdfs.filter((x) => pendingIds.has(x.docId)).map((x) => x.attachment);
+      const attachments = pdfs.filter((x) => pendingIds.has(x.docId))
+        .map((x) => attachmentFor(x, party.contacts?.first_name, party.contacts?.last_name));
       const titles = pending.map((d) => d.title);
 
       let toEmail = party.contacts?.email ?? null;
@@ -357,7 +372,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             fromEmail: identity.fromEmail,
             subject: mirrorEmail.subject,
             html: mirrorEmail.html,
-            attachments: allAttachments,
+            // The company's own file copy: every document in the set, named for
+            // the org rather than for a person — nobody signed this copy.
+            attachments: pdfs.map((x) => attachmentFor(x, null, null)),
           })
         : { ok: false as const };
       companyNotified = notice.ok;

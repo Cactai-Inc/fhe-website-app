@@ -17,12 +17,15 @@ import {
   myNameConfirmationState,
   myNavPresence,
   pollDeliveryConfirmed,
+  fetchOfferings,
+  createDraftOrder,
   type OnboardingProfileInput,
   type OnboardingPurchase,
   type OnboardingState,
   type StandingCategory,
   type NavPresence,
 } from '../../lib/api';
+import type { Offering } from '../../lib/types';
 import OrderPayment from '../../components/order/OrderPayment';
 import type { Order, OrderItem, Payment } from '../../lib/types';
 import { signMyDocument } from '../../lib/ops/api-client';
@@ -80,7 +83,22 @@ import { consumeWallReturnDestination } from '../../lib/wallReturn';
 // time(s) for each at the time they onboard." It is skipped entirely — exactly as
 // §C10a skips the horse step — for an order with no `recurring` line, because a
 // punch-card buyer has no standing time to choose.
-type Step = 'order' | 'details' | 'horse' | 'sign' | 'payment' | 'slots' | 'done';
+type Step = 'order' | 'details' | 'horse' | 'shop' | 'sign' | 'payment' | 'slots' | 'done';
+
+/* ⚠️ THE EVALUATION LESSON IS THE FIRST PURCHASE (owner, 2026-08-24).
+   "the evaluation lesson should be highlighted with a gold outline so they know
+   that is the first thing to look at and it clearly states that its the first
+   thing they do for a lesson, they can purchase more than that but they should
+   always purchase this before they can buy anything else... we can gate it so the
+   others are not selectable and slightly grayed out but still very readable."
+
+   Matched on SERVICE + the offering's own name rather than a hardcoded id: an id
+   in a function body is the MEDIA_RELEASE class, and this one would silently stop
+   gating anything the day the offering is re-priced into a new row. */
+function isEvaluationOffering(o: { name?: string | null; service_type?: string | null }): boolean {
+  return (o.service_type ?? '') === 'RIDING_LESSON'
+    && /evaluation/i.test(o.name ?? '');
+}
 
 /** The plain profile fields (the name, minor toggle + fields are tracked apart). */
 type ProfileFormFields = Omit<
@@ -90,6 +108,8 @@ type ProfileFormFields = Omit<
 
 const EMPTY_FORM: Required<ProfileFormFields> = {
   phone: '',
+  text_only_phone: '',
+  preferred_contact: '',
   date_of_birth: '',
   address_street: '',
   address_city: '',
@@ -255,6 +275,11 @@ export default function Onboarding() {
   // the step, and the step machine below honours it whatever the paperwork says.
   const [searchParams] = useSearchParams();
   const wantsSlots = searchParams.get('step') === 'slots';
+  /* THE REACH for the first-lesson shop (owner, 2026-08-24): the dashboard card
+     links here, so somebody who closed the shop mid-flow can pick it back up.
+     Same idiom as `?step=slots` — one query parameter, honoured over whatever the
+     paperwork would otherwise choose. */
+  const wantsShop = searchParams.get('step') === 'shop';
   const { hasModule } = useAuth();
   const propertyTerm = usePropertyTerm();
   // I6 — the app-overview modal's page list now mirrors AppLayout's canonical
@@ -277,6 +302,13 @@ export default function Onboarding() {
 
   // Step 1 — details form
   const [form, setForm] = useState<Required<ProfileFormFields>>(EMPTY_FORM);
+  // ── The shop step (owner, 2026-08-24). Rider offerings, evaluation first.
+  const [shopOfferings, setShopOfferings] = useState<Offering[]>([]);
+  const [shopPicked, setShopPicked] = useState<string[]>([]);
+  const [shopBusy, setShopBusy] = useState(false);
+  const [shopError, setShopError] = useState<string | null>(null);
+  /** They bought through the shop step just now, so WE book the first lesson. */
+  const [weBookThisOne, setWeBookThisOne] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   // Name: email-only invites arrive nameless — collect it here. Prefilled from
@@ -397,7 +429,13 @@ export default function Onboarding() {
     setPayError(null);
     const purchaseId = state?.purchase?.purchase_id ?? null;
     try {
-      if (!purchaseId) { setStep('done'); return; }
+      /* ⚠️ NO ORDER YET => GO SHOPPING, not to a dead end (owner, 2026-08-24):
+         "at the end of the document signing, it should take me to the offerings
+         booking page for riding lessons so i can proceed with adding something."
+         A self-onboarding rider arrives with nothing bought — this used to end
+         their flow on a congratulations screen with no way to buy the lesson the
+         whole exercise was about. */
+      if (!purchaseId) { setStep('shop'); return; }
       const [o, p, sl] = await Promise.all([
         getOrder(purchaseId), getOrderPayment(purchaseId), fetchMyStandingSlots(),
       ]);
@@ -418,6 +456,44 @@ export default function Onboarding() {
     setOrder(o);
     setPayment(p);
     if (o && o.status === 'paid') finishPayment();
+  }
+
+  /** Load the rider catalog the first time the shop step is reached. */
+  useEffect(() => {
+    if (step !== 'shop' || shopOfferings.length > 0) return;
+    fetchOfferings()
+      .then((all) => setShopOfferings(all.filter(
+        (o) => o.segment === 'rider' && o.active
+          && o.config_kind !== 'inquire' && o.price_amount != null)))
+      .catch(() => setShopError('We could not load the lesson options. You can browse them from the Shop.'));
+  }, [step, shopOfferings.length]);
+
+  /** Buy what they picked, then go to payment.
+   *
+   *  ⚠️ THE BOOKING STEP IS DELIBERATELY SKIPPED ON THIS FIRST PASS. Owner,
+   *  2026-08-24: "the difference with this flow is we are sending the url for them
+   *  to self onboard and they add the offering and get the payment information
+   *  page but we skip booking, we handle the booking step for them on this first
+   *  pass, from then on they can use the calendar to select a slot and make the
+   *  request." The order opens as a DRAFT (create_my_purchase owns every
+   *  money-bearing column), so staff approve it — which is also what now assigns
+   *  any further paperwork and books the first lesson. */
+  async function buyPicked() {
+    if (shopPicked.length === 0 || shopBusy) return;
+    setShopBusy(true); setShopError(null);
+    try {
+      const { orderId } = await createDraftOrder({
+        items: shopPicked.map((id) => ({ offering_id: id, quantity: 1 })),
+      });
+      const [o, p] = await Promise.all([getOrder(orderId), getOrderPayment(orderId)]);
+      setOrder(o); setPayment(p);
+      setWeBookThisOne(true);
+      setStep('payment');
+    } catch (err) {
+      setShopError(toErrorMessage(err, 'Could not start your order. Staff can set it up for you.'));
+    } finally {
+      setShopBusy(false);
+    }
   }
 
   /** Leaving payment. A weekly membership still owes us its standing time, so that
@@ -468,6 +544,8 @@ export default function Onboarding() {
           setForm((prev) => ({
             ...prev,
             phone: pre?.phone ?? p?.phone ?? '',
+            text_only_phone: pre?.text_only_phone ?? '',
+            preferred_contact: pre?.preferred_contact ?? '',
             date_of_birth: pre?.date_of_birth ?? '',
             // Address comes from the CONTACT only. `profiles` carries a
             // look-alike address block that NOTHING writes (0 of 7 rows
@@ -498,7 +576,8 @@ export default function Onboarding() {
         // Asking for the step by name wins over everything; an unchosen slot wins
         // over "nothing to do".
         const slotOutstanding = sl.some((x) => !x.chosen);
-        if (wantsSlots && sl.length > 0) setStep('slots');
+        if (wantsShop) setStep('shop');
+        else if (wantsSlots && sl.length > 0) setStep('slots');
         else if (!s.needed) setStep(slotOutstanding ? 'slots' : 'done');
         // §C9 — the order screen comes FIRST when there is an order to show.
         else if (s.purchase?.purchase_id) setStep('order');
@@ -561,7 +640,7 @@ export default function Onboarding() {
   }
 
   const upd = (key: keyof ProfileFormFields) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
   async function saveDetails(e: React.FormEvent) {
@@ -854,12 +933,48 @@ export default function Onboarding() {
           <h3 className="form-label mb-3">Contact</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
             <div className="mb-4">
-              <label className="form-label" htmlFor="ob-phone">Phone</label>
-              <input id="ob-phone" type="tel" required className="form-input" value={form.phone} onChange={upd('phone')} />
+              {/* ⚠️ "Phone" WAS THE MOBILE NUMBER ALL ALONG. Owner, 2026-08-24:
+                  "we should be collecting the mobile number on intake not a
+                  'contact number for phone calls', there is no difference with
+                  mobile." Same column, honest label. */}
+              <label className="form-label" htmlFor="ob-phone">Mobile number</label>
+              <input id="ob-phone" type="tel" inputMode="tel" required className="form-input"
+                value={form.phone} onChange={upd('phone')}
+                placeholder={form.phone ? undefined : '(555) 555-5555'} />
+              {!form.phone && (
+                <p className="text-xs text-muted mt-1">
+                  We don&apos;t have a number for you yet — this is the one we&apos;ll call and text.
+                </p>
+              )}
             </div>
             <div className="mb-4">
               <label className="form-label" htmlFor="ob-dob">Date of birth</label>
               <input id="ob-dob" type="date" required className="form-input" value={form.date_of_birth} onChange={upd('date_of_birth')} />
+            </div>
+          </div>
+          {/* The alternate, and how they'd rather be reached. Both optional —
+              "the only difference is if they want to add an alternate number for
+              texts only" (owner), so this asks rather than assumes. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
+            <div className="mb-4">
+              <label className="form-label" htmlFor="ob-text-phone">
+                Texts-only number <span className="text-muted font-normal">(optional)</span>
+              </label>
+              <input id="ob-text-phone" type="tel" inputMode="tel" className="form-input"
+                value={form.text_only_phone} onChange={upd('text_only_phone')}
+                placeholder="A different number for texts" />
+            </div>
+            <div className="mb-4">
+              <label className="form-label" htmlFor="ob-preferred">
+                How should we reach you? <span className="text-muted font-normal">(optional)</span>
+              </label>
+              <select id="ob-preferred" className="form-input"
+                value={form.preferred_contact} onChange={upd('preferred_contact')}>
+                <option value="">No preference</option>
+                <option value="TEXT">Text</option>
+                <option value="CALL">Call</option>
+                <option value="EMAIL">Email</option>
+              </select>
             </div>
           </div>
           <div className="mb-4">
@@ -1259,7 +1374,9 @@ export default function Onboarding() {
                     onChange={(e) => setTypedName(e.target.value)}
                   />
                 </div>
-                <button type="submit" className="btn-outline-gold" disabled={!nameMatches || !esignConsent || signing}>
+                {/* Armed = filled (see .btn-sign). The gate is unchanged: the typed
+                    name must match and e-sign consent must be given. */}
+                <button type="submit" className="btn-sign" disabled={!nameMatches || !esignConsent || signing}>
                   {signing ? 'Signing…' : 'Sign'}
                 </button>
               </form>
@@ -1275,6 +1392,109 @@ export default function Onboarding() {
         </section>
       )}
 
+      {/* ── The shop — the evaluation lesson first ───────────────────────────
+          Owner, 2026-08-24: the evaluation lesson "should be highlighted with a
+          gold outline so they know that is the first thing to look at and it
+          clearly states that its the first thing they do... we can gate it so the
+          others are not selectable and slightly grayed out but still very
+          readable, the evaluation lesson is the first purchase and when they
+          select it the other options become selectable so it indicates they can
+          still add more things."
+
+          GREYED, NOT HIDDEN, and readable — the point of showing the rest is that
+          they can see what they are unlocking. `opacity-60` keeps body text above
+          contrast on cream; the cheaper trick (opacity-40) does not. */}
+      {step === 'shop' && (() => {
+        const evaluation = shopOfferings.find(isEvaluationOffering);
+        const evaluationPicked = !!evaluation && shopPicked.includes(evaluation.id);
+        // Nothing is locked when the catalog has no evaluation lesson to require.
+        const locked = !!evaluation && !evaluationPicked;
+        const toggle = (id: string) => setShopPicked((prev) =>
+          prev.includes(id)
+            // Dropping the evaluation drops everything: it is the prerequisite,
+            // so leaving the extras selected would sell a set we just said is
+            // not orderable.
+            ? (evaluation && id === evaluation.id ? [] : prev.filter((x) => x !== id))
+            : [...prev, id]);
+        const money = (n: number | null) => n == null ? ''
+          : `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 2 })}`;
+
+        return (
+          <section aria-labelledby="ob-shop-heading">
+            <h2 id="ob-shop-heading" className="font-serif text-lg text-green-900 mb-1">
+              Your first lesson
+            </h2>
+            <p className="text-sm text-muted mb-5">
+              Your paperwork is signed. Choose what you&apos;d like to book — we&apos;ll be in
+              touch to schedule your first lesson, and after that you can pick your own
+              times on the Calendar.
+            </p>
+            {shopError && <p role="alert" className="form-error mb-4">{shopError}</p>}
+
+            <div className="flex flex-col gap-3 mb-6">
+              {[...shopOfferings]
+                .sort((a, b) => (isEvaluationOffering(b) ? 1 : 0) - (isEvaluationOffering(a) ? 1 : 0)
+                  || (a.price_amount ?? 0) - (b.price_amount ?? 0))
+                .map((o) => {
+                  const isEval = isEvaluationOffering(o);
+                  const picked = shopPicked.includes(o.id);
+                  const disabled = locked && !isEval;
+                  return (
+                    <button key={o.id} type="button" disabled={disabled}
+                      onClick={() => toggle(o.id)}
+                      aria-pressed={picked}
+                      className={`text-left rounded-lg border p-4 transition-all focus-ring ${
+                        picked ? 'border-green-700 bg-green-50'
+                        : isEval ? 'border-2 border-gold-600 bg-gold-50/40 hover:bg-gold-50'
+                        : disabled ? 'border-green-800/15 bg-white opacity-60 cursor-not-allowed'
+                        : 'border-green-800/15 bg-white hover:border-green-800/40'}`}>
+                      <span className="flex items-start justify-between gap-3">
+                        <span className="min-w-0">
+                          <span className="block text-[15px] text-green-900 font-medium">
+                            {o.name}
+                            {isEval && (
+                              <span className="ml-2 align-middle text-[10px] uppercase tracking-wide
+                                               text-gold-900 bg-gold-200 rounded-full px-2 py-0.5">
+                                Start here
+                              </span>
+                            )}
+                          </span>
+                          {isEval ? (
+                            <span className="block text-[12.5px] text-gold-900 mt-1">
+                              Everyone&apos;s first lesson is an evaluation — it&apos;s how we get
+                              to know your riding. Book this first; everything else opens up once
+                              you do. Allow an extra 30 minutes: arrive 15 minutes early, and the
+                              lesson runs 15 minutes longer than usual.
+                            </span>
+                          ) : (
+                            <span className="block text-[12.5px] text-muted mt-1">
+                              {o.tagline || (disabled ? 'Available once your evaluation lesson is added' : '')}
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-green-900 whitespace-nowrap">{money(o.price_amount)}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button type="button" className="btn-primary text-sm"
+                disabled={shopPicked.length === 0 || shopBusy} onClick={() => void buyPicked()}>
+                {shopBusy ? 'Setting up…' : 'Continue to payment'}
+              </button>
+              {/* "they can also just exit the shopping and we can provision for
+                  them" — leaving is a real answer, not an escape hatch. */}
+              <button type="button" className="text-sm text-muted underline underline-offset-2"
+                onClick={() => setStep('done')}>
+                Skip for now — we&apos;ll set it up with you
+              </button>
+            </div>
+          </section>
+        );
+      })()}
+
       {/* ── Step 3: Payment (sign-before-pay; Zelle at launch) ───────────── */}
       {step === 'payment' && (
         <section aria-labelledby="ob-pay-heading">
@@ -1284,10 +1504,28 @@ export default function Onboarding() {
               booking reads payment state, and this very step ships an "I'll pay
               later — finish" bypass, so the old sentence contradicted both the
               database and the button beneath it. */}
+          {/* ⚠️ TWO DIFFERENT PROMISES, AND ONLY ONE OF THEM IS TRUE PER PATH.
+              Owner, 2026-08-24: on the self-onboarding pass "we skip booking, we
+              handle the booking step for them on this first pass, from then on
+              they can use the calendar." Sending someone to the Calendar for a
+              lesson we have already undertaken to schedule is how they end up
+              with two. */}
           <p className="text-sm text-muted mb-6">
-            Your documents are signed — the last step is payment. Send it below, or
-            finish now and pay later; either way you can book your sessions on the{' '}
-            <Link to="/app/calendar" className="text-green-800 underline">Calendar</Link>.
+            {weBookThisOne ? (
+              <>
+                Your documents are signed and your lesson is reserved — the last step is
+                payment. Send it below, or finish now and pay later; either way{' '}
+                <strong className="text-green-900">we&apos;ll be in touch to schedule this
+                first lesson with you</strong>. After that you can pick your own times on
+                the <Link to="/app/calendar" className="text-green-800 underline">Calendar</Link>.
+              </>
+            ) : (
+              <>
+                Your documents are signed — the last step is payment. Send it below, or
+                finish now and pay later; either way you can book your sessions on the{' '}
+                <Link to="/app/calendar" className="text-green-800 underline">Calendar</Link>.
+              </>
+            )}
           </p>
           {payError && <p role="alert" className="form-error mb-4">{payError}</p>}
           {order ? (

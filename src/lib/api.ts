@@ -287,7 +287,10 @@ export interface OnboardingMinor {
 export interface OnboardingPrefill {
   first_name: string | null;
   last_name: string | null;
+  /** THE mobile number — see OnboardingProfileInput.phone. */
   phone: string | null;
+  text_only_phone: string | null;
+  preferred_contact: string | null;
   /** YYYY-MM-DD */
   date_of_birth: string | null;
   address_street: string | null;
@@ -375,7 +378,16 @@ export interface OnboardingProfileInput {
    *  (which arrive nameless). Fills the contact/profile when currently blank. */
   first_name?: string;
   last_name?: string;
+  /** THE mobile number. `contacts.phone` is the column; "phone" and "mobile" were
+   *  never two facts — owner, 2026-08-24: "there is no difference with mobile."
+   *  Relabelled everywhere rather than rewired (his call, and the data agreed:
+   *  21 contacts had `phone`, 2 had `mobile`). */
   phone?: string;
+  /** An alternate number they only want TEXTS on. Optional, and genuinely
+   *  optional — most people have one number. */
+  text_only_phone?: string;
+  /** How they would rather be reached: TEXT | CALL | EMAIL. */
+  preferred_contact?: string;
   /** YYYY-MM-DD */
   date_of_birth?: string;
   address_street?: string;
@@ -729,11 +741,38 @@ export async function emailMyDocumentCopy(documentId: string): Promise<{ email: 
 }
 
 /** Stage 3f: the signing-wall state for the signed-in person. */
+/**
+ * OFFERINGDOCS/INTAKE — "have they ever bought a riding lesson?"
+ *
+ * Owner, 2026-08-24: the first-lesson prompt must be RECOVERABLE — "they can
+ * close out of it, navigate away from it, but it lives on the dashboard." So it
+ * is derived from the purchases, not written as a notification row: a
+ * notification is a one-shot record and dismissing it would lose the prompt for
+ * good. This appears while it is true and stops the moment they buy.
+ */
+export interface FirstLessonState {
+  has_lesson_purchase: boolean;
+  /** Only riders are prompted — a boarder is not failing to do anything. */
+  is_rider: boolean;
+}
+
+export async function myFirstLessonState(): Promise<FirstLessonState> {
+  const { data, error } = await supabase.rpc('my_first_lesson_state');
+  if (error) throw error;
+  return (data ?? { has_lesson_purchase: true, is_rider: false }) as FirstLessonState;
+}
+
 export interface WallState {
   pending: number;
   wall: boolean;
   staff_banner?: boolean;
   staff: boolean;
+  /** OFFERINGDOCS §12 — documents ASKED for, not demanded. These never wall;
+   *  they are surfaced at every login until signed, and can be dismissed for the
+   *  session. A hard gate and a standing request are different things and the
+   *  app now distinguishes them. */
+  waiting?: number;
+  waiting_titles?: string[];
 }
 /** THE SIGNING WALL — FAILS CLOSED (2026-07-29).
  *

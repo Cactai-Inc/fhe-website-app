@@ -11,7 +11,17 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 const PAGE_W = 612; // US Letter, points
 const PAGE_H = 792;
-const MARGIN = 54; // 0.75"
+/* 0.64" — reduced from 0.75" on 2026-08-24. Owner: "lets reduce the size of the
+   margins to make it so the signature fits on the last page with content."
+   Measured, not guessed: at this value Company Policies drops from four pages to
+   three and its signature block joins the content page. Still a proper legal
+   margin — well clear of the 0.5" most print shops treat as the floor.
+   ⚠️ MARGIN ALONE DOES NOT DELIVER THE GOAL. Measuring all four onboarding
+   documents showed the reduction fixing Company Policies and BREAKING Human
+   Emergency Medical — pulling more body onto earlier pages left its signature
+   block alone on the last one, which it had not been at 0.75". Shrinking the
+   page is a coin flip; the guarantee is the keep-group rule below. */
+const MARGIN = 46;
 const FONT_SIZE = 10;
 const LINE_H = 14;
 const HEADING_SIZE = 11;
@@ -70,6 +80,20 @@ function wrap(text: string, font: import('pdf-lib').PDFFont, size: number, maxWi
 }
 
 /** Render one document body to a PDF, returned as bytes (Uint8Array). */
+/** An unsigned body still carries its literal {{SIG.*}} tokens — generate_document
+ *  leaves `kind = 'signature'` alone because a signature is written when somebody
+ *  signs. The working-copy PDF is exactly that document, so it gets the same
+ *  treatment the on-screen renderer gives it: the date is a fact we know, the
+ *  signature is the one thing we must not invent. */
+function resolveUnsignedSignatureTokens(body: string): string {
+  const stamp = new Date().toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric',
+  });
+  return body
+    .replace(/\{\{SIG\.[A-Z_]+\.DATE\}\}/g, stamp)
+    .replace(/\{\{SIG\.[A-Z_]+\.(?!DATE)[A-Z_]+\}\}/g, '');
+}
+
 export async function renderDocumentPdf(title: string, body: string): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.TimesRoman);
@@ -123,8 +147,57 @@ export async function renderDocumentPdf(title: string, body: string): Promise<Ui
     y -= LINE_H + 2;
   };
 
-  const sourceLines = body.replace(/\r\n/g, '\n').split('\n');
-  for (const raw of sourceLines) {
+  /* ⚠️ KEEP A HEADING WITH ITS CONTENT (owner, 2026-08-24).
+     "facility rules doc page 2 has section 11 title on the page but the content
+     is on page 3", and earlier the same for sections 8 and 15 of the participant
+     release.
+
+     The renderer only ever broke when it RAN OUT of room — `y < MARGIN + LINE_H`
+     — so a heading that happened to fit on the last line of a page took it, and
+     its first sentence started the next one. Nothing was wrong with any
+     individual section; it is where the text happened to fall.
+
+     Nudging one heading would just move the orphan somewhere else, which is why
+     the owner's follow-up question ("then check to see if that affected section
+     19") is the right one to ask and the wrong one to have to ask. So this is a
+     RULE: before drawing a heading, look ahead at what follows it and break
+     FIRST unless the heading and the opening of its content fit together. Every
+     section is covered, including ones nobody has looked at yet. */
+  const KEEP_LINES_WITH_HEADING = 2;
+  /* ⚠️ THE SIGNATURE BLOCK IS NEVER ALONE ON A PAGE. Owner, 2026-08-24: "client
+     signature block is on its own page as the only item."
+
+     A signature that has drifted away from everything it relates to reads as an
+     afterthought on a legal instrument, and no margin is guaranteed to prevent
+     it — the measurement above proved a smaller page can cause it as easily as
+     cure it. So the block and the closing text before it are laid out as ONE
+     group: if they do not fit together, the break happens before the closing
+     text, and the last page carries both. */
+  const KEEP_LINES_BEFORE_SIGNATURE = 2;
+  const isSignatureBlockLine = (t: string) =>
+    /^(CLIENT|COMPANY|LESSEE|LESSOR|BUYER|SELLER)$/.test(t.trim())
+    || /^(Date|Printed Name|Signature|By \(signature\)|Phone|Email|Title):/.test(t.trim());
+
+  /** Index of the first line of the signature block, or -1. */
+  const signatureStart = (() => {
+    const ls = body.replace(/\r\n/g, '\n').split('\n');
+    for (let k = 0; k < ls.length; k += 1) {
+      if (!isSignatureBlockLine(ls[k])) continue;
+      // A heading-shaped party word only starts the block when signature lines
+      // actually follow — "CLIENT" appears in prose throughout these templates.
+      let n = k + 1; let sawField = false;
+      while (n < ls.length && n <= k + 4) {
+        if (/^(Date|Printed Name|Signature):/.test(ls[n].trim())) { sawField = true; break; }
+        n += 1;
+      }
+      if (sawField) return k;
+    }
+    return -1;
+  })();
+
+  const sourceLines = resolveUnsignedSignatureTokens(body).replace(/\r\n/g, '\n').split('\n');
+  for (let i = 0; i < sourceLines.length; i += 1) {
+    const raw = sourceLines[i];
     if (raw.trim() === '') {
       y -= LINE_H * 0.5; // blank line = half-line of vertical space
       continue;
@@ -137,7 +210,56 @@ export async function renderDocumentPdf(title: string, body: string): Promise<Ui
     const heading = isHeading(raw);
     const size = heading ? HEADING_SIZE : FONT_SIZE;
     const useFont = heading ? bold : font;
-    for (const wrapped of wrap(raw, useFont, size, maxWidth)) {
+    const headingLines = wrap(raw, useFont, size, maxWidth);
+
+    if (heading) {
+      // The next non-blank source line is this heading's content. Measure the
+      // opening of it, wrapped exactly as it will be drawn — an estimate would
+      // be wrong for precisely the long headings that cause the problem.
+      let j = i + 1;
+      while (j < sourceLines.length && sourceLines[j].trim() === '') j += 1;
+      const followLines = j < sourceLines.length && !isHeading(sourceLines[j])
+        ? wrap(sourceLines[j], font, FONT_SIZE, maxWidth) : [];
+      const keep = Math.min(KEEP_LINES_WITH_HEADING, followLines.length);
+      const needed = headingLines.length * (LINE_H + 2)
+        + keep * LINE_H
+        + (j > i + 1 ? LINE_H * 0.5 : 0);   // the blank line between them
+      // Break BEFORE the heading rather than after it.
+      if (keep > 0 && y - needed < MARGIN) {
+        page = pdf.addPage([PAGE_W, PAGE_H]);
+        y = PAGE_H - MARGIN;
+      }
+    }
+
+    /* Approaching the signature block: measure this line plus everything left of
+       the block, and break now if the group will not fit. `i` is checked against
+       the block start so this fires on the closing paragraph, not inside the
+       block itself — once we are in it, there is nothing left to pull along. */
+    if (!heading && signatureStart >= 0 && i < signatureStart) {
+      let nonBlankAhead = 0;
+      for (let k = i + 1; k < signatureStart; k += 1) {
+        if (sourceLines[k].trim() !== '') nonBlankAhead += 1;
+      }
+      if (nonBlankAhead < KEEP_LINES_BEFORE_SIGNATURE) {
+        let needed = headingLines.length * LINE_H;
+        for (let k = i + 1; k < sourceLines.length; k += 1) {
+          const t = sourceLines[k];
+          if (t.trim() === '') { needed += LINE_H * 0.5; continue; }
+          const sg = signatureSplit(t);
+          const f2 = isHeading(t) ? bold : font;
+          const s2 = isHeading(t) ? HEADING_SIZE : FONT_SIZE;
+          needed += sg
+            ? LINE_H + 2
+            : wrap(t, f2, s2, maxWidth).length * (isHeading(t) ? LINE_H + 2 : LINE_H);
+        }
+        if (y - needed < MARGIN) {
+          page = pdf.addPage([PAGE_W, PAGE_H]);
+          y = PAGE_H - MARGIN;
+        }
+      }
+    }
+
+    for (const wrapped of headingLines) {
       drawLine(wrapped, useFont, size);
     }
   }
@@ -165,18 +287,27 @@ export function partyPdfFileName(
   signerFirstName: string | null | undefined,
   signerLastName: string | null | undefined,
   executedAt: Date,
+  /** The tenant's own name. Owner, 2026-08-24: "we lost the file name
+   *  personalization, the names are generic, it doesnt have our company name nor
+   *  the persons name." Optional so the one-argument callers keep working. */
+  brandName?: string | null,
 ): string {
-  const base = (title || 'Document')
-    .replace(/[^a-zA-Z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .slice(0, 80) || 'Document';
-  const initials = [signerFirstName, signerLastName]
-    .map((n) => (n || '').trim().charAt(0))
-    .join('')
-    .toLowerCase();
+  const slug = (v: string, max: number) => (v || '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, max);
+  const base = slug(title || 'Document', 60) || 'Document';
+  /* ⚠️ THE PERSON'S NAME, not their initials. The 2026-08-02 spec used lowercase
+     initials ("cjz"), which is unreadable in a Downloads folder six months later
+     and is what the owner is describing as missing. Full name where we have it,
+     falling back to initials, falling back to nothing. */
+  const who = slug([signerFirstName, signerLastName].filter(Boolean).join(' '), 40)
+    || [signerFirstName, signerLastName].map((n) => (n || '').trim().charAt(0)).join('').toLowerCase();
+  const brand = slug(brandName ?? '', 40);
   const mm = String(executedAt.getUTCMonth() + 1).padStart(2, '0');
   const dd = String(executedAt.getUTCDate()).padStart(2, '0');
   const yy = String(executedAt.getUTCFullYear()).slice(-2);
-  const suffix = [initials, `${mm}_${dd}_${yy}`].filter(Boolean).join('_');
-  return suffix ? `${base}_${suffix}.pdf` : `${base}.pdf`;
+  // Document first — it is what the reader is looking for; then who signed it,
+  // then whose paperwork it is, then when.
+  return [base, who, brand, `${mm}_${dd}_${yy}`].filter(Boolean).join('_') + '.pdf';
 }

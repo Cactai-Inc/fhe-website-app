@@ -9,6 +9,7 @@ import {
   AssignDocumentsModal, ClientHorseRecordsCard, AttachOfferingPanel, PaperworkEditor,
 } from './ClientRecordActions';
 import { ProvisionClientForm } from './ProvisionClientForm';
+import { TAG_LABEL, TAG_REASON } from '../../lib/admin';
 import { AgreedLessonSection, type AgreedLesson } from './AgreedLessonPanel';
 import { StaffStandingSlotSection } from './StandingSlotPicker';
 
@@ -35,8 +36,15 @@ const FIELD_GROUPS: { title: string; fields: [string, string][] }[] = [
   { title: 'Name and contact', fields: [
     ['first_name', 'First name'], ['last_name', 'Last name'],
     ['email', 'Email'],
-    ['phone', 'Phone'], ['phone_ext', 'Phone ext.'],
-    ['mobile', 'Mobile'], ['mobile_ext', 'Mobile ext.'],
+    /* ⚠️ ONE MOBILE NUMBER (INTAKE 2026-08-24). `phone` and `mobile` were never
+       two facts — owner: "there is no difference with mobile." `phone` is the
+       column with the data (21 contacts vs 2) so it keeps the data and gets the
+       honest label; `mobile`, `mobile_ext` and `phone_ext` leave this editor
+       (columns retained, D32 — `mobile`'s two values were folded into `phone`,
+       and both ext columns were empty on every contact). */
+    ['phone', 'Mobile number'],
+    ['text_only_phone', 'Texts-only number'],
+    ['preferred_contact', 'Preferred contact'],
     ['whatsapp', 'WhatsApp'],
     ['date_of_birth', 'Date of birth'],
   ]},
@@ -222,8 +230,19 @@ export function ContactDossierModal({
                       {d.standing.is_client && (
                         <span className="text-[11px] px-2.5 py-1 rounded-full bg-green-800 text-white">Client</span>
                       )}
+                      {/* ⚠️ DERIVED TAGS, AND THEY SAY WHY (OFFERINGDOCS 2026-08-24).
+                          These are applied automatically — by a purchase, a horse,
+                          a file, or a contract — and never ticked by anyone. They
+                          used to render as raw tokens (HORSE_OWNER, and now
+                          DEAL_PARTY), which reads as a system value rather than a
+                          fact about a person. The reason rides in the tooltip
+                          because a tag nobody can account for is a tag nobody
+                          trusts — the same rule CATEGORISE applied to prefills. */}
                       {d.standing.groups.map((g) => (
-                        <span key={g} className="text-[11px] px-2.5 py-1 rounded-full bg-cream-100 text-secondary border border-green-800/10">{g}</span>
+                        <span key={g} title={TAG_REASON[g] ?? 'derived from their record'}
+                          className="text-[11px] px-2.5 py-1 rounded-full bg-cream-100 text-secondary border border-green-800/10 cursor-help">
+                          {TAG_LABEL[g] ?? g}
+                        </span>
                       ))}
                     </div>
                   </div>

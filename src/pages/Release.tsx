@@ -463,7 +463,7 @@ export default function Release() {
                   </span>
                 </label>
                 {error && <p className="form-error mt-4" role="alert">{error}</p>}
-                <button type="submit" disabled={!canSign || !preview} className="btn-primary mt-6 w-full justify-center">
+                <button type="submit" disabled={!canSign || !preview} className="btn-sign mt-6 w-full justify-center">
                   {signing ? 'Recording your signature…' : 'Sign the release'}
                 </button>
               </div>

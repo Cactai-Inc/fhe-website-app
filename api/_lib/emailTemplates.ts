@@ -177,17 +177,93 @@ function emit(nodes: Node[], vars: TokenMap, item: unknown, missing: Set<string>
 
 /** Render one template string. Exported for the subject line and for the
  *  byte-identity harness, which renders without touching the database. */
+/**
+ * HTML-escape a value before it goes into a rendered template.
+ *
+ * ⚠️ THIS IS THE THIRD COPY OF THESE THREE REPLACEMENTS in api/ — the other two
+ * are private functions in `notifications-nudge.ts` and `paymentRequest.ts`. It
+ * is exported from here, beside the renderer every caller already imports, so a
+ * fourth is never needed. The two incumbents are left alone deliberately: they
+ * are byte-identical and rewriting a working mail path to save six lines is not
+ * worth the risk. Point new callers here.
+ */
+export function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 export function renderTemplateString(src: string, vars: TokenMap): { text: string; missing: string[] } {
   const missing = new Set<string>();
   const text = emit(parse(src), vars, undefined, missing);
   return { text, missing: Array.from(missing) };
 }
 
+/* ───────────────────────── the branded shell ─────────────────────────
+ * ⚠️ EVERY EMAIL THIS SYSTEM SENDS WAS UNSTYLED. Owner, 2026-08-24, on the
+ * signed-documents email: "the email itself is completely unstyled just like the
+ * welcome email with the invitation to activate link."
+ *
+ * He is right, and the reason is structural: `email_templates.body` holds a
+ * FRAGMENT — a few <p> and <ul> tags — and `renderEmail` handed that fragment
+ * straight to the mail provider as the whole document. No <html>, no background,
+ * no typography, no brand. Twenty-two templates, all of them bare.
+ *
+ * So the shell goes HERE, in the one function every template already passes
+ * through, rather than into twenty-two rows that would then have to be kept in
+ * step with each other. The bodies are untouched: whatever a template renders is
+ * dropped into the card exactly as it was, so no email's CONTENT changes today.
+ *
+ * EMAIL HTML IS NOT WEB HTML, and the constraints below are the reason this looks
+ * like 2004:
+ *   · tables, because Outlook's engine is Word and it does not do flexbox;
+ *   · inline styles only — Gmail strips <style> blocks in many contexts;
+ *   · no webfonts, no external CSS, no images (an image would need hosting and
+ *     would be blocked by default in most clients anyway);
+ *   · a max-width of 600px, the width every client renders without scaling.
+ */
+const BRAND_GREEN = '#143321';   // green-800, the brand green
+const BRAND_GOLD = '#ba9935';    // gold-600
+const PAGE_BG = '#f5f0e8';       // cream-100
+const INK = '#0d2118';           // green-900
+
+export function wrapEmailHtml(inner: string, brandName: string): string {
+  const safeBrand = escapeHtml(brandName || '');
+  return `<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+</head>
+<body style="margin:0;padding:0;background:${PAGE_BG};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="background:${PAGE_BG};padding:24px 12px;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
+           style="width:100%;max-width:600px;background:#ffffff;border:1px solid rgba(20,51,33,0.10);">
+      <tr><td style="height:4px;background:${BRAND_GOLD};font-size:0;line-height:0;">&nbsp;</td></tr>
+      ${safeBrand ? `<tr><td style="padding:20px 32px 0 32px;">
+        <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:18px;
+                  letter-spacing:0.02em;color:${BRAND_GREEN};">${safeBrand}</p>
+      </td></tr>` : ''}
+      <tr><td style="padding:20px 32px 28px 32px;font-family:-apple-system,BlinkMacSystemFont,
+                     'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;
+                     color:${INK};">
+        ${inner}
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+}
+
 /** Render a loaded row (subject + body) against one token map. */
 export function renderEmail(tpl: Pick<EmailTemplateRow, 'subject' | 'body'>, vars: TokenMap): RenderedEmail {
   const s = renderTemplateString(tpl.subject, vars);
   const b = renderTemplateString(tpl.body, vars);
-  return { subject: s.text, html: b.text, missing: Array.from(new Set([...s.missing, ...b.missing])) };
+  // The body is a FRAGMENT and always has been; the shell is what turns it into
+  // a document. A template that already renders its own <html> is left alone, so
+  // this can never wrap a full document twice.
+  const brand = String(vars['ORG.BRAND_NAME'] ?? '');
+  const html = /<html[\s>]/i.test(b.text) ? b.text : wrapEmailHtml(b.text, brand);
+  return { subject: s.text, html, missing: Array.from(new Set([...s.missing, ...b.missing])) };
 }
 
 /* ───────────────────────── loading ───────────────────────── */
