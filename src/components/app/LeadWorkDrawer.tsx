@@ -605,8 +605,13 @@ export function LeadWorkDrawer({ request, onClose, onChanged }: LeadWorkDrawerPr
               lastName={invite.lastName}
               agreedLesson={agreedLesson}
               onProvisioned={(r) => {
+                /* PAMELA §A: a SAVE sent nothing. Reporting "confirmation sent"
+                   and flipping the lead to `invited` would be a false statement
+                   about an email that deliberately did not happen — the form
+                   shows its own saved confirmation instead. */
+                if (r.inviteStatus === 'draft') { changed({ ...selected }); return; }
                 setInviteResult({
-                  url: r.registerUrl,
+                  url: r.registerUrl ?? '',
                   emailed: r.emailed,
                   offeringLabel: r.offeringLabel ?? undefined,
                   // From what the act RETURNED, not from what we sent it.
@@ -619,15 +624,20 @@ export function LeadWorkDrawer({ request, onClose, onChanged }: LeadWorkDrawerPr
                     : 'Confirmation sent — invitation created.',
                 );
               }}
-            >
-              <AgreedLessonPanel
-                proposedTimes={selected.proposed_times}
-                ridingExperience={ridingExperience(selected.notes)}
-                value={agreedFields}
-                onChange={setAgreedFields}
-                horses={horses}
-              />
-            </ProvisionClientForm>
+              /* PAMELA §A — the agreed-time panel moves to the gated `scheduling`
+                 slot: it renders for a rider or a scheduling-shaped order and not
+                 otherwise. A lead who asked about a lease or a clipping is not
+                 asked to pick a lesson time. */
+              scheduling={(
+                <AgreedLessonPanel
+                  proposedTimes={selected.proposed_times}
+                  ridingExperience={ridingExperience(selected.notes)}
+                  value={agreedFields}
+                  onChange={setAgreedFields}
+                  horses={horses}
+                />
+              )}
+            />
             <div className="flex justify-end mt-3">
               <button type="button" className="btn-outline-gold text-sm" onClick={() => setInviteOpen(false)}>
                 Back

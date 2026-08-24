@@ -24,6 +24,7 @@ import {
  */
 
 const STATE_STYLE: Record<InviteLinkState, { label: string; chip: string }> = {
+  draft:    { label: 'Not sent', chip: 'bg-gold-50 text-gold-900 border-gold-400' },
   current:  { label: 'Current',  chip: 'bg-green-100 text-green-900 border-green-300' },
   retired:  { label: 'Retired',  chip: 'bg-cream-100 text-secondary border-green-800/20' },
   expired:  { label: 'Expired',  chip: 'bg-amber-50 text-amber-900 border-amber-300' },
@@ -113,7 +114,8 @@ export function InvitationHistoryPanel({ contactId, email, refreshKey, onResent 
       <p className="text-[12px] text-muted mb-3">
         Every link ever issued to this person. Only the <strong>current</strong> one activates
         an account — retired and expired links are kept so you can recognise one read to you
-        over the phone.
+        over the phone. A <strong>Not sent</strong> link belongs to an account that has been
+        created and never emailed; it works, but nobody has been given it.
       </p>
 
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
@@ -156,7 +158,9 @@ export function InvitationHistoryPanel({ contactId, email, refreshKey, onResent 
                                  bg-white border border-green-800/15 rounded px-2 py-1.5">
                   {url}
                 </code>
-                <CopyButton value={url} label={`Copy the ${style.label.toLowerCase()} activation link`} />
+                <CopyButton value={url}
+                  label={state === 'draft' ? 'Copy this account’s activation link'
+                    : `Copy the ${style.label.toLowerCase()} activation link`} />
                 {state === 'current' && (
                   <button type="button" disabled={busyId === row.id}
                     onClick={() => void resend(row)}

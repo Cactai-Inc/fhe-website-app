@@ -1,18 +1,45 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { toErrorMessage } from '../../lib/ops/errors';
 import {
   adminSendInvitation, categoryDocumentDefaults, suggestedCategoryForContact,
   onboardingTemplateOptions, matchesCategoryToken, requestOnboardingCategories,
   getContactRequiredDocumentsState, narrowContactRequiredDocuments,
+  contactProvisioningDraft,
   CLIENT_CATEGORIES, CATEGORY_TOKEN, type CategoryDocDefault,
   type AdminInviteResult, type RequiredDocumentState,
 } from '../../lib/admin';
-import { fetchOfferings } from '../../lib/api';
+import { fetchOfferings, contactDossier, updateContactRecord } from '../../lib/api';
 import { InviteResultPanel } from './InviteResultPanel';
 import type { AgreedLesson } from './AgreedLessonPanel';
 import type { Offering, Segment } from '../../lib/types';
 
 /**
+ * ⚠️ TASK-PAMELA §A — THE ACCOUNT IS REAL WHEN IT IS SAVED, NOT WHEN IT IS SENT.
+ *
+ * Owner, 2026-08-23: *"i can create the account but my changes dont get saved
+ * until i send her the invite to activate the account… im making a contract for
+ * her so i want to wait until the contract is created, then i will send her the
+ * activation email."* And the framing: *"every account hinges on activation and
+ * it shouldnt."*
+ *
+ * This form had ONE submit path and it was `adminSendInvitation`. Every field it
+ * collected — category, paperwork, offerings, payment, notes — was thrown away
+ * unless staff also emailed the person in the same click. There are now two acts:
+ *
+ *   SAVE            provisions the account and stops. The whole spine runs
+ *                   (contact, clients row, categories, onboarding documents, the
+ *                   order, apply_affiliations); the invitation is written as a
+ *                   DRAFT; no email leaves and no live link is retired. Per the
+ *                   owner's own terminology this IS the activation — *"truly the
+ *                   activation is when i create an account."*
+ *   SEND INVITATION delivers the claim link. Reachable any time after, and it
+ *                   sends the token the draft has been holding, so the link staff
+ *                   saved is the link the client receives.
+ *
+ * A saved-but-unsent account re-opens THIS form, prefilled from its own draft —
+ * `invitations.categories / offering_ids / template_keys` are that draft's own
+ * columns, so there is no second store and nothing to keep in sync.
+ *
  * PROVISION CLIENT — the ONE shared "upgrade a contact to an account" form.
  * Every admin account-creation surface renders this so the field set never
  * drifts and there is a single call site to the provisioning spine:
@@ -94,14 +121,48 @@ export interface ProvisionClientFormProps {
   agreedLesson?: AgreedLesson | null;
   /** Rendered above the fields — the host's own sections for this invite. */
   children?: React.ReactNode;
+  /**
+   * ⚠️ THE SCHEDULING SECTION, AND THE ONLY TWO REASONS IT EXISTS.
+   *
+   * Owner, 2026-08-23: *"the huge provision form is mostly content that matters
+   * for one of two reasons, A) they are a rider… B) they have an order created
+   * for them that involves scheduling in some capacity… If they are not a rider,
+   * it shouldnt be shown to me, if they dont have an order with offering that
+   * requires scheduling it shouldnt be shown to me."*
+   *
+   * Hosts pass the agreed-time panel here rather than as `children`, because THIS
+   * form is the only thing that knows both conditions: the RIDER tag (ticked here,
+   * or already standing on the contact) and whether any selected offering's
+   * `config_kind` is `scheduled` or `recurring`. Neither true → it does not
+   * render at all. Not collapsed, not present-but-empty.
+   */
+  scheduling?: ReactNode;
 }
 
 export function ProvisionClientForm({
   source, contactId, requestId, email: emailProp,
-  firstName, lastName, onProvisioned, hideResult, agreedLesson, children,
+  firstName, lastName, onProvisioned, hideResult, agreedLesson, children, scheduling,
 }: ProvisionClientFormProps) {
   const emailLocked = Boolean(emailProp);
   const [email, setEmail] = useState(emailProp ?? '');
+  /* ⚠️ WHO THEY ARE — RECONCILED WITH THE TWO CLIENT-FACING INTAKES (§A).
+     `/sign/*` asks name + phone + address; the invited intake (Onboarding) asks
+     name + phone + DOB + address; this staff form asked for NONE of them, so the
+     one person who already has all of it — the staff member who just had them on
+     the phone — had nowhere to put it and the record went out empty. D22 §0 is
+     the standard: name + email + phone are the minimum on every path, and the
+     address is required where a contract prints it. */
+  const [ident, setIdent] = useState({
+    first_name: firstName ?? '', last_name: lastName ?? '', phone: '',
+    address_line1: '', city: '', state: '', postal_code: '',
+  });
+  const setIdentField = (k: keyof typeof ident) => (v: string) => setIdent((p) => ({ ...p, [k]: v }));
+  /** The groups already standing on this contact (RIDER / HORSE_OWNER / …). */
+  const [standingGroups, setStandingGroups] = useState<string[]>([]);
+  /** PAMELA §A — a saved-but-unsent provisioning on this contact, if any. */
+  const [draftId, setDraftId] = useState<string | null>(null);
+  /** Which act the last submit was. Drives the confirmation, not the button. */
+  const [savedOnly, setSavedOnly] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   const [defaults, setDefaults] = useState<CategoryDocDefault[]>([]);
   const [docChecked, setDocChecked] = useState<Set<string> | null>(null);
@@ -180,15 +241,68 @@ export function ProvisionClientForm({
   }, [contactId]);
 
   // Signed-contact detection: preselect category from what they've already signed.
+  //
+  // ⚠️ AND ONLY FROM WHAT THEY HAVE SIGNED. `suggested_category_for_contact`
+  // returns 'GUEST' as its ELSE branch — for a contact with no executed documents
+  // at all, which is every fresh one. This screen read that as a decision and
+  // ticked "Guest", which unfolded the paperwork, offerings and payment sections
+  // for someone nobody had chosen a category for. That is a large part of why the
+  // owner met "a huge section" on a contact who is only ever going to be a
+  // contract party, and it contradicts STABILIZE ITEM 2 outright: no category is
+  // a choice, and this was making it silently impossible to leave it unmade.
   useEffect(() => {
     if (!contactId) return;
     suggestedCategoryForContact(contactId)
       .then((r) => {
         setSignedTemplates(r.executed_templates ?? []);
+        if ((r.executed_templates ?? []).length === 0) return;   // no evidence, no guess
         const display = TOKEN_TO_DISPLAY[r.suggested];
         if (display) setCategories((prev) => (prev.length ? prev : [display]));
       })
       .catch(() => {});
+  }, [contactId]);
+
+  /* ⚠️ PAMELA §A — RE-OPEN WHAT WAS SAVED, AND WHAT IS ALREADY KNOWN.
+     Two reads, both prefills, neither ever overwriting a staff edit in progress:
+       · the DRAFT invitation — the categories / documents / offerings a previous
+         Save persisted, so a reload shows the work rather than a blank form;
+       · the CONTACT record — name, phone and address already on file, so the
+         identity block below is a review, not a re-interrogation. `standing.groups`
+         also answers half the scheduling gate: a contact who is ALREADY a rider
+         gets the section without anybody re-ticking the box. */
+  const prefilledContact = useRef<string | null>(null);
+  useEffect(() => {
+    if (!contactId || prefilledContact.current === contactId) return;
+    prefilledContact.current = contactId;
+    contactProvisioningDraft(contactId)
+      .then((d) => {
+        if (!d) return;
+        setDraftId(d.id);
+        const cats = (d.categories ?? []).filter(Boolean);
+        if (cats.length) {
+          const wanted = new Set(cats);
+          setCategories(CLIENT_CATEGORIES.filter((c) => wanted.has(CATEGORY_TOKEN[c])));
+        }
+        if (d.template_keys) setDocChecked(new Set(d.template_keys));
+        if (d.offering_ids?.length) setOfferingIds(d.offering_ids);
+      })
+      .catch(() => { /* the form still works from scratch */ });
+    contactDossier(contactId)
+      .then((dos) => {
+        const c = dos.contact as Record<string, unknown>;
+        const str = (k: string) => (c?.[k] == null ? '' : String(c[k]));
+        setIdent((prev) => ({
+          first_name: prev.first_name || str('first_name'),
+          last_name: prev.last_name || str('last_name'),
+          phone: prev.phone || str('phone'),
+          address_line1: prev.address_line1 || str('address_line1'),
+          city: prev.city || str('city'),
+          state: prev.state || str('state'),
+          postal_code: prev.postal_code || str('postal_code'),
+        }));
+        setStandingGroups(dos.standing?.groups ?? []);
+      })
+      .catch(() => setStandingGroups([]));
   }, [contactId]);
 
   // ⚠️ PARTYROLE §R1 — THE SCREEN RESOLVES DOCUMENTS THE WAY THE RPC DOES.
@@ -284,6 +398,21 @@ export function ProvisionClientForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categories, offerings]);
 
+  /* ⚠️ THE SCHEDULING SECTION'S EXACT, TESTABLE CONDITION (owner, 2026-08-23).
+     (A) the account carries — or is being given — the RIDER tag, or
+     (B) an offering attached to this provisioning needs scheduling, which the
+         catalog states in DATA: `config_kind` is 'scheduled' (credits the client
+         spends and books) or 'recurring' (a standing weekly slot — D23). The
+         other four kinds (intake_finder, intake_evaluation, document_transaction,
+         inquire) schedule nothing.
+     Neither → it does not render. Not collapsed, not present-but-empty. */
+  const schedulingNeeded = useMemo(() => {
+    if (categories.includes('Rider') || standingGroups.includes('RIDER')) return true;
+    return offerings.some(
+      (o) => offeringIds.includes(o.id)
+        && (o.config_kind === 'scheduled' || o.config_kind === 'recurring'));
+  }, [categories, standingGroups, offerings, offeringIds]);
+
   const offeringTotal = useMemo(() => {
     let t = 0;
     for (const o of offerings)
@@ -316,9 +445,12 @@ export function ProvisionClientForm({
     setOfferingIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   }
 
-  async function submit(e: React.FormEvent) {
+  /** Which act is running — so the button that is NOT pressed can also disable. */
+  const [pending, setPending] = useState<'save' | 'send' | null>(null);
+
+  async function submit(e: React.FormEvent, send: boolean) {
     e.preventDefault();
-    setWorking(true); setError(null); setResult(null);
+    setWorking(true); setPending(send ? 'send' : 'save'); setError(null); setResult(null);
     try {
       const tokens = categories.map((c) => CATEGORY_TOKEN[c]).filter(Boolean);
       const finalDocs = docChecked ? Array.from(effectiveDocs) : undefined;
@@ -341,8 +473,12 @@ export function ProvisionClientForm({
       const r = await adminSendInvitation({
         email: email.trim(),
         ...(requestId ? { requestId } : {}),
-        ...(firstName?.trim() ? { firstName: firstName.trim() } : {}),
-        ...(lastName?.trim() ? { lastName: lastName.trim() } : {}),
+        // The names travel on the RPC (they land on the invitation and are carried
+        // onto the profile at redemption); everything else in the identity block
+        // is written to the contact record below, through its own writer.
+        ...(ident.first_name.trim() ? { firstName: ident.first_name.trim() } : {}),
+        ...(ident.last_name.trim() ? { lastName: ident.last_name.trim() } : {}),
+        sendInvitation: send,
         categories: tokens,
         // STABILIZE ITEM 2: this form ALWAYS creates a client account, including
         // when staff deliberately tick no category (a contract-only party).
@@ -355,37 +491,116 @@ export function ProvisionClientForm({
         ...(notes.trim() ? { notes: notes.trim() } : {}),
         ...(agreedLesson ? { agreedLesson } : {}),
       });
-      setResult({ url: r.registerUrl, emailed: r.emailed, emailError: r.emailError, email: email.trim() });
+      /* ⚠️ D22 — THE CONTACT RECORD IS THE SOURCE OF TRUTH FOR PARTY FIELDS.
+         Phone and address go through `update_contact_record`, the incumbent staff
+         writer, onto the contact the act just resolved — so they reach the party
+         tokens of every contract this person is on, not just this screen. Written
+         AFTER provisioning because on a brand-new account there is no contact to
+         write to until the spine has made one. Best-effort: the account exists
+         either way, and losing an address must not read as "the save failed". */
+      const targetContact = r.contactId ?? contactId;
+      const patch: Record<string, string> = {};
+      for (const k of ['phone', 'address_line1', 'city', 'state', 'postal_code'] as const) {
+        if (ident[k].trim()) patch[k] = ident[k].trim();
+      }
+      if (targetContact && Object.keys(patch).length > 0) {
+        try { await updateContactRecord(targetContact, patch); }
+        catch { /* provisioning stands; staff can correct the record directly */ }
+      }
+
+      setSavedOnly(!send);
+      setResult({ url: r.registerUrl ?? '', emailed: r.emailed, emailError: r.emailError, email: email.trim() });
+      if (r.inviteStatus === 'draft' && r.invitationId) setDraftId(r.invitationId);
+      if (send) setDraftId(null);
       onProvisioned?.(r);
       setRemoveHeld(false); setRemoveReason('');
       if (contactId) getContactRequiredDocumentsState(contactId).then(setHeld).catch(() => {});
-      if (source === 'new') {
+      // Only a SEND finishes the New-client page's job; a save is meant to be
+      // returned to, so clearing the form under the staff member would be wrong.
+      if (source === 'new' && send) {
         setEmail(''); setCategories([]); setDocChecked(null); setOfferingIds([]);
         setPayStatus('unpaid'); setPartialAmount(''); setNotes('');
+        setIdent({ first_name: '', last_name: '', phone: '', address_line1: '', city: '', state: '', postal_code: '' });
       }
     } catch (err) {
-      setError(toErrorMessage(err, 'Could not create the invitation.'));
+      setError(toErrorMessage(err, send ? 'Could not send the invitation.' : 'Could not save the account.'));
     } finally {
-      setWorking(false);
+      setWorking(false); setPending(null);
     }
   }
 
-  // §L3 — the button says what the one act actually does. When a time was set
-  // it books the lesson too, and the label must not hide that.
-  const primaryLabel = agreedLesson ? 'Book the lesson & send invitation'
+  // §L3 — the SEND button says what that one act actually does. When a time was
+  // set it books the lesson too, and the label must not hide that.
+  const sendLabel = agreedLesson ? 'Book the lesson & send invitation'
     : source === 'submission' ? 'Convert & send invitation'
-    : source === 'contact' ? 'Provision & send invitation'
-    : 'Create & send invitation';
+    : 'Send invitation';
+  const saveLabel = draftId ? 'Save changes'
+    : source === 'contact' ? 'Save the account'
+    : 'Create the account';
 
   return (
     <>
-      <form onSubmit={submit}>
+      <form onSubmit={(e) => void submit(e, true)}>
+        {/* ⚠️ SAVED, AND NOT SENT — SAY SO. A contact whose provisioning was saved
+            but never delivered must not look identical to one where nothing has
+            been done, which is precisely what an un-marked form does. */}
+        {draftId && (
+          <div className="mb-5 rounded-lg border border-green-700/40 bg-green-50 px-4 py-3">
+            <p className="text-[13.5px] text-green-900 font-medium">
+              This account exists — the invitation has not been sent.
+            </p>
+            <p className="text-[12.5px] text-green-900/75 mt-0.5">
+              Everything below is saved on their record. Change it as often as you like;
+              send the invitation when you're ready for them to set up their login.
+            </p>
+          </div>
+        )}
         {children}
         <Field label="Email">
           <input type="email" required className="form-input" value={email}
             disabled={emailLocked}
             onChange={(e) => setEmail(e.target.value)} placeholder="their@email.com" />
         </Field>
+
+        {/* ⚠️ WHAT WE ALREADY KNOW ABOUT THEM (PAMELA §A).
+            Owner: *"if i have any of the info from them already I can add it in
+            this section."* Both client-facing intakes collect name, phone and
+            address; this staff form collected none of it, so a person staff had
+            just spoken to arrived as an email address and nothing else — and the
+            contract party tokens that read from this record printed blanks.
+            Prefilled from the contact and written back through
+            `update_contact_record`, so it reaches every document they are on. */}
+        <div className="mb-6">
+          <span className="form-label">Their details</span>
+          <p className="text-sm text-muted mb-2.5">
+            Whatever you already have. They complete the rest when they set up their
+            login — nothing here is asked of them twice.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <input className="form-input" value={ident.first_name} placeholder="First name"
+              aria-label="First name" onChange={(e) => setIdentField('first_name')(e.target.value)} />
+            <input className="form-input" value={ident.last_name} placeholder="Last name"
+              aria-label="Last name" onChange={(e) => setIdentField('last_name')(e.target.value)} />
+            <input type="tel" inputMode="tel" className="form-input" value={ident.phone} placeholder="Phone"
+              aria-label="Phone" onChange={(e) => setIdentField('phone')(e.target.value)} />
+            <input className="form-input" value={ident.address_line1} placeholder="Street address"
+              aria-label="Street address" onChange={(e) => setIdentField('address_line1')(e.target.value)} />
+            <input className="form-input" value={ident.city} placeholder="City"
+              aria-label="City" onChange={(e) => setIdentField('city')(e.target.value)} />
+            <div className="grid grid-cols-2 gap-3">
+              <input className="form-input" value={ident.state} placeholder="State"
+                aria-label="State" onChange={(e) => setIdentField('state')(e.target.value)} />
+              <input className="form-input" inputMode="numeric" value={ident.postal_code} placeholder="ZIP"
+                aria-label="ZIP" onChange={(e) => setIdentField('postal_code')(e.target.value)} />
+            </div>
+          </div>
+          {/* D22 §0: a contract prints the address, so say so where it matters
+              rather than refusing the save — staff may genuinely not have it yet. */}
+          <p className="text-[12px] text-muted mt-2">
+            A full address is what a contract prints. Leave it blank if you don't have
+            it — a partial one (a street with no city) is worse than none.
+          </p>
+        </div>
 
         <div className="mb-6">
           <span className="form-label">Account category</span>
@@ -651,13 +866,35 @@ export function ProvisionClientForm({
           </>
         )}
 
-        {/* NOSTRIP §4: the removal is gated, not merely announced — a reason is
-            what makes the skip mark worth more than the delete it replaced. */}
-        <button type="submit"
-          disabled={working || !email.trim() || narrowingBlocked}
-          className="btn-primary">
-          {working ? 'Sending…' : primaryLabel}
-        </button>
+        {/* ⚠️ SCHEDULING — SHOWN ONLY FOR THE TWO REASONS IT EXISTS.
+            Rider (ticked here or already standing on the record), or a selected
+            offering whose config_kind is 'scheduled' / 'recurring'. Neither →
+            nothing renders; this is the gate, not a collapse. */}
+        {scheduling && schedulingNeeded && scheduling}
+
+        {/* ⚠️ TWO REAL BUTTONS (PAMELA §A rule 2). SAVE is the primary act, because
+            it is the one that makes the account exist and the one staff will use
+            most; SEND is deliberately separate and reachable at any time after.
+            NOSTRIP §4: the removal is gated on both, not merely announced — a
+            reason is what makes the skip mark worth more than the delete it
+            replaced. */}
+        <div className="flex flex-wrap items-center gap-3">
+          <button type="button"
+            onClick={(e) => void submit(e, false)}
+            disabled={working || !email.trim() || narrowingBlocked}
+            className="btn-primary">
+            {pending === 'save' ? 'Saving…' : saveLabel}
+          </button>
+          <button type="submit"
+            disabled={working || !email.trim() || narrowingBlocked}
+            className="btn-outline-gold">
+            {pending === 'send' ? 'Sending…' : sendLabel}
+          </button>
+        </div>
+        <p className="text-[12px] text-muted mt-2">
+          Saving creates the account and keeps every choice above — no email is sent.
+          Send the invitation when you want them to set up their login.
+        </p>
         {narrowingBlocked && (
           <p className="text-[12.5px] text-gold-800 mt-2">
             Say why those documents are no longer required, or untick the removal.
@@ -666,10 +903,21 @@ export function ProvisionClientForm({
         {error && <p className="form-error mt-4" role="alert">{error}</p>}
       </form>
 
-      {!hideResult && result && (
+      {/* A SAVE has no link to show and no delivery to report — showing the
+          invite-result panel would announce an email that deliberately did not
+          happen. It gets its own confirmation instead. */}
+      {!hideResult && result && (savedOnly ? (
+        <div className="mt-6 p-5 rounded-lg border border-green-700/40 bg-green-50">
+          <p className="text-[14px] text-green-900 font-medium">Saved. No email was sent.</p>
+          <p className="text-[13px] text-green-900/75 mt-1">
+            {result.email} has an account and everything you chose is on their record.
+            Come back and send the invitation whenever you're ready.
+          </p>
+        </div>
+      ) : (
         <InviteResultPanel url={result.url} emailed={result.emailed}
           emailError={result.emailError} email={result.email} className="mt-6 p-5" />
-      )}
+      ))}
     </>
   );
 }

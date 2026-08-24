@@ -24,6 +24,11 @@
  *
  * Email delivery uses the shared transport; otherwise the function still
  * creates the invitation and returns the activation URL so the admin can copy it.
+ *
+ * PAMELA §A — `sendInvitation: false` provisions and STOPS: the whole spine runs,
+ * the invitation is written as a `draft`, and no email leaves. Sending later is
+ * the same call with the flag omitted; it promotes that draft and delivers its
+ * token, so the link staff saved is the link the client gets.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
@@ -199,6 +204,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // someone already provisioned, TeamPage invites staff.
   const provisionClient = body.provisionClient === true;
   const provisioning = categories.length > 0 || offeringIds.length > 0 || provisionClient;
+  /**
+   * PAMELA §A — SAVE vs SEND.
+   *
+   * Owner, 2026-08-23: *"every account hinges on activation and it shouldnt."*
+   * The account, its category, its paperwork and its order are all written by the
+   * provisioning spine BEFORE the invitation is minted and long before the mailer
+   * runs — the only reason staff had to send in order to save was that this
+   * handler did both in one breath.
+   *
+   * `sendInvitation: false` therefore passes `p_send => false` (the invitation is
+   * written as a DRAFT and no prior live link is retired) and RETURNS BEFORE THE
+   * MAILER. Absent or true is what every other caller does; nothing about the
+   * plain-invite path below changes at all.
+   */
+  const sendInvitation = body.sendInvitation !== false;
+  if (!sendInvitation && !provisioning) {
+    return res.status(400).json({
+      error: 'saving without sending only applies to a client account — '
+        + 'a plain or staff invitation has nothing to save',
+      stage: 'provision' as Stage,
+    });
+  }
   // Optional role for the account being provisioned (New account flow).
   const invitedRole =
     typeof body.role === 'string' && ['USER', 'MANAGER', 'ADMIN'].includes(body.role)
@@ -295,6 +322,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           p_partial_amount: partialAmount,
           // §L3: null keeps this call byte-identical to what it always did.
           p_agreed_lesson: agreed ? agreed.rpc : null,
+          // PAMELA §A: false writes the invitation as a draft and supersedes nothing.
+          p_send: sendInvitation,
         });
         if (rpcErr) throw rpcErr;
         return (Array.isArray(data) ? data[0] : data) as ProvisionResult;
@@ -306,6 +335,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // and held for owner sign-off, and this call is what keeps regenerate
       // correct once it lands. Idempotent in the meantime — the second call
       // finds nothing left to retire.
+      // ── SAVED, NOT SENT ──────────────────────────────────────────────────
+      // Everything above has happened: the contact, the clients row, the
+      // categories, the onboarding documents, the order, apply_affiliations. The
+      // one thing that has NOT is the email — so this returns here, before the
+      // mailer, before recordInvitationDelivery, and with no URL to hand over.
+      if (!sendInvitation) {
+        return res.status(200).json({
+          registerUrl: null,
+          emailed: false,
+          saved: true,
+          inviteStatus: 'draft',
+          invitationId: out.invitation_id,
+          contactId: out.contact_id,
+          categories: out.categories,
+          purchaseId: out.purchase_id,
+          amount: out.amount,
+          agreedLesson: out.agreed_lesson ?? null,
+        });
+      }
+
       if (mode === 'regenerate') {
         await at('supersede', async () => {
           const { error: supErr } = await db.rpc('supersede_invitations', {
@@ -353,6 +402,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({
         registerUrl,
         emailed: sent.ok,
+        saved: true,
+        inviteStatus: 'sent',
         ...(sent.ok ? {} : { emailError: sent.error, stage: 'email' as Stage }),
         invitationId: out.invitation_id,
         contactId: out.contact_id,
