@@ -90,6 +90,8 @@ type ProfileFormFields = Omit<
 
 const EMPTY_FORM: Required<ProfileFormFields> = {
   phone: '',
+  text_only_phone: '',
+  preferred_contact: '',
   date_of_birth: '',
   address_street: '',
   address_city: '',
@@ -468,6 +470,8 @@ export default function Onboarding() {
           setForm((prev) => ({
             ...prev,
             phone: pre?.phone ?? p?.phone ?? '',
+            text_only_phone: pre?.text_only_phone ?? '',
+            preferred_contact: pre?.preferred_contact ?? '',
             date_of_birth: pre?.date_of_birth ?? '',
             // Address comes from the CONTACT only. `profiles` carries a
             // look-alike address block that NOTHING writes (0 of 7 rows
@@ -561,7 +565,7 @@ export default function Onboarding() {
   }
 
   const upd = (key: keyof ProfileFormFields) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
   async function saveDetails(e: React.FormEvent) {
@@ -854,12 +858,48 @@ export default function Onboarding() {
           <h3 className="form-label mb-3">Contact</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
             <div className="mb-4">
-              <label className="form-label" htmlFor="ob-phone">Phone</label>
-              <input id="ob-phone" type="tel" required className="form-input" value={form.phone} onChange={upd('phone')} />
+              {/* ⚠️ "Phone" WAS THE MOBILE NUMBER ALL ALONG. Owner, 2026-08-24:
+                  "we should be collecting the mobile number on intake not a
+                  'contact number for phone calls', there is no difference with
+                  mobile." Same column, honest label. */}
+              <label className="form-label" htmlFor="ob-phone">Mobile number</label>
+              <input id="ob-phone" type="tel" inputMode="tel" required className="form-input"
+                value={form.phone} onChange={upd('phone')}
+                placeholder={form.phone ? undefined : '(555) 555-5555'} />
+              {!form.phone && (
+                <p className="text-xs text-muted mt-1">
+                  We don&apos;t have a number for you yet — this is the one we&apos;ll call and text.
+                </p>
+              )}
             </div>
             <div className="mb-4">
               <label className="form-label" htmlFor="ob-dob">Date of birth</label>
               <input id="ob-dob" type="date" required className="form-input" value={form.date_of_birth} onChange={upd('date_of_birth')} />
+            </div>
+          </div>
+          {/* The alternate, and how they'd rather be reached. Both optional —
+              "the only difference is if they want to add an alternate number for
+              texts only" (owner), so this asks rather than assumes. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
+            <div className="mb-4">
+              <label className="form-label" htmlFor="ob-text-phone">
+                Texts-only number <span className="text-muted font-normal">(optional)</span>
+              </label>
+              <input id="ob-text-phone" type="tel" inputMode="tel" className="form-input"
+                value={form.text_only_phone} onChange={upd('text_only_phone')}
+                placeholder="A different number for texts" />
+            </div>
+            <div className="mb-4">
+              <label className="form-label" htmlFor="ob-preferred">
+                How should we reach you? <span className="text-muted font-normal">(optional)</span>
+              </label>
+              <select id="ob-preferred" className="form-input"
+                value={form.preferred_contact} onChange={upd('preferred_contact')}>
+                <option value="">No preference</option>
+                <option value="TEXT">Text</option>
+                <option value="CALL">Call</option>
+                <option value="EMAIL">Email</option>
+              </select>
             </div>
           </div>
           <div className="mb-4">
@@ -1259,7 +1299,9 @@ export default function Onboarding() {
                     onChange={(e) => setTypedName(e.target.value)}
                   />
                 </div>
-                <button type="submit" className="btn-outline-gold" disabled={!nameMatches || !esignConsent || signing}>
+                {/* Armed = filled (see .btn-sign). The gate is unchanged: the typed
+                    name must match and e-sign consent must be given. */}
+                <button type="submit" className="btn-sign" disabled={!nameMatches || !esignConsent || signing}>
                   {signing ? 'Signing…' : 'Sign'}
                 </button>
               </form>

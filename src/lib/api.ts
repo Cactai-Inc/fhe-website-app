@@ -287,7 +287,10 @@ export interface OnboardingMinor {
 export interface OnboardingPrefill {
   first_name: string | null;
   last_name: string | null;
+  /** THE mobile number — see OnboardingProfileInput.phone. */
   phone: string | null;
+  text_only_phone: string | null;
+  preferred_contact: string | null;
   /** YYYY-MM-DD */
   date_of_birth: string | null;
   address_street: string | null;
@@ -375,7 +378,16 @@ export interface OnboardingProfileInput {
    *  (which arrive nameless). Fills the contact/profile when currently blank. */
   first_name?: string;
   last_name?: string;
+  /** THE mobile number. `contacts.phone` is the column; "phone" and "mobile" were
+   *  never two facts — owner, 2026-08-24: "there is no difference with mobile."
+   *  Relabelled everywhere rather than rewired (his call, and the data agreed:
+   *  21 contacts had `phone`, 2 had `mobile`). */
   phone?: string;
+  /** An alternate number they only want TEXTS on. Optional, and genuinely
+   *  optional — most people have one number. */
+  text_only_phone?: string;
+  /** How they would rather be reached: TEXT | CALL | EMAIL. */
+  preferred_contact?: string;
   /** YYYY-MM-DD */
   date_of_birth?: string;
   address_street?: string;

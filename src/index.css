@@ -225,6 +225,35 @@
            disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gold-800;
   }
 
+  /* ⚠️ THE SIGN BUTTON — ARMED MEANS FILLED (owner, 2026-08-24).
+     "when the name matches and the sign button becomes active, make it a full
+     fill color so they know its active, its hard to discern right now with the
+     method used and the full fill can then lighten on click", and "lighten on
+     mouseover so they know its active".
+
+     The signing controls were `.btn-outline-gold`, whose only difference between
+     armed and unarmed is 50% opacity on an outline — two states of the same
+     shape, on a page where the person has just typed their legal name and is
+     looking for permission to commit. Filled-vs-outline is a difference you can
+     see across the room; opacity is not.
+
+     Three steps, each lighter than the last, so the button answers every stage of
+     the gesture: ARMED fills gold-800, HOVER lifts to gold-700, PRESS lifts again
+     to gold-600 (the brand gold) — the "lighten on click" the owner asked for.
+     DISABLED returns to a plain muted outline, so unarmed reads as a different
+     control rather than a dimmer one. */
+  .btn-sign {
+    @apply inline-flex items-center justify-center gap-2 px-8 py-3.5 font-sans text-sm font-medium
+           tracking-wide uppercase transition-all duration-200
+           border bg-gold-800 border-gold-800 text-white shadow-sm
+           hover:bg-gold-700 hover:border-gold-700 hover:shadow-md
+           active:bg-gold-600 active:border-gold-600 active:shadow-inner
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-800 focus-visible:ring-offset-2
+           disabled:bg-transparent disabled:border-green-800/20 disabled:text-green-900/40
+           disabled:shadow-none disabled:cursor-not-allowed
+           disabled:hover:bg-transparent disabled:hover:border-green-800/20 disabled:hover:shadow-none;
+  }
+
   /* Ghost button (white on dark) */
   .btn-ghost-white {
     @apply inline-flex items-center justify-center gap-2 px-8 py-3.5 border border-white/60 text-white font-sans text-sm font-medium

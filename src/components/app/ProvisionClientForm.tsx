@@ -496,8 +496,11 @@ export function ProvisionClientForm({
               aria-label="First name" onChange={(e) => setIdentField('first_name')(e.target.value)} />
             <input className="form-input" value={ident.last_name} placeholder="Last name"
               aria-label="Last name" onChange={(e) => setIdentField('last_name')(e.target.value)} />
-            <input type="tel" inputMode="tel" className="form-input" value={ident.phone} placeholder="Phone"
-              aria-label="Phone" onChange={(e) => setIdentField('phone')(e.target.value)} />
+            {/* If staff have it now, the onboarding form stops asking — and if
+                they don't, it asks (INTAKE 2026-08-24: my_onboarding_state now
+                surfaces on an incomplete profile, not only on unsigned docs). */}
+            <input type="tel" inputMode="tel" className="form-input" value={ident.phone} placeholder="Mobile number"
+              aria-label="Mobile number" onChange={(e) => setIdentField('phone')(e.target.value)} />
             <input className="form-input" value={ident.address_line1} placeholder="Street address"
               aria-label="Street address" onChange={(e) => setIdentField('address_line1')(e.target.value)} />
             <input className="form-input" value={ident.city} placeholder="City"

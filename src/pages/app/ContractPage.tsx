@@ -2260,7 +2260,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 <input value={signName} onChange={(e) => setSignName(e.target.value)}
                   placeholder="Full legal name"
                   className="px-3 py-2 rounded-lg border border-green-800/15 text-sm focus-ring w-64" />
-                <button type="button" className="btn-primary text-sm" disabled={!signName.trim()}
+                <button type="button" className="btn-sign text-sm" disabled={!signName.trim()}
                   onClick={() => void act(() => signAndContinue(myRoles[0], signName.trim()))}>
                   <PenLine size={14} /> Sign
                 </button>

@@ -542,7 +542,9 @@ export default function SignStart() {
                 </div>
               </div>
               <div className="mb-5">
-                <label className="form-label" htmlFor="sign-phone">Phone *</label>
+                {/* The number we call AND text. "Phone" read as a landline-era
+                    question; the column is unchanged (INTAKE 2026-08-24). */}
+                <label className="form-label" htmlFor="sign-phone">Mobile number *</label>
                 <input
                   id="sign-phone"
                   type="tel"

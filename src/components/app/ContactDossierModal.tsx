@@ -36,8 +36,15 @@ const FIELD_GROUPS: { title: string; fields: [string, string][] }[] = [
   { title: 'Name and contact', fields: [
     ['first_name', 'First name'], ['last_name', 'Last name'],
     ['email', 'Email'],
-    ['phone', 'Phone'], ['phone_ext', 'Phone ext.'],
-    ['mobile', 'Mobile'], ['mobile_ext', 'Mobile ext.'],
+    /* ⚠️ ONE MOBILE NUMBER (INTAKE 2026-08-24). `phone` and `mobile` were never
+       two facts — owner: "there is no difference with mobile." `phone` is the
+       column with the data (21 contacts vs 2) so it keeps the data and gets the
+       honest label; `mobile`, `mobile_ext` and `phone_ext` leave this editor
+       (columns retained, D32 — `mobile`'s two values were folded into `phone`,
+       and both ext columns were empty on every contact). */
+    ['phone', 'Mobile number'],
+    ['text_only_phone', 'Texts-only number'],
+    ['preferred_contact', 'Preferred contact'],
     ['whatsapp', 'WhatsApp'],
     ['date_of_birth', 'Date of birth'],
   ]},
