@@ -243,7 +243,7 @@ function renderZone(
     case 'C1':  return <TodayZone items={items as any} />;
     case 'C2':  return <WeekZone items={items as any} />;
     case 'C3':  return <MoneyZone items={items as any} onDone={refresh} />;
-    case 'C4':  return <PeopleZone items={items as any} />;
+    case 'C4':  return <PeopleZone items={items as any} onDone={refresh} />;
     case 'C6':  return <NotesZone items={items as any} onDone={refresh} />;
     case 'C7':  return <StableZone items={items as any} />;
     case 'C9':  return <DocumentsZone items={items as any} />;

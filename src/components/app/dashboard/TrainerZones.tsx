@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { confirmPaymentClaim } from '../../../lib/ops/api-payments';
 import { markBookingNoteSeen } from '../../../lib/ops/api-dashboard';
+import { markRequestContacted, appendRequestNote } from '../../../lib/ops/api-intake';
 import type {
   TodayRow, WeekDay, MoneyRow, PersonWaitingRow, NotesRow, StableRow,
   DocRow, CommunityRow, EvalRow, GiftRow, StableReason,
@@ -231,18 +232,88 @@ function waitingHref(r: PersonWaitingRow): string {
   }
 }
 
-export function PeopleZone({ items }: { items: PersonWaitingRow[] }) {
+/** Owner, 2026-08-23: "We need to make this follow up system much simpler.
+ *  a single button to confirm they have been contacted is sufficient. a
+ *  place for notes and a contact log is helpful if Claire will use it, im
+ *  not sure she will so its optional and should be a single click away."
+ *  markRequestContacted / appendRequestNote already existed
+ *  (src/lib/ops/api-intake.ts) — built for the retired IntakePage's
+ *  LeadWorkDrawer and unreachable since. Reused here, not rebuilt (D18). */
+export function PeopleZone({ items, onDone }: { items: PersonWaitingRow[]; onDone: () => void }) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [noting, setNoting] = useState<string | null>(null);
+  const [note, setNote] = useState('');
+  const [failed, setFailed] = useState<{ id: string; msg: string } | null>(null);
+
+  async function contacted(id: string) {
+    setBusy(id);
+    setFailed(null);
+    try {
+      await markRequestContacted(id);
+      if (noting === id && note.trim()) await appendRequestNote(id, note.trim());
+      setNoting(null);
+      setNote('');
+      onDone();
+    } catch (e) {
+      setFailed({ id, msg: toErrorMessage(e, 'Could not mark that as contacted.') });
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <Cards>
       {items.slice(0, CAP).map((r) => (
         <Card
           key={`${r.kind}-${r.id}`}
-          to={waitingHref(r)}
+          to={r.kind === 'inquiry' ? undefined : waitingHref(r)}
           title={r.who ?? 'Someone'}
           tag={r.age_hours > 24 ? `${WAIT_LABEL[r.kind]} · ${ageLabel(r.age_hours)}` : WAIT_LABEL[r.kind]}
           tagTone={r.age_hours > 24 ? 'urgent' : 'new'}
           detail={<>{r.subject}{r.detail ? ` — ${r.detail}` : ''}</>}
-        />
+        >
+          {r.kind === 'inquiry' && (
+            <div className="mt-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={busy === r.id}
+                  onClick={() => void contacted(r.id)}
+                  className="rounded-lg bg-green-800 px-2.5 py-1 text-[0.72rem] font-semibold text-gold-100 disabled:opacity-60 focus-ring"
+                >
+                  {busy === r.id ? 'Marking…' : 'Mark contacted'}
+                </button>
+                {noting !== r.id && (
+                  <button
+                    type="button"
+                    onClick={() => setNoting(r.id)}
+                    className="text-[0.7rem] font-medium text-green-800/60 underline underline-offset-2 focus-ring"
+                  >
+                    + note
+                  </button>
+                )}
+                <Link
+                  to={r.contact_id ? contactHref(r.contact_id) : '/app/records/leads'}
+                  className="text-[0.7rem] font-medium text-green-800/60 underline underline-offset-2 focus-ring"
+                >
+                  Open
+                </Link>
+              </div>
+              {noting === r.id && (
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="What did you say? (optional — attaches when you mark contacted)"
+                  rows={2}
+                  className="mt-1.5 w-full rounded-lg border border-green-800/20 px-2.5 py-1.5 text-[0.78rem] focus-ring"
+                />
+              )}
+              {failed?.id === r.id && (
+                <p role="alert" className="mt-1.5 text-[0.72rem] text-red-700">{failed.msg}</p>
+              )}
+            </div>
+          )}
+        </Card>
       ))}
       <More count={items.length} shown={CAP} to="/app/records/leads" />
     </Cards>
