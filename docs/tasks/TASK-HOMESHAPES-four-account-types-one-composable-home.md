@@ -112,8 +112,15 @@ over `bookings` + `fulfillment_units`. Small, and it unblocks the whole "Your ho
   the reads do not;
 - **who may see what.** A guardian reading a minor's lesson notes is right; the same mechanism
   pointed at an adult dependant is not. D8's linked-accounts item is recorded scope and unbuilt.
-- *"sharing captured content"* — photos/video of a lesson. **No storage or capture path exists
-  for this today.** It is a product, not a zone.
+- ~~*"sharing captured content"* — no storage or capture path exists.~~ **WRONG, CORRECTED BY THE
+  OWNER 2026-08-24.** The community feed IS the sharing location and the path already works —
+  *"thats why there is content in there."* Capture means a parent filming their child on a phone;
+  **we are not involved in capture and we do no editing.** The real work is CONSTRAINTS AND
+  COMPRESSION on the posting control, so the feed "runs smoothly, looks professional, and dont get
+  out of control in storage costs." Full audit and build plan:
+  `docs/HANDOFF-OFFERINGDOCS-2026-08-24.md` §5.2 — in short, image compression before upload is
+  missing entirely and is the single biggest storage lever, the `feed-media` bucket has no
+  `allowed_mime_types`, and nine other buckets have no size limit at all.
 - *"setting trainer notes and feedback"* — parents WRITING notes is new; today notes are staff
   output. Whether a parent authors, or requests, or only reads, is the owner's call.
 
@@ -135,7 +142,8 @@ correct amount of app for someone whose only relationship with us is a document.
 
 ## FLAGGED BEFORE STARTING
 
-- **Parents are ~70% of the work** and carry every open product question. Riders, horse owners and
+- **Parents are the bulk of the work** and carry the open product questions — though LESS than
+  first assessed: sharing is not a new product, it is constraints on an existing one (§3 above). Riders, horse owners and
   deal parties are mostly surfacing what already exists.
 - **"Content worth looking at"** is the owner's own precondition on the community zone. It should
   render only when the feed has recent posts — self-hiding, like everything else here.
