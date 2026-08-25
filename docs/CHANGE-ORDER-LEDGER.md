@@ -1367,7 +1367,30 @@ itself a notification *(CR-59)*, so someone owing profile details **has** a noti
 lands on the dashboard. **The two rules agree once the profile prompt counts as a notification.
 Verify that it does.**
 
+### ⚠️ AND THE BUTTON LIES TOO — owner, 2026-08-25
+**SAID**
+> *"I have a dashboard notification, we established that and there is a big button that says back to
+> your dashboard on a page im taken to when i click on an onboarding task shown on my dashboard and
+> the best part of all of this is when i click the back to your dashboard button, it takes me to the
+> community feed! lmfao"*
+
+**Three falsehoods on one page:**
+| # | Claim | Truth |
+|---|---|---|
+| 1 | *"there's no onboarding waiting on you"* | there is — his dashboard says so |
+| 2 | the button says **"back to your dashboard"** | **it goes to the community feed** |
+| 3 | — | he **has** a notification, so under his own landing rule the dashboard is exactly where he should be |
+
+⚠️ **The page implements the EXACT INVERSE of the landing rule he just gave.** It sends a person with
+notifications to the feed. That is not a missing rule — **it is the right rule wired backwards**, and
+it is worth finding out whether the condition is simply negated somewhere.
+⚠️ **The round trip is a closed loop:** dashboard → onboarding task → "nothing to do" → "back to your
+dashboard" → **community feed.** He never returns to the thing that sent him.
+
 **ASK-REPO** *(assignments — produce, do not ask)*
+0. ⚠️ **Check whether the landing condition is inverted rather than absent.** If some surface already
+   asks "does this person have notifications?" and routes the wrong way on the answer, **that is one
+   character, not a feature** — and it may be the same code CR-64 is deleting.
 1. **Find the page and every route into it.** Two are known.
 2. ⚠️ **Diagnose the broken notification link and say which it is:** an artefact of this one account's
    state when the flow changed, **or a live bug that will hit everyone.** He asked for the
