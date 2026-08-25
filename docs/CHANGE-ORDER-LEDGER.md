@@ -1962,6 +1962,47 @@ whether the BARN ever negotiates that way**, not about whether the switch looks 
 2. **Should a lessee or a buyer be able to change deal terms at all**, or only fill in their own
    details and sign?
 
+## CR-73 · G7 · captured + researched — remove "I have reviewed the horse information"
+**SAID**
+> *"as the author (admin) its weird that the box for "I have reviewed the horse information and it is
+> accurate" is shown. not just weird that im seeing it as im creating the contract for the first time,
+> because i have no way to know if its accurate, the data comes from the horse record and the horse
+> record is either mine and i created it so i think its accurate or its not mine and i dont know if
+> its accurate...either way remove that entirely from the system it serves no purpose."*
+
+**His reasoning is the whole argument, and it holds:** the horse data comes **from the horse record**.
+Either the record is ours — in which case confirming it adds nothing — or it is not, in which case
+**we are not the ones who can vouch for it.** ⚠️ **There is no third case**, which is why the control
+has no job.
+
+### ⚠️ FINDINGS — it has never been used, and it can BLOCK
+| | |
+|---|---|
+| **documents where the horse section has ever been confirmed** | ⚠️ **ZERO, out of 68** |
+| **it is wired into** | the workflow-advance path **and the contract lock blockers** |
+| **there is even a reopen path** | `reopen_horse_section` |
+
+⚠️ **A GATE NOBODY HAS EVER SATISFIED, SITTING IN THE PATH THAT LOCKS A CONTRACT.** Either it is
+blocking contracts and being worked around, or the blocker is conditional and inert. **Establish
+which before removing it** — if contracts have been advancing past an unsatisfied gate, that tells us
+something about the other blockers too.
+
+⚠️ **Same shape as everything else this pass has found:** built, wired, and never driven. **This one
+is worse than inert — it is a lock condition.**
+
+### Removing it, precisely
+- **the checkbox and its button** — gone
+- **the gate in workflow-advance and in the lock blockers** — gone *(that is the part that matters)*
+- ⚠️ **the two columns on the document** — nothing has ever been written to them, so **there is no
+  history to preserve**. D32 keeps evidence; **there is none here.** Removal is clean, and this should
+  be stated when it is done rather than assumed.
+
+**ASK-REPO**
+1. Is the lock blocker conditional — does it only apply to contracts with a horse? *(All 68 documents
+   include the four onboarding releases, which have no horse at all.)*
+2. Does anything else read the confirmation — a token, a printed line in a contract body, a party
+   view?
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
