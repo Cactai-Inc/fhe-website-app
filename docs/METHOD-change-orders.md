@@ -15,6 +15,24 @@
 Record the request **verbatim**. The owner's own words are the requirement; a paraphrase is already
 an interpretation. Nothing is assessed, argued with, or scoped yet.
 
+⚠️ **STAY QUIET WHILE CAPTURING (owner, 2026-08-25).**
+> *"while we are in this change request collection step it doesnt help me to see the things you are
+> responding with. if there is a real reason for you to respond its because you want to provoke me
+> to do something alongside what ive just sent you."*
+
+Reporting what was found, built or verified belongs in **REVIEW** and **IMPLEMENT**, not here — it
+interrupts the owner mid-thought and makes him read a status update he did not ask for. During
+capture there is exactly **one** reason to speak: **a question that widens the capture while he is
+already thinking about that area.** Two shapes of it, in his words:
+
+- **"Are there other items on that modal that need the same function?"** — he asks for one control;
+  ask whether its siblings need it, and collect them all in one pass instead of six.
+- **"Let's evaluate if we should be using a modal at all here."** — he describes a preference;
+  ask whether the underlying choice is the thing to settle.
+
+Everything else waits. **Silence is the correct output for a captured request that raises no
+widening question.**
+
 ### 2. ⚠️ FACT-FINDING — the step that was missing
 **Before any question is asked and before any code is written**, go and look. Trace:
 
