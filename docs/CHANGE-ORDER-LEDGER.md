@@ -474,3 +474,93 @@ unopened, which is why she received no paperwork and no credits.
 1. Which stages does the barn actually use? Ten were designed; you may only need three.
 2. Is **approving the request** the same act as **opening the order**, or two acts?
 3. Who can approve — Claire only, or CJ as well?
+
+---
+
+# G5 · BILLING & PRICING
+
+## CR-28 · G5 · researched
+**SAID** *"we say we need 30 days notice for cancellation and we collect payment every month the day
+prior to the start of the next month, so we need to set it to fill out the month ahead when payment
+is confirmed … until their payment is confirmed their scheduled lessons appear on the calendar only
+as pending payment not reserved, when we confirm payment their lessons switch to confirmed and
+reserved and if they want to change their lesson schedule while its sitting in pending this is ok,
+but not when payment is past due."*
+**FOUND** ✅ **"Pending payment" and "confirmed" already exist as booking states** — two more of the
+ones nothing has ever used. ⚠️ And the screen currently **promises something untrue**: it says the
+weekly plan is put on the calendar for the next three months, and no such thing happens anywhere.
+*(Wording corrected; the behaviour is this change request.)*
+**ASK-REPO** Nothing records what period a client has paid **through**. Where should that live?
+**ASK-OWNER**
+1. Where does the **30 days' notice** live, and what enforces it?
+2. ⚠️ Nothing may re-write a month **already paid for**. The current rule only protects weeks
+   already past — confirm.
+
+## CR-29 · G5 · researched
+**SAID** *"the rule about Evaluation lesson being the first thing they buy, when they combine
+something like a weekly riding subscription, we should be increasing the price of the first month by
+$20 and then changing the price of the evaluation lesson to show it as included with their first
+month"*
+**SAID** *"we should offer 3 payment options for the weekly riders … a weekly payment of $260 /week,
+a bi-weekly payment of $480, and a monthly payment of $880 … For their willingness to pay for the
+month up front they get a discount."*
+**FOUND** The three prices are **internally consistent** — paying more often costs more, every step
+of the way. ⚠️ But **the system can only hold one price per service**; there is no concept of paying
+weekly versus monthly for the same thing. ⚠️ And on the evaluation rule: it reads as *"+$20"* and
+lands as **$150 off** the à-la-carte total. Almost certainly intended, but it should be a decision on
+the record.
+**ASK-OWNER**
+1. **Do the other three weekly plans get their own three prices?** You gave one ladder; there are
+   **four** weekly plans on sale.
+2. **How does "+$20 on the first month" work if they pay weekly?** +$20 on the first week, or spread?
+3. Is the **weekly price the real one and monthly the discount**, or the other way round? It decides
+   what happens when prices change.
+4. What does *"unlocks"* mean concretely when someone is late — does the unpaid week's lesson
+   disappear, or sit there unconfirmed?
+⚠️ **This revises CR-28**: with three cadences, every date in it becomes relative to *the period*,
+not to the month.
+
+---
+
+# G9 · GLOBALIZATION INVENTORY
+
+## CR-37 · G9 · researched
+**SAID** *"we will be implementing a globalization refactor when you and i are done fixing all these
+issues … im trying to get as much of the ui and ux in the right standing ahead of the final
+evaluation pass of the repo so there is less guess work and less ambiguous questions for me to
+answer."*
+**FOUND** *(measured, not estimated)*
+- **Pop-up panels: 33 screens each build their own; 7 use the shared one that already exists.**
+  Between them: six different background shades, three different stacking levels, three different
+  ways of positioning.
+- **Buttons: the shared style is used on 112 screens; 48 screens hand-build the same green button
+  instead — and 29 screens do both.**
+- **"Nothing here" messages: a shared one exists; 32 places write their own.**
+- **Rounded corners: no agreed rule** — six different radii in use, while the shared form fields and
+  buttons have **no rounding at all**. *(Which is why "rounded outside, sharp inside looks weird" is
+  a system-wide inconsistency, not one panel's mistake.)*
+- **The row list — name, detail, remove — is hand-built on six screens**, two of them this week.
+**ASK-OWNER** Does the refactor set the standard, or do the fixes in G1–G8 set it as they land?
+
+---
+
+# ⚠️ CROSS-CUTTING — read before scheduling anything
+
+| Dependency | Consequence if ignored |
+|---|---|
+| **CR-30 → CR-12, CR-15, CR-20, CR-36** | four requests are built on, or aimed at, the surface being discarded |
+| **CR-03 ↔ CR-06** | each is the other's evidence; deciding them apart invalidates both |
+| **CR-05 → CR-07** | a clash-aware time picker needs durations to exist first |
+| **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
+| **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
+| **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **G9 ← everything** | each group's fix should carry its globalization, or the refactor inherits 34 pop-ups instead of 33 |
+
+# ⚠️ ALREADY BUILT — carry the requirement, not the code
+CR-11 · CR-15 · CR-17 · CR-18 · CR-19 · CR-20 · CR-36 — all on surfaces CR-30 may replace.
+
+# ⚠️ ALREADY EXISTS — do not rebuild
+Complete / no-show / pending-payment / confirmed states · the "I have paid" declaration · the
+standing-weekly editor (wrong screen) · changing a horse's owner · resolving a name-only owner ·
+the horse-care paperwork rule (enforced, ignored by the screen) · a today list on the dashboard ·
+the customer-facing evaluation gate.
