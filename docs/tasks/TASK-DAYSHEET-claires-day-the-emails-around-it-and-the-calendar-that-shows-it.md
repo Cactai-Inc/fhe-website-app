@@ -1014,6 +1014,109 @@ losing it. **Audit before switching.**
 
 ---
 
+## 17. THE SURFACES ARE BACKWARD — and three pricing rulings
+
+**Owner, 2026-08-25.** Supersedes §16's framing: the question is not only *which* surface is richer,
+it is *which kind* of surface each person deserves.
+
+### 17.1 THE RULING
+> *"the lead modal should be what i get when i click a client card and the client page is what i
+> should see when i click a lead card … the page is much better on desktop, the modal is for quick
+> access on a page you dont want to leave."*
+
+| | Gets | Because |
+|---|---|---|
+| **A client** | **the rich surface, as a PAGE on desktop** — every tab, every associated record | this is the working record; you go there to do things |
+| **A lead** | **a small MODAL** — the form they submitted, and one act: **promote to a client** (activate the account). At most, edit their order contents first | you are on the phone, you do not want to leave the list |
+
+⚠️ *"the caveat is i might be on the phone and the phone is my working device"* — **so the client
+surface must work as a page on desktop AND be usable on a phone.** Not desktop-only.
+
+### 17.2 THE CONCRETE BLOCKER, CONFIRMED
+> *"i have no way to add a horse to pamela godde's client record, i cant see anything about her
+> beyond what is shown on the main record page."*
+
+**Pamela Godde: `contacts f80e944a…`, ZERO horses, ZERO tags.** She is a client, and the surface she
+gets (`Admin.tsx` / `RosterCard`) has no horse-add. A *lead* gets `ContactDossierModal` with
+`ClientHorseRecordsCard` and every tab. **The person who needs the record least has it; the person
+who needs it most does not.**
+
+### 17.3 SNAPSHOT WHAT THEY ASKED FOR
+> *"we should keep a snapshot of what they send us in the form and the changes should happen on
+> promotion to account, this way we can spot trends like upselling or people wanting more than they
+> should be requesting."*
+
+⚠️ **Nothing preserves it today.** `requests.notes` holds the submitted text and is **mutable**;
+`request_selections` is what they picked and is edited in place. **There is no `audit_log` table in
+this database at all** — checked. So a staff edit silently overwrites what the visitor actually
+said, and the trend the owner wants to measure is destroyed by the act of serving the customer.
+
+**Build: an immutable submission snapshot written once at intake**, with all subsequent edits
+applied to the live record. The DIFFERENCE between the two is the signal — it is what makes
+"upselling" and "wanting more than they should" measurable rather than anecdotal.
+
+### 17.4 THE EVALUATION LESSON, WHEN COMBINED WITH A SUBSCRIPTION
+> *"when they combine something like a weekly riding subscription, we should be increasing the price
+> of the first month by $20 and then changing the price of the evaluation lesson to show it as
+> included with their first month."*
+
+Live prices: **Evaluation Lesson $170** · **2x Weekly Lessons $880/month** · 1x Weekly $460 ·
+with-your-horse variants $780 / $420.
+
+So for a 2x Weekly rider: **$1,050 becomes $900**, the evaluation renders as a line item marked
+**Included**, and month one carries the +$20.
+
+⚠️ **State it plainly: that is a $150 concession.** It reads as "+$20" and behaves as "-$150"
+against the à-la-carte total. That is very likely intended — the evaluation is an on-ramp, not a
+revenue line — but it should be a decision on the record, not an arithmetic accident nobody
+noticed.
+
+### 17.5 THREE PAYMENT CADENCES FOR WEEKLY RIDERS
+> *"the monthly payment is an inherited config from the way other programs are run, for us, its
+> better to offer a higher weekly payment price and they pay us at the end of each week to unlock
+> the next week … For their willingness to pay for the month up front they get a discount."*
+
+| Cadence | Price | Paid | Unlocks | Effective /week |
+|---|---|---|---|---|
+| Weekly | **$260** | end of each week | the next week | $260 |
+| Bi-weekly | **$480** | end of every other week | the next two weeks | $240 |
+| Monthly | **$880** | end of the month | the next month | ~$220 |
+
+✅ **The ladder is internally consistent** — paying later and more often costs more, monotonically.
+Nothing here needs re-deriving.
+
+⚠️ **`offerings` CANNOT EXPRESS THIS.** One `price_amount` and one `price_unit` per row — that is
+the whole pricing model. There is no cadence concept.
+⚠️ **`product_prices` exists and is a red herring**: 0 rows, and it is keyed to `products`, not
+`offerings` — a different, unused spine. **Do not build on it without a ruling** (it may be dead
+scaffolding from the Phase-4 SKU design).
+⚠️ `offerings.price_model jsonb` exists and holds `{"kind":"inquire"}` on exactly 3 rows. **That is
+the natural home for a cadence set**, and it is already an owner-editable column.
+
+⚠️ **This ruling REVISES §14.3.** That section assumed a monthly cycle — "fill the month ahead when
+payment is confirmed", "3 days before month end". With three cadences, *every* date in §14.3 becomes
+**relative to the period**, not to the month. The status machinery is unchanged
+(`pending_payment → confirmed`); the calendar arithmetic is not.
+
+### ❓ QUESTIONS — §17
+1. **Do leads keep any tabs at all?** The ruling says *"the form they submitted, and promote"* —
+   confirm Documents/Paperwork/Activity disappear for a lead rather than being hidden-but-present.
+2. **Is the client surface a route (`/app/records/clients/:id`) or the modal made full-page?** A
+   route gives a shareable address (D17) and a back button; the modal is already built.
+3. **The three cadences: only for `2x Weekly Lessons`, or every recurring offering?** The owner gave
+   ONE ladder and there are **four active recurring rider offerings** ($880 / $780 / $460 / $420).
+   The other three need their own numbers, or a rule for deriving them.
+4. **How does "+$20 on the first month" behave on the WEEKLY cadence?** +$20 on the first week, or
+   +$20 spread across the first four? §17.4 and §17.5 collide here.
+5. **Is the ~$220/week monthly rate the anchor, or is $260 the anchor?** i.e. is monthly discounted
+   from weekly, or weekly surcharged from monthly? It changes what happens when prices move.
+6. **What unlocks mean concretely when payment is late** — §14.3 says a past-due rider may not
+   change their schedule. Does an unpaid week's lesson vanish, or sit as `pending_payment`?
+7. **`product_prices` / `products` / `tiers` / `tier_modules`: alive or dead?** All empty. If dead,
+   say so — they are actively misleading when looking for where price lives.
+
+---
+
 ## THE REACH
 
 Claire's day sheet is the dashboard she already lands on; the next-up card and the past list are
