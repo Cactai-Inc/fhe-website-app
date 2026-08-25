@@ -638,6 +638,51 @@ it."*
 incentives all touch the same thing: **what an order line is allowed to say about money.** Research
 them in one pass or the same tables get read five times.
 
+## CR-43 · G6/G8 · captured — ⚠️ OWNER IS SPLIT, DECISION NEEDED
+**SAID**
+> *"I'm split on whether we open the door to full account creation with activation email from an
+> order which right now ends at the lead stage, im inclined to do it and just implement hcaptcha to
+> protect against spam account creation … it wont eliminate the need for the internal pathways and
+> processess but it will substantially reduce how many people show up as a lead and then need to wait
+> for me to send them a link, the first contact still shows up as a lead but they are a lead with an
+> account and the only reason this is important, is that it gates their app access to not show
+> community until they are accepted as a client."*
+
+**A/B, his own words** — *"I'm split … im inclined to do it."*
+- **A** — keep it as it is: a public order ends at the lead stage and waits for him to send a link.
+- **B** — a public order creates the account and sends the activation email, protected by hCaptcha.
+  The person still appears as a lead, but **a lead with an account**, and community stays hidden
+  until they are accepted as a client.
+**He leans B. Not locked.**
+
+**FOUND (fact-finding done at capture, because he asked for an opinion)**
+1. ⚠️ **THE DOOR IS ALREADY OPEN.** The self-service signing links already create a full account
+   from a public page with no human in the loop. B is **a second entrance to a door that is already
+   unlocked**, not a new door. That materially weakens the risk case for A.
+2. ⚠️ **B CONTRADICTS A RULE HE SET THE DAY BEFORE.** Ruling 11 (2026-08-24): *"Every account holder
+   gets the community feed … gated by ACCOUNT, never by having bought something,"* and the guard was
+   deleted to make that true — **community is currently on for every account.** If leads start having
+   accounts, then under today's rule **a lead sees community immediately**, which is the opposite of
+   what B is for.
+3. ✅ **THE GATE HE WANTS ALREADY EXISTS AND IS NOT "HAS AN ACCOUNT."** App access is already decided
+   by **membership status**, not by having an account. A lead-with-an-account is a member who is not
+   yet active. **No new flag needs inventing** — which matters, because inventing one is how this
+   codebase has repeatedly ended up with a single flag carrying two meanings.
+4. ⚠️ **DEPENDS ON CR-27.** *"Until they are accepted as a client"* is a state change, and **nothing
+   in the system can currently accept or approve anything.**
+
+**ASK-OWNER**
+1. Confirm the gate moves from *has an account* to *membership is active* — and that ruling 11 is
+   **re-worded, not reversed** (its intent was "buying something must not be the price of entry";
+   that stays true).
+2. **What can an un-accepted account actually reach?** Not "what is hidden" — what is *reachable*.
+   That list is the real security decision; hCaptcha only controls how many of them there are.
+3. Does the activation email say anything different for a self-created account than for one he sends?
+
+**RECOMMENDATION (mine, asked for):** **B, with the gate on membership status.** The friction it
+removes is real, the door it opens is already open, and the mechanism to hold community back already
+exists. The work is not hCaptcha — it is CR-27 and one careful re-wording of ruling 11.
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
@@ -672,6 +717,8 @@ answer."*
 | **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
 | **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
 | **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **CR-43 → CR-27** | "accepted as a client" is a state change nothing can currently make |
+| **CR-43 → ruling 11** | community is gated by ACCOUNT today; leads with accounts would see it immediately |
 | **CR-38…CR-42 → CR-16** | changing an offering is one case of line-item editing; build the model, not the button |
 | **CR-41 → CR-29** | a public rate card and three cadence prices are the same pricing rebuild |
 | **G9 ← everything** | each group's fix should carry its globalization, or the refactor inherits 34 pop-ups instead of 33 |
