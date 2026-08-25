@@ -54,7 +54,7 @@ as is and should be reimagined entirely."* **Ask it before researching, not afte
 
 # G6 · PEOPLE SURFACES
 
-## CR-30 · G6 · captured ⚠️ SUPERSEDES CR-31…CR-36
+## CR-30 · G6 · captured — surface model ✅ SETTLED ⚠️ SUPERSEDES CR-31…CR-36
 **SAID**
 > *"the modal needs to be total thrown out as is and should be reimagined entirely and the contact
 > record page needs the same treatment and the modal design is a great layout for the contact record
@@ -79,11 +79,46 @@ do. **They are requirements for the new thing, not fixes to the old one.**
 5. Is any of this reachable by URL today, and what breaks if the address changes? (D17)
 6. **Standing Q1:** is there a global layout/shell this should be built from, or does it become one?
 
-**ASK-OWNER**
-1. ❗ **STILL OPEN, asked 2026-08-25, not yet answered:** is the reimagined surface **one thing in two
-   modes** (quick view / full record), or **two things**?
-2. Does a lead ever need the full record, or only the submission + promote?
-3. What must be visible **without a click** on the client surface?
+**✅ ANSWERED — owner, 2026-08-25. THE SURFACE MODEL IS SETTLED.**
+> *"A lead only needs to show me what they submitted and then if i want to take action for them im
+> promoting them to an account and it moves to client and becomes a client record page and i see all
+> the options as button tabs like the modal shows me now, and i can configure everything as i need
+> to, i probably have a cover page that i see for provisioning them for their first order and this is
+> inherited from their submission if there is one attached and then once that order is correct maybe
+> i want to do something like add a horse record and other types of things that are found on the
+> client records and im able to save it and im able to send the activation link."*
+
+**Not one thing in two modes, and not two peer surfaces. A sequence:**
+
+| Stage | Surface | Contains |
+|---|---|---|
+| **Lead** | minimal | **what they submitted.** One action: **promote to an account.** Nothing else — a lead is not a record yet |
+| **↓ promote** | | the lead becomes a client |
+| **Client** | **client record PAGE** | **all the options as button tabs** — the modal's tab set, on a page |
+| **↳ landing** | **a provisioning cover page** | their **first order**, **inherited from their submission** where one exists |
+| **↳ then** | the other tabs | add a horse record, and everything else found on a client record |
+| **↳ acts** | | **save**, and **send the activation link** — two separate acts |
+
+⚠️ **This resolves CR-32's A/B: option B**, with the refinement that the lead surface is not a
+smaller record — **it is a submission and a button.**
+⚠️ **The provisioning form (CR-15, CR-17–CR-20) becomes the cover page of the client record page.**
+Those requirements carry forward into it; that is where they land.
+⚠️ *"i probably have a cover page"* — recorded with his hedge intact. **Confirm in review.**
+
+**ASK-REPO** *(added by this answer)*
+1. Does the client record page have a real address of its own today, and what breaks when a person
+   moves from lead to client? (D17 — a promoted lead should not lose its link)
+2. Is **promote** already an act in the system, or is it currently implied by sending an invitation?
+3. Where does a lead's submission attach to the new client, so the cover page can inherit it?
+4. What happens to the **other** places a person is shown (Partners, Vendors, Archived, Review) —
+   do they all become this page?
+
+**ASK-OWNER** *(added by this answer)*
+1. Is **promote** purely internal until you press *send the activation link* — i.e. no email leaves
+   on promotion? *(The save/send split already exists on the provisioning form.)*
+2. A lead you decide **against** — does it get an outcome (declined, archived), or just sit?
+3. If there is **no submission** — staff creating a client from scratch — what does the cover page
+   show?
 
 ---
 
@@ -111,7 +146,8 @@ the lead surface has one. **The person who needs the record least has it.**
 - **A** — literal swap: client gets the modal, lead gets the page.
 - **B** — by *kind of surface*: **client gets a PAGE** (rich, desktop-first), **lead gets a MODAL**
   (quick, one act: promote). B is what the rest of the message describes.
-**Neither is chosen. Discuss in step 3.**
+✅ **RESOLVED 2026-08-25 — B, refined.** See CR-30: the lead surface is not a small record, it is
+**the submission plus a promote button**, and the client page carries the modal's tabs. 
 
 **Caveat he attached:** *"i might be on the phone and the phone is my working device for modifying
 the lead record"* — whatever wins must work on a phone.
