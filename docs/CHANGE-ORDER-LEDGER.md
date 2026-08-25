@@ -1265,6 +1265,70 @@ small, the sweep is not.
 3. ⚠️ **CR-50 says a lead's preferences do not show.** Where does this toggle live for someone who
    has not been promoted yet?
 
+## CR-62 · G6 · captured — card order and layout, lead and client ⚠️ SUPERSEDES CR-53's order
+**SAID**
+> *"lets change my list order for mobile layout on the lead only view of the cards on the account page
+> to: my profile, my stable, my orders, my gifts, my login. on desktop my profile goes on the left in
+> row 1, my stable goes on the right in row 1, my orders goes on the left in row 2, my gifts goes on
+> the right in row 2, and my login goes on the left in row 3. When their Lead designation is promoted
+> to Client, they are granted the extra cards and the list becomes: profile, stable, orders, gifts,
+> lessons, preferences, posts, saved items, documents, files, login."*
+
+**LEAD — mobile (single column):** `My Profile` → `My Stable` → `My Orders` → `My Gifts` → `My Login`
+
+**LEAD — desktop (two columns):**
+| Row | Left | Right |
+|---|---|---|
+| 1 | **My Profile** | **My Stable** |
+| 2 | **My Orders** | **My Gifts** |
+| 3 | **My Login** | *(empty)* |
+
+⚠️ **Same sequence, read left-to-right then down** — so ONE list drives both layouts. **It is a
+column count, not a second ordering.** *(Confirms the CR-57 assumption that mobile is single-column.)*
+
+**CLIENT — eleven cards:** `Profile · Stable · Orders · Gifts · Lessons · Preferences · Posts ·
+Saved items · Documents · Files · Login`
+⚠️ **The first four are unchanged and Login stays last** — promotion **inserts six cards into the
+middle**. Nothing moves; the lead's world is a prefix of the client's.
+
+## CR-63 · G6 · captured — ⚠️ OWNER ASKED FOR MY TAKE (cannot test it himself)
+**SAID**
+> *"i want your take on it since there arent items for me to test this with because the abby account
+> doesnt have things in places like lessons or orders. I noticed the nav item for my lessons opens a
+> dedicated page whereas the my lessons card in account expands to show something. why is there a
+> difference? do we need it shown in both places? if so should they have the same functionality (ie:
+> one uniform surface two locations to get to it? should we remove my documents from the nav and
+> replace it with my orders? seems like orders is a recurring thing and docs are one time maybe two
+> possibly 3 lifetime total so they would want to see orders frequently and documents rarely if
+> ever..."*
+
+**Four questions, and the first three are one question.**
+
+**MY TAKE — recorded here for step 3, and given briefly in-thread because he is blocked from
+testing it:**
+
+**1–3. Nav and card should not be two implementations.** A card that expands into a working surface
+and a page that is a different working surface is the same defect this ledger keeps finding —
+two things doing one job, drifting apart. **The card should be a SUMMARY with a way through to the
+page; the page is where the work happens.** That gives one surface to build and maintain, and the
+account page becomes a consistent index rather than eleven small apps.
+⚠️ **This is a G9 rule, not a lessons fix** — it decides the behaviour of all eleven cards.
+
+**4. Yes — swap Documents out of the nav for Orders.** His reasoning holds: **the nav should carry
+what recurs.** Orders are ongoing; documents are two or three events in a lifetime. Documents stay a
+card, reachable, just not occupying a permanent slot. ⚠️ **One caveat:** documents are *rare but
+urgent* — an unsigned one is blocking. **That belongs on the dashboard as a notification (already
+specified in CR-59), not in the nav** — which is exactly why the nav slot is the wrong home for it.
+
+**ASK-REPO**
+1. Which of the eleven cards expand into a working surface today, and which already summarise?
+2. Which have a dedicated page as well? *(The overlap is the duplication.)*
+3. Does the nav's composition come from one place, or is it assembled per surface?
+
+**ASK-OWNER** *(step 3)*
+1. Confirm: **card = summary + doorway, page = the work.** Applied to all eleven.
+2. Does anything genuinely belong ONLY on a card, with no page behind it?
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
