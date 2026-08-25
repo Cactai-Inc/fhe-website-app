@@ -198,6 +198,12 @@ deleting (D32).
 3. **The ops inbox is config, not a constant** — `CONTACT/OPS_INBOX_FALLBACK`. Read it, don't
    retype the literal.
 
+### ❓ QUESTIONS — §2
+1. **A booking created inside its own reminder window gets no reminder** — nothing fires between
+   hourly ticks. Accept it (the 07:00 rundown and the day sheet still show it), or send on create?
+2. **Who counts as "the ops inbox"** when a second staff identity exists? Today one address gets
+   everything. Is the 07:00 rundown always `hello@`, or per-instructor?
+
 ---
 
 ## 3. THE DAY SHEET — a static daily view that advances
@@ -215,6 +221,12 @@ already renders "every session today, with whether its plan is ready"
 - **Items are not only lessons.** Horse care services, and TASKS: supplements, medication, calling
   the vet. ⚠️ `horse_medications` and `horse_health_events` exist; **whether a task is a `booking`
   row or its own thing is an open design question** — see §7.
+
+### ❓ QUESTIONS — §3
+1. **What does "advance" mean exactly** — an item leaves the forward list at its START time, or at
+   its END time? A lesson in progress is arguably neither ahead nor behind.
+2. **Does the day sheet ever show tomorrow?** "The day's rundown" is today; at 6pm, is the next
+   thing on it tomorrow's first item or nothing?
 
 ---
 
@@ -246,6 +258,13 @@ them.**
 order · fulfillment · lesson_plan` (1,142 rows). **It has no `booking` entity_type.** Adding one is
 the cheapest correct way to get the item log, and it reuses a read surface the deal pages already
 use rather than inventing `booking_status_log`.
+
+### ❓ QUESTIONS — §4
+1. **Client no-show vs horse unavailable — one status with a logged reason, or two statuses?**
+   Recommend one (`no_show` + reason), since the owner named both under one word.
+2. **Does marking an item `completed` do anything beyond display?** Notes, credit consumption and
+   billing all plausibly hang off it. Scope deliberately.
+3. **Who may set a disposition — Claire only, or any staff?**
 
 ---
 
@@ -282,6 +301,13 @@ booking path (`book_open_slot`) takes a `p_booking_id`, i.e. it books an EXISTIN
 (`request_open_time(p_starts_at, p_ends_at, …)`) takes a time directly and does not need one. So
 this ruling likely retires `book_open_slot` as well — confirm before deleting (D32: keep the
 function, remove the callers and the publisher).
+
+### ❓ QUESTIONS — §5
+1. **Does retiring published slots retire `book_open_slot`?** It takes a `p_booking_id` — it books a
+   slot that already exists. With no published slots there is nothing for it to book.
+2. **What replaces it for a client self-booking?** `request_open_time(p_starts_at, p_ends_at, …)`
+   takes a time directly and needs no slot — is that the whole answer?
+3. **Do the 494 existing `available` rows get deleted, or left to age out?** They run to 2026-09-20.
 
 ---
 
@@ -324,6 +350,14 @@ one name with two meanings.**
 request and their offering is scheduled the docs get triggered"* — and the approval it names does
 not exist yet. Documents currently trigger on the purchase `draft → open` transition instead.
 
+### ❓ QUESTIONS — §6
+1. **Which of the ten `line_item_state` values does the barn actually use?** Ten were defined and
+   one is written. Approving may only need `received → approved → confirmed`, and the rest may be
+   scaffolding to retire (D32: keep the enum, stop pretending it is a workflow).
+2. **Is "approve the request" the SAME act as "open the order"?** §14.2 shows Rachel's order stuck
+   in `draft`. If they are one act, this is one build; if two, the order of them matters.
+3. **Who approves — Claire only, or CJ too?**
+
 ---
 
 ## 6b. NAME A HORSE NOW, CLAIM IT TO A RECORD LATER
@@ -361,28 +395,29 @@ the control is built — both reference `horse_id` but their pickers were not re
 
 ---
 
-## 7. OPEN QUESTIONS FOR THE OWNER
+## 7. THE QUESTION INDEX — every open decision, by section
 
-1. ~~What timezone is the barn in?~~ **ANSWERED: `America/Los_Angeles`.** Only "where it lives"
-   remains, and that is settled by precedent — tenant settings, not a constant.
-2. ~~How precise must "1 hour prior" be?~~ **ANSWERED: hourly cron, rounded down.** Rule and table
-   in §2. No plan-tier change needed.
-3. ~~Is a task a `booking` row?~~ **ANSWERED, owner 2026-08-24 — see §9.** Timed-vs-day-level is
-   **Claire's call at scheduling time**, not a derived property. So it is one record type with an
-   optional time (`kind='task'`, `is_flexible` carrying "no specific time"), and the answer opened
-   a larger question about where the requirement comes from.
-4. ~~Does a client with multiple items that day get one email or several?~~ **ANSWERED, owner
-   2026-08-24: "clients get 1 email."** One email per client per send, listing everything they have
-   that day. ⚠️ Note this applies to the 09:00 email; the **1-hour-prior reminder is per item by
-   definition** — two lessons three hours apart get two reminders, because each is an hour before a
-   different thing.
-5. **Client no-show vs horse unavailable** — one status with a logged reason, or two statuses?
-   Recommend one.
-6. ~~What wrote the 00:00–13:00 booking?~~ **ANSWERED — a 12 AM / 12 PM slip, corroborated by the
-   data. See §1.** The remaining action is to confirm the duplicate and remove it.
-7. ~~Where does an unclaimed horse name get claimed?~~ **ANSWERED, owner 2026-08-24 — see §12.**
-   At the moment a horse is added to an account, from a list of horses **not currently assigned to
-   anyone**. Two of the three parts turn out to be built already.
+⚠️ **Questions live UNDER the section that raised them** (owner, 2026-08-25). This is the index, not
+the content — each `❓ QUESTIONS` block holds the detail and the evidence behind it.
+
+| § | Subject | Open |
+|---|---|---|
+| **2** | The emails | 2 — reminder gap inside the tick, who the ops inbox is |
+| **3** | The day sheet | 2 — what "advance" means, whether tomorrow ever shows |
+| **4** | Disposition & the log | 3 — no-show vs horse unavailable, what `completed` triggers, who may set it |
+| **5** | Removing open slots | 3 — `book_open_slot`'s fate, what replaces self-booking, the 494 rows |
+| **6** | Pending & approval | 3 — which states are real, is approve == open the order, who approves |
+| **8** | The scheduling panel | 3 — what "relevant" means, filter vs order, draft-or-open |
+| **14** | The monthly cycle | 4 — 30 days' notice, dunning vehicle, non-payers, the lead-alert email |
+| **15** | Changing an ordered offering | 3 — price follows or holds, paid orders, recurring days |
+| **16** | Two surfaces, one job | 2 — what `Admin.tsx` uniquely does, does TASK-ROSTER stand |
+| **17** | Surfaces & pricing | 7 — lead tabs, route vs modal, the other three cadences, +$20 on weekly, which rate anchors, what "unlock" means when late, are `products`/`tiers` dead |
+
+**Answered and closed** — kept for the record, do not re-ask:
+timezone (`America/Los_Angeles`) · reminder cadence (hourly, rounded down, `[H+1, H+2)`) · one email
+per client per send · what wrote the 00:00 booking (a 12 AM/PM slip) · where an unclaimed horse name
+is claimed (§12) · is a task a booking row (§9.1, Claire decides) · does `med_schedule` generate
+tasks (**no** — §9.3).
 
 ---
 
@@ -490,6 +525,15 @@ holds the standing-weekly editor — `fetchClientMonthlyPlans`, `setRecurringDay
 ⚠️ TASK-WALK2 recorded the standing-slot recurring feature as **unreachable on two identities**.
 Moving it to the client card is likely the fix for that as well — check before treating them as
 separate work.
+
+### ❓ QUESTIONS — §8
+1. **What makes an offering "relevant" to a client?** Held entitlement is obvious; is a lapsed one
+   relevant? Is an offering they have never bought but could?
+2. **Should the offering list be filtered, or ordered?** Hiding is decisive but invisible; sorting
+   what they hold to the top keeps everything reachable. The owner said filter — confirm hiding
+   rather than de-emphasising.
+3. **When a booking GENERATES a purchase, is it created `draft` or already open?** Given §14.2, a
+   new draft nobody opens would repeat the exact defect.
 
 ---
 
@@ -932,6 +976,15 @@ two of the eight values nothing has ever written. **This ruling is what finally 
 (nothing opens an order). 14.3 is the big one and depends on §4's disposition work, because
 `pending_payment → confirmed` is the same status machinery.
 
+### ❓ QUESTIONS — §14
+1. **Where does "30 days' notice" live and what enforces it?** Stated, nowhere in the system.
+2. **Is `purchase_unpaid` the right vehicle for dunning** (it exists and has fired exactly once), or
+   does the countdown need its own notification kind?
+3. **What happens to a rider who never pays?** The countdown extends forever unless something ends
+   it. Does the plan lapse, and after how long?
+4. **Does the lead-alert email path need fixing at the same time?** Only 2 of 12 `request_new` rows
+   have ever been emailed.
+
 ---
 
 ## 15. THE ORDERS TAB — five revisions BUILT, one still needs a decision
@@ -1011,6 +1064,13 @@ side simply does not point at it.
 `ContactDossierModal`, then work out what `Admin.tsx` still uniquely does — `RosterCard`'s badges,
 rings, flags and `AgreedLessonSection` are not obviously in the modal — and move it, rather than
 losing it. **Audit before switching.**
+
+### ❓ QUESTIONS — §16
+1. **What does `Admin.tsx` still do that the modal does not?** `RosterCard`'s badges, rings and
+   flags, and `AgreedLessonSection`, are not obviously in the dossier. **Audit before switching, or
+   they are lost silently.**
+2. **Does TASK-ROSTER's ruling stand or is it superseded?** It settled the Clients page as "THE one
+   people page" on 2026-08-10; §17 reverses that in practice.
 
 ---
 
