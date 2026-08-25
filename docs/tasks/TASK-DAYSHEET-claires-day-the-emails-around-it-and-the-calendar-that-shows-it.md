@@ -255,6 +255,41 @@ not exist yet. Documents currently trigger on the purchase `draft → open` tran
 
 ---
 
+## 6b. NAME A HORSE NOW, CLAIM IT TO A RECORD LATER
+
+**Owner, 2026-08-24:** *"for the horse section we should be able to write in the name of a horse and
+claim it later for a horse record. right now its either select from the list or no horse lol"*
+
+**Confirmed.** `CalendarItemPanel.tsx:698` and `:733` are both a bare `<select>` whose only escape
+hatch is `<option value="">No horse</option>`. There is no free-text path, and
+**`bookings` has exactly one horse column — `horse_id uuid`** — so there is nowhere to put a name
+that is not yet a record. This needs a schema addition, not just a control change.
+
+**The shape already exists twice in this codebase, and the second one is the right model:**
+- `PartiesHorseCard` reaches `AddHorseModal` (built by TASK-PAMELA) — the *heavy* path: create the
+  full record now. The owner is explicitly asking for the light one.
+- `lookup_suggestions` — propose a value, resolve it later from a review queue. **Same shape.**
+  ⚠️ Note the standing D13 gap: `lookup_suggestions` **has no review page**, so if this is modelled
+  on it, the claim step must get a surface or it becomes another queue nobody can drain.
+
+**Build:**
+1. `bookings.horse_name text` alongside `horse_id` — a name with no record yet.
+2. The control becomes select-or-type. `HorseIntakeForm` already has a `SelectOrOther` for height;
+   reuse it rather than writing a third variant.
+3. **The claim step**: on the horse record surface, an unclaimed name resolves to a real
+   `horse_id`, and every booking carrying that name updates. This is the part that makes it worth
+   doing — without it, the typed name is just a note.
+4. ⚠️ **One field, two meanings, again** (trap §4.5): once both columns exist, every reader must
+   decide what "the horse" means. **Rule to write down: `horse_id` wins when set; `horse_name` is
+   display-only and never an authority.** Anything that gates on a horse record — care services,
+   medications, `ensure_horse_documents` — must keep requiring `horse_id`.
+
+**Also carries a bare horse select, same treatment:** `CreateModal.tsx:223`,
+`PartiesHorseCard.tsx:237`. `ScheduleSessionForm` and `AgreedLessonPanel` should be checked when
+the control is built — both reference `horse_id` but their pickers were not read for this note.
+
+---
+
 ## 7. OPEN QUESTIONS FOR THE OWNER
 
 1. **What timezone is the barn in, and where does it live?** Blocks every time in §2.
@@ -270,6 +305,9 @@ not exist yet. Documents currently trigger on the purchase `draft → open` tran
 5. **Client no-show vs horse unavailable** — one status with a logged reason, or two statuses?
    Recommend one.
 6. **What wrote the 00:00–13:00 booking?** Needs finding before the row is touched.
+7. **Where does an unclaimed horse name get claimed?** (§6b) A tab on the horse records page, or a
+   prompt on the booking itself when someone next opens it. Recommend the horse records page — it
+   is where someone with the authority to create a record already is.
 
 ---
 
