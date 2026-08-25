@@ -394,6 +394,25 @@ function InvitePanel({ row, onSent }: { row: ClientAccountRow; onSent: () => voi
              scheduling-shaped order — the "huge section" the owner met on a
              contact who is neither. */
           scheduling={<AgreedLessonSection onAgreedChange={setAgreedLesson} />} />
+
+        {/* ⚠️ PRIORITY-1, owner 2026-08-25: "on pamelas account ive added her
+            information and saved it, but now i need to add a horse and there is no
+            way for me to do that because even though she is a client, the only thing
+            i see when i click on her record is the intake page."
+
+            THE CAUSE: this branch returned the provisioning form and NOTHING ELSE, so
+            a saved-but-not-sent account had no record behind it — no horses, no way
+            to reach them. A draft is a real account whose claim link simply has not
+            been delivered; the fact that it is undelivered says nothing about whether
+            it owns a horse.
+
+            The horse card is the same one the dossier already uses, mounted here so
+            the record exists before the invitation does — which is exactly the order
+            of work when a contract has to be built for someone who has not signed in
+            yet. */}
+        <div className="mt-4">
+          <ClientHorseRecordsCard contactId={row.contact_id} />
+        </div>
       </section>
     );
   }

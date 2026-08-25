@@ -1880,36 +1880,17 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <HorseGate documentId={id} onAttached={() => { void load({ blank: false }); }} />
       )}
 
-      {/* H5: horse-confirmation control for clause-model documents (the legacy
-          flat renderer's header affordance never renders for these, so the
-          Lessor previously had NO way to confirm). Gated on RIGHTS, not phase:
-          the Lessor (or staff) sees it in every pre-lock state (editable /
-          editing / in_review); other parties see the awaiting note ONLY while
-          unconfirmed. */}
-      {structure && !!doc.horse_id && horseFields.length > 0 && editablePhase
-        && !isVoid && !showHorseGate && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 bg-white border border-green-800/10 rounded-xl px-5 py-3">
-          <p className="text-sm font-medium text-green-900">Horse information</p>
-          {horseConfirmed ? (
-            <span className="inline-flex items-center gap-1.5 text-xs text-green-700">
-              <ShieldCheck size={14} /> Confirmed accurate
-              {(isLessor || isStaff) && (
-                <button type="button" className="underline text-muted ml-2"
-                  onClick={() => void act(() => reopenHorseSection(id!))}>
-                  <RotateCcw size={11} className="inline" /> reopen
-                </button>
-              )}
-            </span>
-          ) : (isLessor || isStaff) ? (
-            <button type="button" className="btn-outline-gold text-xs"
-              onClick={() => void act(() => confirmHorseSection(id!), 'Horse information confirmed.')}>
-              <ShieldCheck size={13} /> I reviewed the horse info — it's accurate
-            </button>
-          ) : (
-            <span className="text-xs text-muted">Awaiting confirmation by the horse’s owner</span>
-          )}
-        </div>
-      )}
+      {/* ⚠️ THE HORSE-CONFIRMATION CONTROL WAS REMOVED HERE (owner, 2026-08-25).
+          "i have no way to know if its accurate, the data comes from the horse record
+          and the horse record is either mine and i created it so i think its accurate
+          or its not mine and i dont know if its accurate ... remove that entirely from
+          the system it serves no purpose."
+
+          It was also a LIVE LOCK BLOCKER that nobody had ever satisfied — zero of 68
+          documents were ever confirmed — so every contract carrying the horse fields
+          was refused a lock. Removed from the blocker set in migration
+          20260825T1200. The confirm/reopen functions and the two columns remain and
+          have no caller (D32). */}
 
       {/* Co-buyer capture: the co-buyer election is YES but no second BUYER party
           exists yet. Pick an existing account/contact (the same list the primary

@@ -776,7 +776,10 @@ export function HorseIntakeForm({
   const hasRealName = filled(f.registered_name) || filled(f.nickname);
   const nameAnswered = answered(f.registered_name) && answered(f.nickname);
   // The owner (who owns this record) always makes the emergency euthanasia authorization.
-  const euthanasiaAnswered = f.euthanasia_authorization === 'A' || f.euthanasia_authorization === 'B';
+  /* Removed from the form 2026-08-25 — so it can no longer block completeness.
+     Kept as a constant rather than deleted so the shape of the gate below stays
+     readable and the column keeps its meaning for anything that already has a value. */
+  const euthanasiaAnswered = true;
   // Vet/farrier phones are doc-merged tokens → required (covered by alwaysKeys);
   // only the lessee's email keeps the name-satisfies-the-pair relaxation.
   const secondariesOk = !leased || secondaryOk(f.lessee_name_text, f.lessee_email);
@@ -805,7 +808,6 @@ export function HorseIntakeForm({
         out.push(HORSE_DOC_REQUIRED_LABELS[k as string] ?? CONDITIONAL_LABELS[k as string] ?? String(k));
       }
     }
-    if (!euthanasiaAnswered) out.push('Emergency euthanasia authorization');
     if (!filled(homeLoc.name)) out.push('Home location name');
     if (!leased && currentDiffers && !filled(currentLoc.name)) out.push('Current location name');
     if (leased && !leaseFromContract && !filled(leaseLoc.name)) out.push('Lease location name');
@@ -847,10 +849,6 @@ export function HorseIntakeForm({
        euthanasia + answer-or-N/A gates still apply on every OTHER caller, where
        this submit is also the moment the horse's onboarding documents get made. */
     if (!createEarly) {
-      if (!euthanasiaAnswered) {
-        reject('Please choose an emergency euthanasia authorization (Option A or B).');
-        return;
-      }
       if (!complete) {
         const missing = missingRequired();
         reject('Please answer every required field — fill it in or mark it N/A.'
@@ -1162,32 +1160,14 @@ export function HorseIntakeForm({
           second={{ label: 'Phone', kind: 'tel', value: f.farrier_phone, onChange: set('farrier_phone'), placeholder: '(555) 555-5555', required: true }} />
       </Section>
 
-      <div>
-        <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mt-4 mb-2">Emergency euthanasia authorization (required)</p>
-          <p className="text-xs text-muted mb-2">
-            As the owner, choose one. This is included in your horse’s Emergency Vet Authorization.
-          </p>
-          <div className="flex flex-col gap-2">
-            {([
-              ['A', 'I AUTHORIZE the attending veterinarian to perform humane euthanasia if, in the vet’s professional judgment, it’s necessary to relieve the horse’s suffering and I can’t be reached in time.'],
-              ['B', 'I DO NOT AUTHORIZE euthanasia without my express consent. Every reasonable effort must be made to reach me (or my emergency contact) before any such decision, except where required by law.'],
-            ] as const).map(([opt, text]) => {
-              const on = f.euthanasia_authorization === opt;
-              return (
-                <button key={opt} type="button"
-                  onClick={() => setF((p) => ({ ...p, euthanasia_authorization: opt }))}
-                  className={`flex items-start gap-3 rounded-lg border px-4 py-3 text-left focus-ring transition-colors ${
-                    on ? 'border-green-700 bg-green-50' : `bg-white hover:border-green-800/30 ${showError && !euthanasiaAnswered ? 'border-red-400' : 'border-green-800/15'}`
-                  }`}>
-                  <span className={`mt-0.5 w-4 h-4 rounded-full border grid place-items-center shrink-0 ${on ? 'border-green-700' : 'border-green-800/30'}`}>
-                    {on && <span className="w-2 h-2 rounded-full bg-green-700" />}
-                  </span>
-                  <span className="text-sm text-green-900"><strong>Option {opt}</strong> — {text}</span>
-                </button>
-              );
-            })}
-          </div>
-      </div>
+      {/* ⚠️ THE EMERGENCY EUTHANASIA BLOCK WAS REMOVED HERE (owner, 2026-08-25).
+          It was asked on the client-facing intake, and the same component is mounted
+          from a CONTRACT — which he confirmed — so a client met it on both paths.
+
+          Removed from the FORM only. The authorisation itself is a real thing that
+          belongs in the horse's Emergency Vet Authorization document; this was the
+          wrong place to collect it, not a thing that stopped mattering. The column
+          and every value already stored are untouched (D32). */}
 
       {err && <p className="form-error text-sm text-red-700 mt-2">{err}</p>}
       {saveState !== 'idle' && (
