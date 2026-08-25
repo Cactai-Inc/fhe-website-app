@@ -474,21 +474,49 @@ rather than just read by the contract parties."* **That machinery is built.** Ve
 field operationally.** A lease can state exactly which supplements a horse gets, who administers
 them and who pays, and none of it reaches Claire's day.
 
-**That is the owner's sentence, exactly: captured, rendered, never utilised.**
+**That is the owner's sentence, exactly: captured, rendered, never utilised.** ⚠️ But see §9.3 —
+this is an observation about the mechanism, **not a licence to wire every structured field to an
+operational consumer.** Only one field has earned that, and the medication field explicitly has
+not.
 
-### 9.3 The two connections worth making first
-1. **`TXN.MEDICATIONS` → the tasks in §3.** The regimen is already structured per item with an
-   administering party. Generating Claire's daily supplement/medication items from it is a read
-   away.
-2. **`TXN.DAYS_USED` → the standing weekly slots in §8.6.** The lease's reserved weekly days are
-   *already a week grid*, and §8.6 wants a standing weekly day+time to materialise on the calendar
-   for the month. **Same data, never consumed.** Do not build a second weekly-schedule capture.
+### 9.3 ⚠️ ONE CONNECTION, NOT TWO — a correction
+
+**An earlier draft of this section proposed generating Claire's daily supplement/medication tasks
+from `TXN.MEDICATIONS`. THAT IS WRONG and the owner corrected it, 2026-08-24:**
+
+> *"we dont have an offering in horse care that involves giving supplements or medication, we
+> incorporate that into the lease agreements as a field to provision because it needs to be and we
+> accomodate those requests where we feel comfortable in combination with exercise purchases. but
+> we dont expressly offer it and it cant hurt to have it in writing but it would be in a notes field
+> and only AI can make use of that and AI is a v2 platform feature."*
+
+**Confirmed against the catalog.** The horse segment offers exactly three services —
+`HORSE_CLIPPING`, `HORSE_EXERCISE`, `HORSE_TRAINING`. **There is no medication or supplement
+offering.** It is accommodated where the barn is comfortable, alongside an exercise purchase, and
+it is not sold.
+
+**So:**
+- **`TXN.MEDICATIONS` stays a written lease provision and generates NOTHING.** It exists so the
+  arrangement is in writing. It is a **notes field**, and *"only AI can make use of that and AI is
+  a v2 platform feature."*
+- **Supplement/medication items on Claire's day sheet are CLAIRE-CREATED**, like any other task —
+  consistent with §9.1, where the timed-vs-day-level call is hers. They are not derived from a
+  purchase (there isn't one) and not auto-generated from the contract (deliberately).
+- ⚠️ **Do not build a med_schedule → task generator.** It would manufacture obligations the barn has
+  not sold and does not want to be held to.
+
+**The connection that DOES survive:**
+
+**`TXN.DAYS_USED` → the standing weekly slots in §8.6.** The lease's *"Reserved days of use"* is
+already a `week_grid`, and §8.6 wants a standing weekly day+time to materialise on the calendar for
+the month. **Same data, never consumed. Do not build a second weekly-schedule capture.** This one is
+a reserved entitlement the client actually bought, which is exactly why it is different from the
+medication field.
 
 ### 9.4 ⚠️ THREE HONEST CAVEATS
-1. **The cadence inside `med_schedule` is FREE TEXT.** `it->>'schedule'` is a prose string
-   ("twice daily"). Item, dose and responsible party are structured; **when** is not. Generating
-   dated tasks needs that one sub-field structured, or Claire setting the cadence once when she
-   accepts the requirement. **This is the actual gap — not the whole mechanism.**
+1. ~~The cadence inside `med_schedule` is free text.~~ **MOOT — see §9.3.** Nothing generates from
+   it, so the prose `schedule` sub-field is fine as it is. Left recorded only so nobody
+   "fixes" it for a consumer that must not exist.
 2. **`contract_fields` has ZERO rows in production.** The engine is built and no live contract
    currently exercises it — the only documents in prod are the seven onboarding releases (no lease,
    no bill of sale). So this is untested against real data, and anything built on it must be proven
