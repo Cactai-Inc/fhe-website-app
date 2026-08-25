@@ -945,6 +945,46 @@ orders for themselves* — but that distinction is not yet stated and should be.
    themselves** — is that the rule?
 2. Does the evaluation-lesson-first rule apply to a lead's self-built order the same way?
 
+## CR-52 · G6/G8 · captured — DELETE the "being activated" page
+**SAID**
+> *"there is an error page that says the account is in the process of being activated. I just hit it
+> when i entered a valid email address and the wrong password but the email address and password
+> combo match but the account was deleted. ive seen people land on this page when they go straight to
+> frenchheritageequestrian.com/app too. it needs to redirect to the login page and if it cant provide
+> a valid useful accurate error message, it shouldnt display anything, but the current page i want
+> deleted and thats because there is no such thing as an account being in the process of being
+> activated, so its an outright lie that harms us and the user."*
+
+**The ruling is unusually absolute — record it as such:**
+1. **DELETE the page.** Not reword it. **There is no such state**, so the page describes something
+   that cannot happen.
+2. **Redirect to login.**
+3. **If the message cannot be valid, useful and accurate — show NOTHING.** ⚠️ *"an outright lie that
+   harms us and the user"* — **silence beats a plausible-sounding falsehood.**
+
+**Two different ways in, both reported:**
+| Route | What happened |
+|---|---|
+| **Sign-in attempt** | valid email, wrong password — *"the email address and password combo match but the account was deleted"* |
+| **Straight to `/app`** | no session at all; other people have hit this too |
+
+⚠️ **The second is the common case** — anyone typing the bare app address gets told their account is
+being activated.
+
+**ASK-REPO** *(fact-finding assignments — produce, do not ask)*
+1. **Find the page and every route into it.** Two are reported; there may be more.
+2. ⚠️ **A DELETED ACCOUNT WHOSE CREDENTIALS STILL AUTHENTICATE.** Establish exactly what "deleted"
+   means here — soft-deleted contact, purged record, or an auth identity that outlived its rows. **A
+   sign-in that still resolves against a deleted account is worth understanding on its own**, and it
+   may be the real defect behind this page.
+3. What does hitting `/app` unauthenticated do today, and where should it land?
+4. **Standing Q2** — is there already a correct redirect-to-login path this can reuse?
+5. Are there **other** dead-end or error pages that assert a state the system does not have?
+
+**ASK-OWNER**
+1. When someone with no session hits `/app`, do they land on login **silently**, or with a short
+   "please sign in"?
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
