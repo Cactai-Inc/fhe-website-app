@@ -166,3 +166,74 @@ no audit table anywhere in this database.** Serving the customer destroys the tr
 
 **status: built** — but ⚠️ **built on the surface CR-30 throws away.** Carry the requirement, not
 the code.
+
+---
+
+# G1 · CALENDAR SURFACE
+
+## CR-01 · G1 · researched
+**SAID** *"i still cant click on things in the month view and get them to open and keep me in the
+month view. it should open a modal not take me to the week view."*
+**SAID** *"the dashboard shows the weekview of whats on the schedule and again, clicking something
+should open the modal but it takes me to the calendar."*
+**SAID** *"the booking provisioning and view is always a right side panel and it fucking sucks we
+need a large modal in the center of the screen."*
+**FOUND** Three complaints, one cause: the item panel is part of the calendar page, so nothing else
+can host it. It is already an overlay — it is simply pinned to the right edge and 448px wide for a
+fifteen-field form.
+**ASK-REPO** ⚠️ **Standing Q4 applies — does the item panel need reimagining rather than
+re-positioning?** CR-30 asked exactly this of the contact modal and the answer was yes.
+**ASK-OWNER** Same question as CR-30's: is this panel worth centring, or worth redesigning?
+
+## CR-02 · G1 · researched
+**SAID** *"there is something booked for 12am which is a physical impossibility and i have no way to
+open it because it only shows in the month view and its out of range in the week view."*
+**FOUND** One booking, midnight to 1pm. Unreachable for two reasons: the week grid only draws
+business hours, and an item is placed by its start hour only — so even a booking running through 1pm
+appears in no row. Cause of the value itself: a 12 AM / 12 PM slip, corroborated by an identical
+booking made the next day.
+**ASK-OWNER** Confirm the two bookings are the same client before deleting either.
+
+## CR-03 · G1 · researched
+**SAID** *"the calendar still shows a full list of all the open slots in green blocks, we need to
+remove this and just make the calendar open for booking by being empty … if something is booked on
+the calendar in a specific slot it shows as unavailable to anyone not involved and for something
+that doesnt have a specific time it just shows at the top of the day as an item being don[e] on that
+day, when the item is confirmed it changes from orange to green and when its complete … it fades but
+remains clickable and editable."*
+**FOUND** The green blocks are generated hourly by a job. **92% of everything in the bookings table
+is that generated furniture.** Removing it also removes the thing the self-booking path books.
+**ASK-REPO** What replaces client self-booking once there are no published slots? *(one candidate
+already exists)*
+**ASK-OWNER** Delete the existing generated rows, or let them age out?
+
+## CR-04 · G1 · researched
+**SAID** *"the calendar bookings still show reserved instead of the client name and activity (week
+and month view)."*
+**FOUND** The read already sends staff the full detail **and already labels the row as staff** — the
+screen just never looks at that label, so staff fall through to the same "Reserved" a stranger sees.
+**ASK-REPO** The read sends ids, not names — add names for staff, or look them up on screen?
+
+## CR-05 · G1 · researched
+**SAID** *"the calendar still shows bookings as 30 minutes when they should show 90 minutes for an
+evaluation lesson and 60 minutes for all other lessons."*
+**FOUND** The bookings are already an hour long — the calendar simply never looks at how long
+anything is, and draws every item the same size. **Nowhere in the system records how long a service
+takes.**
+**ASK-OWNER** Duration for every service, or only lessons for now?
+
+## CR-06 · G1 · captured
+**SAID** *"the scheduling panel still has the three position toggle at the top … it needs to be
+decommissioned, whatever its wired into and whatever controls it or whatever it controls all need to
+be dissolved and reconfigured so we dont break anything that is working."*
+**FOUND** Two of its three positions have never been used, ever. The third is how availability gets
+published — which CR-03 removes.
+⚠️ **CR-03 and CR-06 must be researched and decided TOGETHER**; each changes the evidence for the
+other.
+
+## CR-07 · G1 · researched
+**SAID** *"the time selection should be a dropdown list of the 30 minute increments a person can
+choose and it should account for what is on the calendar and the duration of the booking."*
+**FOUND** Today both start and end are free-form date-and-time boxes, which is what allowed CR-02.
+⚠️ **Depends on CR-05** (nothing knows durations) **and CR-03** (while the generated slots exist,
+every hour already looks busy, so a clash check would refuse everything).
