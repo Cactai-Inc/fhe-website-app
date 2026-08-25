@@ -33,6 +33,36 @@ already thinking about that area.** Two shapes of it, in his words:
 Everything else waits. **Silence is the correct output for a captured request that raises no
 widening question.**
 
+### ⚠️⚠️ WIDENING vs CLARIFYING — the distinction I got wrong (owner, 2026-08-25)
+
+> *"you are breaking the rules with these questions and ill tell you why … these dont pertain to
+> digging deeper into the ui or considering the impact on other surfaces im currently looking at,
+> these are clarifying questions, they take me down the rabbit hole in the wrong way, they ruin my
+> focus and my flow state so now im not thinking about finding problems and coming up with
+> solutions, im articulating specs and details, its hard to climb back out of this mental space to
+> the leve above it where im scanning for issues to resolve and chaining together the solutions so
+> they deliver unification and standardization."*
+
+**The test is not "is this a good question." It is WHICH ALTITUDE the question puts him at.**
+
+| | Asks him to | Effect |
+|---|---|---|
+| ✅ **WIDENING** | look **across** — other surfaces, sibling controls, whether the pattern repeats | keeps him scanning for problems and chaining solutions toward unification |
+| ❌ **CLARIFYING** | look **down** — specify a detail, define a state, decide an edge case | drops him into spec-writing; **the climb back up is expensive** |
+
+**Examples of what I asked that were wrong**, all three clarifying:
+*"Is promote silent?"* · *"Does a rejected lead get an outcome?"* · *"What does the cover page show
+with no submission?"* — each is a spec detail he would have reached on his own, and asking pulled
+him out of the altitude where he finds problems.
+
+⚠️ **A clarifying question is not saved by being important.** Those three were answered and the
+answers were substantial — that is not the point. **They cost him the flow state, and flow state is
+what produces the change orders in the first place.** Detail questions belong in **step 3**, where
+he has already chosen to be in specification mode.
+
+**When a detail is genuinely missing: go and find it (step 2), or write it down as ASK-OWNER and
+raise it in review.** Never mid-capture.
+
 ### 2. ⚠️ FACT-FINDING — the step that was missing
 **Before any question is asked and before any code is written**, go and look. Trace:
 
