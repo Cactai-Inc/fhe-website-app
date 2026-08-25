@@ -1691,6 +1691,72 @@ the right fit *(CR-45)*. **They are not hypothetical — they are on screen, tod
 is buyable under this service`, and two services flagged `LOOKS UNFINISHED — no cover image`. ⚠️ **The
 catalogue is already telling us it is incomplete.**
 
+## CR-68 · G2/G9 · captured — the client-facing Add-a-Horse modal
+**SAID**
+> *"the add a horse modal for the client facing "My Stable" card in Account page, shows two drop down
+> selection menus "Barn" and "Stall" but even though the sections are literally named Barn and Stall,
+> there is a selection menu with alternate choices Stable and Pen, neither of which can be selected.
+> It also instructs to leave barn blank if outdoor, that is dumb text and needs to be removed. the
+> idea for stable or stall or pen or barn is that the key terms used can be selected but we need an
+> empty option for them to input their own title for what the location is called at the place their
+> horse is kept. two fields with the option to set their own names and input a text entry to go with
+> it is sufficient to handle mos[t] cases and if there is more to share the notes section is the place
+> to do it but the placeholder text inside of the notes section needs to be changed so it says
+> "additional information that will be helpful for finding your horse". Trainer should have a
+> selection menu and list claire as the first option, then free text as a fall back, we as the company
+> maintain the trainer list globally but if the user enters a trainers name they can see that as an
+> option to select from in the future. Apply this to t[he] care giver, groom, and "other" on future
+> horses for this account only. Also, on the intake modal, accidentally clicking outside of it closes
+> it and erases the inputs. found that out the hard way."*
+
+### ⚠️ 68a — DATA LOSS: clicking outside the modal erases everything typed
+> *"accidentally clicking outside of it closes it and erases the inputs. found that out the hard way."*
+
+**Severity first: this destroys work with no warning and no undo.** ⚠️ **It is not specific to this
+modal** — the outside-click-to-close pattern is repeated across the app *(step 2 counted 33
+hand-rolled overlays)*. **Any of them containing a form has the same defect.**
+**Fix the pattern, not the instance:** a modal with unsaved input must not close on an outside click
+*(or must confirm first)*.
+
+### 68b — the location fields are broken and over-explained
+| | |
+|---|---|
+| **the bug** | fields labelled **Barn** and **Stall** offer **Stable** and **Pen** as choices, **and neither can be selected** |
+| **the copy** | *"leave barn blank if outdoor"* — ⚠️ **delete it.** *"That is dumb text"* |
+| **what it should be** | **two fields**, each: pick a key term *(barn · stable · stall · pen)* **or an empty option to type their own name for it**, plus a text entry for the value |
+| **anything else** | goes in **notes** |
+
+### 68c — the notes placeholder
+Change to exactly: **"additional information that will be helpful for finding your horse"**
+⚠️ **That reframes the whole section**: notes are not general remarks, they are **directions to the
+horse.** The two location fields plus this are meant to cover most cases.
+
+### 68d — people fields: a global list plus a personal one
+**Trainer:** a selection menu, **Claire first**, **free text as the fallback**.
+| | |
+|---|---|
+| **the company** | maintains the trainer list **globally** |
+| **the user** | types a name not on it — and ⚠️ **sees it as an option to select in future** |
+| **scope of that memory** | ⚠️ **"for this account only"** — their own additions do not join the global list |
+
+**Same treatment for: care giver · groom · "other".**
+
+⚠️ **STANDING Q2 — THIS PATTERN ALREADY EXISTS AND IS HALF-BUILT.** The app already has a
+**managed-options** concept with a **suggestions** side for values people propose. **It has 33 values
+across three vocabularies and NO editor anywhere, and the suggestions queue has no screen** — a
+standing gap already on the list. ⚠️ **CR-68d is the same mechanism with one new requirement: a
+suggestion that is visible only to the person who made it.** **Do not build a second one.**
+⚠️ **And it needs the D21 editor** — *an algorithm ships with an editor* — because "the company
+maintains the trainer list globally" means someone must be able to maintain it.
+
+**ASK-REPO**
+1. Why can `Stable` and `Pen` not be selected — disabled options, a value mismatch, or a broken
+   handler?
+2. Does the existing managed-options mechanism support a per-account scope, or is it global only?
+3. **How many modals contain a form and close on an outside click?** *(68a is a sweep.)*
+4. Is this the same intake form staff use *(CR-51 asked the same question)* — so does fixing it here
+   fix it there?
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
@@ -1725,6 +1791,8 @@ answer."*
 | **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
 | **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
 | **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **CR-68a → G9** | outside-click-closes destroys unsaved input; 33 hand-rolled overlays share the pattern |
+| **CR-68d → lookup options** | the propose-a-value mechanism exists, has no editor, and its queue has no screen |
 | **CR-66 ⟶ CR-63** | the nav question assumes we choose; the design says the person chooses |
 | **CR-67 ⟶ CR-32** | the phone is his working device, and the dashboard is unusable on it |
 | **CR-64 ⟶ CR-52** | second page asserting a false state; the sweep is now a task, not a question |
