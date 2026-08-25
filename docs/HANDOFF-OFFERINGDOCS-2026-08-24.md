@@ -203,9 +203,15 @@ of these at once, and four homes force a question with no correct answer. Audit 
   dependent-scoped variant. A parent can see their own lessons and nothing about the child they
   are paying for.
 
-**Open decisions for the parent shape:** who may see what (a guardian reading a minor's notes is
-right; the same mechanism pointed at an adult dependent is not — D8's linked-accounts item is
-recorded scope and unbuilt), and whether a parent **authors** notes, requests them, or only reads.
+**Open decisions for the parent shape — ONE REMAINS.**
+- ~~who may see what~~ **SETTLED, owner 2026-08-24: "we dont have adult dependents."** A dependent
+  IS a minor, so the `guardian_contact_id` link alone is sufficient authority — no age test, no
+  permission layer. Verified in production: exactly one dependent exists (Gabriella Olenik, DOB
+  2013), and she is a minor. Preserve C10: `is_minor_contact` keeps a minor from being emailed
+  directly, so a parent zone must read the child's activity without becoming a second path that
+  mails the child. D8's linked-accounts item is a different feature (adults sharing a record).
+- **STILL OPEN:** whether a parent **authors** trainer notes, requests them, or only reads them.
+  This changes the build materially.
 
 ### 5.2 ⚠️ CORRECTED — "sharing captured content" is NOT a new product
 

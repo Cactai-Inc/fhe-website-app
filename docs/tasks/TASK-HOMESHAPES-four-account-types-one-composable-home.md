@@ -110,8 +110,19 @@ over `bookings` + `fulfillment_units`. Small, and it unblocks the whole "Your ho
 **§3 — The parent surface**, which needs its own decisions before code:
 - a dependent-scoped read family (progress, plan, schedule, reports) — the guardian link exists,
   the reads do not;
-- **who may see what.** A guardian reading a minor's lesson notes is right; the same mechanism
-  pointed at an adult dependant is not. D8's linked-accounts item is recorded scope and unbuilt.
+- ~~**who may see what** — a guardian reading a minor's notes is right, an adult dependent is
+  not.~~ **SETTLED, owner 2026-08-24: "we dont have adult dependents."**
+  **A dependent IS a minor.** So the guardian link alone is sufficient authority — a
+  dependent-scoped read needs no age test and no permission layer beyond
+  `guardian_contact_id`, which is what every existing guardian path already trusts
+  (`generate_my_onboarding_documents`, `sign_release`, `ensure_contract_role_documents`).
+  Confirmed against production: exactly ONE dependent exists — Gabriella Olenik, DOB 2013,
+  guardian Brian Olenik — and she is a minor.
+  ⚠️ **The one thing to preserve:** `is_minor_contact` already gates delivery so a minor is never
+  emailed directly (C10 — guardian-addressed delivery). A parent zone must read the dependent's
+  activity without becoming a second path that emails the child.
+  D8's linked-accounts item (separate logins, shared records by add-by-email) is a DIFFERENT
+  feature — adults sharing a horse record — and stays unbuilt scope.
 - ~~*"sharing captured content"* — no storage or capture path exists.~~ **WRONG, CORRECTED BY THE
   OWNER 2026-08-24.** The community feed IS the sharing location and the path already works —
   *"thats why there is content in there."* Capture means a parent filming their child on a phone;
