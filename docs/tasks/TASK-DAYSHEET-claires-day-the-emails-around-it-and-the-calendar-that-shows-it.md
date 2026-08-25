@@ -121,11 +121,29 @@ deleting (D32).
    code is the MEDIA_RELEASE class; seed the setting to `America/Los_Angeles` and read it. Note
    "PST" is the winter abbreviation — the barn is on PDT for most of the year, which is exactly why
    the stored value must be the IANA zone name and never a fixed UTC offset.
-2. **Vercel cron granularity.** The current schedule is hourly. 07:00 and 09:00 are fine on an
-   hourly tick; **"1 hour prior" is not** — a 10:30 lesson wants a 09:30 send. Either run the
-   endpoint more often (`*/15`) and let it decide, or accept hour-granularity reminders. **This is
-   an owner call.** Note Vercel's Hobby plan limits cron frequency; check the account's tier before
-   promising `*/15`.
+2. ~~**Vercel cron granularity.**~~ **SETTLED, owner 2026-08-24:** *"just make it fire off at 1 hour
+   prior based on every hour and give extra time always so it sends it 1.5 hours prior instead of
+   30 min prior."* **Keep the hourly cron. Round the send time DOWN to the hour, never up** — the
+   lead time may grow, never shrink.
+
+   **The rule, stated so it can be implemented without re-deriving it:**
+   > On the run at hour **H**, send the 1-hour reminder for every booking starting in
+   > **[H+1, H+2)**.
+
+   | Booking | Reminder sent | Lead |
+   |---|---|---|
+   | 10:00 | 09:00 | 1h 00m |
+   | 10:30 | 09:00 | **1h 30m** (not 10:00 / 30m) |
+   | 10:45 | 09:00 | 1h 45m |
+   | 11:00 | 10:00 | 1h 00m |
+
+   Lead time is therefore always ≥ 1 hour and < 2 hours. **Same rounding governs the 09:00 client
+   email**: a booking before 10:00 moves the send to the hour at or before `T − 1h`, so an 09:30
+   lesson is emailed at 08:00, not 09:00.
+
+   ⚠️ **A booking created inside its own reminder window gets no reminder** — nothing fires between
+   hours. Accept it (the 07:00 rundown and the day sheet both still show it), or send on create;
+   do not silently assume it is covered.
 3. **The ops inbox is config, not a constant** — `CONTACT/OPS_INBOX_FALLBACK`. Read it, don't
    retype the literal.
 
@@ -296,8 +314,8 @@ the control is built — both reference `horse_id` but their pickers were not re
 
 1. ~~What timezone is the barn in?~~ **ANSWERED: `America/Los_Angeles`.** Only "where it lives"
    remains, and that is settled by precedent — tenant settings, not a constant.
-2. **How precise must "1 hour prior" be?** Hourly cron gives up to an hour of slop. `*/15` costs a
-   plan tier — worth it?
+2. ~~How precise must "1 hour prior" be?~~ **ANSWERED: hourly cron, rounded down.** Rule and table
+   in §2. No plan-tier change needed.
 3. **Is a task (supplements, medication, call the vet) a `booking` row?** It has a day but often no
    time, no client, and no offering. Making it a booking gets the calendar and the day sheet free;
    giving it its own table avoids twelve more branches on `bookings.kind`. **Recommend: a booking
