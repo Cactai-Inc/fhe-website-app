@@ -210,8 +210,23 @@ of these at once, and four homes force a question with no correct answer. Audit 
   2013), and she is a minor. Preserve C10: `is_minor_contact` keeps a minor from being emailed
   directly, so a parent zone must read the child's activity without becoming a second path that
   mails the child. D8's linked-accounts item is a different feature (adults sharing a record).
-- **STILL OPEN:** whether a parent **authors** trainer notes, requests them, or only reads them.
-  This changes the build materially.
+- ~~whether a parent authors notes~~ **SETTLED, owner 2026-08-24: parents CONTRIBUTE, and entries
+  are stamped with who wrote them.** The stamping already exists — `booking_notes` carries
+  `author_user_id`, `author_role`, `author_name`. The gap is the vocabulary:
+  `booking_notes_author_role_check` admits `rider · instructor · staff · admin` and has **no
+  guardian role**. Build = widen the CHECK, let a guardian write on a dependent's booking, and
+  render three names (parent as guardian, child as rider, Claire as instructor).
+  ⚠️ *"contribute to everything their dependent has access to or does"* is broader than notes —
+  booking, documents and purchases are in scope by that sentence. Scope it deliberately.
+
+**AND A SEPARATE RULING, same message — THE TRAINER IS ALWAYS CLAIRE.** *"there is no need to
+select a trainer when a lesson or any other service is scheduled."* Verified: two tenant staff
+identities exist (Claire and CJ, both Owner; the third is the platform owner, D1a), and **527
+bookings have no instructor at all** vs 11 Claire and 1 CJ — the selector is already skipped more
+than used, losing attribution each time. **Default the field, do not remove it** (it is the
+attribution and D7 reads it); remove the CONTROL from seven files. Do NOT hardcode her user id —
+that is the MEDIA_RELEASE class; it belongs in tenant settings. The 527 unattributed bookings are
+a separate call: backfilling asserts she taught lessons nobody recorded.
 
 ### 5.2 ⚠️ CORRECTED — "sharing captured content" is NOT a new product
 

@@ -104,6 +104,27 @@ already use (time → money → attention → reference):
 7. **Your documents** *(deal party)* — status, what is outstanding, executed copies.
 8. **From the community** — the feed, once there is content worth showing.
 
+**§1b — THE TRAINER IS ALWAYS CLAIRE. Stop asking (owner, 2026-08-24):** *"the trainer is always
+claire there is no need to select a trainer when a lesson or any other service is scheduled."*
+
+Verified: the tenant has exactly **two** staff identities — `hello@fhequestrian.com` (Claire) and
+`admin@fhequestrian.com` (CJ), both titled Owner. The third staff row is `admin@cactai.io`, the
+PLATFORM owner, which D1a says is never a tenant identity. And on bookings today: **527 have no
+instructor at all**, 11 are Claire, 1 is CJ — so the selector is already being skipped far more
+often than it is used, and skipping it loses the attribution entirely.
+
+**Default it, do not delete it.** `instructor_user_id` still earns its place: it is the
+attribution on the booking and it is what D7's act-as-company trace reads. The change is that
+nothing ASKS — the field is populated with the tenant's instructor and the control disappears.
+Seven files carry a selector today: `SessionFields.tsx`, `AgreedLessonPanel.tsx`,
+`ScheduleSessionForm.tsx`, `CalendarItemPanel.tsx`, and the three libs behind them.
+
+⚠️ **Do not hardcode Claire's user id.** That is the MEDIA_RELEASE class — a tenant fact frozen
+into code. It belongs in the value registry / tenant settings beside the other tenant identity
+values, so a second instructor one day is a settings change and not a thread.
+⚠️ **The 527 unattributed bookings are a separate decision** — backfilling them asserts Claire
+taught lessons nobody recorded her at. Leave them, and say so, unless the owner rules otherwise.
+
 **§2 — The one missing read for horse owners:** a horse-scoped upcoming-appointments function
 over `bookings` + `fulfillment_units`. Small, and it unblocks the whole "Your horse" zone.
 
@@ -132,8 +153,27 @@ over `bookings` + `fulfillment_units`. Small, and it unblocks the whole "Your ho
   `docs/HANDOFF-OFFERINGDOCS-2026-08-24.md` §5.2 — in short, image compression before upload is
   missing entirely and is the single biggest storage lever, the `feed-media` bucket has no
   `allowed_mime_types`, and nine other buckets have no size limit at all.
-- *"setting trainer notes and feedback"* — parents WRITING notes is new; today notes are staff
-  output. Whether a parent authors, or requests, or only reads, is the owner's call.
+- **SETTLED, owner 2026-08-24:** *"parents can contribute to everything their dependent has
+  access to or does but they need to be listed as such — a note needs to inherit the ability to
+  stamp entries with who wrote them... so a third party listed as their name along with their
+  childs name for the things they wrote, and then Claire's name as the trainer."*
+
+  **His assumption is correct — the stamping already exists.** `booking_notes` carries
+  `author_user_id`, `author_role` and `author_name`, so every note already records who wrote it
+  and displays their name. Nothing needs inventing.
+
+  **The one real gap is the vocabulary.** `booking_notes_author_role_check` admits exactly
+  `rider · instructor · staff · admin` — **there is no guardian/parent role.** So the build is:
+  1. widen that CHECK to admit `guardian`;
+  2. let a guardian WRITE on a booking belonging to their dependent (the write path and RLS
+     today assume the rider is the author, or staff are);
+  3. render three names where two render now — the parent (as guardian), the child (as rider),
+     and Claire (as instructor). `author_name` already exists to carry it.
+
+  ⚠️ **"contribute to everything their dependent has access to or does" is broader than notes.**
+  Booking, rescheduling, documents and purchases are all in scope by that sentence. Notes are the
+  first instance, not the whole ruling — scope the guardian-acts-for-dependent capability
+  deliberately rather than one surface at a time.
 
 **§4 — Absorb `/app/care` and `/app/deal`.** Their content becomes zones 3 and 7. Routes retained
 (D32); the pages stop being orphans by becoming the zone's "see everything" destination.
