@@ -269,6 +269,46 @@ run smoothly · look professional · storage costs stay controlled.
    never serves a 12 MB file into a scroll.
 5. **State the limits in the control** before someone picks a file, not after the upload fails.
 
+### 5.2b THE CALENDAR PANEL'S THREE-POSITION TOGGLE — decommission, evidence gathered
+
+**Owner, 2026-08-24:** *"the scheduling panel still has the three position toggle at the top. i
+dont know what its for or why its there but it needs to be decommissioned, whatever its wired into
+and whatever controls it or whatever it controls all need to be dissolved and reconfigured so we
+dont break anything that is working."*
+
+**It is `src/pages/app/CalendarItemPanel.tsx`** — the New/Edit calendar item panel.
+`type ItemType = 'unavailable' | 'offering' | 'appointment'`, rendered at the top as
+**Session · Appointment · Unavailable**. It is a discriminator: `buildPayload()` branches on it
+about twelve times, deciding `kind`, `status`, and whether client / purchase / horse / offering /
+instructor / price / payment are carried at all.
+
+| Toggle | writes `kind` | writes `status` | carries |
+|---|---|---|---|
+| **Session** (`offering`) | `lesson`, or `care` for a horse-segment offering, or `block` when flexible | `scheduled`, or `available` when flexible | client, purchase, horse, offering, instructor, price, payment |
+| **Appointment** | `block` | `unavailable` | client + horse only |
+| **Unavailable** | `block` | `unavailable` | nothing |
+
+**⚠️ TWO OF THE THREE HAVE NEVER BEEN USED. Checked in production:**
+- `bookings.kind` → **lesson 537, block 2.** No `care` row has ever existed.
+- `bookings.status` → available 494, scheduled 43, draft 1, cancelled 1. **ZERO rows with
+  `status = 'unavailable'`** — which is the *only* status Appointment and Unavailable can produce.
+- The two `block` rows are both `status='available'`, `is_flexible=true`, no client, no horse —
+  i.e. they came from **Session + flexible**, not from either of the other two positions.
+
+**So the decommission is safe, and the shape of it is clear:** delete the Appointment and
+Unavailable positions and every branch that tests them; the panel becomes "a session", with the
+flexible checkbox unchanged.
+
+**⚠️ THE ONE THING THAT MUST NOT BE DISTURBED: `is_flexible`.** 494 of the 537 bookings are
+`status='available'`, which is how availability gets published. That is the Session path with
+flexible ticked — it is the single most-used behaviour in the table and it lives on the same
+toggle position that survives. Any refactor must leave it byte-identical.
+
+**Also check before deleting:** the `'unavailable'` status value and the `'care'` kind are
+referenced elsewhere (calendar reads, RLS, the availability grid). Retire the CONTROL and the dead
+branches; do not remove the enum values from the schema (D32) — something may still read them
+defensively, and an unused value costs nothing.
+
 ### 5.3 Smaller items, all named and none started
 - **The automatic order-approval path raises the dashboard notification but sends no email** — a
   database trigger has no mail transport. Wiring it means the staff action that opens the order
