@@ -1897,6 +1897,71 @@ seam**; these limits extend it rather than needing a new one.
 4. **Who sets them — the owner, or us?** ⚠️ For a client-owned horse these are the owner's
    instructions; for a lease horse they may be ours.
 
+## CR-72 · G7 · captured + researched — the four party controls on a contract
+**SAID**
+> *"explain to me what edit deal terms enables when its checked. also explain what suggest and propose
+> do when those are checked... these controls were a good idea at the time but i think we evolved past
+> them and might want to change or remove them based on what your research reveals about what they
+> control and how wired up everything actually is."*
+
+**FOUR SWITCHES, PER PARTY, PER DOCUMENT — what each actually does:**
+
+| Switch | What it lets that party do |
+|---|---|
+| **Can fill fields** *(on by default)* | fill in the fields **that belong to their own role** — their name, their address, their answers |
+| **Can edit deal terms** *(off by default)* | edit the **shared** fields — the negotiated terms both parties care about, price, dates, responsibilities. ⚠️ **This is the one with teeth** |
+| **Can suggest changes** | ⚠️ **not edit — PROPOSE.** Their change is **staged, not applied**, and appears under *"Proposed changes"* for someone to accept or reject |
+| **Can add a clause** | propose **a new item** into the contract. Same staging: *"Proposed clauses don't change the contract until accepted"* |
+
+**Two rules built around them:**
+- ⚠️ **"Edit deal terms" and "Suggest changes" are mutually exclusive** — you either change the terms
+  or you propose changes to them, never both.
+- ⚠️ **You cannot turn off "Can edit deal terms" for the last party who has it.** The UI blocks it:
+  *"Enable it for the other party first."* Somebody must always be able to move the deal.
+
+**Who is exempt:** ⚠️ **staff and the contract's originator bypass all four** — they can always edit
+and always propose.
+**One thing nobody may do on someone's behalf:** ⚠️ **elections** — a choice that is a party's own act
+*(who carries an obligation)* can only be made by that party. **Not even staff can substitute.**
+
+### ⚠️ FINDINGS THAT BEAR ON HIS INSTINCT
+
+1. **Only TWO control rows exist in the entire system**, both with the same settings:
+   `fill ✓ · edit deal ✓ · suggest ✗ · add clause ✓`.
+2. ⚠️ **"Can suggest changes" has NEVER been turned on. Not once.** The propose-and-review tier —
+   the machinery with the most surface area *(staged values, a review queue, accept and reject
+   paths, change history)* — **has never been exercised.**
+3. **"Can fill" defaults to on and does the routine work.** It is the only one that earns its keep
+   silently.
+4. **"Can edit deal terms" is doing real work** and has a real safety rule around it.
+5. ⚠️ **The same flag lives in TWO tables** — the per-document controls and the contract parties
+   table both carry `can_edit_deal`. **One of them is likely stale.**
+
+### MY READ *(he asked)*
+**His instinct is supported, with one exception.** Three of the four are answering a single question
+— *is this person a real counterparty, or someone just filling in their details?* — and the fourth,
+suggest, was built for a negotiation style **the barn has never actually used**.
+
+**But "edit deal terms" is not decoration.** It is the only thing standing between a counterparty and
+the negotiated terms, and it has a guard so a deal can never become unmovable.
+
+**Options for him:**
+- **A — collapse to one switch.** *"This party can change the deal"* vs *"this party fills in their
+  own details."* Retire suggest and add-clause; keep the election rule and the last-editor guard.
+- **B — keep all four, delete nothing, but stop showing what is unused.** Suggest and add-clause
+  become staff-only.
+- **C — keep as is**, on the grounds that a real negotiation will eventually want proposals.
+
+⚠️ **Before choosing: the propose machinery is not just a checkbox.** Retiring it also retires the
+staged values, the review queue and part of the change history — **so it should be a decision about
+whether the BARN ever negotiates that way**, not about whether the switch looks tidy.
+
+**ASK-OWNER**
+1. **Has a counterparty ever proposed a change rather than making one** — is that a real way you
+   work, or a thing that sounded right when it was built?
+2. **Should a lessee or a buyer be able to change deal terms at all**, or only fill in their own
+   details and sign?
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
