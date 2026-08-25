@@ -1717,6 +1717,10 @@ modal** — the outside-click-to-close pattern is repeated across the app *(step
 hand-rolled overlays)*. **Any of them containing a form has the same defect.**
 **Fix the pattern, not the instance:** a modal with unsaved input must not close on an outside click
 *(or must confirm first)*.
+✅ **CONFIRMED ON A SECOND SURFACE, owner 2026-08-25** — the same modal reached from a **contract**
+loses the data the same way. ⚠️ **It travels with the component**, so the component fix covers every
+surface that mounts it — but that is *not* the same as the 33-overlay sweep, which is still needed
+for the other modals that hand-roll their own shell.
 
 ### 68b — the location fields are broken and over-explained
 | | |
@@ -1773,8 +1777,15 @@ establish**, because the answer decides whether this is one fix or three.
 | | |
 |---|---|
 | **confirmed** | the euthanasia block **is still showing on the account-page form** and **must go** |
-| **to establish** | whether the onboarding and contract forms are the same component — and if so, whether it still shows there too |
+| ✅ **confirmed by the owner, 2026-08-25** | *"i can confirm the contract modal for add a horse is the same as the one the user sees from the account page, so the euthanasia block needs to be removed there"* — **the contract surface and the account surface are ONE component.** |
+| ⏳ **still to establish** | whether the **onboarding flow** form is the same one. ⚠️ **Research task, not a question for him.** |
 | **in its place** | ⚠️ **a photo upload block** |
+
+⚠️ **TWO OF THREE ARE ONE COMPONENT — so this is ONE fix reaching two surfaces**, and the euthanasia
+block is showing to clients on the contract path today, which is the more exposed of the two.
+✅ **And CR-68a is confirmed there too:** *"the click out of the modal closes it and the data is lost,
+that needs to be fixed."* **The data-loss bug is not confined to the account page** — it travels with
+the component, so **fixing the component fixes both**, and any third surface using it as well.
 
 ⚠️ **Standing Q2, and it is the whole question here.** *(CR-51 and CR-68 both asked a version of "is
 this the same form staff use?" — answer it once, properly, for all four surfaces.)*
