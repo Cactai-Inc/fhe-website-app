@@ -985,6 +985,111 @@ being activated.
 1. When someone with no session hits `/app`, do they land on login **silently**, or with a short
    "please sign in"?
 
+## CR-53 · G6 · captured — THE LEAD'S APP, SPECIFIED
+**SAID**
+> *"what a person should have access to as a lead is the dashboard and it shows their order as
+> pending, and a notification to complete their profile, clicking on these open their expanded cards
+> in the account page a back button in the top left area of the page takes them back to the
+> dashboard. The nav only shows Dashboard, Catalog, Account, and Sign out. In the Catalog selecting an
+> item gives them the option to add it to their existing pending order or create a second sperate
+> order. They should have the ability to cancel or modify the order from the modal that should open
+> when they click on an order inside the expanded orders card on the account page. their view of the
+> account page should be restricted to show only these cards: my profile, my stable, my login, my
+> orders, my gifts. in this order: My Orders, My Profile, My Stable, My Gifts, My Login."*
+
+⚠️ **This SUPERSEDES the three-item allowlist in CR-50** — it is the same intent, fully specified.
+
+**NAV — exactly four:** `Dashboard` · `Catalog` · `Account` · `Sign out`
+
+**DASHBOARD** — two things, both clickable:
+| | Opens |
+|---|---|
+| **their order, shown as PENDING** | the expanded orders card on the Account page |
+| **a notification to complete their profile** | the expanded profile card on the Account page |
+
+⚠️ **A back button, top-left of the page, returns to the dashboard.** *(A navigation pattern, not a
+browser-back reliance.)*
+
+**ACCOUNT PAGE — five cards, in THIS order:**
+`My Orders` → `My Profile` → `My Stable` → `My Gifts` → `My Login`
+⚠️ He listed the cards in one order and then **re-stated the display order deliberately** — the
+second list wins. ⚠️ **`My Stable` and `My Gifts` are present for a lead**, which is a widening of
+CR-50's three.
+
+**CATALOG** — selecting an item offers a choice:
+- **add it to their existing pending order**, or
+- **create a second separate order**
+
+**AN ORDER** — clicking one inside the expanded orders card opens **a modal**, and from it they can
+**cancel or modify** the order. *(Matches CR-49's cancel-is-a-signal.)*
+
+**ASK-REPO**
+1. Do these five cards exist on the account page today, and can the set and order be restricted per
+   person without building a second account page?
+2. Is there an existing back-button pattern, or is this new?
+3. Does anything today let one catalog selection choose between joining an order and starting one?
+
+## CR-54 · G7 · captured — ⚠️ INVESTIGATE FIRST: documents listed twice
+**SAID**
+> *"the documents card that opens shows me the same set of documents twice, and they are listed as
+> cards with one set showing read and resend and the other showing read, pdf, and resend. Seems like a
+> clear instance of me saying add pdf to the view in the documents section of the app and instead of
+> adding that to the card it created a duplicate set of cards and add the pdf button to it … they are
+> the same docs btw"*
+> *"Investigate to verify the cause of showing both sets of docs … and then if it was from the doc
+> changes we made or my refreshing the page or using the back button after signing the last one, then
+> fix the issue there, if its coded that way remove the duplicate"*
+
+**Two sets of cards for the SAME documents:** one offering `read · resend`, the other
+`read · pdf · resend`.
+
+⚠️ **HE ASKED FOR THE CAUSE BEFORE THE FIX, EXPLICITLY.** Three candidate causes named:
+1. a previous "add a PDF button" request implemented as a **second set of cards** rather than a
+   button on the existing one;
+2. a **page refresh**;
+3. **using the back button after signing the last document.**
+**If duplicated data → fix the cause. If duplicated code → delete the duplicate.**
+
+## CR-55 · G7 · captured — the "read" view is broken; replace it
+**SAID**
+> *"the read button opens a really funky view that turns a 4 page doc into 7 and a lot of titles left
+> at the pagebreaks, so we remove that option and use only a pdf view … no option to view as a pdf as
+> an overlay on the screen that is a frameless set of scrollable pages with gaps between them which is
+> what it should be and then from that they have the option on the screen in the top right corner to
+> download."*
+
+⚠️ **The on-screen reader re-flows a 4-page document into 7 and orphans headings at the breaks** —
+the same class of defect already fixed in the PDF renderer, in a second, separate viewer.
+
+**Wanted:** **the PDF itself, as a frameless overlay** — scrollable pages with gaps between them —
+and a **download** control **top-right on desktop, floating above the document on mobile**.
+Card buttons become **download pdf** and **resend**; **read is removed.**
+
+⚠️ **A/B — HIS OWN FALLBACK, in the same breath:**
+> *"if this is too much work or potential for error dont do it and just keep the download pdf button
+> as the way to download a copy of the document."*
+- **A** — build the frameless PDF overlay with the download control.
+- **B** — **no viewer at all**; download-pdf is the only way to see it.
+**B is explicitly acceptable. Judge by effort and risk, and say which was chosen and why.**
+
+## CR-56 · G7 · captured
+**SAID** *"remove the text that says "contracts you've signed"."*
+
+## CR-57 · G9 · captured — ⚠️ ASKED BEFORE AND DROPPED
+**SAID**
+> *"ive asked for this to be implemented before but it looks like the thread dropped the ball on it, i
+> want the cards that are clicked and expand to show the content below them to themselves expand to
+> the width of the container and the arrow should be a down arrow when its collapsed and an up arrow
+> when its expanded."*
+
+1. **An expanded card expands to the full width of its container.**
+2. **The arrow points DOWN when collapsed and UP when expanded.**
+
+⚠️ **A REPEAT REQUEST.** Find out where it was previously asked and why it did not land — a request
+that has been dropped once will be dropped again.
+⚠️ **This is a globalization item** (G9): it is a behaviour every expanding card should share, not a
+fix to one card. **Find every expanding card.**
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
@@ -1019,6 +1124,8 @@ answer."*
 | **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
 | **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
 | **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **CR-53 ⟶ CR-50** | the four-item nav and five-card account page supersede the three-item allowlist |
+| **CR-55 ↔ PDF work** | the on-screen reader repeats the page-break defect already fixed in the PDF renderer — one of the two viewers should not exist |
 | **CR-51 ↔ CR-10** | one says hide horse services without a horse, the other says let them order and ask at sign-in |
 | **CR-50 → ruling 11** | community-for-every-account and no-community-for-leads cannot both stand |
 | **CR-49 → CR-43/CR-45** | self-activation is only safe because the client designation is withheld; the empty lead app is what makes the gate real |
