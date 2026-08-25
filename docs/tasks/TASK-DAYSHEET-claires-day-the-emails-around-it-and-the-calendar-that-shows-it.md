@@ -352,9 +352,9 @@ the control is built — both reference `horse_id` but their pickers were not re
    Recommend one.
 6. ~~What wrote the 00:00–13:00 booking?~~ **ANSWERED — a 12 AM / 12 PM slip, corroborated by the
    data. See §1.** The remaining action is to confirm the duplicate and remove it.
-7. **Where does an unclaimed horse name get claimed?** (§6b) A tab on the horse records page, or a
-   prompt on the booking itself when someone next opens it. Recommend the horse records page — it
-   is where someone with the authority to create a record already is.
+7. ~~Where does an unclaimed horse name get claimed?~~ **ANSWERED, owner 2026-08-24 — see §12.**
+   At the moment a horse is added to an account, from a list of horses **not currently assigned to
+   anyone**. Two of the three parts turn out to be built already.
 
 ---
 
@@ -416,6 +416,17 @@ job.
 5. **Horse care only for clients with a horse.** `offerings.segment = 'horse'` is the set to hide
    (16 of the 32). **No explanatory text** — the owner was explicit.
 6. **Filter the horse picker to that client's horses too.** Same rule, same reason.
+
+### 8.4b ✅ THE RULE THE OWNER WANTS HONOURED IS ALREADY ENFORCED — one layer down
+Owner: *"it should honor our rules not ignore them."* **The rule exists.**
+`assert_horse_care_eligible(p_contact_id, p_horse_id)` raises unless there is a horse AND that
+contact holds a `RELEASE_HORSE_CARE` and a `HORSE_EMERGENCY_VET` for **that** horse. It is called by
+`book_open_slot` and `attach_booking_horse`.
+
+**So the write layer already refuses what the owner described. The SURFACE ignores it** — the
+offering list is unfiltered, so staff can pick a horse-care offering for a horseless client and only
+meet the wall on save. §8.4's filtering is therefore not a new rule; it is **making the surface
+agree with a rule the database already enforces**, which is why no explanatory text is needed.
 
 ### 8.5 ⚠️ "HAS A HORSE" IS NOT ONE COLUMN
 `horses` carries **both** `current_owner_contact_id` **and** `lessee_contact_id`. **A lessee has a
@@ -669,6 +680,69 @@ This is the one item on the list that makes a whole class of defect **unexpressi
 merely fixed. §1's booking is not a bug in code anyone wrote — it is a control that accepted a
 value nobody meant. A dropdown of valid, non-colliding, duration-aware start times cannot produce a
 13-hour lesson at midnight.
+
+---
+
+## 12. CLAIMING, IN BOTH DIRECTIONS — and TWO OF THE THREE PARTS ALREADY EXIST
+
+**Owner, 2026-08-24:**
+
+> *"the unclaimed horse name gets claimed when a horse is being added to an account. you can pick it
+> from a list of horses (which should only show the names of horses that arent assigned to someone,
+> and to prevent a horse getting locked to a person automatically, i need to be able to change the
+> owner from the horse record)"*
+> *"likewise i can select the owner of a horse record that lives as a name only"*
+
+Two mirrored claims, and the schema already has both name-only columns:
+`bookings` needs a horse name with no record (§6b — **not built**), and
+**`horses.owner_name_text` already exists** — an owner name with no contact.
+
+### ✅ 12.1 ALREADY BUILT — do not spec these, go and look at them
+
+**"I need to be able to change the owner from the horse record."** Built.
+`HorseRecordsPage.tsx:184` renders, in edit mode:
+```
+<option value="">— unassigned{r.owner_name_text ? ` (${r.owner_name_text})` : ''}</option>
+```
+followed by the full contacts list. Writes go through `staff_assign_horse_party(p_horse_id,
+p_role, p_contact_id, …)`, never a direct table write, and that RPC sets `current_owner_contact_id`
+or `lessee_contact_id` depending on the role.
+
+**"Likewise I can select the owner of a horse record that lives as a name only."** Same control —
+that is exactly what the `— unassigned (owner_name_text)` option is for. A horse whose owner is a
+bare name shows that name in the picker, and choosing a contact resolves it.
+
+⚠️ **So a horse is already never locked to a person.** The ownership ledger is
+`horse_relationships`, edited by ending the old row and recording the new one, so history is
+preserved rather than overwritten. **If this is not discoverable, the defect is reach, not
+capability** (D17) — check the horse record actually offers edit mode where Claire expects it
+before building anything.
+
+### ❌ 12.2 NOT BUILT — the two real gaps
+
+**1. No horse picker filters to unassigned horses.** Checked every function: the only one containing
+`current_owner_contact_id IS NULL` is `generate_document`, and that is for a merge token.
+- `listScheduleHorses()` (`api-lessons.ts:841`) — every horse in the org, no filter at all
+- `my_listable_horses` — staff see everything; members see only horses they own or lease
+- `NewContractPage.tsx:386` — lists all horses, *labelled with the current owner's name*
+
+So "only show the names of horses that aren't assigned to someone" needs a new, filtered read at
+the point a horse is added to an account: `current_owner_contact_id IS NULL AND lessee_contact_id
+IS NULL`.
+
+**2. `bookings.horse_name` does not exist** (§6b). The booking-side half of the claim — naming a
+horse before it is a record — has nowhere to store the name.
+
+### 12.3 The rule to write down before either is built
+⚠️ **One field, two meanings** (trap §4.5), and it now applies on both sides:
+- **`horse_id` wins when set; `horse_name` is display-only and never an authority.**
+- **`current_owner_contact_id` wins when set; `owner_name_text` is display-only and never an
+  authority.**
+
+Anything that GATES on a horse or an owner must require the id. In particular
+**`assert_horse_care_eligible`** (see §8) already refuses a care booking without a horse *and*
+without that contact's `RELEASE_HORSE_CARE` and `HORSE_EMERGENCY_VET` on that horse — a name must
+never satisfy it.
 
 ---
 
