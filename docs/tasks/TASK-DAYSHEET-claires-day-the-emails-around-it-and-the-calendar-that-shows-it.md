@@ -51,6 +51,34 @@ opening" report is the same defect wearing a different hat:
 whatever surface listed the item, and month view / dashboard / week view all open it in place.
 `?item=` should keep working — a shared link must still land somewhere real (D17).
 
+### 0.1 AND IT IS A LARGE CENTERED MODAL, NOT A SIDE PANEL
+**Owner, 2026-08-24:** *"the booking provisioning and view is always a right side panel and it
+fucking sucks we need a large modal in the center of the screen."*
+
+**Good news: it is already an overlay, so this is a container change, not a rewrite.**
+`CalendarItemPanel.tsx:469-472`:
+```
+<div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={handleClose}>
+  <div className="bg-cream w-full sm:max-w-md h-full …" onClick={e => e.stopPropagation()}>
+```
+`justify-end` + `sm:max-w-md` + `h-full` is what makes it a right-hand drawer **448px wide** — for a
+form with roughly fifteen fields, which is why it feels the way it does. Centering it and widening
+it is `items-center justify-center` and a real `max-w`.
+
+**Copy the existing modal idiom rather than inventing one.** `AddHorseModal.tsx:39` is the
+precedent already in the repo:
+```
+fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto p-4
+role="dialog" aria-modal="true"    // + outside-click guarded by e.target === e.currentTarget
+```
+⚠️ Note `CalendarItemPanel` has **no `role="dialog"` and no `aria-modal`** today — worth fixing
+while the shell is being replaced.
+
+⚠️ **Only FOUR files use the right-drawer overlay**: `CalendarPage`, `CalendarItemPanel`,
+`CalendarSettingsPanel`, `TeamPage`. This is not a house style being overturned — it is a local
+habit in the calendar. **`CalendarSettingsPanel` sits beside the item panel and should move with
+it**, or the calendar will have one of each.
+
 ---
 
 ## 1. THE 12AM BOOKING — found, and it is worse than it looks
@@ -743,6 +771,48 @@ Anything that GATES on a horse or an owner must require the id. In particular
 **`assert_horse_care_eligible`** (see §8) already refuses a care booking without a horse *and*
 without that contact's `RELEASE_HORSE_CARE` and `HORSE_EMERGENCY_VET` on that horse — a name must
 never satisfy it.
+
+---
+
+## 13. "RESERVED" — the read already says staff; the label never asks
+
+**Owner, 2026-08-24:** *"the calendar bookings still show reserved instead of the client name and
+activity (week and month view)."*
+
+**This is four lines of UI, and the server is already doing the right thing.**
+
+`calendar_free_busy` has a **staff branch that returns full detail on every item** — `client_id`,
+`horse_id`, `offering_id`, `purchase_id`, `price_amount`, `notes`, the lot. And it deliberately
+stamps that branch:
+```
+'is_mine', false, 'mine_role', 'staff'
+```
+
+`itemLabel` (`CalendarPage.tsx:126-137`) then branches on **`is_mine` alone**:
+```
+if (item.is_mine) return item.kind === 'lesson' ? 'Your Riding Lesson' : 'Your session';
+return 'Reserved';                                    // ← staff land here, every time
+```
+
+**`mine_role: 'staff'` is the exact discriminator required, and the UI never reads it.** The privacy
+rule (D25 — *"booking" is internal taxonomy and must never appear on a chip*) was written for
+clients and silently applied to everyone, so Claire sees "Reserved" on her own barn's calendar.
+
+### What to build
+1. **A staff branch in `itemLabel`** keyed on `mine_role === 'staff'`: client name + activity.
+2. ⚠️ **The staff payload carries IDs, not names.** `client_id` and `offering_id` come back as uuids
+   and `CalendarPage` does not load client or offering lists (only `listStableHorses`).
+   **Recommend adding `client_name` and `offering_name` to the STAFF BRANCH of
+   `calendar_free_busy`** — one place, privacy untouched, no client-side N lookups, and it is the
+   branch that is already allowed to see them.
+3. **Same label function serves both grids** — `WeekGrid` and `MonthGrid` both call `itemLabel`, so
+   this fixes week and month at once.
+4. ⚠️ **Do not weaken the non-staff branches.** *"Reserved" is CORRECT for someone not involved* —
+   §5 says a booked slot shows as unavailable to anyone not involved. The bug is only that **staff
+   are always involved** and were never given a branch.
+
+⚠️ `itemLabel` also returns `'Open'` for `status='available'` — **that is the green-block furniture
+§5 retires.** When those 494 rows go, that branch goes with them.
 
 ---
 
