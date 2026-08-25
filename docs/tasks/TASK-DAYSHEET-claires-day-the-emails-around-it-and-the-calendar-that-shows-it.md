@@ -535,6 +535,60 @@ medication field.
 
 ---
 
+## 10. DURATION EXISTS NOWHERE — the calendar draws every booking the same size
+
+**Owner, 2026-08-24:** *"the calendar still shows bookings as 30 minutes when they should show 90
+minutes for an evaluation lesson and 60 minutes for all other lessons."*
+
+**Three separate gaps, and the DATA is not one of them.** Production booking lengths:
+`60 min × 537 · 180 min × 1 · 780 min × 1` (the last is the §1 midnight row). Every real booking is
+already stored as an hour. Nothing is 30 minutes.
+
+### 10.1 The week grid never reads `ends_at`
+`CalendarPage.tsx:585–608`. The grid is a table of **hour cells**, each `min-h-[44px]`, and an item
+renders as a `<button>` *inside* one cell, sized by its own text padding (`text-[11px] py-1`) —
+roughly 22px in a 44px row. **That is why a 60-minute booking looks like 30 minutes: it is drawn as
+a fixed chip in its start hour, and duration plays no part in rendering at all.**
+
+⚠️ **This is the SAME defect as §1's "a booking spanning 13:00 draws in no row."** `itemsFor(day,
+hour)` matches on `s.getHours() === hour` and nothing else. **Proportional-height rendering fixes
+both** — an item positioned by its start offset and sized by its length occupies every hour it
+actually spans. Do not fix these separately.
+
+### 10.2 ⚠️ `offerings` HAS NO DURATION COLUMN
+Checked every column: the only match for duration/minutes/length is **`price_min`**, which is a
+price. **"90 minutes for an evaluation, 60 for everything else" cannot be expressed anywhere in the
+system today.** This is a schema addition, not a display fix.
+
+### 10.3 The panel hardcodes one hour and never reconsiders
+`CalendarItemPanel.tsx:90` — `new Date(initialStart).getTime() + 3_600_000`. The end defaults to
+start + 1h, and **it does not react when the offering changes.** Picking the evaluation lesson does
+not make it 90 minutes.
+
+### 10.4 What to build
+1. **`offerings.duration_minutes`**, owner-editable (D21 — an algorithm ships with an editor).
+   Evaluation = 90, other lessons = 60, and every other service gets its own honest number rather
+   than inheriting an hour.
+2. **The panel derives the end time from the chosen offering**, still overridable by Claire — she
+   sets the exception, the offering sets the default. Order matters here: this only works once §8
+   puts the offering selection ahead of a client-filtered list.
+3. **The grid renders by duration** — position by start, height by length, spanning hour rows. Same
+   change that makes §1's multi-hour booking visible.
+
+### 10.5 A hack this retires
+`Onboarding.tsx:98` identifies the evaluation lesson by **regex on its NAME**:
+```
+(o.service_type ?? '') === 'RIDING_LESSON' && /evaluation/i.test(o.name ?? '')
+```
+That is the MEDIA_RELEASE class — a tenant fact frozen into code, and it silently stops working the
+day someone renames the offering. **Once duration and the evaluation's special standing come from
+columns, this regex should go.** Do not add a second name-matcher for the 90 minutes.
+
+⚠️ **`publish_open_slots_all(p_slot_minutes := 60)` also hardcodes an hour**, but it is being
+retired by §5 — do not "fix" it, delete it.
+
+---
+
 ## THE REACH
 
 Claire's day sheet is the dashboard she already lands on; the next-up card and the past list are
