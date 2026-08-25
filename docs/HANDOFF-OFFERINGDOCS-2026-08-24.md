@@ -117,9 +117,20 @@ These supersede the previous category/tag behaviour. Cite this section.
 - **An adult's liability release was naming them as a minor.** Fixed — see §3.
 - **Orphaned headings**: 9 across four documents, now 0, with no document gaining a page.
 - **The signature block is never alone on a page** — it and the closing text lay out as one unit.
-- **Margins 0.75" → 0.64"**, as asked. *Honest note: once the keep-group rule is in, the margin
-  reduction does not save Company Policies its page. The document is the same length, laid out
-  correctly instead of accidentally.*
+- **Margins 0.75" → 0.64"**, as asked. *Honest note: on its own, the margin reduction did not save
+  Company Policies its page.*
+  ⚠️ **SUPERSEDED LATER THE SAME DAY — see `f87f2180`.** The keep-group rule had cured the
+  signature orphan and manufactured a HEADING orphan four lines above it: section 16's title sat
+  alone at the foot of page 3 while its paragraph and the CLIENT block opened page 4. Two fixes —
+  the closing group now starts at the heading that introduces it, and the bottom margin is
+  measured to the BASELINE rather than reserving an empty line beneath it (a declared 46pt margin
+  had been behaving like 60pt, costing every page a line). **Company Policies is now 3 pages with
+  section 16 and the signature block together**, no other document regresses, and the lowest
+  baseline across all seven is 47pt. ⚠️ `src/lib/documentPdf.ts` — the in-app download — **had
+  silently drifted** from its server twin despite a docstring promising parity: still 0.75", none
+  of the keep rules, so the same document paginated differently by email than by download. Now a
+  verbatim port; the two tsconfig projects share no module, so a change to one MUST be made to
+  the other.
 - **Unsigned documents no longer show `{{SIG.*}}`** — the date renders as today's date, the
   signature as empty space.
 - **PDF filenames carry the person and the tenant again.** They never had it on the SET path,
@@ -183,6 +194,10 @@ affected account was repaired by a narrow idempotent backfill.
 6. **Verification style:** the PDF layout fixes were verified by *replaying the layout arithmetic*,
    not by reading text back out of a rendered PDF (pdf-lib cannot extract text). Same maths,
    different code — a strong check, not a proof.
+   **Upgraded 2026-08-24:** a rendered page CAN be read back, without poppler or pyobjc — copy the
+   page into a one-page PDF with pdf-lib, then `qlmanage -t -s 1400 -o <dir> <file>` to rasterise
+   it and look at the PNG. That turns the strong check into an actual proof, and is how `f87f2180`
+   was confirmed.
 
 ---
 
