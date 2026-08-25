@@ -63,6 +63,33 @@ he has already chosen to be in specification mode.
 **When a detail is genuinely missing: go and find it (step 2), or write it down as ASK-OWNER and
 raise it in review.** Never mid-capture.
 
+### ⚠️⚠️⚠️ THE THREE HARD RULES — broken twice on 2026-08-25, minutes apart
+
+> *"no questions, no research, no information sharing in step 1, only provoking me to look around
+> relative to the request i just made, one thing at a time even if i send you 10 you respond one at a
+> time. and then take all this shit you just fed me and focus on printing it into the document you
+> should be keeping as a ledger so this thread is disposable"*
+
+**1. NOTHING BUT THE PROVOCATION.** No findings. No recommendation. No evidence. No summary of what
+was built. The reply during capture contains **one widening question, or nothing at all.**
+
+**2. ONE AT A TIME.** *"even if i send you 10 you respond one at a time."* Ten captured items get
+**one** question — the one worth interrupting for. The rest go in the ledger.
+
+**3. ⚠️ EVEN WHEN HE ASKS A DIRECT QUESTION.** He asked *"what do you think about this?"* about
+public account creation. I answered it — research, findings, a recommendation, and a closing question
+— in the reply. **Wrong.** The answer belonged **in the ledger entry**, surfaced in step 3 where
+decisions are made. *"This thread is disposable"* is the whole point: **anything that exists only in
+a reply is lost.** A direct question does not suspend the phase; it becomes a `FOUND` and a
+`RECOMMENDATION` line under its CR.
+
+⚠️ **The failure mode is seductive**, which is why it happened immediately after being praised for
+getting it right: the research WAS good, the findings WERE material, the recommendation WAS sound.
+**None of that matters.** Delivered at the wrong time it costs him the altitude, and delivered in a
+reply it is thrown away with the thread.
+
+**The reply during step 1 is not where value is delivered. The ledger is.**
+
 ### 2. ⚠️ FACT-FINDING — the step that was missing
 **Before any question is asked and before any code is written**, go and look. Trace:
 
