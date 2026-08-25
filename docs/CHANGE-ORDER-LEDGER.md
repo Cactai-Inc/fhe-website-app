@@ -237,3 +237,132 @@ choose and it should account for what is on the calendar and the duration of the
 **FOUND** Today both start and end are free-form date-and-time boxes, which is what allowed CR-02.
 ⚠️ **Depends on CR-05** (nothing knows durations) **and CR-03** (while the generated slots exist,
 every hour already looks busy, so a clash check would refuse everything).
+
+---
+
+# G2 · BOOKING PROVISIONING
+
+## CR-08 · G2 · researched
+**SAID** *"we are being asked to select a product before we select the client and the inverse is the
+right approach. we select a client, then we see what the client has available, if they are a weekly
+rider or if they have credits we should see that"*
+**FOUND** The screen asks for the product first, and the code proves the order is backwards: the
+client field's own label is decided by which product was picked. Nothing on the panel is narrowed by
+who the client is — every offering and **every horse in the system** is offered on every booking.
+**ASK-OWNER** Hide what is not relevant, or just sort it to the bottom? (Hiding is decisive but
+invisible.)
+
+## CR-09 · G2 · researched
+**SAID** *"if they dont have a paid offering purchased that matches the selection … we generate that
+offering by creating the scheduled booking. if they have that offering we see it and we are using
+what they purchased."*
+**ASK-REPO** ⚠️ When a booking creates an order, is it created in a state that actually **opens**?
+See CR-27 — an order that stays unopened is exactly the live defect on Rachel Page's record.
+
+## CR-10 · G2 · researched
+**SAID** *"we only show horse care services for clients with a horse. if they dont have a horse in
+the system that means we dont have the paperwork signed from them … we dont need to add any text to
+the ui to explain this, its self evident … it should honor our rules not ignore them."*
+**FOUND** ✅ **The rule already exists and is enforced when the booking is saved** — a care booking
+is refused without a horse and without that person's care paperwork for that horse. **Only the
+screen ignores it**, so staff can pick the service and hit the wall at the end.
+⚠️ **"Has a horse" is two different relationships** — owning one and leasing one. A lease client has
+a horse in their care without owning it.
+⚠️ Scale: **there is exactly one horse in the system.** The rule will hide horse services from
+everyone but one person, and that will look like a bug.
+
+## CR-11 · G2 · researched
+**SAID** *"the repeat weekly is weird … the primary selection is "just once" which literally reads
+repeat this one time."*
+**status: built** (wording) — the underlying control is CR-12's.
+
+## CR-12 · G2 · captured
+**SAID** *"this is not the surface for setting a weekly lesson … the primary option is the client
+card where they or us can set their weekly riding day and time which then appears automatically on
+the calendar until its renewed at the end of the month for the next month. if we do want to repeat a
+lesson it would be because they have credits or they intend on purchasing a punch card."*
+**FOUND** The standing-weekly machinery is **already built** — it is simply on the wrong screen.
+⚠️ **This is a MOVE, not a build**, and it may also fix a related feature previously recorded as
+unreachable.
+⚠️ **The destination is the client card — which CR-30 is throwing away and reimagining.** Sequence
+after CR-30.
+
+## CR-13 · G2 · captured
+**SAID** *"the trainer is always claire there is no need to select a trainer when a lesson or any
+other service is scheduled."*
+**FOUND** The field is already skipped far more often than used, and skipping it loses who taught the
+lesson entirely.
+**ASK-OWNER** The bookings with no instructor recorded — leave them blank, or assume Claire?
+⚠️ Do not write her identity into the code; it belongs in settings.
+
+## CR-14 · G2 · captured
+**SAID** *"for the horse section we should be able to write in the name of a horse and claim it later
+for a horse record. right now its either select from the list or no horse lol"*
+**SAID** *"the unclaimed horse name gets claimed when a horse is being added to an account. you can
+pick it from a list of horses (which should only show the names of horses that arent assigned to
+someone, and to prevent a horse getting locked to a person automatically, i need to be able to change
+the owner from the horse record)"*
+**SAID** *"likewise i can select the owner of a horse record that lives as a name only"*
+**FOUND** ✅ **Two of the three already exist.** Changing a horse's owner from the horse record, and
+resolving an owner who is only a name, are both built — and ownership is kept as history, so a horse
+is never locked to anyone. **Not built:** no list anywhere is filtered to horses nobody has claimed,
+and a booking has nowhere to put a horse's name that is not yet a record.
+**ASK-OWNER** If the existing owner control is not discoverable, is the problem the control or where
+it lives?
+
+---
+
+# G7 · ORDERS & PAPERWORK EDITING
+
+## CR-15 · G7 · built
+**SAID** *"the attach offering needs to be revised to "+ Add offerings" and the order should be the
+[f]irst thing on the page not the last, and then the option to add an offering to the order lives
+under the line item for the offering they selected … make it an outline that holds space for a new
+line item … the size of the text and … square … remove the rounded square surounding … the rounded
+corners on the outside with sharp corners on the elements inside looks weird."*
+⚠️ **Built on the surface CR-30 discards.** Carry the requirements.
+
+## CR-16 · G7 · captured ❗ BLOCKED
+**SAID** *"we need to be able to change the offering they ordered... i dont see any way to do that
+here."*
+**FOUND** Cancelling a line is possible; **adding one to an existing order is not** — the only "add"
+makes a *second, separate order*. So the obvious shortcut would leave a cancelled order plus a new
+one, rather than a changed one.
+**ASK-OWNER** *(all three block the build)*
+1. Does the **price follow the new offering**, or is the agreed amount held?
+2. What happens on an order that is **already paid**?
+3. A weekly plan carries the days they chose — what happens to those, and to any month already put
+   on the calendar?
+⚠️ **His own widening question, unanswered:** *are there other line-item actions the same surface
+needs* — change quantity, comp or override a price, void the order, mark it paid, switch cadence?
+
+## CR-17 · G7 · built
+**SAID** *"why is this shown to me in the ui … 'The first lesson for anyone new … is an evaluation
+lesson — plan for an extra 30 minutes total' … the evaluation being a requirement means it should be
+the only riding lesson option to select right now until i select it nothing else can be added from
+that category. this is handled by software not by surfacing words i read and comply with, also the
+notes like that are things that should be in the client facing content not things facing me as the
+admin."*
+**FOUND** The customer-facing shop already worked this way. Only the staff screen asked politely.
+
+## CR-18 · G7 · built
+**SAID** *"horsemanship should be shown below lessons, then horse training then exercise then
+clipping."*
+**ASK-OWNER** Jumper training was not in the list — where does it belong? *(currently last)*
+
+## CR-19 · G7 · built
+**SAID** *"the entire surface is a bit too large the items [c]an be an order form with line items i
+add and select from a list on a menu not a giant list of everything with check boxes its a terrible
+waste of space and on mobile its going to be a nightmare."*
+
+## CR-20 · G7 · built
+**SAID** *"the same for the paperwork, we can preselect and make rows for the documents they should
+be signing but that comes after the selection of offerings … just show a row with the menu to select
+a new document and the placeholder selection says select a document to add it, and when i select
+something it becomes a row and the x is there to delete it and the new empty selectable row appears
+below the one i just added and moves up when something is deleted."*
+⚠️ **His A/B, in one sentence** — he offered two shapes and then chose:
+- **A** — an X on each row plus a **`+` button** that adds an empty row revealing a dropdown.
+- **B** — *"or just show a row with the menu"* — a permanent trailing menu row, no button.
+**B was built** because it is the one he elaborated. **Confirm in step 3.**
+**ASK-OWNER** The separate Paperwork tab was not touched — same treatment?
