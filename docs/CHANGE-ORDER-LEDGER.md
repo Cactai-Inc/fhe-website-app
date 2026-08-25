@@ -1400,6 +1400,34 @@ dashboard" → **community feed.** He never returns to the thing that sent him.
 4. Where else does the app decide where to send someone after finishing something? Apply one landing
    rule.
 
+## CR-65 · G9 · ⚠️ OWNER-ASSIGNED SWEEP — where every flow ends
+**SAID**
+> *"i dont know yet i havent used it so its worth you researching the flows and paths to see where the
+> end of a flow takes the user when its finished..."*
+
+**Asked whether other buttons lie about where they go, he declined to guess and assigned the sweep
+instead.** ⚠️ **Produce the answer; do not come back with the question.**
+
+**THE SWEEP — for every flow in the app, end to end:**
+1. **Where does it drop the user when it finishes?**
+2. **Does the control's LABEL match that destination?** *(CR-64: "back to your dashboard" → the
+   community feed.)*
+3. **Does it obey the landing rule** — dashboard when notifications are present, community feed
+   otherwise *(CR-64)*?
+4. **Is the exit a dead end or a loop?** CR-64's round trip never returns the person to what sent
+   them.
+5. **Does any exit land on a page that asserts a state the system cannot be in?** *(CR-52, CR-64 —
+   two found; assume more.)*
+
+**Flows known to have an end worth checking:** document signing *(CR-59 says straight back to the
+dashboard)* · onboarding · the self-service signing links · first sign-in / account claim · the
+evaluation-lesson shop · payment declaration · booking a lesson · order placement · contract
+execution · invitation acceptance.
+
+⚠️ **Deliverable: one table — flow · exit label · actual destination · correct destination.** That
+table is also the specification for fixing them, and it is the only way to know whether CR-64's page
+is one bug or the visible corner of a pattern.
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
