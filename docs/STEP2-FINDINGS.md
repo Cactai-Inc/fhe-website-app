@@ -194,3 +194,82 @@ capitalisation: *"+ Add New"* (×5), *"+ Add new"* (×2), *"+ Add a location"*, 
 *"+ Add gear"*, *"+ Add a supply"*, *"+ Add an offering"*, *"+ Add a new horse"*, *"+ address"*,
 *"+ add"*. ⚠️ **You spotted three disagreeing on one card. There are thirteen across the app.**
 
+
+---
+
+## ✅ CR-63 — YOUR PREMISE WAS WRONG, IN A USEFUL WAY
+
+**"Should we remove My Documents from the nav and replace it with My Orders?"**
+⚠️ **My Orders is ALREADY in the nav — and so is My Documents.** They sit in a second nav group that
+is **presence-gated**: each row appears **only when that person actually has one**.
+
+| Nav group | Rows | When shown |
+|---|---|---|
+| always | Dashboard · Calendar · Catalog · Messages · Community Feed | always |
+| **presence** | **My Orders** · **My Documents** · My Stable · My Posts · My Saved Items | **only when the person has some** |
+
+**So you are seeing My Documents and not My Orders because the account you are testing has documents
+and no orders** — which is exactly what you told me about it. **The mechanism already does what you
+were asking for.** No swap is needed; an order will put My Orders in the nav by itself.
+
+⚠️ **And on "the nav opens a page but the card expands":** **there is no member Lessons page at all.**
+Every lessons route in the app is a staff route. For a member, **My Lessons exists only as an account
+card.** Of the eleven cards, five have a real page behind them (Orders, Documents, Stable, Posts, and
+Saved — which points back at the account page itself); the rest are card-only.
+
+**So the duplication is smaller than it looked, and the inconsistency is real:** five cards have a
+page, six do not, and one nav row leads back to the page it came from.
+
+## ✅ CR-55 — the broken reader is a SECOND document viewer
+The `Read` button opens **`PaperViewer`**, a component that re-flows the document's text in the
+browser. **That is why a 4-page document becomes 7 with headings stranded at the breaks** — it is
+laying the document out a second time, by different rules, from the same source. ⚠️ **The page-break
+problem you had fixed in the PDF was fixed in the PDF renderer only. This is the other one.**
+**Replacing `Read` with the PDF removes the second layout engine entirely** — which is why option A
+is worth more than it looks.
+
+## ✅ CR-59 — the tour already exists
+`AppOverviewModal` is built, and there is already a "seen it" marker so it shows once. **The tour
+step of the promotion flow is a matter of when to trigger it, not what to build.**
+
+## ✅ CR-41 — the public catalog already reads the same prices
+The public-facing catalog reads **the same offerings staff sell from** — including unpriced ones,
+which display as "Inquire for pricing". ⚠️ **So a published rate card is not a second price list; it
+is the one you already have, shown.** That also means **CR-29's three cadences and CR-41's rate card
+are unavoidably the same job** — the moment one service needs three prices, both surfaces change
+together.
+
+---
+
+# STEP 2 IS COMPLETE
+
+## THE FIVE THINGS THAT CHANGE WHAT WE BUILD
+
+1. **Comping is already built** — modes, reason, zero-priced line, list price kept, loss reported
+   monthly, and reachable in the UI. CR-39 shrinks from a system to two extensions.
+2. **Three buttons labelled "Dashboard" go to the community feed.** One mistake, three places,
+   because `/app` was treated as the dashboard throughout.
+3. **My Orders is already in the nav, presence-gated.** The swap you asked for is already the
+   behaviour.
+4. **Comping, discounts and rate cards are one mechanism** — a list price kept alongside a charged
+   price. Comping proved it; discounting should reuse it.
+5. ⚠️ **My earlier advice was wrong:** `members.status` has no value meaning "account, not yet a
+   client". The gate exists; the state does not.
+
+## THE PATTERN, STATED ONCE
+**Nearly everything you asked for is built and undriven.** Booking states: 8 of 12 never written.
+Request stages: 10 defined, 1 used. Quantity: wired through 14 functions, always 1. Member statuses:
+3 allowed, 1 used. Comping: complete and only reachable for lesson credits.
+⚠️ **The work is mostly connection, not construction** — which makes CR-27 the hinge, because it is
+the connection everything else is waiting on.
+
+## RECOMMENDED STEP 3 ORDER — most-blocking first
+| # | | Unblocks |
+|---|---|---|
+| 1 | **CR-27** approval / opening an order | CR-09, CR-25, CR-43, CR-45, CR-59, and all of billing |
+| 2 | **CR-30** the people surface | CR-12, CR-15, CR-20, CR-31…CR-36, CR-44…CR-46, CR-62, CR-63 |
+| 3 | **CR-29 + CR-41 + CR-39/40** pricing, cadences, comps, discounts | CR-28, CR-60, CR-16, CR-38 |
+| 4 | **CR-03 + CR-06** open slots and the toggle | CR-05, CR-07, and the whole calendar |
+| 5 | **CR-50 + CR-43 + CR-49** the lead's world | CR-53, CR-62, CR-64 |
+| 6 | **CR-64 + CR-52 + CR-65** the lying pages and flow exits | quick, independent, visible |
+| 7 | **G9** globalization | carried by each of the above |
