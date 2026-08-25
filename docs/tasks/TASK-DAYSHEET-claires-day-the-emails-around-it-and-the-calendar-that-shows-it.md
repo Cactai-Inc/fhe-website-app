@@ -316,11 +316,10 @@ the control is built — both reference `horse_id` but their pickers were not re
    remains, and that is settled by precedent — tenant settings, not a constant.
 2. ~~How precise must "1 hour prior" be?~~ **ANSWERED: hourly cron, rounded down.** Rule and table
    in §2. No plan-tier change needed.
-3. **Is a task (supplements, medication, call the vet) a `booking` row?** It has a day but often no
-   time, no client, and no offering. Making it a booking gets the calendar and the day sheet free;
-   giving it its own table avoids twelve more branches on `bookings.kind`. **Recommend: a booking
-   with `kind='task'` and `is_flexible=true`** — it is the "no specific time, shows at the top of
-   the day" case the owner already described, so the display rule is already specified.
+3. ~~Is a task a `booking` row?~~ **ANSWERED, owner 2026-08-24 — see §9.** Timed-vs-day-level is
+   **Claire's call at scheduling time**, not a derived property. So it is one record type with an
+   optional time (`kind='task'`, `is_flexible` carrying "no specific time"), and the answer opened
+   a larger question about where the requirement comes from.
 4. **Does the 9am client email go to a client with MULTIPLE items that day** as one email? Assumed
    yes — one email, all their items.
 5. **Client no-show vs horse unavailable** — one status with a logged reason, or two statuses?
@@ -425,6 +424,86 @@ holds the standing-weekly editor — `fetchClientMonthlyPlans`, `setRecurringDay
 ⚠️ TASK-WALK2 recorded the standing-slot recurring feature as **unreachable on two identities**.
 Moving it to the client card is likely the fix for that as well — check before treating them as
 separate work.
+
+---
+
+## 9. WHERE A TASK COMES FROM — and the capability that is already half-built
+
+**Owner, 2026-08-24, answering "is a task a booking row or a day":**
+
+> *"whether a task is a booking row or a day is determined by claire which is informed by the
+> requirements setforth by the client in the offering purchase conversation, unlikely to codified
+> from the purchase but this is where we can either add that capability to certain purchases or
+> contracts capturing it can use the right tokens and structured fields so that the information can
+> be utilized rather than just read by the contract parties."*
+
+**Two rulings in one sentence.**
+
+### 9.1 Timed vs day-level is a HUMAN decision, not a derived one
+Claire decides, informed by what the client asked for. **So do not build a rule that infers it.**
+One record type with an optional time — `kind='task'`, and the existing `is_flexible` carrying "no
+specific time", which is already exactly the "shows at the top of the day" case in §5. Claire's
+choice is a field she sets, and it is changeable afterwards.
+
+### 9.2 ⚠️ THE STRUCTURED-FIELD CAPABILITY ALREADY EXISTS. IT IS ONLY EVER READ AS PROSE.
+
+The owner proposes *"the right tokens and structured fields so that the information can be utilized
+rather than just read by the contract parties."* **That machinery is built.** Verified:
+
+- **`contract_fields.structured jsonb`** is a real column, and **`set_field_structured(p_document_id,
+  p_field_key, p_structured jsonb)`** is a live RPC.
+- **`contract_field_defs.input_kind` already has 18 kinds, and four of them are structured
+  capture** — and two are precisely what this task needs:
+
+| `input_kind` | Field | What it captures |
+|---|---|---|
+| **`med_schedule`** | `TXN.MEDICATIONS` — *"Medications and supplements"* | **the supplement/medication regimen** |
+| **`week_grid`** | `TXN.DAYS_USED` — *"Reserved days of use"* | **a weekly day grid** |
+| `fee_schedule` | `TXN.LEASE_FEE` | payment cadence |
+| `contacts_list` | `TXN.CO_OWNERS` | people |
+
+`med_schedule` stores, per item:
+```
+{ medItems: [ { name, dose, schedule, administer_party, order_party, cost_party, …_note } ] }
+```
+
+**And every single consumer turns it back into prose.** The readers of `structured` are
+`compose_med_schedule`, `compose_field_prose`, `compose_pair_cost`, `compose_reveal_text`,
+`location_full_label`, `remerge_contract_from_fields`, `recompose_document_fields`,
+`contract_document_detail` — **all of them compose document text. Nothing consumes a structured
+field operationally.** A lease can state exactly which supplements a horse gets, who administers
+them and who pays, and none of it reaches Claire's day.
+
+**That is the owner's sentence, exactly: captured, rendered, never utilised.**
+
+### 9.3 The two connections worth making first
+1. **`TXN.MEDICATIONS` → the tasks in §3.** The regimen is already structured per item with an
+   administering party. Generating Claire's daily supplement/medication items from it is a read
+   away.
+2. **`TXN.DAYS_USED` → the standing weekly slots in §8.6.** The lease's reserved weekly days are
+   *already a week grid*, and §8.6 wants a standing weekly day+time to materialise on the calendar
+   for the month. **Same data, never consumed.** Do not build a second weekly-schedule capture.
+
+### 9.4 ⚠️ THREE HONEST CAVEATS
+1. **The cadence inside `med_schedule` is FREE TEXT.** `it->>'schedule'` is a prose string
+   ("twice daily"). Item, dose and responsible party are structured; **when** is not. Generating
+   dated tasks needs that one sub-field structured, or Claire setting the cadence once when she
+   accepts the requirement. **This is the actual gap — not the whole mechanism.**
+2. **`contract_fields` has ZERO rows in production.** The engine is built and no live contract
+   currently exercises it — the only documents in prod are the seven onboarding releases (no lease,
+   no bill of sale). So this is untested against real data, and anything built on it must be proven
+   with a real contract first, not assumed from the schema.
+3. **The purchase side is NOT built and the owner said so** — *"unlikely to codified from the
+   purchase."* Do not build purchase-side requirement capture on spec. **The contract path is the
+   one with the machinery**; if certain purchases later need it, they can reuse the same
+   `structured` shape rather than inventing a parallel one.
+
+### 9.5 What this makes the task, concretely
+- Claire accepts a requirement (from a contract's structured field, or from a conversation she
+  records herself) and it becomes a recurring task, timed or day-level **as she chooses**.
+- The document remains the source of the obligation; the task is the operational instance —
+  the same relationship the offering already has to a booking. **Do not copy the requirement into
+  the task as free text**; point at the field so an amended contract changes the tasks.
 
 ---
 
