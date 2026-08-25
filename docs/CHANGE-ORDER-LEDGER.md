@@ -507,7 +507,7 @@ plan lapse?
 
 # G8 · THE REQUEST → ORDER SPINE
 
-## CR-27 · G8 · researched
+## CR-27 · G8 · ⚠️ LOCKING — lifecycle settled 2026-08-25, three questions remain
 **SAID** *"it doesnt appear the pending status is working properly and likely the approval process for
 a request isnt working properly either"*
 **FOUND** Both are the same thing, and it is worse than a bug: **the steps were designed and never
@@ -516,10 +516,70 @@ part of the system can approve one.** Bookings have twelve possible states and o
 been used. And Rachel Page's order — the only one that came from a request — is still sitting
 unopened, which is why she received no paperwork and no credits.
 ⚠️ **This is the hinge for CR-09, CR-25 and the whole of G5.** It is a build, not a repair.
-**ASK-OWNER**
-1. Which stages does the barn actually use? Ten were designed; you may only need three.
-2. Is **approving the request** the same act as **opening the order**, or two acts?
-3. Who can approve — Claire only, or CJ as well?
+**✅ LOCKED, owner 2026-08-25 — THE ORDER LIFECYCLE**
+
+> *"the submission is a request to purchase, not an actual purchase, and the approval to purchase is
+> the order creation step. There's no point in creating an order that isn't gonna be paid and no point
+> in creating an order just to cancel it on our end by declining or denying them … We create the order
+> by approving the creation of the order[,] booking is a separate step. The user doesn't see and
+> notice that we approved their purchase. They see a notice that their order has been processed and
+> they get a payment request … booking follows order creation and, as previously discussed, payment is
+> not part of the booking flow. It's part of the fulfillment requirement[;] without payment, we do not
+> fulfill … if they don't pay and they show up, we tell them they have to pay[;] if they don't pay and
+> don't show up, the order may be canceled. [T]he booking may be rescheduled on the customer side
+> prior to payment, they can cancel the order[;] after payment they can cancel the booking and they
+> get a credit or they can reschedule the booking based on our policies"*
+
+**THE CHAIN — four separate things, in this order:**
+| # | Act | Who | Creates |
+|---|---|---|---|
+| 1 | **a request to purchase** | the visitor | **not a purchase** — an ask |
+| 2 | **approval** | staff | ⚠️ **THE ORDER.** Approving *is* creating it |
+| 3 | **booking** | staff, usually after a conversation | a separate step, **after** the order |
+| 4 | **payment** | the client | ⚠️ **not part of booking — a FULFILMENT requirement** |
+
+⚠️ **NO ORDER EXISTS BEFORE APPROVAL.** *"No point in creating an order that isn't gonna be paid and
+no point in creating an order just to cancel it on our end by declining."* **This settles CR-25 and
+CR-09 too** — Rachel Page's `draft` order should never have existed; the request should have stayed a
+request until approved.
+
+⚠️ **THE CLIENT NEVER SEES "APPROVED."** They see **"your order has been processed"** and **a payment
+request**. Approval is our word, not theirs.
+
+⚠️ **PAYMENT DOES NOT GATE BOOKING. IT GATES FULFILMENT.** The order sits there; the booking sits
+there. *"Without payment, we do not fulfil."*
+
+**WHAT HAPPENS WHEN THEY DON'T PAY:**
+| | |
+|---|---|
+| **doesn't pay, shows up** | **we tell them they have to pay** — the lesson is not silently free |
+| **doesn't pay, doesn't show** | **the order MAY be cancelled** *(our discretion, not automatic)* |
+
+**WHAT THE CLIENT MAY DO — and payment is the dividing line:**
+| | Before payment | After payment |
+|---|---|---|
+| **the booking** | **reschedule** — customer side | **reschedule**, per our policies |
+| **the order** | **cancel it** | — |
+| **the booking** | — | **cancel it → they get a CREDIT** |
+
+⚠️ **Before payment they can walk away from the ORDER. After payment they can only move or convert
+the BOOKING** — the money stays with us as a credit.
+
+**✅ ANSWERED — "which stages do we use?"**
+> *"We need all of the states that pertain to the options. I'm not sure what logic you were using
+> that says this because I listed the happy path statuses[,] those are the only ones we need"*
+
+⚠️ **MY RECOMMENDATION TO COLLAPSE TO THREE WAS WRONG.** He had described the happy path only, and I
+read a happy path as a complete vocabulary. **The rule is: every state that corresponds to a REAL
+OPTION must exist.** The options above — declined, cancelled-by-us, cancelled-by-them, rescheduled,
+credited, unpaid-but-attended — **are all real, so their states are all needed.**
+
+**ASK-OWNER — REMAINING to lock CR-27**
+1. **Who may approve — Claire only, or CJ as well?**
+2. ⚠️ **The eight requests already stuck at stage one, and Rachel's £880 order that should never have
+   been created** — leave, migrate, or delete?
+3. **Is "declined" the same as CR-44's dungeon exit, or a separate thing?** A declined *purchase* and
+   a not-a-fit *person* may not be the same decision.
 
 ---
 
