@@ -11,7 +11,9 @@ import {
 import { fetchOfferings, contactDossier, updateContactRecord } from '../../lib/api';
 import { InviteResultPanel } from './InviteResultPanel';
 import type { AgreedLesson } from './AgreedLessonPanel';
+import { X } from 'lucide-react';
 import type { Offering } from '../../lib/types';
+import { isEvaluationOffering, serviceDisplayRank } from '../../lib/serviceCatalog';
 
 /**
  * ⚠️ TASK-PAMELA §A — THE ACCOUNT IS REAL WHEN IT IS SAVED, NOT WHEN IT IS SENT.
@@ -74,11 +76,15 @@ const INVITE_HIDDEN_OFFERING_IDS = new Set<string>([
      is added. Staff could not offer the one thing every new rider must buy. */
 ]);
 
-// The owner's note shown wherever lessons are offered on this page.
-const EVALUATION_LESSON_NOTE =
-  'The first lesson for anyone new to French Heritage Equestrian is an '
-  + 'evaluation lesson — plan for an extra 30 minutes total: arrive 15 minutes '
-  + 'early, and the lesson runs 15 minutes longer than normal.';
+/* ⚠️ THE EVALUATION NOTE IS GONE FROM THIS SURFACE (owner, 2026-08-25):
+   "this is handled by software not by surfacing words i read and comply with,
+   also the notes like that are things that should be in the client facing content
+   not things facing me as the admin."
+
+   It was a paragraph of arrive-15-minutes-early guidance shown to STAFF, asking
+   them to remember a rule the form could simply enforce. The rule is now enforced
+   below; the sentence still lives where it is for — the member's own shop, at
+   Onboarding.tsx. */
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="mb-4"><span className="form-label">{label}</span>{children}</div>;
@@ -169,7 +175,6 @@ export function ProvisionClientForm({
   const [docChecked, setDocChecked] = useState<Set<string> | null>(null);
   /** Every document staff MAY apply — not only what the categories suggest. */
   const [allTemplates, setAllTemplates] = useState<{ template_key: string; title: string }[]>([]);
-  const [addingDoc, setAddingDoc] = useState(false);
   const [offerings, setOfferings] = useState<Offering[]>([]);
   const [offeringIds, setOfferingIds] = useState<string[]>([]);
   const [payStatus, setPayStatus] = useState<'unpaid' | 'partial' | 'paid'>('unpaid');
@@ -288,11 +293,9 @@ export function ProvisionClientForm({
     ?? allTemplates.find((t) => t.template_key === key)?.title
     ?? key;
   const effectiveDocs = docChecked ?? derivedDocKeys;
-  const shownDocKeys = useMemo(() => {
-    const s = new Set(derivedDocKeys);
-    if (docChecked) docChecked.forEach((k) => s.add(k));
-    return Array.from(s);
-  }, [derivedDocKeys, docChecked]);
+  /* `shownDocKeys` (prefill ∪ hand-added, INCLUDING un-ticked suggestions) went with
+     the checkbox grid — see `docRowKeys` below. Un-ticking and deleting are now the
+     same act, so a suggestion that is off is simply not a row. */
   // ⚠️ NOSTRIP §4 — SAY IT BEFORE DOING IT.
   //
   // Everything this person currently owes that the selection above does NOT
@@ -319,9 +322,30 @@ export function ProvisionClientForm({
   // and everything is permitted, so this is deliberately not filtered by category
   // — a seller who is delivering the horse needs the general release, and their
   // category suggests nothing at all.
+  /* ⚠️ AN ORDER FORM FOR PAPERWORK TOO (owner, 2026-08-25): "we can preselect and
+     make rows for the documents they should be signing … a quick click of an X to
+     remove it … just show a row with the menu to select a new document and the
+     placeholder selection says select a document to add it, and when i select
+     something it becomes a row and the x is there to delete it and the new empty
+     selectable row appears below the one i just added and moves up when something
+     is deleted."
+
+     So the rows ARE the answer, not a grid of ticked and unticked boxes. A document
+     on the record is a row; removing it is an X; the trailing row is always an empty
+     menu. `docRowKeys` is therefore what is ON — the prefill from the offerings,
+     plus anything added by hand, minus anything removed — where the old
+     `shownDocKeys` also carried un-ticked suggestions that now simply are not rows.
+     Unticking and deleting became the same act, which is what makes the trailing
+     menu honest: everything not on a row is in it. */
+  const docRowKeys = useMemo(() => {
+    const on = new Set<string>(effectiveDocs);
+    signedTemplates.forEach((k) => on.add(k)); // signed paperwork is never not-on
+    return Array.from(on);
+  }, [effectiveDocs, signedTemplates]);
+
   const addableTemplates = useMemo(
-    () => allTemplates.filter((t) => !shownDocKeys.includes(t.template_key)),
-    [allTemplates, shownDocKeys],
+    () => allTemplates.filter((t) => !docRowKeys.includes(t.template_key)),
+    [allTemplates, docRowKeys],
   );
 
   /* EVERY purchasable offering. The segment filter was driven by the ticked
@@ -358,8 +382,33 @@ export function ProvisionClientForm({
       return s;
     });
   }
+  /* ⚠️ THE EVALUATION IS THE FIRST LESSON — ENFORCED, NOT ANNOUNCED (owner,
+     2026-08-25): "the evaluation being a requirement means it should be the only
+     riding lesson option to select right now until i select it nothing else can be
+     added from that category."
+
+     The member's own shop already worked this way; this staff form only had a
+     paragraph asking the reader to comply. Same rule, same shape: the other riding
+     lessons stay VISIBLE and readable (opacity, not hidden — the owner's earlier
+     ruling on the shop) so it is obvious what selecting the evaluation unlocks.
+     Nothing is locked when the catalog has no evaluation lesson to require. */
+  const evaluationOffering = useMemo(
+    () => visibleOfferings.find(isEvaluationOffering) ?? null,
+    [visibleOfferings]);
+  const lessonsLocked = !!evaluationOffering && !offeringIds.includes(evaluationOffering.id);
+
   function toggleOffering(id: string) {
-    setOfferingIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+    setOfferingIds((prev) => {
+      if (!prev.includes(id)) return [...prev, id];
+      /* Dropping the evaluation drops every lesson it unlocked — leaving them
+         selected would provision a set the rule says is not orderable. */
+      if (evaluationOffering && id === evaluationOffering.id) {
+        const lessonIds = new Set(visibleOfferings
+          .filter((o) => o.service_type === 'RIDING_LESSON').map((o) => o.id));
+        return prev.filter((x) => !lessonIds.has(x));
+      }
+      return prev.filter((x) => x !== id);
+    });
   }
 
   /** Which act is running — so the button that is NOT pressed can also disable. */
@@ -568,6 +617,105 @@ export function ProvisionClientForm({
 
           <>
             <div className="mb-6">
+              <span className="form-label">Offerings (optional)</span>
+              <p className="text-sm text-muted mb-2.5">
+                What they're purchasing — their first order. <strong>This is what decides
+                their paperwork</strong>: each service carries its own documents, and the
+                list below fills in from whatever you pick here. A comped, zero-priced
+                offering counts the same as a paid one.
+              </p>
+              {visibleOfferings.length === 0 ? (
+                <p className="text-sm text-muted">
+                  No purchasable offerings are published.
+                </p>
+              ) : (
+                /* ⚠️ AN ORDER FORM, NOT A CATALOGUE (owner, 2026-08-25): "the items
+                   can be an order form with line items i add and select from a list
+                   on a menu not a giant list of everything with check boxes its a
+                   terrible waste of space and on mobile its going to be a nightmare."
+
+                   Was: every purchasable offering rendered as a checkbox, grouped,
+                   two columns — the whole catalogue on screen to choose two things
+                   from. Now: the chosen lines, and one menu to add another. The menu
+                   is a native <select> with <optgroup>s, which is the mobile-native
+                   picker and costs one row of space instead of the page.
+
+                   The evaluation rule rides on the SAME data: a locked lesson is a
+                   disabled <option>, so it is still listed and readable — the owner's
+                   "greyed but still very readable" — without a paragraph explaining
+                   why. */
+                <div className="border border-green-800/15 p-3">
+                  {offeringIds.length === 0 ? (
+                    <p className="text-sm text-muted mb-2">No offerings on this order yet.</p>
+                  ) : (
+                    <div className="flex flex-col gap-1.5 mb-2">
+                      {offeringIds.map((id) => {
+                        const o = visibleOfferings.find((x) => x.id === id);
+                        if (!o) return null;
+                        return (
+                          <div key={id} className="flex items-baseline gap-2 text-sm border-b border-green-800/[0.06] pb-1.5">
+                            <span className="min-w-0 flex-1 text-green-900">
+                              {o.name}
+                              {o.config_kind === 'recurring' && o.weekly_frequency
+                                ? <span className="text-xs text-muted"> · {o.weekly_frequency}×/wk monthly</span>
+                                : o.config_kind === 'scheduled' && (o.unit_count ?? 1) > 1
+                                  ? <span className="text-xs text-muted"> · {o.unit_count} sessions</span>
+                                  : null}
+                            </span>
+                            <span className="text-green-900 whitespace-nowrap">{money(o.price_amount ?? 0)}</span>
+                            <button type="button" onClick={() => toggleOffering(id)}
+                              aria-label={`Remove ${o.name}`}
+                              className="text-muted hover:text-green-900 focus-ring shrink-0">
+                              <X size={14} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                      <div className="flex items-baseline gap-2 text-sm pt-0.5">
+                        <span className="min-w-0 flex-1 text-muted">Total</span>
+                        <span className="text-green-900 whitespace-nowrap">{money(offeringTotal)}</span>
+                        <span className="w-[14px] shrink-0" aria-hidden="true" />
+                      </div>
+                    </div>
+                  )}
+                  <select className="form-input text-sm" value=""
+                    aria-label="Add an offering to this order"
+                    onChange={(e) => { if (e.target.value) toggleOffering(e.target.value); }}>
+                    <option value="">+ Add an offering…</option>
+                    {Object.entries(
+                      visibleOfferings
+                        .filter((o) => !offeringIds.includes(o.id))
+                        .reduce<Record<string, Offering[]>>((acc, o) => {
+                          const k = o.service_type ?? 'Other';
+                          (acc[k] ??= []).push(o); return acc;
+                        }, {}),
+                    )
+                      /* Owner, 2026-08-25: lessons, then horsemanship, then horse
+                         training, exercise, clipping. One order, in serviceCatalog. */
+                      .sort(([a], [b]) => serviceDisplayRank(a) - serviceDisplayRank(b))
+                      .map(([svc, items]) => (
+                        <optgroup key={svc} label={svc.replace(/_/g, ' ').toLowerCase()}>
+                          {items.map((o) => (
+                            <option key={o.id} value={o.id}
+                              disabled={lessonsLocked && svc === 'RIDING_LESSON' && !isEvaluationOffering(o)}>
+                              {o.name} · {money(o.price_amount ?? 0)}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* ⚠️ PAPERWORK COMES AFTER THE OFFERINGS (owner, 2026-08-25): "we can
+                preselect and make rows for the documents they should be signing but
+                that comes after the selection of offerings."
+
+                It sat ABOVE them, prefilled from a choice the reader had not made yet —
+                so the section explaining "the offerings you chose prefill this" was
+                shown before there were any. Reading order now matches causal order. */}
+            <div className="mb-6">
               <span className="form-label">First-login paperwork</span>
               <p className="text-sm text-muted mb-2.5">
                 What they'll review and sign when they activate. <strong>The offerings you
@@ -575,70 +723,63 @@ export function ProvisionClientForm({
                 it. Choose no offerings and nothing is required, which is the right answer
                 for a contract party.
               </p>
-              {shownDocKeys.length === 0 ? (
-                <p className="text-sm text-muted">
-                  Nothing will be assigned — they'll activate straight into whatever
-                  they were invited for. That is correct for someone who has bought
-                  nothing. Add a document below if this one needs it.
-                </p>
-              ) : (
-                <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                  {shownDocKeys.map((key) => {
-                    const alreadySigned = signedTemplates.includes(key);
-                    return (
-                      <label key={key}
-                        className={`flex items-start gap-2.5 px-4 py-3 rounded-lg border ${
-                          alreadySigned ? 'border-green-800/20 bg-cream-100/60 cursor-default'
-                          : effectiveDocs.has(key) ? 'border-green-700 bg-green-50 cursor-pointer'
-                          : 'border-green-800/15 hover:bg-green-50/50 cursor-pointer'}`}>
-                        <input type="checkbox" className="accent-green-700 w-[18px] h-[18px] mt-0.5"
-                          checked={alreadySigned || effectiveDocs.has(key)}
-                          disabled={alreadySigned}
-                          onChange={() => toggleDoc(key)} />
-                        <span className="min-w-0">
-                          <span className="block text-[14px] leading-snug text-green-900">{titleFor(key)}</span>
-                          {alreadySigned && <span className="block text-[11.5px] text-green-700 mt-0.5">Already signed</span>}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
+              <div className="border border-green-800/15 p-3">
+                {docRowKeys.length === 0 && addableTemplates.length === 0 ? (
+                  <p className="text-sm text-muted">
+                    Nothing will be assigned — they'll activate straight into whatever
+                    they were invited for. That is correct for someone who has bought
+                    nothing.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    {docRowKeys.map((key) => {
+                      const alreadySigned = signedTemplates.includes(key);
+                      return (
+                        <div key={key}
+                          className="flex items-baseline gap-2 text-sm border-b border-green-800/[0.06] pb-1.5">
+                          <span className="min-w-0 flex-1 text-green-900">
+                            {titleFor(key)}
+                            {alreadySigned && (
+                              <span className="text-[11.5px] text-green-700"> · already signed</span>
+                            )}
+                          </span>
+                          {/* Signed paperwork has no X. It is evidence they were asked
+                              and agreed, and it is never removed (NOSTRIP §4). */}
+                          {alreadySigned ? (
+                            <span className="w-[14px] shrink-0" aria-hidden="true" />
+                          ) : (
+                            <button type="button" onClick={() => toggleDoc(key)}
+                              aria-label={`Remove ${titleFor(key)}`}
+                              className="text-muted hover:text-green-900 focus-ring shrink-0">
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
 
-              {/* ⚠️ PARTYROLE §4c — NOTHING IS MANDATORY, EVERYTHING IS PERMITTED.
-                  The checkboxes above are the SUGGESTION; this is the reach. A
-                  control built only from category defaults can subtract but never
-                  add outside them, which is useless for the case the owner named:
-                  a seller who never visits owes nothing, and the same seller
-                  delivering the horse owes the general release. The judgement is
-                  staff's; the system has no opinion, so nothing here is filtered
-                  by category. */}
-              {addableTemplates.length > 0 && (
-                <div className="mt-3">
-                  {!addingDoc ? (
-                    <button type="button" onClick={() => setAddingDoc(true)}
-                      className="text-sm text-green-800 underline underline-offset-2">
-                      + Add another document
-                    </button>
-                  ) : (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <select className="form-input w-auto max-w-full text-sm" defaultValue=""
-                        onChange={(e) => {
-                          if (!e.target.value) return;
-                          toggleDoc(e.target.value);
-                          setAddingDoc(false);
-                        }}>
-                        <option value="">Choose a document…</option>
+                    {/* ⚠️ PARTYROLE §4c — NOTHING IS MANDATORY, EVERYTHING IS PERMITTED.
+                        The prefill above is the SUGGESTION; this is the reach. A control
+                        built only from category defaults can subtract but never add
+                        outside them, which is useless for the case the owner named: a
+                        seller who never visits owes nothing, and the same seller
+                        delivering the horse owes the general release. Nothing here is
+                        filtered by category — the judgement is staff's.
+                        The empty row is ALWAYS last, so adding pushes a fresh one down
+                        and deleting pulls the list up, with no button to press first. */}
+                    {addableTemplates.length > 0 && (
+                      <select className="form-input text-sm" value=""
+                        aria-label="Add a document"
+                        onChange={(e) => { if (e.target.value) toggleDoc(e.target.value); }}>
+                        <option value="">Select a document to add it…</option>
                         {addableTemplates.map((t) => (
                           <option key={t.template_key} value={t.template_key}>{t.title}</option>
                         ))}
                       </select>
-                      <button type="button" onClick={() => setAddingDoc(false)}
-                        className="text-sm text-muted px-2">Cancel</button>
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* ⚠️ NOSTRIP §4 — SAY IT BEFORE DOING IT.
                   This selection used to DESTROY everything outside it, silently:
@@ -685,64 +826,6 @@ export function ProvisionClientForm({
                       )}
                     </>
                   )}
-                </div>
-              )}
-            </div>
-
-            <div className="mb-6">
-              <span className="form-label">Offerings (optional)</span>
-              <p className="text-sm text-muted mb-2.5">
-                What they're purchasing — their first order. <strong>This is what decides
-                their paperwork</strong>: each service carries its own documents, and the
-                list below fills in from whatever you pick here. A comped, zero-priced
-                offering counts the same as a paid one.
-              </p>
-              {visibleOfferings.length === 0 ? (
-                <p className="text-sm text-muted">
-                  No purchasable offerings are published.
-                </p>
-              ) : (
-                <div className="space-y-4 border border-green-800/15 rounded-lg p-4">
-                  {Object.entries(
-                    visibleOfferings.reduce<Record<string, Offering[]>>((acc, o) => {
-                      const k = o.service_type ?? 'Other';
-                      (acc[k] ??= []).push(o); return acc;
-                    }, {}),
-                  )
-                    // Lessons are ALWAYS the top group, whatever categories are
-                    // checked; the rest keep their catalog order.
-                    .sort(([a], [b]) =>
-                      (a === 'RIDING_LESSON' ? 0 : 1) - (b === 'RIDING_LESSON' ? 0 : 1))
-                    .map(([svc, items]) => (
-                    <div key={svc}>
-                      <p className="text-xs uppercase tracking-wide text-secondary/70 mb-1.5">
-                        {svc.replace(/_/g, ' ').toLowerCase()}
-                      </p>
-                      {svc === 'RIDING_LESSON' && (
-                        <p className="text-xs text-gold-ink mb-2 leading-relaxed">{EVALUATION_LESSON_NOTE}</p>
-                      )}
-                      <div className="grid sm:grid-cols-2 gap-2">
-                        {items.map((o) => (
-                          <label key={o.id}
-                            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer text-sm ${
-                              offeringIds.includes(o.id) ? 'border-green-700 bg-green-50 text-green-900'
-                                : 'border-green-800/15 text-secondary hover:bg-green-50/50'}`}>
-                            <input type="checkbox" className="accent-green-700 w-[17px] h-[17px]"
-                              checked={offeringIds.includes(o.id)} onChange={() => toggleOffering(o.id)} />
-                            <span className="min-w-0 flex-1">
-                              {o.name}
-                              {o.config_kind === 'recurring' && o.weekly_frequency
-                                ? <span className="text-xs text-muted"> · {o.weekly_frequency}×/wk monthly</span>
-                                : o.config_kind === 'scheduled' && (o.unit_count ?? 1) > 1
-                                  ? <span className="text-xs text-muted"> · {o.unit_count} sessions</span>
-                                  : null}
-                            </span>
-                            <span className="text-green-900 whitespace-nowrap">{money(o.price_amount ?? 0)}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
                 </div>
               )}
             </div>

@@ -116,8 +116,19 @@ export async function renderDocumentPdf(title: string, body: string): Promise<Ui
     y -= TITLE_SIZE + 10;
   }
 
+  /* ⚠️ THE BOTTOM MARGIN IS MEASURED TO THE BASELINE (owner, 2026-08-24:
+     "check out the way this document page break splits the last section and
+     signature block — can you get this onto the page above?").
+
+     This test used to be `y < MARGIN + LINE_H`, which reserved a full empty line
+     BELOW the last baseline on every page. The declared margin is 46pt but the
+     effective bottom margin was 60pt, so every page ran a line short and the
+     page was visibly unbalanced — more white at the foot than at the head. A
+     baseline sitting exactly on MARGIN puts the descenders ~2pt lower, still
+     0.6" clear of the paper edge. Measured across all seven live documents: the
+     lowest baseline any of them now reaches is 47pt. */
   const newlineIfNeeded = () => {
-    if (y < MARGIN + LINE_H) {
+    if (y < MARGIN) {
       page = pdf.addPage([PAGE_W, PAGE_H]);
       y = PAGE_H - MARGIN;
     }
@@ -196,11 +207,62 @@ export async function renderDocumentPdf(title: string, body: string): Promise<Ui
   })();
 
   const sourceLines = resolveUnsignedSignatureTokens(body).replace(/\r\n/g, '\n').split('\n');
+
+  /** The vertical space lines [from, to) occupy if drawn as one run, measured
+   *  the way `drawLine` will actually draw them. The final line's own advance is
+   *  NOT counted: only its BASELINE has to clear the margin, and reserving the
+   *  empty line-height beneath it is what pushed the closing group off the page. */
+  const measureRun = (from: number, to: number): number => {
+    let needed = 0;
+    for (let k = from; k < to; k += 1) {
+      const t = sourceLines[k];
+      if (t.trim() === '') { needed += LINE_H * 0.5; continue; }
+      if (signatureSplit(t)) { needed += LINE_H + 2; continue; }
+      const h = isHeading(t);
+      needed += wrap(t, h ? bold : font, h ? HEADING_SIZE : FONT_SIZE, maxWidth).length
+        * (h ? LINE_H + 2 : LINE_H);
+    }
+    let last = to - 1;
+    while (last >= from && sourceLines[last].trim() === '') last -= 1;
+    if (last >= from) {
+      const t = sourceLines[last];
+      needed -= (signatureSplit(t) || isHeading(t)) ? LINE_H + 2 : LINE_H;
+    }
+    return needed;
+  };
+
+  /* ⚠️ THE CLOSING GROUP INCLUDES THE HEADING THAT INTRODUCES IT.
+     The previous rule kept the signature block with the closing sentence but
+     stopped there, so on Company Policies it broke between "16. GOVERNING LAW
+     AND SEVERABILITY" and the one paragraph under it — the heading was left
+     alone at the foot of page 3 and its own content opened page 4. Fixing the
+     signature orphan had created a heading orphan four lines above it.
+
+     So the group runs from the heading through the last signature field, and
+     the break decision is taken ONCE, at its first line. */
+  const tailStart = (() => {
+    if (signatureStart < 0) return -1;
+    let k = signatureStart - 1;
+    let kept = 0;
+    let first = signatureStart;
+    while (k >= 0 && kept < KEEP_LINES_BEFORE_SIGNATURE) {
+      if (sourceLines[k].trim() !== '') { kept += 1; first = k; }
+      k -= 1;
+    }
+    while (k >= 0 && sourceLines[k].trim() === '') k -= 1;
+    if (k >= 0 && isHeading(sourceLines[k])) first = k;
+    return first;
+  })();
+
   for (let i = 0; i < sourceLines.length; i += 1) {
     const raw = sourceLines[i];
     if (raw.trim() === '') {
       y -= LINE_H * 0.5; // blank line = half-line of vertical space
       continue;
+    }
+    if (i === tailStart && y - measureRun(i, sourceLines.length) < MARGIN) {
+      page = pdf.addPage([PAGE_W, PAGE_H]);
+      y = PAGE_H - MARGIN;
     }
     const sig = signatureSplit(raw);
     if (sig) {
@@ -223,39 +285,12 @@ export async function renderDocumentPdf(title: string, body: string): Promise<Ui
       const keep = Math.min(KEEP_LINES_WITH_HEADING, followLines.length);
       const needed = headingLines.length * (LINE_H + 2)
         + keep * LINE_H
-        + (j > i + 1 ? LINE_H * 0.5 : 0);   // the blank line between them
+        + (j > i + 1 ? LINE_H * 0.5 : 0)    // the blank line between them
+        - LINE_H;                           // the last kept baseline, not the space under it
       // Break BEFORE the heading rather than after it.
       if (keep > 0 && y - needed < MARGIN) {
         page = pdf.addPage([PAGE_W, PAGE_H]);
         y = PAGE_H - MARGIN;
-      }
-    }
-
-    /* Approaching the signature block: measure this line plus everything left of
-       the block, and break now if the group will not fit. `i` is checked against
-       the block start so this fires on the closing paragraph, not inside the
-       block itself — once we are in it, there is nothing left to pull along. */
-    if (!heading && signatureStart >= 0 && i < signatureStart) {
-      let nonBlankAhead = 0;
-      for (let k = i + 1; k < signatureStart; k += 1) {
-        if (sourceLines[k].trim() !== '') nonBlankAhead += 1;
-      }
-      if (nonBlankAhead < KEEP_LINES_BEFORE_SIGNATURE) {
-        let needed = headingLines.length * LINE_H;
-        for (let k = i + 1; k < sourceLines.length; k += 1) {
-          const t = sourceLines[k];
-          if (t.trim() === '') { needed += LINE_H * 0.5; continue; }
-          const sg = signatureSplit(t);
-          const f2 = isHeading(t) ? bold : font;
-          const s2 = isHeading(t) ? HEADING_SIZE : FONT_SIZE;
-          needed += sg
-            ? LINE_H + 2
-            : wrap(t, f2, s2, maxWidth).length * (isHeading(t) ? LINE_H + 2 : LINE_H);
-        }
-        if (y - needed < MARGIN) {
-          page = pdf.addPage([PAGE_W, PAGE_H]);
-          y = PAGE_H - MARGIN;
-        }
       }
     }
 

@@ -117,9 +117,20 @@ These supersede the previous category/tag behaviour. Cite this section.
 - **An adult's liability release was naming them as a minor.** Fixed — see §3.
 - **Orphaned headings**: 9 across four documents, now 0, with no document gaining a page.
 - **The signature block is never alone on a page** — it and the closing text lay out as one unit.
-- **Margins 0.75" → 0.64"**, as asked. *Honest note: once the keep-group rule is in, the margin
-  reduction does not save Company Policies its page. The document is the same length, laid out
-  correctly instead of accidentally.*
+- **Margins 0.75" → 0.64"**, as asked. *Honest note: on its own, the margin reduction did not save
+  Company Policies its page.*
+  ⚠️ **SUPERSEDED LATER THE SAME DAY — see `f87f2180`.** The keep-group rule had cured the
+  signature orphan and manufactured a HEADING orphan four lines above it: section 16's title sat
+  alone at the foot of page 3 while its paragraph and the CLIENT block opened page 4. Two fixes —
+  the closing group now starts at the heading that introduces it, and the bottom margin is
+  measured to the BASELINE rather than reserving an empty line beneath it (a declared 46pt margin
+  had been behaving like 60pt, costing every page a line). **Company Policies is now 3 pages with
+  section 16 and the signature block together**, no other document regresses, and the lowest
+  baseline across all seven is 47pt. ⚠️ `src/lib/documentPdf.ts` — the in-app download — **had
+  silently drifted** from its server twin despite a docstring promising parity: still 0.75", none
+  of the keep rules, so the same document paginated differently by email than by download. Now a
+  verbatim port; the two tsconfig projects share no module, so a change to one MUST be made to
+  the other.
 - **Unsigned documents no longer show `{{SIG.*}}`** — the date renders as today's date, the
   signature as empty space.
 - **PDF filenames carry the person and the tenant again.** They never had it on the SET path,
@@ -183,6 +194,10 @@ affected account was repaired by a narrow idempotent backfill.
 6. **Verification style:** the PDF layout fixes were verified by *replaying the layout arithmetic*,
    not by reading text back out of a rendered PDF (pdf-lib cannot extract text). Same maths,
    different code — a strong check, not a proof.
+   **Upgraded 2026-08-24:** a rendered page CAN be read back, without poppler or pyobjc — copy the
+   page into a one-page PDF with pdf-lib, then `qlmanage -t -s 1400 -o <dir> <file>` to rasterise
+   it and look at the PNG. That turns the strong check into an actual proof, and is how `f87f2180`
+   was confirmed.
 
 ---
 
@@ -225,7 +240,7 @@ identities exist (Claire and CJ, both Owner; the third is the platform owner, D1
 bookings have no instructor at all** vs 11 Claire and 1 CJ — the selector is already skipped more
 than used, losing attribution each time. **Default the field, do not remove it** (it is the
 attribution and D7 reads it); remove the CONTROL from seven files. Do NOT hardcode her user id —
-that is the MEDIA_RELEASE class; it belongs in tenant settings. The 527 unattributed bookings are
+that is a TENANT FACT HARDCODED IN CODE; it belongs in tenant settings. The 527 unattributed bookings are
 a separate call: backfilling asserts she taught lessons nobody recorded.
 
 ### 5.2 ⚠️ CORRECTED — "sharing captured content" is NOT a new product
@@ -327,6 +342,26 @@ defensively, and an unused value costs nothing.
 - **The owner's four executed test documents still carry the minor block**, because they were
   signed before the fix and a signed document is evidence (D32). New ones are correct. Correcting
   them means a superseding version and a re-sign — the owner's call.
+
+### 5.4 ⚠️ TWO OPEN QUESTIONS THAT NEED THE OWNER — recorded here 2026-08-24 because they
+existed only in a session memory, not in this document, and would have been lost
+
+**1. Does the document-before-contract gate come back, and for whom?**
+Ruling 7 in §1 says an offering's documents are signed *before* the contract. But that gate was
+**retired on 2026-08-22 on the owner's own instruction** — *"off entirely"* — and the retirement is
+still live in the code: `CONTRACT_ONBOARDING_GATE_RETIRED = true` at
+`src/pages/app/ContractPage.tsx:401`, plus migration `20260822T0820`. Ruling 7 asks for a gate
+again. **The question: does it apply to the contract COUNTERPARTY, or only to the person who
+purchased the offering?** Rulings 9 and 10 point at the second reading (a lessor/seller owes
+nothing by default), but that has not been said. **This blocks the ordering half of ruling 7.**
+
+**2. A recorded contradiction about where a new member lands.**
+The owner asked for *"no notifications → land on the community feed."* `Onboarding.tsx`'s
+`enterApp` deliberately does the opposite, on his own earlier instruction (ONBOARD §5): *"The
+dashboard is the landing, unconditionally"* — because a freshly-activated member still owes their
+profile details, and the notice and checklist live on the dashboard. **Surfaced, not silently
+flipped.** The comment at `src/pages/app/Onboarding.tsx:631` states the reasoning in place. If the
+newer instruction wins, that comment is the thing to change.
 
 ---
 

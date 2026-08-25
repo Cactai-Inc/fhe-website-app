@@ -37,6 +37,7 @@ import { standingSlotSentence, serviceLabel } from '../../lib/standingSlots';
 import { StandingSlotPicker } from '../../components/app/StandingSlotPicker';
 import { BodyWithSignatures } from '../../components/ops/documents/MergedBodyView';
 import { toErrorMessage } from '../../lib/ops/errors';
+import { isEvaluationOffering } from '../../lib/serviceCatalog';
 import { useDocumentTitle } from '../../lib/hooks';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
 import type { HorseIntakePayload } from '../../lib/horses';
@@ -93,12 +94,9 @@ type Step = 'order' | 'details' | 'horse' | 'shop' | 'sign' | 'payment' | 'slots
    others are not selectable and slightly grayed out but still very readable."
 
    Matched on SERVICE + the offering's own name rather than a hardcoded id: an id
-   in a function body is the MEDIA_RELEASE class, and this one would silently stop
+   in a function body is a TENANT FACT HARDCODED IN CODE, and this one would silently stop
    gating anything the day the offering is re-priced into a new row. */
-function isEvaluationOffering(o: { name?: string | null; service_type?: string | null }): boolean {
-  return (o.service_type ?? '') === 'RIDING_LESSON'
-    && /evaluation/i.test(o.name ?? '');
-}
+
 
 /** The plain profile fields (the name, minor toggle + fields are tracked apart). */
 type ProfileFormFields = Omit<

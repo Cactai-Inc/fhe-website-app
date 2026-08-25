@@ -76,6 +76,10 @@ export function StandingSlotPicker({
   slots, onSaved, audience = 'client', personName,
 }: StandingSlotPickerProps) {
   const staff = audience === 'staff';
+  /* Whose plan this sentence is about. Staff read it about a client; the member reads
+     it about themselves — same meaning, correct person. */
+  const whose = staff ? "this client's" : 'your';
+  const renewer = staff ? 'the client' : 'you';
   const [editing, setEditing] = useState<string | null>(null);
   const [choices, setChoices] = useState<StandingSlotChoice[]>([]);
   const [busy, setBusy] = useState(false);
@@ -201,11 +205,15 @@ export function StandingSlotPicker({
             {frequency(open) > 1 && !serviceLabel(open, 2).endsWith('s') ? 's' : ''}
           </h3>
           <p className="text-sm text-muted mb-4">
+            {/* Owner wording, 2026-08-24. A weekly plan is not "held until cancelled" — it is
+                held for as long as the client keeps renewing, month by month. The old sentence
+                promised open-ended tenure the billing cycle never gave it. A scheduled end date
+                is still stated when the plan has one, because that is a fact Claire needs. */}
             {frequency(open) === 1
-              ? `This is a standing weekly time${staff ? '' : ' that is yours'} — one day and one time, held every week${
-                  open.indefinite ? ' until it is cancelled' : ` until ${open.plan_ends_on}`}.`
-              : `This is ${frequency(open)} standing weekly times — pick ${frequency(open)} days and a time for each, held every week${
-                  open.indefinite ? ' until they are cancelled' : ` until ${open.plan_ends_on}`}.`}
+              ? `Pick a day and time for ${whose} weekly lesson, this will repeat each week for every month ${renewer} renews unless it is changed or cancelled.${
+                  open.indefinite ? '' : ` This plan is set to end ${open.plan_ends_on}.`}`
+              : `Pick ${frequency(open)} days and times for ${whose} weekly lessons, these will repeat each week for every month ${renewer} renews unless they are changed or cancelled.${
+                  open.indefinite ? '' : ` This plan is set to end ${open.plan_ends_on}.`}`}
           </p>
 
           {error && <p role="alert" className="form-error mb-3">{error}</p>}
@@ -315,17 +323,26 @@ export function StaffStandingSlotSection({ contactId, personName, title }: {
   // panel on every contact would be noise on every contact.
   if (slots !== null && slots.length === 0 && !error) return null;
 
+  /* Square, not rounded (owner, 2026-08-25): "the rounded corners on the outside
+     with sharp corners on the elements inside looks weird." The design system
+     agrees — `.form-input` and `.btn-primary` carry no radius at all, so the
+     rounded box was the outlier, not the sharp controls inside it. */
   return (
     <section aria-label="Standing weekly time"
-      className="border border-green-800/15 rounded-lg p-4 mb-6">
+      className="border border-green-800/15 p-4 mb-6">
       <h3 className="form-label mb-1 flex items-center gap-2">
         <CalendarClock size={16} aria-hidden="true" />
         {title ?? 'Their standing weekly time'}
       </h3>
       <p className="text-sm text-muted mb-4">
-        A weekly plan is a reserved time, not a pool of credits — set it here and every
-        week is put on the calendar for the next three months, rolling forward as it is
-        read. Changing it re-materialises from today; weeks already past are untouched.
+        {/* Corrected 2026-08-24: this promised "the next three months, rolling forward" and
+            NO three-month generation exists — set_recurring_days re-trues the current month
+            and the generator is _generate_plan_month. Says what it does.
+            ⚠️ TASK-DAYSHEET §14.3 changes this to fill the month ahead on payment confirmation;
+            revise this sentence WITH that build, not before it. */}
+        A weekly plan is a reserved time, not a pool of credits — set it here and the
+        month is put on the calendar. Changing it re-materialises from today; weeks
+        already past are untouched.
       </p>
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
       {slots === null
