@@ -905,6 +905,46 @@ withhold the client designation" real rather than cosmetic.
    app a member otherwise has; a lead's app is built up from three things instead. **Do not implement
    this as page visibility.**
 
+## CR-51 · G6/G7 · captured — one catalog, and the horse loop closes at sign-in
+**SAID**
+> *"yea its all one catalog, the gate on evaluation and horse care being order able or required is
+> based on having a previous qualifying order or having a horse in the system right? so we dont gate
+> them explicitly when they order horse care services but if they self activate we ask for their horse
+> information when they sign in so we complete the loop and if they dont have a horse then there is a
+> bit of an issue that we know going into the call or text exchange..."*
+
+**ONE CATALOG.** ✅ Answers the open question — a lead sees the same catalog a client does; the
+difference is what they may *do*, not what they may *see*.
+
+**The horse-care gate moves from BLOCKING to ASKING:**
+| | |
+|---|---|
+| **At order time** | ⚠️ **do NOT gate.** A lead ordering horse care is not stopped |
+| **At first sign-in** | **ask for their horse information** — the loop closes here |
+| **If they have no horse** | ⚠️ **not an error — an INTELLIGENCE.** *"a bit of an issue that we know going into the call or text exchange"* |
+
+⚠️ **This is a different philosophy from CR-10** and the two must be reconciled. CR-10 asked to hide
+horse services from clients without a horse; this says **let a lead order them and catch it at
+sign-in**. Both can be true — *hide from staff picking on someone's behalf, ask when the person
+orders for themselves* — but that distinction is not yet stated and should be.
+
+**FOUND** *(for step 3 — his "right?" needs one correction)*
+- The existing rule is **not** "a previous qualifying order or a horse in the system." A horse-care
+  booking is refused unless there is a horse **and** that person holds the care paperwork for **that
+  horse**. **Paperwork is part of the gate**, which matters because a lead who names a horse at
+  sign-in still will not have signed anything.
+
+**ASK-REPO**
+1. Is the horse-information ask at sign-in the **same intake form staff use**, or a lighter one?
+   *(Standing Q2 — a shared one already exists.)*
+2. Where does a no-horse flag surface for the person about to make the call?
+3. Does the catalog behave identically for a lead and a client today?
+
+**ASK-OWNER**
+1. Reconcile with CR-10: **hidden when staff pick for someone, asked when the person orders for
+   themselves** — is that the rule?
+2. Does the evaluation-lesson-first rule apply to a lead's self-built order the same way?
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
@@ -939,6 +979,7 @@ answer."*
 | **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
 | **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
 | **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **CR-51 ↔ CR-10** | one says hide horse services without a horse, the other says let them order and ask at sign-in |
 | **CR-50 → ruling 11** | community-for-every-account and no-community-for-leads cannot both stand |
 | **CR-49 → CR-43/CR-45** | self-activation is only safe because the client designation is withheld; the empty lead app is what makes the gate real |
 | **CR-45 → CR-43** | an account costs nothing; the CLIENT DESIGNATION is what triggers everything — so create accounts freely and withhold the designation |
