@@ -169,7 +169,7 @@ deleting (D32).
    pst, Los Angeles."* The VALUE is `America/Los_Angeles`. **Still store it as tenant config, not a
    constant** — no `time_zone` column exists on `organizations` or `org_settings` today, and
    `calendar-reminders.ts` hardcodes the zone inside `pacificHour()`. A tenant fact frozen into
-   code is the MEDIA_RELEASE class; seed the setting to `America/Los_Angeles` and read it. Note
+   code is a TENANT FACT HARDCODED IN CODE; seed the setting to `America/Los_Angeles` and read it. Note
    "PST" is the winter abbreviation — the barn is on PDT for most of the year, which is exactly why
    the stored value must be the IANA zone name and never a fixed UTC offset.
 2. ~~**Vercel cron granularity.**~~ **SETTLED, owner 2026-08-24:** *"just make it fire off at 1 hour
@@ -709,7 +709,7 @@ not make it 90 minutes.
 ```
 (o.service_type ?? '') === 'RIDING_LESSON' && /evaluation/i.test(o.name ?? '')
 ```
-That is the MEDIA_RELEASE class — a tenant fact frozen into code, and it silently stops working the
+That is a TENANT FACT HARDCODED IN CODE, and it silently stops working the
 day someone renames the offering. **Once duration and the evaluation's special standing come from
 columns, this regex should go.** Do not add a second name-matcher for the 90 minutes.
 
@@ -1199,7 +1199,7 @@ says is not orderable. Nothing locks when the catalog has no evaluation to requi
 
 ⚠️ **ONE name-matcher, not two.** `isEvaluationOffering` matched on the offering's NAME and was
 about to be copied into a second file. It now lives once, in `src/lib/serviceCatalog.ts`, with the
-warning attached: **this is the MEDIA_RELEASE class and breaks the day someone renames the
+warning attached: **this is a TENANT FACT HARDCODED IN CODE and breaks the day someone renames the
 offering.** The real fix is a column — §10.5.
 
 ### 18.2 The order of the groups
@@ -1265,6 +1265,41 @@ cover"*, with the named reason before anything stops being asked for — is **un
 4. **Should the same row treatment go to the ORDERS tab's paperwork and the Paperwork tab?**
    `PaperworkEditor` is a separate surface and was not touched — two shapes for one job is the
    pattern this task keeps finding.
+
+---
+
+## 19. A NAMING CORRECTION — "the MEDIA_RELEASE class" is retired
+
+**Owner, 2026-08-25:** *"what is a MEDIA_RELEASE class? why is that a thing? … fuck media release we
+dont care about that, and claude has been harping on it since day one and its fucking irrelevant.
+the only thing that matters is liability release matching the offering."*
+
+**He is right, and the label is gone from the code and every document.**
+
+**What it was trying to say:** *a tenant fact hardcoded in code — a value that belongs in data.*
+The name came from one past incident: `MEDIA_RELEASE` was retired as a standalone document and
+folded into the liability releases, but its template key stayed **hardcoded in two function bodies**,
+so the code kept referencing a document that no longer existed. A previous thread used it as
+shorthand for the pattern, and it calcified.
+
+**Why the name was bad.** It elevated a **retired, irrelevant document** into a naming convention;
+it named an *example* rather than the *pattern*; and it meant nothing to the only person who has to
+read these documents. Jargon that has to be explained is not shorthand.
+
+**Replaced everywhere with the plain description: A TENANT FACT HARDCODED IN CODE.** Seven places —
+`serviceCatalog.ts`, `Onboarding.tsx`, and four documents.
+
+**And the substantive point stands on its own:** *"the only thing that matters is liability release
+matching the offering."* That is what `service_type_document_requirements` is (48 rows, 12 service
+types, owner-editable) and it is exactly the OFFERINGDOCS model — **the offering decides the
+paperwork.** The three rules that had been hardcoded in function bodies
+(`RELEASE_HORSE_EXERCISE`, `RELEASE_JUMPER_ADDENDUM`, `EVALUATION_LIABILITY_WAIVER`) were moved into
+that table precisely because a liability release belongs to an offering, not to a function.
+
+⚠️ **The remaining instances of the actual pattern**, which still need fixing regardless of what it
+is called: `isEvaluationOffering` matching on an offering's NAME (§18.1), the tenant timezone
+hardcoded in `calendar-reminders.ts` (§2), and Claire's user id if the trainer default is ever
+written that way (`TASK-HOMESHAPES` §1b).
 
 ---
 

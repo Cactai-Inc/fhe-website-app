@@ -94,7 +94,7 @@ type Step = 'order' | 'details' | 'horse' | 'shop' | 'sign' | 'payment' | 'slots
    others are not selectable and slightly grayed out but still very readable."
 
    Matched on SERVICE + the offering's own name rather than a hardcoded id: an id
-   in a function body is the MEDIA_RELEASE class, and this one would silently stop
+   in a function body is a TENANT FACT HARDCODED IN CODE, and this one would silently stop
    gating anything the day the offering is re-priced into a new row. */
 
 

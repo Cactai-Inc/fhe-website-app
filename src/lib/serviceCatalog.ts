@@ -79,7 +79,7 @@ export function serviceTypeForOfferingSlug(slug: string): string | undefined {
 /* ─── THE EVALUATION LESSON, AND THE ORDER SERVICES ARE OFFERED IN ──────────────
  *
  * ⚠️ `isEvaluationOffering` MATCHES ON THE OFFERING'S NAME. That is the
- * MEDIA_RELEASE class — a tenant fact frozen into code — and it stops working the
+ * a TENANT FACT HARDCODED IN CODE — and it stops working the
  * day someone renames the offering. It lives here, alone, because there were about
  * to be TWO copies of it (the member shop and the staff provisioning form) and two
  * name-matchers drifting apart is worse than one that is honest about itself.

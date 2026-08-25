@@ -119,7 +119,7 @@ nothing ASKS — the field is populated with the tenant's instructor and the con
 Seven files carry a selector today: `SessionFields.tsx`, `AgreedLessonPanel.tsx`,
 `ScheduleSessionForm.tsx`, `CalendarItemPanel.tsx`, and the three libs behind them.
 
-⚠️ **Do not hardcode Claire's user id.** That is the MEDIA_RELEASE class — a tenant fact frozen
+⚠️ **Do not hardcode Claire's user id.** That is a TENANT FACT HARDCODED IN CODE — a fact frozen
 into code. It belongs in the value registry / tenant settings beside the other tenant identity
 values, so a second instructor one day is a settings change and not a thread.
 ⚠️ **The 527 unattributed bookings are a separate decision** — backfilling them asserts Claire

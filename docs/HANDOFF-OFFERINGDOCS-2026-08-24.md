@@ -240,7 +240,7 @@ identities exist (Claire and CJ, both Owner; the third is the platform owner, D1
 bookings have no instructor at all** vs 11 Claire and 1 CJ — the selector is already skipped more
 than used, losing attribution each time. **Default the field, do not remove it** (it is the
 attribution and D7 reads it); remove the CONTROL from seven files. Do NOT hardcode her user id —
-that is the MEDIA_RELEASE class; it belongs in tenant settings. The 527 unattributed bookings are
+that is a TENANT FACT HARDCODED IN CODE; it belongs in tenant settings. The 527 unattributed bookings are
 a separate call: backfilling asserts she taught lessons nobody recorded.
 
 ### 5.2 ⚠️ CORRECTED — "sharing captured content" is NOT a new product
