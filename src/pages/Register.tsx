@@ -28,13 +28,25 @@ export default function Register() {
   const navigate = useNavigate();
   const { refreshProfile } = useAuth();
 
-  /** Redeem per invite kind; returns the post-redemption destination. */
-  async function redeemByKind(): Promise<string> {
+  /** Redeem per invite kind; returns the post-redemption destination.
+   *
+   *  ⚠️ P1 ITEM 1 — THE INVITATION SAYS WHERE TO GO, NOT THE URL.
+   *
+   *  `?kind=contract` is the OLD two-email path (a counterparty who already has
+   *  an account). The unified send issues an ACCOUNT invitation carrying
+   *  `document_id`, so after the claim we route on what the invitation carries:
+   *    document_id present → the contract, via ITEM 2's gate
+   *    no document_id      → the existing landing rule
+   *  The gate at /app/contracts/:id/start decides for itself whether anything is
+   *  actually missing and forwards straight to the document when nothing is, so
+   *  a complete record never sees an interstitial. */
+  async function redeemByKind(carriedDocumentId?: string | null): Promise<string> {
     if (isContractInvite) {
       const documentId = await redeemContractInvitation(token);
       return `/app/contracts/${documentId}`;
     }
     await redeemInvitation(token);
+    if (carriedDocumentId) return `/app/contracts/${carriedDocumentId}/start`;
     // paperwork assigned → straight into the document flow
     try {
       const state = await myOnboardingState();
@@ -117,7 +129,7 @@ export default function Register() {
         const sessionEmail = sessionData.session?.user?.email?.toLowerCase();
         if (sessionEmail && sessionEmail === inv.email.trim().toLowerCase()) {
           try {
-            const dest = await redeemByKind();
+            const dest = await redeemByKind(inv.document_id ?? null);
             navigate(dest, { replace: true });
             return;
           } catch {
@@ -144,6 +156,10 @@ export default function Register() {
       email: invitation.email,
       request_id: invitation.request_id ?? null,
       kind: isContractInvite ? 'contract' : 'community',
+      // P1 ITEM 1: the OAuth redirect loses component state, so the contract this
+      // account invitation carries rides with it — otherwise a party who claims
+      // with Google lands on the dashboard and never sees the document.
+      document_id: invitation.document_id ?? null,
     }));
     const { error: oauthError } = await signInWithGoogle('/activate/complete');
     if (oauthError) {
@@ -193,7 +209,7 @@ export default function Register() {
     // its org_id; a bare insert with a null org_id trips the contact-link trigger
     // (contacts.org_id NOT NULL) and aborts, leaving the account half-built.
     try {
-      const dest = await redeemByKind();
+      const dest = await redeemByKind(invitation.document_id ?? null);
       await refreshProfile().catch(() => {});
       navigate(dest === '/app' ? '/app?welcome=1' : dest, { replace: true });
       return;

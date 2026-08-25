@@ -159,6 +159,14 @@ export interface Invitation {
   status: InvitationStatus;
   expires_at: string;
   request_id: string | null;
+  /** 'COMMUNITY' (an account claim) or 'CONTRACT' (a counterparty who already
+   *  HAS an account). P1 ITEM 1: a counterparty with no account is invited as
+   *  COMMUNITY carrying `document_id`, so ONE email claims the account and
+   *  names the contract — the CONTRACT kind is left for the case it serves. */
+  kind?: 'COMMUNITY' | 'CONTRACT';
+  /** The contract this invitation ALSO carries, if any. Set, the claim page
+   *  routes to that document instead of the ordinary landing rule. */
+  document_id?: string | null;
 }
 
 /** Backed by the `purchases` table (spine refactor). The exported name stays
