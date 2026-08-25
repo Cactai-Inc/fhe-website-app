@@ -836,6 +836,47 @@ accepted. The gate is doing real work rather than being cosmetic.
    theirs until accepted?
 2. Does cancelling remove them from the lead list, or mark them cancelled and leave them visible?
 
+## CR-50 · G6/G8 · captured — the access condition
+**SAID**
+> *"set a condition that if has_account=true and is_lead=true and is_client=false no access to
+> community, no access to most of the app pages or settings until is_account=true and is_lead=true and
+> is_client=true"*
+
+**The rule, as stated:**
+| State | Access |
+|---|---|
+| account ✓ · lead ✓ · **client ✗** | **no community, no most-of-the-app, no settings** |
+| account ✓ · lead ✓ · **client ✓** | full access |
+
+⚠️ **This is the enforcement half of CR-43 and CR-45.** It is what makes "create accounts freely,
+withhold the client designation" real rather than cosmetic.
+
+**FOUND** *(carried from CR-43's fact-finding — for step 3, not for the reply)*
+- **App access is already decided by a single membership status**, not by account existence. An
+  inactive member already gets nothing.
+- **Community is currently open to every account** — the guard was removed on 2026-08-24 under the
+  ruling *"every account holder gets the community feed."* **That ruling and this condition cannot
+  both stand as written.**
+
+**ASK-OWNER**
+1. ⚠️ **Three booleans can express states that cannot exist** — a client who is not an account, a
+   lead who is neither. Is this **one status with a sequence** (lead → client), or genuinely three
+   independent flags? *(This codebase's most repeated defect is one flag carrying two meanings; three
+   flags for one sequence is the same trap with more surface area.)*
+2. **"Most of the app pages"** — which pages are the exception? A lead needs their order, their
+   submission and the catalog *(CR-49)*; is anything else allowed?
+3. **Settings** — none at all, or the account-security minimum a person needs to manage their own
+   login?
+4. Confirm the 2026-08-24 community ruling is **re-worded rather than reversed** — its intent was
+   "buying something must not be the price of entry", which stays true.
+
+**ASK-REPO**
+1. Enumerate every page and settings surface, and mark which a lead may reach. **Produce the list;
+   do not ask for it.**
+2. Is page access driven by one gate today, or by a check in each page?
+3. Does an existing per-page visibility mechanism already exist that this should ride on rather than
+   duplicate?
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
@@ -870,6 +911,7 @@ answer."*
 | **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
 | **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
 | **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **CR-50 → ruling 11** | community-for-every-account and no-community-for-leads cannot both stand |
 | **CR-49 → CR-43/CR-45** | self-activation is only safe because the client designation is withheld; the empty lead app is what makes the gate real |
 | **CR-45 → CR-43** | an account costs nothing; the CLIENT DESIGNATION is what triggers everything — so create accounts freely and withhold the designation |
 | **CR-44/45 → new app zones** | marketing zone and dungeon do not exist; both are surfaces, not flags |
