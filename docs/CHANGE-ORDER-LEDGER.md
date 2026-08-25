@@ -874,12 +874,25 @@ withhold the client designation" real rather than cosmetic.
    |---|---|
    | **their order** | with the form they submitted *(CR-49)* |
    | **the catalog** | to change, add, remove — or cancel *(CR-49)* |
-   | **their personal profile information** | — |
+   | **their personal profile information** | name · email · login only — see Q3 |
 
    **Everything else is absent, including community.**
-3. ~~Settings — none at all, or the minimum?~~ ✅ **ANSWERED:** *"their personal profile
-   information."* ⚠️ Confirm in review whether that includes **login/security** (changing a password,
-   an auth method) — a person who has just claimed an account may need it.
+3. ~~Settings — none at all, or the minimum?~~ ✅ **FULLY ANSWERED, owner 2026-08-25:**
+   > *"so they can change their name their email their login, etc...preferences dont show, and the
+   > other sections and pages dont show."*
+
+   | Shown to a lead | Hidden from a lead |
+   |---|---|
+   | **name** | **preferences** |
+   | **email** | every other section |
+   | **login** *(auth method / password)* | every other page |
+   | *…and the like* | |
+
+   ⚠️ **"Preferences don't show" is a deliberate exclusion, not an oversight.** Preferred contact
+   method, notification choices and the rest belong to someone we have a relationship with — a lead
+   has not been accepted yet. ⚠️ **Cross-check with CR-34:** the preferred contact method a visitor
+   already gave us on the enquiry form must still be captured and must still reach the contact
+   record — **it is hidden from THEIR settings, not discarded.**
 4. Confirm the 2026-08-24 community ruling is **re-worded rather than reversed** — its intent was
    "buying something must not be the price of entry", which stays true.
 
