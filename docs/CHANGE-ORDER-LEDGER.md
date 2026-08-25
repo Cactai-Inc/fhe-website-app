@@ -1177,6 +1177,94 @@ that has been dropped once will be dropped again.
 ⚠️ **This is a globalization item** (G9): it is a behaviour every expanding card should share, not a
 fix to one card. **Find every expanding card.**
 
+## CR-59 · G6/G8 · captured — PROMOTION TO CLIENT: the whole flow
+**SAID**
+> *"the lead should be contacted and when the admin promotes to client by approving their order and
+> optionally scheduling their first lesson, the view of the app shows them the app tour modal and then
+> when they close that they are at the dashboard again and see whatever it should show for a new order
+> without payment and a new booking that is confirmed by admin (when there is one). they should be
+> prompted to click on a button that says make payment and it opens the payment page as a modal and
+> they can see the payment information and pick their option for which payment they are making or did
+> submit and then they proceed to the dashboard again. clicking the lesson shown opens the calendar.
+> Their nav now contains all the pages and if they didnt update their profile that notification is
+> still there on the dashboard, also on the dashboard is the documents to sign and if they click on
+> the button on the notification to click to sign they are taken to the intake form that captures the
+> remaining missing data fields and then sequentially sign the documents and upon conclusion they exit
+> straight back to the dashboard the notification about the documents is gone, when we verify payment
+> and mark their order paid that notification goes away"*
+
+⚠️ **PROMOTION IS AN ACT WITH TWO PARTS:** *"approving their order"* and *"optionally scheduling
+their first lesson."* **Approving the order IS the promotion.** *(This is CR-27's missing approval,
+named at last.)*
+
+**What the newly-promoted client meets, in order:**
+| # | | |
+|---|---|---|
+| 1 | **the app tour modal** | shown on their next view |
+| 2 | **the dashboard** | on closing the tour |
+| 3 | **the nav now contains all the pages** | the CR-53 allowlist ends here |
+
+**On that dashboard — four things, each with its own exit:**
+| Shows | Click leads to | Disappears when |
+|---|---|---|
+| **a new order without payment** + a **`Make payment`** button | **the payment page as a MODAL** — see the payment info, pick which payment they are making or already submitted, then back to the dashboard | admin verifies payment and marks the order paid |
+| **a new booking, confirmed by admin** *(when there is one)* | **the calendar** | — |
+| **complete your profile** *(if still outstanding)* | — | they complete it |
+| **documents to sign** | ⚠️ **the INTAKE FORM FIRST** — *"captures the remaining missing data fields"* — **then** the documents **sequentially**, then **straight back to the dashboard** | the last one is signed |
+
+⚠️ **The intake form is part of the signing path, not a separate errand.** One button, one journey,
+one exit.
+
+**ASK-REPO**
+1. Does the app tour already exist and is it already once-only?
+2. Is there a payment surface today, and is it a page that must become a modal?
+3. Does the signing path already run intake-then-documents-then-exit, or does it drop the person
+   somewhere else at the end?
+4. Are these dashboard cards the same self-hiding zones that already exist, or new ones?
+
+## CR-60 · G5 · captured — the three-state payment ladder
+**SAID**
+> *"their booking notification and on calendar both change from awaiting payment, to payment pending,
+> to paid status based on approval of the order, clicking the payment option on the payment modal, and
+> verification of payment by an admin."*
+
+**Three states, three triggers, two surfaces — the booking notification AND the calendar move
+together:**
+| State | Set by |
+|---|---|
+| **awaiting payment** | **approval of the order** *(the promotion itself)* |
+| **payment pending** | **the client picking their payment option** in the payment modal |
+| **paid** | **an admin verifying** the payment |
+
+⚠️ **Cross-check CR-28**, which used `pending payment → confirmed`. **This is a three-rung ladder,
+not two**, and the middle rung is the client's own declaration — which already exists end to end
+*(CR-26)*. **Reconcile the vocabulary in review before either is built.**
+
+## CR-61 · G9 · captured — photo, letter, and what other people see
+**SAID**
+> *"If the user uploads a picture to their profile they should have a toggle in the preferences
+> section to show the letter or photo in the actual avatar on the header, anywhere they post, any
+> lessons they book, anything any other user or admin sees that they personally did or are associated
+> with their image file should be used and where possible, their name but never the avatar its too
+> ambiguous."*
+
+| Where | Shows |
+|---|---|
+| **their own header avatar** | **their choice** — a toggle in preferences: **letter or photo** |
+| **anywhere ANYONE ELSE sees them** — posts, lessons they book, anything they did or are associated with | **their photo, and where possible their NAME.** ⚠️ **never the letter avatar** |
+
+⚠️ **The rule is about the audience, not the surface.** A letter is fine when you are looking at
+yourself and already know who you are; **to everyone else it is ambiguous** — which is why the toggle
+governs only their own header.
+⚠️ **G9:** this is a rule for **every** place a person is depicted. **Find them all** — the toggle is
+small, the sweep is not.
+
+**ASK-REPO**
+1. Where does the letter avatar render today, and how many of those are seen by other people?
+2. Is a photo already uploadable, and is there anywhere it is not used when it exists?
+3. ⚠️ **CR-50 says a lead's preferences do not show.** Where does this toggle live for someone who
+   has not been promoted yet?
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
@@ -1211,6 +1299,9 @@ answer."*
 | **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
 | **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
 | **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **CR-59 ⟶ CR-27** | approving the order IS the promotion — the approval nothing can currently perform |
+| **CR-60 ↔ CR-28** | three rungs here, two there; the vocabulary must be reconciled before either is built |
+| **CR-61 ↔ CR-50** | the avatar toggle lives in preferences, which a lead cannot see |
 | **CR-53 ⟶ CR-50** | the four-item nav and five-card account page supersede the three-item allowlist |
 | **CR-55 ↔ PDF work** | the on-screen reader repeats the page-break defect already fixed in the PDF renderer — one of the two viewers should not exist |
 | **CR-51 ↔ CR-10** | one says hide horse services without a horse, the other says let them order and ask at sign-in |
