@@ -38,6 +38,7 @@ import { ConfirmNameModal } from '../../components/app/ConfirmNameModal';
 import { CaptureInfoModal } from '../../components/app/CaptureInfoModal';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { ContractCascade, ContractBody, ContractHorseProvider } from '../../components/app/ContractCascade';
+import { PartyDocumentView } from '../../components/app/PartyDocumentView';
 import { AddElementButton } from '../../components/app/AddElementModal';
 import { PartyControlsCard, type PartyControlValues } from '../../components/app/PartyControlsCard';
 import { ContractChangeRequests } from '../../components/app/ContractChangeRequests';
@@ -760,7 +761,32 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   //    never see their captured signature there. (Editing a locked doc means
   //    unlocking it back to in_review, so nobody edits in-place while locked.)
   // Executed has its own sealed view below.
-  const readOnlyDoc = (state !== 'executed')
+  /* ⚠️ P1 ITEM 3 — A PARTY READS THE DOCUMENT; ONLY STAFF AUTHOR IT.
+     Owner, 2026-08-25: *"her view of the contract should show the selections made
+     and the text that renders along with that selection, she should not see the
+     text that doesnt render in the finished document … if she makes a change to a
+     selection then the content should change to the appropriately shown text
+     immediately."*
+
+     A party used to get <ClauseDocument>, the authoring surface — numbered clause
+     boxes, include/omit affordances, and conditional clauses previewed MUTED while
+     the choice controlling them was unmade. She now gets the composed body with
+     her own controls attached to their sections (<PartyDocumentView>).
+
+     ⚠️ IT COVERS THE WHOLE EDITABLE PHASE, NOT JUST "SHE STILL HAS A BLANK."
+     `reviewOnly` (no REQUIRED field of hers is empty) used to hand her the
+     read-only frame, which meant the moment she answered her last required
+     question every control she owned disappeared — including the ones she had
+     just used. Her optional selections are still hers, and "changing a selection
+     changes the visible text immediately" cannot be true on a surface with no
+     selections on it. She reads the same composed body either way; the only
+     difference is whether her own choices are still hers, and until the document
+     is locked they are. */
+  const partyDocView = !isOwnerSide && myRoles.length > 0
+    && state !== 'executed' && editablePhase;
+  // Locked and terminated are frozen — read-only for everyone, party or not. The
+  // party's editable-phase case is `partyDocView` above and never lands here.
+  const readOnlyDoc = (state !== 'executed') && !partyDocView
     && (reviewOnly || state === 'locked' || state === 'terminated');
   const partyControls: PartyControls[] = detail?.party_controls ?? [];
   // Counterparty seats = every party on the document that isn't one of my own
@@ -1066,12 +1092,26 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const saveField = useCallback(async (key: string, value: string) => {
     try {
       await setContractField(id!, key, value);
+      /* P1 ITEM 3 — "the content should change to the appropriately shown text
+         immediately". `set_contract_field` writes the VALUE; it does not recompose
+         the body, and the party view renders nothing BUT the body — so without
+         this her selection would land in the database and change nothing she can
+         see until the next full open.
+         Deliberately NOT unconditional: the comment on `load` above records that
+         regenerating on every save "would make a full recompose the cost of a
+         keystroke", and the authoring cascade renders from the fields directly and
+         needs none of it. So it runs exactly where the composed text is what is on
+         screen. Swallowed — a recompose that fails must not lose her answer, which
+         is already saved. */
+      if (partyDocView) {
+        try { await regenerateContractDocument(id!); } catch { /* the value is saved */ }
+      }
       await load({ blank: false });
       setChangeKey((k) => k + 1);
     } catch (e) {
       setError(errMessage(e, 'Could not save that field.'));
     }
-  }, [id, load]);
+  }, [id, load, partyDocView]);
 
   // Commit a party CONTACT token (LESSOR/LESSEE . ADDRESS/PHONE/EMAIL/FULL_NAME):
   // writes to that party's contact record, then refills + re-merges the doc so the
@@ -1694,7 +1734,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               ? 'The document is final and locked for signing. Review it below, then sign at the bottom of the page.'
               : reviewOnly
                 ? 'Review the document below. It will be locked for signing once both sides are ready; you\u2019ll sign then.'
-                : 'Complete the highlighted fields. The document is locked for signing once both sides are ready.'}
+                /* P1 ITEM 3: there are no "highlighted fields" on her surface any
+                   more — she reads the document, and her own choices sit with the
+                   section they belong to. */
+                : 'Read the document below and answer the questions marked as yours. The text updates as you answer. It is locked for signing once both sides are ready.'}
         </p>
       )}
 
@@ -1952,7 +1995,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
           Clause-model documents (Section›Clause›Field): numbered structure with
           live gating. */}
-      {state !== 'executed' && !readOnlyDoc && !showHorseGate && structure && (
+      {state !== 'executed' && !readOnlyDoc && !showHorseGate && !partyDocView && structure && (
         <ClauseDocument
           sections={structure.sections}
           fields={detail.fields}
@@ -1987,7 +2030,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {/* Field sections (legacy flat grouping) — hidden until a horse is chosen when
           the gate applies, hidden for a review-only party, and skipped entirely for
           clause-model documents (rendered above). */}
-      {state !== 'executed' && !showHorseGate && !readOnlyDoc && !structure && sections.map(([section, fields]) => {
+      {state !== 'executed' && !showHorseGate && !readOnlyDoc && !partyDocView && !structure && sections.map(([section, fields]) => {
         const anyEditable = fields.some((f) => f.can_edit);
         // counterparty intake: show only sections with something for them (or filled)
         if (!isOwnerSide && !anyEditable && !fields.some((f) => f.value)) return null;
@@ -2054,8 +2097,30 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           appear while the read-only merged frame (below) or the executed frame is
           showing the same text. This REPLACES the old collapsible "Review the
           document text" block that used to sit further down the page. */}
-      {state !== 'executed' && !showHorseGate && !readOnlyDoc && !structure && (
+      {state !== 'executed' && !showHorseGate && !readOnlyDoc && !partyDocView && !structure && (
         <FlatDocument body={doc.merged_body} title={doc.title} />
+      )}
+
+      {/* ═══ P1 ITEM 3 — THE PARTY'S VIEW OF THE SAME ONE BODY SLOT ═══════════
+          The third renderer beside <ClauseDocument> and <FlatDocument>, chosen by
+          WHO IS READING rather than by how the document is built — which is why it
+          serves both kinds: a clause template passes its sections so her controls
+          attach to the right ones, a flat template passes none and they gather
+          below the text.
+          It is the composed body, so every conditional is already resolved by the
+          server and nothing that will not appear in the finished document is on
+          screen. The horse gate still comes first: until the contract knows which
+          horse it is about there is no composed text worth reading. */}
+      {partyDocView && !showHorseGate && (
+        <PartyDocumentView
+          body={doc.merged_body}
+          sections={structure?.sections ?? []}
+          fields={detail.fields}
+          editable={editablePhase}
+          onSave={saveField}
+          onSaveStructured={(k, sv) => void act(() => setFieldStructured(id!, k, sv as never))}
+          onSaveResponsibility={(k, r) => void act(() => setFieldResponsibility(id!, k, r as never))}
+        />
       )}
 
       {/* (change-request composer removed 2026-07-20, audit M-3: it was
