@@ -366,3 +366,111 @@ below the one i just added and moves up when something is deleted."*
 - **B** — *"or just show a row with the menu"* — a permanent trailing menu row, no button.
 **B was built** because it is the one he elaborated. **Confirm in step 3.**
 **ASK-OWNER** The separate Paperwork tab was not touched — same treatment?
+
+---
+
+# G3 · CLAIRE'S DAY
+
+## CR-21 · G3 · captured
+**SAID** *"the in app notifcation isnt needed if we have a static daily view for claire with a next
+up card and the daily view should advance as the day progresses so shes not looking at a card that
+shows the day ahead and seeing things that already happened, those belong on a separate list further
+down the page so she can click on them to add notes or do something to the lesson or scheduled
+activity like horse care service or task like giving a horse its supplements or medicine or
+contacting the vet."*
+**FOUND** A "today" list already exists on her dashboard. What is missing is the shape: a next-up
+card, items leaving the forward list as they pass, and a separate list below for what is done.
+**ASK-OWNER**
+1. Does an item leave the forward list when it **starts**, or when it **ends**?
+2. At the end of the day, does the view show **tomorrow**, or nothing?
+
+## CR-22 · G3 · captured
+**SAID** *"Each of these items also needs to have a way for her to record the status as complete,
+skipped, no-show (when the client doesnt show up or the horse isnt available), things like cancelled
+or rescheduled are self explanatory and we can record them in the log for that item so we know when
+we look at a future booking that it was actually something that was rescheduled or when we look back
+at an item we see it was cancelled, the client didnt show, the horse wasnt there or was unavailable,
+or the booking was rescheduled."*
+**FOUND** ✅ **"Complete" and "no-show" already exist in the system's vocabulary** — they have simply
+never been used. Only "skipped" is genuinely missing. There is already a history log used by other
+record types that bookings are not yet part of.
+**ASK-OWNER**
+1. Client no-show and horse unavailable — **one status with a reason**, or two statuses?
+2. Does marking something complete **do** anything (consume a credit, trigger billing, prompt for
+   notes), or is it just a label?
+3. Can anyone set it, or only Claire?
+
+## CR-23 · G3 · captured
+**SAID** *"whether a task is a booking row or a day is determined by claire which is informed by the
+requirements setforth by the client in the offering purchase conversation, unlikely to codified from
+the purchase but this is where we can either add that capability to certain purchases or contracts
+capturing it can use the right tokens and structured fields so that the information can be utilized
+rather than just read by the contract parties."*
+**FOUND** Timed-versus-all-day is her judgement, not something to derive. Separately: the contract
+system **can already capture structured information** — including a medication schedule and a weekly
+day grid — but **everything that reads it only turns it back into wording for the document.** Nothing
+uses it to do anything.
+**SAID (correction, same day)** *"we dont have an offering in horse care that involves giving
+supplements or medication … it cant hurt to have it in writing but it would be in a notes field and
+only AI can make use of that and AI is a v2 platform feature."*
+⚠️ **So the medication field generates NOTHING.** The one structured field worth wiring is the
+lease's reserved weekly days — because that is something the client actually bought.
+
+---
+
+# G4 · NOTIFICATIONS & EMAIL
+
+## CR-24 · G4 · researched
+**SAID** *"the new email system for notifications about upcoming lessons is working but its doing too
+much, we need a daily email at 7am with the days rundown sent to hello@fhequestrian.com and a client
+email at 9am (or 1 hour prior to their scheduled time if their scheduled booking is earlier than
+10am) and then a reminder email 1 hour prior for the client and hello@fhequestrian.com"*
+**SAID** *"just make it fire off at 1 hour prior based on every hour and give extra time always so it
+sends it 1.5 hours prior instead of 30 min prior."*
+**SAID** *"clients get 1 email"*
+**SAID** *"tenant timezone is a good point, all activity is rooted in pst, Los [A]ngeles."*
+**FOUND** The reminder job runs and works. It sends on the two-hour mark as well as the one-hour
+mark, and emails each alert the moment it appears rather than at a chosen time. **The barn's timezone
+is written into the code rather than kept as a setting.**
+**ASK-OWNER** A booking made inside its own reminder window never gets a reminder. Accept that, or
+send one on creation?
+
+## CR-25 · G4 · captured
+**SAID** *"it appears she placed an order, thats great, i didnt notice any big notification, no email
+alert, nothing, telling me we got an order for a monthly subscriber riding weekly 2x."*
+**FOUND** Two separate reasons. **There is no "an order was placed" alert in the system at all** — so
+nothing failed, nothing exists. And **her order was never opened**, so even the paperwork and credits
+that normally follow an order did not happen. *(See CR-27.)*
+⚠️ Also found: the **lead** alert did reach him, but only 2 of 12 such alerts have ever been emailed
+at all.
+
+## CR-26 · G4 · captured
+**SAID** *"we need to surface a payment notification sent to the client 3 days prior to the end of
+the month and then we surface payment notifications to us when they say they paid so we know to check
+and we need to surface a list of monthly riders who owe payments reminding us to monitor for their
+payment … the riders are informed automatically 3 days prior that payment is due within the next 3
+days and then on the day its due we send them another email and for both of these we surface a
+notification starting at the 3 day mark and it counts down to your payment is due today and it
+extends into your payment is past due by and it counts the days."*
+**FOUND** ✅ The client's "I have paid" declaration **already exists end to end** — telling Claire to
+check it is a surfacing job, not a build. Nothing else here exists.
+**ASK-OWNER** What happens to a rider who never pays — does the countdown run forever, or does the
+plan lapse?
+
+---
+
+# G8 · THE REQUEST → ORDER SPINE
+
+## CR-27 · G8 · researched
+**SAID** *"it doesnt appear the pending status is working properly and likely the approval process for
+a request isnt working properly either"*
+**FOUND** Both are the same thing, and it is worse than a bug: **the steps were designed and never
+connected.** A request has ten possible stages and every one ever created sits at the first. **No
+part of the system can approve one.** Bookings have twelve possible states and only four have ever
+been used. And Rachel Page's order — the only one that came from a request — is still sitting
+unopened, which is why she received no paperwork and no credits.
+⚠️ **This is the hinge for CR-09, CR-25 and the whole of G5.** It is a build, not a repair.
+**ASK-OWNER**
+1. Which stages does the barn actually use? Ten were designed; you may only need three.
+2. Is **approving the request** the same act as **opening the order**, or two acts?
+3. Who can approve — Claire only, or CJ as well?
