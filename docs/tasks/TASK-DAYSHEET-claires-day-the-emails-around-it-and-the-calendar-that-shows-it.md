@@ -934,6 +934,86 @@ two of the eight values nothing has ever written. **This ruling is what finally 
 
 ---
 
+## 15. THE ORDERS TAB — five revisions BUILT, one still needs a decision
+
+Owner, 2026-08-25, looking at Rachel Page's record. **Five are done and on this branch; the sixth
+is blocked on a real question.**
+
+### ✅ Built
+1. **"+ Attach offering" → "+ Add offerings."**
+2. **The order is first, not last.** It sat under a standing-time editor for a plan the reader had
+   not been shown yet.
+3. **Line items render under their order** — requires migration `20260825T0900`, see below.
+4. **The add control is an outline that holds a line item's space**, with a square, text-sized,
+   unfilled button at its left, in place of the filled dark-green pill. That pill (`TabCreate`) had
+   exactly one caller and went with it.
+5. **Square corners** on the standing-slot section. ⚠️ The design system was already on the owner's
+   side: **`.form-input` and `.btn-primary` carry no border radius at all**, so the rounded box was
+   the outlier and the sharp controls inside it were correct.
+6. **The modal is one fixed size** (`h-[85vh]`), no longer `max-h-full`. It was re-sizing to each
+   tab's content and re-centring under the cursor on every tab change.
+
+⚠️ **`contact_dossier` returned NO line items** — `orders` was purchase-level only (id, code,
+status, amount, payment_status, method, created_at). The tab rendered `$880.00 · PUR-000302`
+because that was genuinely all it had, and **there was nothing to hang a per-item control on.**
+Migration `20260825T0900` adds `items` (label, quantity, price, unit, `config_kind`,
+`service_type`, `voided_at`). Additive, applied and verified on production. **Voided lines are
+returned, not filtered** (D32) — the UI decides how to show a cancelled line.
+
+### ❌ NOT built — "we need to be able to change the offering they ordered"
+**There is no RPC that can do it, and the obvious composition is wrong.**
+- `void_purchase_item(p_item_id, p_reason)` exists and is correct — it sets `voided_at`, never
+  deletes ("what was asked for is evidence"), logs a status event, and re-runs
+  `_recompute_purchase_total`, which voids the ORDER if that was the last live line.
+- **But `attachOfferings` creates a NEW PURCHASE**, not a line on the existing one. So
+  void-then-attach would leave the record showing a cancelled order and a second order — not a
+  changed one.
+
+**The missing piece is `replace_purchase_item(p_item_id, p_offering_id)`** (or
+`add_purchase_item(p_purchase_id, …)`), and it carries questions that are the owner's:
+1. **Does the price follow the new offering, or is the agreed amount held?**
+2. **What happens on a PAID order?** Rachel's is `draft`, so nothing has minted. On a paid order a
+   swap moves money and credits.
+3. **Recurring plans carry a standing time** (`set_recurring_days` writes against the purchase
+   item). Changing the offering under a live weekly plan must decide what happens to the days
+   already chosen — and to any month already materialised.
+
+⚠️ **Do not compose this out of void + attach to ship it sooner.** It would create a second order
+on the record every time, which is precisely the confusion this tab was being cleaned up to remove.
+
+---
+
+## 16. WHY THE LEAD MODAL BEATS THE CLIENT PAGE
+
+**Owner, 2026-08-25:** *"why does a lead modal have more data fields and functionally work far
+better than the actual client page we show after a lead becomes a client."*
+
+**Because the client page is where the lead modal's parts CAME FROM, and it was never switched over
+to them.** `ClientRecordActions.tsx:42` says so in its own header:
+
+> *"Exported from here and rendered by `ContactDossierModal`; `Admin.tsx` no longer…"*
+
+| | Surface | Backed by |
+|---|---|---|
+| **A lead** | `ContactDossierModal` — 7 tabs (Record · Relationships · Documents · Orders · Paperwork · Account · Activity) | **one RPC**, `contact_dossier` |
+| **A client** | `Admin.tsx` — the Clients tab, 1,044 lines, `RosterCard` + inline `setSelectedId` expansion | assorted reads |
+
+**`Admin.tsx` does not import `ContactDossierModal` at all.** The working parts were extracted out
+of the Clients page into a modal, the modal then grew (tabs, dossier RPC, and now line items), and
+the page they were taken from kept its original card. So the richer surface exists and the client
+side simply does not point at it.
+
+⚠️ **This is a "two surfaces, one job" defect, and it has a ruling on it already.** TASK-ROSTER
+(owner, 2026-08-10) settled that the Clients page is *"THE one people page"*, beating
+`/app/ops/contacts`. That ruling has since been overtaken by the modal without anyone saying so.
+
+**The fix is small and the risk is in the leftovers, not the change:** point a client row at
+`ContactDossierModal`, then work out what `Admin.tsx` still uniquely does — `RosterCard`'s badges,
+rings, flags and `AgreedLessonSection` are not obviously in the modal — and move it, rather than
+losing it. **Audit before switching.**
+
+---
+
 ## THE REACH
 
 Claire's day sheet is the dashboard she already lands on; the next-up card and the past list are

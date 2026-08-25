@@ -2584,6 +2584,16 @@ export interface ContactDossier {
     purchase_id: string; code: string | null; status: string;
     amount: number | null; amount_paid: number | null;
     payment_status: string | null; payment_method: string | null; created_at: string;
+    /* Added 2026-08-25 (migration 20260825T0900). The tab could only render
+       "$880.00 · PUR-000302" because purchase-level fields were all it was given —
+       there was nothing to hang a per-item control on. Voided lines ARE returned
+       (D32); the UI decides how to show a cancelled one. */
+    items: {
+      item_id: string; offering_id: string | null; label: string | null;
+      quantity: number | null; price_amount: number | null; price_unit: string | null;
+      config_kind: string | null; service_type: string | null;
+      voided_at: string | null; void_reason: string | null;
+    }[];
   }[];
   notifications: { id: string; kind: string; title: string; created_at: string }[];
   posts: {

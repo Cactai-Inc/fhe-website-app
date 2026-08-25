@@ -323,9 +323,13 @@ export function StaffStandingSlotSection({ contactId, personName, title }: {
   // panel on every contact would be noise on every contact.
   if (slots !== null && slots.length === 0 && !error) return null;
 
+  /* Square, not rounded (owner, 2026-08-25): "the rounded corners on the outside
+     with sharp corners on the elements inside looks weird." The design system
+     agrees — `.form-input` and `.btn-primary` carry no radius at all, so the
+     rounded box was the outlier, not the sharp controls inside it. */
   return (
     <section aria-label="Standing weekly time"
-      className="border border-green-800/15 rounded-lg p-4 mb-6">
+      className="border border-green-800/15 p-4 mb-6">
       <h3 className="form-label mb-1 flex items-center gap-2">
         <CalendarClock size={16} aria-hidden="true" />
         {title ?? 'Their standing weekly time'}

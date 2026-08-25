@@ -21,15 +21,6 @@ import { toErrorMessage } from '../../lib/ops/errors';
 import type { Offering } from '../../lib/types';
 
 /** The small "+ add" button these panels share. */
-function TabCreate({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick}
-      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-green-800 text-white text-xs font-medium hover:bg-green-700 focus-ring mb-3">
-      <Plus size={13} /> {label}
-    </button>
-  );
-}
-
 /**
  * CLIENT-RECORD ACTIONS — the working parts of the old Clients page, extracted
  * so they can live on the contact dossier.
@@ -377,10 +368,27 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
     } finally { setWorking(false); }
   }
 
-  if (!open) return <TabCreate label="Attach offering" onClick={() => setOpen(true)} />;
+  /* ⚠️ NOT THE FILLED PILL (owner, 2026-08-25): "maybe dont make it a thing dark
+     green button, instead make it an outline that holds space for a new line item
+     to be added and just show the button with text as an unfilled button on the
+     left side of the inside of the box, and make it the size of the text and make
+     it square." So: a bordered box the height of a line item, holding a square
+     outline button at its left. The filled `TabCreate` pill this replaced turned
+     out to have exactly ONE caller — this one — so it went with it rather than
+     being left behind as a helper nothing uses. */
+  if (!open) {
+    return (
+      <div className="border border-green-800/15 p-2 mt-1.5">
+        <button type="button" onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-1.5 border border-green-800/40 text-green-900 text-xs font-medium px-2 py-1 hover:bg-green-50 focus-ring">
+          <Plus size={12} /> Add offerings
+        </button>
+      </div>
+    );
+  }
   return (
-    <div className="border border-green-800/15 rounded-lg p-4 mb-3">
-      <p className="text-sm font-medium text-green-900 mb-2">Attach offering(s)</p>
+    <div className="border border-green-800/15 p-4 mt-1.5">
+      <p className="text-sm font-medium text-green-900 mb-2">Add offerings</p>
       <div className="space-y-2 max-h-56 overflow-y-auto overscroll-contain mb-3">
         {purchasable.map((o) => (
           <label key={o.id} className="flex items-center gap-2 text-sm text-secondary py-0.5">

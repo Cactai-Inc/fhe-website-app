@@ -158,7 +158,12 @@ export function ContactDossierModal({
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-green-950/40 px-4 py-8"
       role="dialog" aria-modal="true" aria-label={`${name} record`} onClick={onClose}>
-      <div className="bg-white rounded-2xl border border-green-800/10 w-full max-w-3xl max-h-full flex flex-col overflow-hidden"
+      {/* ⚠️ ONE SIZE, ALWAYS (owner, 2026-08-25): "keep it one size dont change it
+          based on the contents when i switch tabs it is constantly resizing and it
+          stays center aligned which makes it really uncomfortable." `max-h-full` let
+          the height follow the tab's content, so every tab change re-centred the box
+          under the cursor. A fixed height holds still; the body scrolls instead. */}
+      <div className="bg-white rounded-2xl border border-green-800/10 w-full max-w-3xl h-[85vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}>
 
         <div className="flex items-start gap-3 px-5 py-4 border-b border-green-800/10">
@@ -323,28 +328,48 @@ export function ContactDossierModal({
 
               {tab === 'orders' && (
                 <div className="flex flex-col gap-5">
+                  {/* ⚠️ THE ORDER COMES FIRST (owner, 2026-08-25): "the order should be
+                      the first thing on the page not the last". It was last, under a
+                      standing-time editor for a plan the reader had not been shown yet.
+                      Its line items sit under it, and the way to add another sits under
+                      THEM — so the shape of the section reads in the order the work
+                      happens. */}
+                  <Section title="Orders">
+                    {d.orders.length === 0 ? <Empty>None.</Empty>
+                      : d.orders.map((o) => (
+                        <div key={o.purchase_id} className="flex flex-col gap-1.5">
+                          <Row
+                            main={`$${Number(o.amount ?? 0).toFixed(2)}${o.code ? ` · ${o.code}` : ''}`}
+                            sub={new Date(o.created_at).toLocaleDateString()}
+                            badge={o.payment_status ?? o.status} />
+                          {(o.items ?? []).map((it) => (
+                            <div key={it.item_id}
+                              className={`flex items-baseline gap-2 pl-4 text-sm ${it.voided_at ? 'text-muted line-through' : 'text-green-900'}`}>
+                              <span className="min-w-0 flex-1">
+                                {it.label ?? 'Offering'}
+                                {(it.quantity ?? 1) > 1 ? ` × ${it.quantity}` : ''}
+                              </span>
+                              <span className="text-[11px] text-muted shrink-0">
+                                ${Number(it.price_amount ?? 0).toFixed(2)}
+                                {it.price_unit ? ` / ${it.price_unit}` : ''}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    {!archived && <AttachOfferingPanel contactId={contactId} onAttached={load} />}
+                  </Section>
+
                   {/* SLOTREACH §2 — a weekly plan's standing time lives on the
                       purchase item, so this is where it belongs: beside the orders
                       that carry it. Renders nothing for a contact with no weekly
                       purchase. */}
                   {!archived && (
-                    <>
-                      <StaffStandingSlotSection
-                        contactId={contactId}
-                        personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
-                      />
-                      <AttachOfferingPanel contactId={contactId} onAttached={load} />
-                    </>
+                    <StaffStandingSlotSection
+                      contactId={contactId}
+                      personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
+                    />
                   )}
-                  <Section title="Orders">
-                  {d.orders.length === 0 ? <Empty>None.</Empty>
-                    : d.orders.map((o) => (
-                      <Row key={o.purchase_id}
-                        main={`$${Number(o.amount ?? 0).toFixed(2)}${o.code ? ` · ${o.code}` : ''}`}
-                        sub={new Date(o.created_at).toLocaleDateString()}
-                        badge={o.payment_status ?? o.status} />
-                    ))}
-                  </Section>
                 </div>
               )}
 
