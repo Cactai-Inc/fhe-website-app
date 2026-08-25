@@ -1757,6 +1757,86 @@ maintains the trainer list globally" means someone must be able to maintain it.
 4. Is this the same intake form staff use *(CR-51 asked the same question)* — so does fixing it here
    fix it there?
 
+## CR-69 · G2/G7 · captured — is there ONE intake form, and does the euthanasia block still show?
+**SAID**
+> *"we removed the emergency euthanasia block from the intake form, this leads me to question if the
+> intake form on the client side under the account page is the same as the one on the onboarding flow
+> and further if the one we made accessible on the contracts is the same. if they are the same we need
+> to see if the emergency euthanasia authorization block is still showing on those, if it is it needs
+> to be removed, this block needs to be removed from the intake form im filling out on the account
+> page as a user. and we need to add a photo upload block in its place"*
+
+**Three places a horse intake form appears:** the **account page**, the **onboarding flow**, and
+**contracts**. ⚠️ **He does not know whether they are one form or three — that is the first thing to
+establish**, because the answer decides whether this is one fix or three.
+
+| | |
+|---|---|
+| **confirmed** | the euthanasia block **is still showing on the account-page form** and **must go** |
+| **to establish** | whether the onboarding and contract forms are the same component — and if so, whether it still shows there too |
+| **in its place** | ⚠️ **a photo upload block** |
+
+⚠️ **Standing Q2, and it is the whole question here.** *(CR-51 and CR-68 both asked a version of "is
+this the same form staff use?" — answer it once, properly, for all four surfaces.)*
+
+## CR-70 · G7/G9 · captured — the horse record page
+**SAID**
+> *"i need to be able to edit a horse after its in my stable and remove a horse record from my stable.
+> Im looking at the horse record page now after adding the horse and it appears to have those
+> functions but i dont want to try removing, make sure it works and that its double gated with a
+> confirmation modal before action happens. On the horse record page it shows the following tabs,
+> record, documents, schedule, and activity. Documents is empty and there is no way to add anything,
+> this could be confused with files which would be considered documents, we previously split the two
+> so that things authored in the system are documents and things added via upload are files and they
+> can include photos, videos, pdfs, and im not sure what other file types are supported by[t] we need
+> to research that. with respect to the horse record page we need to add an upload button for adding
+> files to the documents tab, we need to add a tab for photos and videos and the upload button on that
+> page allows a user to add the content to the record and then they can select from the availble
+> content associated with this horse record when they create a post in the community feed, also
+> anything they post in the community feed should be able to be tagged with a horse from any of the
+> members and the content should appear in the horse record for that horse."*
+
+### 70a — edit and remove, double-gated
+Edit a horse and remove it from the stable **appear to exist**. ⚠️ **He deliberately did not test
+remove.** **Verify it works, and that destructive action is double-gated behind a confirmation
+modal.**
+
+### 70b — documents vs files, and the empty tab
+| | |
+|---|---|
+| **the rule (already ruled, previously)** | **DOCUMENTS = authored in the system.** **FILES = uploaded** — photos, videos, PDFs, *"and im not sure what other file types are supported"* |
+| **today** | the Documents tab is **empty with no way to add anything** |
+| **wanted** | **an upload button on the Documents tab** for adding files |
+
+⚠️ **He named the confusion himself** — *"this could be confused with files which would be considered
+documents"*. **The split is real and already ruled; the tab does not yet reflect it.**
+⚠️ **ASK-REPO: what file types are actually supported?** He said to research it. *(This meets the
+open feed-media work — no allowed types on the bucket, nine buckets with no size limit.)*
+
+### 70c — a Photos & Videos tab, and it feeds the community feed
+1. **A new tab for photos and videos**, with an upload button that attaches content to the horse
+   record.
+2. ⚠️ **When creating a community post, they can select from the content already on that horse's
+   record.** *(Not a fresh upload every time — the record is the library.)*
+3. ⚠️ **Any post can be TAGGED with a horse — including another member's horse** — *"tagged with a
+   horse from any of the members"*.
+4. ⚠️ **Tagged content then APPEARS IN THAT HORSE'S RECORD.**
+
+⚠️ **POINT 3 AND 4 TOGETHER ARE A PERMISSION QUESTION, NOT A FEATURE.** Anyone can tag anyone's
+horse, and doing so **writes to that horse's record**. **Who may tag, and can an owner remove a tag
+from their own horse?** That must be decided before it is built.
+⚠️ **This is also the answer to a long-standing gap:** *"sharing captured content"* was ruled to be
+the community feed plus constraints. **This is the mechanism that connects the feed to the records**
+— and it makes the media constraints work *(compression, allowed types, size limits)* load-bearing
+rather than housekeeping.
+
+**ASK-REPO**
+1. Do edit and remove actually work on a horse, and is remove confirmed before it fires?
+2. What is the existing files/uploads spine, and does the horse record already link to it?
+3. Which file types does the storage layer actually accept today?
+4. Can a feed post already reference an existing stored file, or only a fresh upload?
+5. Is there any existing tagging concept on a post?
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
@@ -1791,6 +1871,8 @@ answer."*
 | **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
 | **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
 | **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **CR-69 → CR-51, CR-68** | three change requests now hinge on whether the horse intake form is one component or several |
+| **CR-70c → feed media** | tagging writes to another member's horse record — a permission question, and it makes the media constraints load-bearing |
 | **CR-68a → G9** | outside-click-closes destroys unsaved input; 33 hand-rolled overlays share the pattern |
 | **CR-68d → lookup options** | the propose-a-value mechanism exists, has no editor, and its queue has no screen |
 | **CR-66 ⟶ CR-63** | the nav question assumes we choose; the design says the person chooses |
