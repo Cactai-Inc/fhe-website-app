@@ -740,6 +740,15 @@ as well: create accounts freely; withhold the client designation.**
 2. What does "client headcount" count today?
 3. Is any of the note/marking machinery already present (status logs, notes on a contact)?
 
+**ASK-OWNER** *(raised at capture on 2026-08-25, correctly deferred to review)*
+1. **A person in the dungeon submits again — what should that arrival look like?** He ruled the
+   dungeon *"blocks the pursuit of that person"* but explicitly *"we dont block them from coming back
+   to try again later if the thing that made them not a fit changes."* So a new submission from a
+   dungeoned contact is a case the model already implies and has not yet been given a behaviour.
+2. Does a **marketable lead** who submits again return to the normal lead flow, or arrive flagged as
+   a returning opportunity with the earlier notes attached?
+3. Do the three exits apply to **Partners and Vendors**, or to leads only? *(asked, unanswered)*
+
 ## CR-46 · G6 · captured — creating a client from scratch
 **SAID**
 > *"if i want to create a client record from scratch, i click the button to add a client and then add
