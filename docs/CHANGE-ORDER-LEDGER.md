@@ -179,19 +179,51 @@ submission and everything that happened after it, on one surface.
 ⚠️ **CR-63 is affected:** the account card list includes Activity. **Activity is demoted** — it stops
 being a destination and becomes a link inside Account History.
 
-**ASK-OWNER — remaining**
-0. **Does the marketing-zone entry and the dungeon entry also carry the submission**, the way a
-   promoted client's record does? *(“remains visible from there as an entry” — an entry of what?)*
-0b. **Is Account History a TAB on the client record page, or a page of its own?**
-1. ⚠️ **RAISED BY HIM IN REVIEW:** *"in addition to a promote button, does a lead have other options
-   … and can I delete the lead?"* — **CR-44 already gives three exits** (make them a client ·
-   marketable lead · cancel into the dungeon). **DELETE is not among them and has never been
-   specified.** ⚠️ The dungeon deliberately RETAINS the person — *"we dont block them from coming back
-   to try again later"* — so **delete is a genuinely destructive fourth option** that would break
-   that. Needs a ruling.
-2. Is **promote** purely internal until *send the activation link* — no email on promotion?
-3. **Do Partners, Vendors and Archived accounts get this same rebuilt surface, or keep the modal?**
-   *(Re-asked — the first phrasing was too ambiguous.)*
+### 🔒 RULING — A FOURTH EXIT: DELETE (owner, 2026-08-25)
+> *"Yes I want a delete button. This is a hard delete with a block on that submitter as optional."*
+
+**A lead now has FOUR exits**, not three: make them a client · marketable lead · cancel into the
+dungeon · **hard delete**, with **an optional block on the submitter**.
+
+⚠️ **A HARD DELETE AND A BLOCK ARE IN TENSION, AND SOMETHING MUST BE KEPT.** You cannot block a
+person you have entirely erased — a block needs **something to match on** (the email address, at
+minimum) that survives the deletion. **So "hard delete + optional block" means: erase the record,
+and when blocking, retain a minimal blocklist entry.** That is a deliberate exception and should be
+designed as one, not discovered later.
+⚠️ **Second consequence:** a hard-deleted lead **cannot appear in conversion figures at all** — the
+cancel-into-the-dungeon exit removes them from the numbers *(CR-44)*, and deletion removes the row.
+**Confirm the numbers behave the same for both, or they will disagree.**
+
+### 🔒 RULING — EVERY RECORD IS A PAGE (owner, 2026-08-25)
+> *"every record is a page. [Modals] are for surfacing information quickly, not information dense or
+> operationally intensive surfaces. All of those named could update to a page. I go back to saying
+> each record type deserves its own unique page view at the layout[;] structure to be the same[,] we
+> need uniformity. We need globalization as much as possible, personalization is extremely important
+> for making things fully usable"*
+
+| | |
+|---|---|
+| **a record** | **always a PAGE** |
+| **a modal** | **quick surfacing only** — never information-dense, never operationally intensive |
+
+**So Partners, Vendors and Archived accounts all become pages too.** ✅ Answers the re-asked question.
+
+⚠️ **THE SHAPE OF THE RULE — this is the G9 principle for the whole app:**
+- **each record type gets its OWN page view** — a horse is not a person is not a deal
+- **the LAYOUT STRUCTURE is the same across all of them** — uniformity
+- **globalize as much as possible**
+- ⚠️ **but "personalization is extremely important for making things fully usable"** — so uniformity
+  is the *frame*, not the content. **A shared skeleton, record-specific flesh.**
+
+⚠️ **This is the answer to CR-63 as well**: a card is a summary and a doorway; **the page is the
+record.** One rule, not two.
+
+**ASK-OWNER — remaining to lock CR-30**
+1. **Does a marketing-zone or dungeon entry carry the submission**, the way a promoted client's
+   record does? *("remains visible from there as an entry" — an entry of what?)*
+2. **Is Account History a TAB on the client record page, or a page of its own?** ⚠️ *"Every record is
+   a page"* settles record TYPES; account history is a surface within one.
+3. Is **promote** purely internal until *send the activation link* — no email on promotion?
 
 ---
 
