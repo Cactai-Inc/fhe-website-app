@@ -863,10 +863,23 @@ withhold the client designation" real rather than cosmetic.
    lead who is neither. Is this **one status with a sequence** (lead → client), or genuinely three
    independent flags? *(This codebase's most repeated defect is one flag carrying two meanings; three
    flags for one sequence is the same trap with more surface area.)*
-2. **"Most of the app pages"** — which pages are the exception? A lead needs their order, their
-   submission and the catalog *(CR-49)*; is anything else allowed?
-3. **Settings** — none at all, or the account-security minimum a person needs to manage their own
-   login?
+2. ~~"Most of the app pages" — which pages are the exception?~~ ✅ **ANSWERED, owner 2026-08-25:**
+   > *"no its much more than they should see. they only see their order, the catalog, their personal
+   > profile information...."*
+
+   ⚠️ **It is an ALLOWLIST OF THREE, not a subtraction from the app.** Stated in response to the
+   existing per-page visibility mechanism — **that lever grants far more than a lead should have**,
+   so a lead's app is not "the app with pages switched off."
+   | A lead sees | |
+   |---|---|
+   | **their order** | with the form they submitted *(CR-49)* |
+   | **the catalog** | to change, add, remove — or cancel *(CR-49)* |
+   | **their personal profile information** | — |
+
+   **Everything else is absent, including community.**
+3. ~~Settings — none at all, or the minimum?~~ ✅ **ANSWERED:** *"their personal profile
+   information."* ⚠️ Confirm in review whether that includes **login/security** (changing a password,
+   an auth method) — a person who has just claimed an account may need it.
 4. Confirm the 2026-08-24 community ruling is **re-worded rather than reversed** — its intent was
    "buying something must not be the price of entry", which stays true.
 
@@ -874,8 +887,10 @@ withhold the client designation" real rather than cosmetic.
 1. Enumerate every page and settings surface, and mark which a lead may reach. **Produce the list;
    do not ask for it.**
 2. Is page access driven by one gate today, or by a check in each page?
-3. Does an existing per-page visibility mechanism already exist that this should ride on rather than
-   duplicate?
+3. ~~Does an existing per-page visibility mechanism exist to ride on?~~ ✅ **It exists and is the
+   WRONG LEVER** — owner: *"its much more than they should see."* It switches pages off within an
+   app a member otherwise has; a lead's app is built up from three things instead. **Do not implement
+   this as page visibility.**
 
 ---
 
