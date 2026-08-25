@@ -1,5 +1,15 @@
 # CHANGE-ORDER LEDGER — FHE, thread of 2026-08-24/25
 
+> ## ⚠️ OVERRIDDEN STATEMENTS ARE DELETED, NOT ARCHIVED
+> Owner, 2026-08-25: *"when i changed my mind about something, ignore the overridden statement and
+> proceed as if it was never mentioned."*
+> Where he replaced an earlier instruction, **the earlier one is gone** — CR-50's first sketch of a
+> lead's app, CR-53's card order, CR-57's first arrow rule, CR-32's literal surface swap.
+> ⚠️ **An A/B he OFFERED and has not chosen is NOT an override** and stays live: CR-20 and CR-55.
+>
+> **65 change requests, CR-01…CR-65, none missing.** Audited against every message of the thread on
+> 2026-08-25.
+
 **This is the STEP 1 artefact.** It is a ledger, not a narrative. Its only job is to hold every
 captured request in a shape that lets steps 2 and 3 run without failure.
 
@@ -142,12 +152,9 @@ the lead surface has one. **The person who needs the record least has it.**
 > and give me a quick access point to promote to a client record (activate them as an account),
 > thats it. at most i can modify their order contents before i do it"*
 
-⚠️ **A/B, in his own message** — he states the swap, then qualifies it:
-- **A** — literal swap: client gets the modal, lead gets the page.
-- **B** — by *kind of surface*: **client gets a PAGE** (rich, desktop-first), **lead gets a MODAL**
-  (quick, one act: promote). B is what the rest of the message describes.
-✅ **RESOLVED 2026-08-25 — B, refined.** See CR-30: the lead surface is not a small record, it is
-**the submission plus a promote button**, and the client page carries the modal's tabs. 
+✅ **SETTLED — see CR-30.** The lead surface is **the submission plus a promote button**; the client
+gets a **page** carrying the tab set. *(He floated a literal swap first and then described this
+instead; the swap is not a live option.)* 
 
 **Caveat he attached:** *"i might be on the phone and the phone is my working device for modifying
 the lead record"* — whatever wins must work on a phone.
@@ -867,16 +874,11 @@ withhold the client designation" real rather than cosmetic.
    > *"no its much more than they should see. they only see their order, the catalog, their personal
    > profile information...."*
 
-   ⚠️ **It is an ALLOWLIST OF THREE, not a subtraction from the app.** Stated in response to the
-   existing per-page visibility mechanism — **that lever grants far more than a lead should have**,
-   so a lead's app is not "the app with pages switched off."
-   | A lead sees | |
-   |---|---|
-   | **their order** | with the form they submitted *(CR-49)* |
-   | **the catalog** | to change, add, remove — or cancel *(CR-49)* |
-   | **their personal profile information** | name · email · login only — see Q3 |
-
-   **Everything else is absent, including community.**
+   ⚠️ **The principle that survives: a lead's app is BUILT UP, not subtracted from.** Stated in
+   response to the existing per-page visibility mechanism — **that lever grants far more than a lead
+   should have**, so this is not "the app with pages switched off."
+   ➜ **The definitive list of what a lead sees is CR-53 (nav, dashboard) and CR-62 (account cards).**
+   Read those, not this.
 3. ~~Settings — none at all, or the minimum?~~ ✅ **FULLY ANSWERED, owner 2026-08-25:**
    > *"so they can change their name their email their login, etc...preferences dont show, and the
    > other sections and pages dont show."*
@@ -1010,11 +1012,8 @@ being activated.
 ⚠️ **A back button, top-left of the page, returns to the dashboard.** *(A navigation pattern, not a
 browser-back reliance.)*
 
-**ACCOUNT PAGE — five cards, in THIS order:**
-`My Orders` → `My Profile` → `My Stable` → `My Gifts` → `My Login`
-⚠️ He listed the cards in one order and then **re-stated the display order deliberately** — the
-second list wins. ⚠️ **`My Stable` and `My Gifts` are present for a lead**, which is a widening of
-CR-50's three.
+**ACCOUNT PAGE — five cards.** ➜ **Order and layout are CR-62.** ⚠️ **`My Stable` and `My Gifts` are
+present for a lead**, which is wider than the first sketch of a lead's app.
 
 **CATALOG** — selecting an item offers a choice:
 - **add it to their existing pending order**, or
@@ -1121,7 +1120,7 @@ Card buttons become **download pdf** and **resend**; **read is removed.**
 > when its expanded."*
 
 1. **An expanded card expands to the full width of its container.**
-2. ~~The arrow points DOWN when collapsed and UP when expanded.~~ **SUPERSEDED — see below.**
+2. **The arrow rule is in CR-57a (desktop) and CR-57b (mobile).**
 
 ### CR-57a · refinement, owner 2026-08-25
 **SAID**
