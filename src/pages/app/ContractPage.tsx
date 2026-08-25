@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { originFrom } from '../../lib/linkOrigin';
 import { supabase } from '../../lib/supabase';
 import {
-  FileText, CheckCircle2, Lock, Send, PenLine, ShieldCheck, RotateCcw, MessageSquarePlus,
+  FileText, CheckCircle2, Lock, Send, PenLine, RotateCcw, MessageSquarePlus,
   History, StickyNote, Check,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
@@ -12,8 +12,7 @@ import { usePropertyTerm } from '../../contexts/BrandProvider';
 import { withArticleCapitalized, agree } from '../../lib/propertyTerm';
 import {
   contractDocumentDetail, setContractField,
-  resolveChangeRequest, advanceWorkflow, sendForReview, lockAndSign, confirmHorseSection,
-  reopenHorseSection, approveContractReview,
+  resolveChangeRequest, advanceWorkflow, sendForReview, lockAndSign, approveContractReview,
   setPartyControls, contractSigningSet,
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
   resolveClause, withdrawClause, attachHorseToDocument,
@@ -674,7 +673,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // the owner-side surface.
   const isOwnerSide = isStaff && !viewAsSigner;
   // the horse-owning side: Lessor on a lease, Seller on a sale / bill of sale
-  const isLessor = myRoles.includes('LESSOR') || myRoles.includes('SELLER');
   // Editing is allowed in review too — the parties' per-party controls (can_fill /
   // can_edit_deal) decide what each may actually change; a party with neither just
   // sees a read-only document. Locked/executed stay read-only (fields are DB-read-
@@ -1990,7 +1988,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           the gate applies, hidden for a review-only party, and skipped entirely for
           clause-model documents (rendered above). */}
       {state !== 'executed' && !showHorseGate && !readOnlyDoc && !structure && sections.map(([section, fields]) => {
-        const isHorse = isHorseSection(section);
         const anyEditable = fields.some((f) => f.can_edit);
         // counterparty intake: show only sections with something for them (or filled)
         if (!isOwnerSide && !anyEditable && !fields.some((f) => f.value)) return null;
@@ -2028,26 +2025,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                     onClick={() => includeSection(false)}>omit section</button>
                 )}
               </h2>
-              {isHorse && (
-                horseConfirmed ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-green-700">
-                    <ShieldCheck size={14} /> Confirmed accurate
-                    {(isLessor || isStaff) && editablePhase && (
-                      <button type="button" className="underline text-muted ml-2"
-                        onClick={() => void act(() => reopenHorseSection(id!))}>
-                        <RotateCcw size={11} className="inline" /> reopen
-                      </button>
-                    )}
-                  </span>
-                ) : (isLessor || isStaff) && editablePhase ? (
-                  <button type="button" className="btn-outline-gold text-xs"
-                    onClick={() => void act(() => confirmHorseSection(id!), 'Horse information confirmed.')}>
-                    <ShieldCheck size={13} /> I reviewed the horse info — it's accurate
-                  </button>
-                ) : (
-                  <span className="text-xs text-muted">Awaiting confirmation by the horse’s owner</span>
-                )
-              )}
+              {/* The horse-confirmation affordance was here too — the flat renderer's
+                  copy of it. Removed 2026-08-25 with the other one; see the note
+                  above the co-buyer block. */}
             </div>
             <ContractCascade
               fields={fields}
