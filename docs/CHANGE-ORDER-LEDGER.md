@@ -80,8 +80,8 @@ do. **They are requirements for the new thing, not fixes to the old one.**
 6. **Standing Q1:** is there a global layout/shell this should be built from, or does it become one?
 
 **ASK-OWNER**
-1. Is the reimagined surface **one thing in two modes** (quick view / full record), or **two
-   things**?
+1. ❗ **STILL OPEN, asked 2026-08-25, not yet answered:** is the reimagined surface **one thing in two
+   modes** (quick view / full record), or **two things**?
 2. Does a lead ever need the full record, or only the submission + promote?
 3. What must be visible **without a click** on the client surface?
 
@@ -333,8 +333,11 @@ one, rather than a changed one.
 2. What happens on an order that is **already paid**?
 3. A weekly plan carries the days they chose — what happens to those, and to any month already put
    on the calendar?
-⚠️ **His own widening question, unanswered:** *are there other line-item actions the same surface
-needs* — change quantity, comp or override a price, void the order, mark it paid, switch cadence?
+✅ **WIDENING QUESTION ANSWERED (owner, 2026-08-25): "the short answer is yes."** The same surface
+needs quantity, comping, discounting, voiding, marking paid, and cadence. **CR-16 is therefore not a
+button — it is the line-item editing model**, and it is specified across CR-38…CR-42 below.
+⚠️ **Do not build CR-16 alone.** Building "change the offering" as a one-off produces a sixth
+inconsistent way to touch an order.
 
 ## CR-17 · G7 · built
 **SAID** *"why is this shown to me in the ui … 'The first lesson for anyone new … is an evaluation
@@ -520,6 +523,85 @@ the record.
 ⚠️ **This revises CR-28**: with three cadences, every date in it becomes relative to *the period*,
 not to the month.
 
+## CR-38 · G5 · captured
+**SAID** *"we didnt make it possible for anyone to set a quantity for the horse care services that
+are weekly."*
+**ASK-REPO**
+1. Where is quantity held on an order line today, and what actually reads it?
+2. **Standing Q2 — is quantity already settable anywhere?** Some services are sold in packs; is that
+   the same mechanism or a different one?
+3. For a *weekly* service, what does quantity even mean — visits per week, or weeks bought? ⚠️ These
+   are different numbers and the system may already conflate them.
+4. What does quantity change downstream — the price, the credits issued, how many days get put on the
+   calendar? All three?
+
+## CR-39 · G5 · captured ⚠️ THE IMPORTANT ONE
+**SAID** *"we need a system for comping an offering or an order (this records a loss for the buisness
+and give the client a free credit instead of just marking it paid which records revenue and they
+dont see they got something free when they look back at an offering or an order)."*
+
+**Three distinct requirements in one sentence — do not collapse them:**
+1. **A comp is not a payment.** Marking something paid records revenue that never arrived.
+2. **A comp records a LOSS** — it must be visible as a cost of doing business, not as income.
+3. **The client must SEE they were given something free**, on the offering and on the order, when
+   they look back.
+
+**ASK-REPO**
+1. How is "paid" recorded today, and is comping currently being faked with it? *(If staff have been
+   marking comps as paid, the revenue figures are already wrong.)*
+2. Do credits carry any notion of what they cost — or are all credits identical once issued?
+3. Is there anywhere a client can see **why** they hold a credit?
+4. **Standing Q1** — is there an existing money-movement concept (refunds, adjustments, write-offs)
+   this belongs inside, or is it new?
+
+**ASK-OWNER**
+1. Comp the **whole order**, or **a line**, or both?
+2. Is a comped credit the same as a bought one — same expiry, same transferability?
+3. Who may comp, and does it need a reason on the record?
+
+## CR-40 · G5 · captured
+**SAID** *"we need a discount capability … discounts are a standard in the business world and we have
+no way to add one to an order."*
+**ASK-REPO**
+1. Can an order line hold a price different from the offering's price today? *(If not, discounting
+   and comping and price-overriding are all the same missing mechanism.)*
+2. Does anything downstream assume line price equals list price — credits, receipts, the contract
+   tokens that print amounts?
+**ASK-OWNER**
+1. Percentage, fixed amount, or both?
+2. Line-level, order-level, or both?
+3. Does the client see **"$880, less 10%"** or just **"$792"**? ⚠️ This is the same visibility
+   principle as CR-39 and should be answered once for both.
+
+## CR-41 · G5 · captured
+**SAID** *"we need to publish our standard rates, those should be high enough to demonstrate our
+quality of services and relative market position."*
+**ASK-REPO**
+1. Is there a public-facing price list today, and does it read the same prices staff sell from?
+2. ⚠️ **Standing Q4** — CR-29 says one service cannot hold three cadence prices. **A rate card is a
+   second reason the pricing model needs rebuilding, not a separate job.**
+**ASK-OWNER**
+1. "Publish" — a page on the website, or a document sent to people?
+2. Is the published rate the **list price that discounts come off**, so a discount is always visible
+   as a concession?
+
+## CR-42 · G5 · captured
+**SAID** *"nor a way to send out an incentive to someone or to everyone with a redeemable item in
+it."*
+**ASK-REPO**
+1. **Standing Q2 — the gift path already issues something redeemable to someone who did not buy it.**
+   Is that the same machinery, and can it be pointed at an incentive?
+2. Is there any concept of sending one message to **everyone**, or only to a named person?
+3. What would "redeem" attach to — an order not yet placed, or a credit issued up front?
+**ASK-OWNER**
+1. One person, a group, or everyone — and is "everyone" a real case or an edge case?
+2. Does an incentive expire?
+3. Single-use per person, or one code many people use? ⚠️ These are very different builds.
+
+⚠️ **CR-38…CR-42 ARE ONE GROUP OF RESEARCH.** Quantity, comps, discounts, published rates and
+incentives all touch the same thing: **what an order line is allowed to say about money.** Research
+them in one pass or the same tables get read five times.
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
@@ -554,6 +636,8 @@ answer."*
 | **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
 | **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
 | **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **CR-38…CR-42 → CR-16** | changing an offering is one case of line-item editing; build the model, not the button |
+| **CR-41 → CR-29** | a public rate card and three cadence prices are the same pricing rebuild |
 | **G9 ← everything** | each group's fix should carry its globalization, or the refactor inherits 34 pop-ups instead of 33 |
 
 # ⚠️ ALREADY BUILT — carry the requirement, not the code
