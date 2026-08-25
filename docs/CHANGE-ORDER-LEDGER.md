@@ -1427,6 +1427,72 @@ execution · invitation acceptance.
 table is also the specification for fixing them, and it is the only way to know whether CR-64's page
 is one bug or the visible corner of a pattern.
 
+## CR-66 · G6 · captured — half of a paired feature never landed
+**SAID**
+> *"we implemented two things and one never landed and the other apparently did, presence gating and
+> on first sign in a modal surfaces with toggles for the user to choose which things the menu shows
+> and which are hidden and then the preferences section has the same list with the same toggles.
+> Neither of the toggle sets are implemented. but the presence gating is in full effect."*
+
+**The pair, as designed:**
+| | Status |
+|---|---|
+| **presence gating** — a nav row appears only when the person has one | ✅ **live and working** *(confirmed in step 2)* |
+| **a first-sign-in modal** — toggles to choose what the menu shows | ❌ **never landed** |
+| **the same toggles in Preferences** | ❌ **never landed** |
+
+⚠️ **So the menu is currently decided FOR the person and cannot be decided BY them.** Presence
+gating answers *"is there anything here?"*; the toggles were meant to answer *"do I want to see it?"*
+Only the first question is being asked.
+
+⚠️ **Cross-check CR-63:** its whole question — *should Documents be swapped for Orders in the nav* —
+was about what the menu shows. **The intended answer is that the person chooses.** Settle CR-66
+before CR-63.
+⚠️ **Cross-check CR-50:** a lead's preferences do not show. **So where do a lead's toggles live —
+or does a lead simply not get them?**
+
+**ASK-REPO**
+1. Is there a stored shape waiting for these toggles, or is nothing persisted?
+2. Is the first-sign-in modal partly built, like the tour is?
+3. What happens when presence says *"nothing here"* and the toggle says *"show it"* — which wins?
+
+## CR-67 · G9 · captured — ⚠️ THE MOBILE DASHBOARD IS UNUSABLE
+**SAID**
+> *"on mobile the dashboard shows some primary data that the rest of the page scrolls under instead
+> of it scrolling so the dashboard is useless when there are these things visible and i dont know how
+> to get rid of them because they appear to be static elements."*
+
+**The KPI cards at the top of the staff dashboard — revenue this week, revenue this month, new
+clients, open pipeline — do not scroll. The page scrolls UNDERNEATH them**, so on a phone the
+dashboard is a wall of numbers with the actual work hidden behind it, and **there is no way to
+dismiss them.**
+
+⚠️ **"I don't know how to get rid of them" is the real severity.** It is not that the layout is
+wrong — it is that **the primary surface of the app is unusable on a phone and offers no escape**,
+and the phone is his working device *(CR-32)*.
+
+**ASK-REPO**
+1. Are they deliberately pinned, or is it a stacking/overflow accident? *(A pinned KPI strip is a
+   choice; a page scrolling under a static block is usually not.)*
+2. ⚠️ **The header is also overlapping** — *"Show Claire's Dashboard"* is half-hidden behind the
+   wordmark in the same screenshot. **Same cause, or two?**
+3. **Standing Q4** — is the dashboard's mobile layout worth fixing, or is it the next surface that
+   needs reimagining rather than repairing?
+
+### ⚠️ INCIDENTAL FINDING FROM THE SAME SCREENSHOT — answers two open ASK-REPOs
+The dashboard already shows:
+- **"10 NEW CLIENTS THIS MONTH"** ➜ **CR-45's "what does client headcount count today?" — it exists,
+  and it is on the dashboard.**
+- **"11 of 16 inquiries became clients (90 days)"** ➜ **CR-44's "does a conversion calculation
+  exist?" — YES, and it is visible.**
+
+⚠️ **Both are exactly the numbers he said would be corrupted** by promoting people who were never
+the right fit *(CR-45)*. **They are not hypothetical — they are on screen, today.**
+
+**Also visible, unreported by him but worth capturing:** `Jumper Training — BLOCKS SELLING — nothing
+is buyable under this service`, and two services flagged `LOOKS UNFINISHED — no cover image`. ⚠️ **The
+catalogue is already telling us it is incomplete.**
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
@@ -1461,6 +1527,8 @@ answer."*
 | **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
 | **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
 | **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **CR-66 ⟶ CR-63** | the nav question assumes we choose; the design says the person chooses |
+| **CR-67 ⟶ CR-32** | the phone is his working device, and the dashboard is unusable on it |
 | **CR-64 ⟶ CR-52** | second page asserting a false state; the sweep is now a task, not a question |
 | **CR-64 ⟶ CR-59** | the signing flow's exit currently lands on the page CR-64 deletes |
 | **CR-59 ⟶ CR-27** | approving the order IS the promotion — the approval nothing can currently perform |
