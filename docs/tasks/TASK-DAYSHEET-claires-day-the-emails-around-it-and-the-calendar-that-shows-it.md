@@ -411,6 +411,7 @@ the content — each `❓ QUESTIONS` block holds the detail and the evidence beh
 | **14** | The monthly cycle | 4 — 30 days' notice, dunning vehicle, non-payers, the lead-alert email |
 | **15** | Changing an ordered offering | 3 — price follows or holds, paid orders, recurring days |
 | **16** | Two surfaces, one job | 2 — what `Admin.tsx` uniquely does, does TASK-ROSTER stand |
+| **18** | The offerings picker | 3 — where `JUMPER_TRAINING` sorts, does the order apply elsewhere, does the gate apply to existing clients |
 | **17** | Surfaces & pricing | 7 — lead tabs, route vs modal, the other three cadences, +$20 on weekly, which rate anchors, what "unlock" means when late, are `products`/`tiers` dead |
 
 **Answered and closed** — kept for the record, do not re-ask:
@@ -1174,6 +1175,65 @@ payment is confirmed", "3 days before month end". With three cadences, *every* d
    change their schedule. Does an unpaid week's lesson vanish, or sit as `pending_payment`?
 7. **`product_prices` / `products` / `tiers` / `tier_modules`: alive or dead?** All empty. If dead,
    say so — they are actively misleading when looking for where price lives.
+
+---
+
+## 18. THE PROVISIONING OFFERINGS PICKER — BUILT
+
+**Owner, 2026-08-25**, three rulings on one control, all built on this branch.
+
+### 18.1 The rule is enforced, not announced
+> *"i didnt designate them as rider by picking something and the evaluation being a requirement
+> means it should be the only riding lesson option to select right now until i select it nothing
+> else can be added from that category. this is handled by software not by surfacing words i read
+> and comply with, also the notes like that are things that should be in the client facing content
+> not things facing me as the admin."*
+
+The staff form carried a paragraph — *"plan for an extra 30 minutes total: arrive 15 minutes
+early…"* — **client guidance, shown to staff, asking the reader to remember a rule the form could
+enforce.** Deleted. **The member's own shop already gated this correctly**
+(`Onboarding.tsx`); only the staff form asked nicely. Same rule now, same shape: other riding
+lessons stay visible and readable but cannot be selected until the evaluation is, and **dropping the
+evaluation drops every lesson it unlocked** — leaving them selected would provision a set the rule
+says is not orderable. Nothing locks when the catalog has no evaluation to require.
+
+⚠️ **ONE name-matcher, not two.** `isEvaluationOffering` matched on the offering's NAME and was
+about to be copied into a second file. It now lives once, in `src/lib/serviceCatalog.ts`, with the
+warning attached: **this is the MEDIA_RELEASE class and breaks the day someone renames the
+offering.** The real fix is a column — §10.5.
+
+### 18.2 The order of the groups
+> *"horsemanship should be shown below lessons, then horse training then exercise then clipping."*
+
+`RIDING_LESSON → HORSEMANSHIP_TRAINING → HORSE_TRAINING → HORSE_EXERCISE → HORSE_CLIPPING`, as
+`serviceDisplayRank` in `serviceCatalog.ts`. **Anything unlisted keeps catalog order AFTER these**,
+so a new service type appears rather than being silently sorted to the front.
+
+### 18.3 An order form, not a catalogue
+> *"the items can be an order form with line items i add and select from a list on a menu not a
+> giant list of everything with check boxes its a terrible waste of space and on mobile its going to
+> be a nightmare."*
+
+Was: every purchasable offering as a checkbox, grouped, two columns — **the whole catalogue on
+screen to choose two things from.** Now: the chosen lines with a running total and a remove control,
+and **one native `<select>` with `<optgroup>`s** to add another. That is the mobile-native picker and
+it costs one row instead of the page.
+
+⚠️ **The evaluation rule rides on the same data** — a locked lesson is a `disabled` `<option>`, so
+it is still listed and readable ("greyed but still very readable", the owner's earlier ruling on the
+shop) with no paragraph explaining why. **One mechanism serving both rulings.**
+
+`typecheck 0 · typecheck:api 0 · lint 0 errors · build clean.`
+
+### ❓ QUESTIONS — §18
+1. **Where does `JUMPER_TRAINING` go?** The owner named five service types; the rider segment also
+   has `JUMPER_TRAINING`, which currently sorts after clipping with everything unlisted. That is
+   probably wrong for a rider service — it likely belongs right after horsemanship.
+2. **Does the same order apply everywhere offerings are listed** — the member shop, the public
+   catalog, the calendar panel — or only to this form?
+3. **Should the evaluation gate apply to the ORDERS tab's "Add offerings" too?** That control adds
+   offerings to an existing client, who may already have had their evaluation. The rule as written
+   is about a NEW rider.
 
 ---
 

@@ -11,7 +11,9 @@ import {
 import { fetchOfferings, contactDossier, updateContactRecord } from '../../lib/api';
 import { InviteResultPanel } from './InviteResultPanel';
 import type { AgreedLesson } from './AgreedLessonPanel';
+import { X } from 'lucide-react';
 import type { Offering } from '../../lib/types';
+import { isEvaluationOffering, serviceDisplayRank } from '../../lib/serviceCatalog';
 
 /**
  * ⚠️ TASK-PAMELA §A — THE ACCOUNT IS REAL WHEN IT IS SAVED, NOT WHEN IT IS SENT.
@@ -74,11 +76,15 @@ const INVITE_HIDDEN_OFFERING_IDS = new Set<string>([
      is added. Staff could not offer the one thing every new rider must buy. */
 ]);
 
-// The owner's note shown wherever lessons are offered on this page.
-const EVALUATION_LESSON_NOTE =
-  'The first lesson for anyone new to French Heritage Equestrian is an '
-  + 'evaluation lesson — plan for an extra 30 minutes total: arrive 15 minutes '
-  + 'early, and the lesson runs 15 minutes longer than normal.';
+/* ⚠️ THE EVALUATION NOTE IS GONE FROM THIS SURFACE (owner, 2026-08-25):
+   "this is handled by software not by surfacing words i read and comply with,
+   also the notes like that are things that should be in the client facing content
+   not things facing me as the admin."
+
+   It was a paragraph of arrive-15-minutes-early guidance shown to STAFF, asking
+   them to remember a rule the form could simply enforce. The rule is now enforced
+   below; the sentence still lives where it is for — the member's own shop, at
+   Onboarding.tsx. */
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="mb-4"><span className="form-label">{label}</span>{children}</div>;
@@ -358,8 +364,33 @@ export function ProvisionClientForm({
       return s;
     });
   }
+  /* ⚠️ THE EVALUATION IS THE FIRST LESSON — ENFORCED, NOT ANNOUNCED (owner,
+     2026-08-25): "the evaluation being a requirement means it should be the only
+     riding lesson option to select right now until i select it nothing else can be
+     added from that category."
+
+     The member's own shop already worked this way; this staff form only had a
+     paragraph asking the reader to comply. Same rule, same shape: the other riding
+     lessons stay VISIBLE and readable (opacity, not hidden — the owner's earlier
+     ruling on the shop) so it is obvious what selecting the evaluation unlocks.
+     Nothing is locked when the catalog has no evaluation lesson to require. */
+  const evaluationOffering = useMemo(
+    () => visibleOfferings.find(isEvaluationOffering) ?? null,
+    [visibleOfferings]);
+  const lessonsLocked = !!evaluationOffering && !offeringIds.includes(evaluationOffering.id);
+
   function toggleOffering(id: string) {
-    setOfferingIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+    setOfferingIds((prev) => {
+      if (!prev.includes(id)) return [...prev, id];
+      /* Dropping the evaluation drops every lesson it unlocked — leaving them
+         selected would provision a set the rule says is not orderable. */
+      if (evaluationOffering && id === evaluationOffering.id) {
+        const lessonIds = new Set(visibleOfferings
+          .filter((o) => o.service_type === 'RIDING_LESSON').map((o) => o.id));
+        return prev.filter((x) => !lessonIds.has(x));
+      }
+      return prev.filter((x) => x !== id);
+    });
   }
 
   /** Which act is running — so the button that is NOT pressed can also disable. */
@@ -702,34 +733,32 @@ export function ProvisionClientForm({
                   No purchasable offerings are published.
                 </p>
               ) : (
-                <div className="space-y-4 border border-green-800/15 rounded-lg p-4">
-                  {Object.entries(
-                    visibleOfferings.reduce<Record<string, Offering[]>>((acc, o) => {
-                      const k = o.service_type ?? 'Other';
-                      (acc[k] ??= []).push(o); return acc;
-                    }, {}),
-                  )
-                    // Lessons are ALWAYS the top group, whatever categories are
-                    // checked; the rest keep their catalog order.
-                    .sort(([a], [b]) =>
-                      (a === 'RIDING_LESSON' ? 0 : 1) - (b === 'RIDING_LESSON' ? 0 : 1))
-                    .map(([svc, items]) => (
-                    <div key={svc}>
-                      <p className="text-xs uppercase tracking-wide text-secondary/70 mb-1.5">
-                        {svc.replace(/_/g, ' ').toLowerCase()}
-                      </p>
-                      {svc === 'RIDING_LESSON' && (
-                        <p className="text-xs text-gold-ink mb-2 leading-relaxed">{EVALUATION_LESSON_NOTE}</p>
-                      )}
-                      <div className="grid sm:grid-cols-2 gap-2">
-                        {items.map((o) => (
-                          <label key={o.id}
-                            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border cursor-pointer text-sm ${
-                              offeringIds.includes(o.id) ? 'border-green-700 bg-green-50 text-green-900'
-                                : 'border-green-800/15 text-secondary hover:bg-green-50/50'}`}>
-                            <input type="checkbox" className="accent-green-700 w-[17px] h-[17px]"
-                              checked={offeringIds.includes(o.id)} onChange={() => toggleOffering(o.id)} />
-                            <span className="min-w-0 flex-1">
+                /* ⚠️ AN ORDER FORM, NOT A CATALOGUE (owner, 2026-08-25): "the items
+                   can be an order form with line items i add and select from a list
+                   on a menu not a giant list of everything with check boxes its a
+                   terrible waste of space and on mobile its going to be a nightmare."
+
+                   Was: every purchasable offering rendered as a checkbox, grouped,
+                   two columns — the whole catalogue on screen to choose two things
+                   from. Now: the chosen lines, and one menu to add another. The menu
+                   is a native <select> with <optgroup>s, which is the mobile-native
+                   picker and costs one row of space instead of the page.
+
+                   The evaluation rule rides on the SAME data: a locked lesson is a
+                   disabled <option>, so it is still listed and readable — the owner's
+                   "greyed but still very readable" — without a paragraph explaining
+                   why. */
+                <div className="border border-green-800/15 p-3">
+                  {offeringIds.length === 0 ? (
+                    <p className="text-sm text-muted mb-2">No offerings on this order yet.</p>
+                  ) : (
+                    <div className="flex flex-col gap-1.5 mb-2">
+                      {offeringIds.map((id) => {
+                        const o = visibleOfferings.find((x) => x.id === id);
+                        if (!o) return null;
+                        return (
+                          <div key={id} className="flex items-baseline gap-2 text-sm border-b border-green-800/[0.06] pb-1.5">
+                            <span className="min-w-0 flex-1 text-green-900">
                               {o.name}
                               {o.config_kind === 'recurring' && o.weekly_frequency
                                 ? <span className="text-xs text-muted"> · {o.weekly_frequency}×/wk monthly</span>
@@ -738,11 +767,47 @@ export function ProvisionClientForm({
                                   : null}
                             </span>
                             <span className="text-green-900 whitespace-nowrap">{money(o.price_amount ?? 0)}</span>
-                          </label>
-                        ))}
+                            <button type="button" onClick={() => toggleOffering(id)}
+                              aria-label={`Remove ${o.name}`}
+                              className="text-muted hover:text-green-900 focus-ring shrink-0">
+                              <X size={14} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                      <div className="flex items-baseline gap-2 text-sm pt-0.5">
+                        <span className="min-w-0 flex-1 text-muted">Total</span>
+                        <span className="text-green-900 whitespace-nowrap">{money(offeringTotal)}</span>
+                        <span className="w-[14px] shrink-0" aria-hidden="true" />
                       </div>
                     </div>
-                  ))}
+                  )}
+                  <select className="form-input text-sm" value=""
+                    aria-label="Add an offering to this order"
+                    onChange={(e) => { if (e.target.value) toggleOffering(e.target.value); }}>
+                    <option value="">+ Add an offering…</option>
+                    {Object.entries(
+                      visibleOfferings
+                        .filter((o) => !offeringIds.includes(o.id))
+                        .reduce<Record<string, Offering[]>>((acc, o) => {
+                          const k = o.service_type ?? 'Other';
+                          (acc[k] ??= []).push(o); return acc;
+                        }, {}),
+                    )
+                      /* Owner, 2026-08-25: lessons, then horsemanship, then horse
+                         training, exercise, clipping. One order, in serviceCatalog. */
+                      .sort(([a], [b]) => serviceDisplayRank(a) - serviceDisplayRank(b))
+                      .map(([svc, items]) => (
+                        <optgroup key={svc} label={svc.replace(/_/g, ' ').toLowerCase()}>
+                          {items.map((o) => (
+                            <option key={o.id} value={o.id}
+                              disabled={lessonsLocked && svc === 'RIDING_LESSON' && !isEvaluationOffering(o)}>
+                              {o.name} · {money(o.price_amount ?? 0)}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                  </select>
                 </div>
               )}
             </div>

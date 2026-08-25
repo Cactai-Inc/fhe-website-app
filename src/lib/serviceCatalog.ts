@@ -75,3 +75,36 @@ export const OFFERING_SLUG_TO_SERVICE_TYPE: Record<string, string> = {
 export function serviceTypeForOfferingSlug(slug: string): string | undefined {
   return OFFERING_SLUG_TO_SERVICE_TYPE[slug];
 }
+
+/* ─── THE EVALUATION LESSON, AND THE ORDER SERVICES ARE OFFERED IN ──────────────
+ *
+ * ⚠️ `isEvaluationOffering` MATCHES ON THE OFFERING'S NAME. That is the
+ * MEDIA_RELEASE class — a tenant fact frozen into code — and it stops working the
+ * day someone renames the offering. It lives here, alone, because there were about
+ * to be TWO copies of it (the member shop and the staff provisioning form) and two
+ * name-matchers drifting apart is worse than one that is honest about itself.
+ * THE REAL FIX is a column on `offerings` saying so; see TASK-DAYSHEET §10.5.
+ */
+export function isEvaluationOffering(
+  o: { name?: string | null; service_type?: string | null },
+): boolean {
+  return (o.service_type ?? '') === 'RIDING_LESSON' && /evaluation/i.test(o.name ?? '');
+}
+
+/** Owner, 2026-08-25: "horsemanship should be shown below lessons, then horse
+ *  training then exercise then clipping." Anything not listed keeps its catalog
+ *  order AFTER these — a new service type appears rather than being silently
+ *  sorted to the front. */
+const SERVICE_DISPLAY_ORDER = [
+  'RIDING_LESSON',
+  'HORSEMANSHIP_TRAINING',
+  'HORSE_TRAINING',
+  'HORSE_EXERCISE',
+  'HORSE_CLIPPING',
+];
+
+/** Sort key for a service-type group. Unlisted types sort after every listed one. */
+export function serviceDisplayRank(code: string): number {
+  const i = SERVICE_DISPLAY_ORDER.indexOf(code);
+  return i === -1 ? SERVICE_DISPLAY_ORDER.length : i;
+}
