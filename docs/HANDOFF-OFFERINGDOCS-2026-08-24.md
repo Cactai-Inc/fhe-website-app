@@ -343,6 +343,26 @@ defensively, and an unused value costs nothing.
   signed before the fix and a signed document is evidence (D32). New ones are correct. Correcting
   them means a superseding version and a re-sign — the owner's call.
 
+### 5.4 ⚠️ TWO OPEN QUESTIONS THAT NEED THE OWNER — recorded here 2026-08-24 because they
+existed only in a session memory, not in this document, and would have been lost
+
+**1. Does the document-before-contract gate come back, and for whom?**
+Ruling 7 in §1 says an offering's documents are signed *before* the contract. But that gate was
+**retired on 2026-08-22 on the owner's own instruction** — *"off entirely"* — and the retirement is
+still live in the code: `CONTRACT_ONBOARDING_GATE_RETIRED = true` at
+`src/pages/app/ContractPage.tsx:401`, plus migration `20260822T0820`. Ruling 7 asks for a gate
+again. **The question: does it apply to the contract COUNTERPARTY, or only to the person who
+purchased the offering?** Rulings 9 and 10 point at the second reading (a lessor/seller owes
+nothing by default), but that has not been said. **This blocks the ordering half of ruling 7.**
+
+**2. A recorded contradiction about where a new member lands.**
+The owner asked for *"no notifications → land on the community feed."* `Onboarding.tsx`'s
+`enterApp` deliberately does the opposite, on his own earlier instruction (ONBOARD §5): *"The
+dashboard is the landing, unconditionally"* — because a freshly-activated member still owes their
+profile details, and the notice and checklist live on the dashboard. **Surfaced, not silently
+flipped.** The comment at `src/pages/app/Onboarding.tsx:631` states the reasoning in place. If the
+newer instruction wins, that comment is the thing to change.
+
 ---
 
 ## 6. HOW TO WORK IN THIS REPO — the parts that bit
