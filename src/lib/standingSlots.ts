@@ -91,8 +91,8 @@ export function standingSlotSentence(slot: StandingSlot): string {
   if (!summary) {
     const n = Math.max(slot.weekly_frequency ?? 1, 1);
     return n === 1
-      ? 'This is a standing weekly time, not a bundle of lessons — choose the day and time that are yours.'
-      : `This is ${n} standing weekly times, not a bundle of lessons — choose the ${n} days and a time for each.`;
+      ? 'This is a standing weekly time, not a bundle of lessons — choose the day and time that are yours. It repeats each week for every month you renew.'
+      : `This is ${n} standing weekly times, not a bundle of lessons — choose the ${n} days and a time for each. They repeat each week for every month you renew.`;
   }
   return slot.indefinite
     ? `${summary} are yours, every week until you tell us otherwise.`
