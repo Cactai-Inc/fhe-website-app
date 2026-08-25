@@ -1468,12 +1468,30 @@ dashboard is a wall of numbers with the actual work hidden behind it, and **ther
 dismiss them.**
 
 ⚠️ **"I don't know how to get rid of them" is the real severity.** It is not that the layout is
-wrong — it is that **the primary surface of the app is unusable on a phone and offers no escape**,
-and the phone is his working device *(CR-32)*.
+wrong — it is that **the primary surface of the app is unusable and offers no escape**, and the phone
+is his working device *(CR-32)*.
+
+### ⚠️ SCOPE, CLARIFIED — owner 2026-08-25
+> *"that was my phone and it doesnt have this type of layout so no it doesnt do that for members but
+> it does it on desktop for admin"*
+
+| Surface | Affected |
+|---|---|
+| **admin dashboard — phone** | ✅ **yes** *(the screenshot)* |
+| **admin dashboard — desktop** | ✅ **yes** |
+| **member dashboard** | ❌ no — a different layout |
+
+⚠️ **It is NOT a mobile bug. It is the ADMIN dashboard's layout, on every screen size.** That rules
+out a breakpoint or an overflow-on-small-screens theory: **whatever pins those cards pins them
+always**, and it was simply most obvious on a phone.
+⚠️ **And the member dashboard is a DIFFERENT LAYOUT** — two dashboards, two layouts, one of which
+works. **Standing Q2: the working one may already be the answer.**
 
 **ASK-REPO**
-1. Are they deliberately pinned, or is it a stacking/overflow accident? *(A pinned KPI strip is a
-   choice; a page scrolling under a static block is usually not.)*
+1. Are they deliberately pinned, or is it a stacking/overflow accident? ⚠️ **It happens at every
+   screen size, so it is not a small-screen edge case.**
+1b. **What does the MEMBER dashboard do differently?** It does not have the problem — **diff the two
+   layouts before designing a fix.**
 2. ⚠️ **The header is also overlapping** — *"Show Claire's Dashboard"* is half-hidden behind the
    wordmark in the same screenshot. **Same cause, or two?**
 3. **Standing Q4** — is the dashboard's mobile layout worth fixing, or is it the next surface that
