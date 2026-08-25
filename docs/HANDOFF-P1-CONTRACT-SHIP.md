@@ -1,10 +1,48 @@
 # BUILD HANDOFF — P1: get Pamela's lease shippable
 
-**Written 2026-08-25 for a build thread.** Three items. **All three are blockers** — the owner
-cannot ship a real client's lease until they are done.
+**Written 2026-08-25 for a build thread.** This document is the entire assignment — everything you
+need is here or named here. **Read it in full before writing any code.**
 
-**Branch from `main` (currently `f95ed03a`). Work in a worktree — a pre-commit hook refuses code
-commits in the canonical checkout.**
+---
+
+## HOW TO RUN THIS
+
+**Model and effort:** Opus 5, thinking ON, effort HIGH. Items 1 and 2 need real design judgment
+about invitation identity and routing; item 3 must not be approximated.
+
+**Set up your worktree** — a pre-commit hook refuses code commits in the canonical checkout:
+```
+cd ~/Downloads/claude-code-repo
+git -C fhe-website-app fetch origin
+git -C fhe-website-app worktree add ../wt-p1ship -b task/p1ship origin/main
+cd wt-p1ship
+ln -s ../fhe-website-app/node_modules node_modules
+cp ../fhe-website-app/.env . && cp ../fhe-website-app/.env.db .
+```
+⚠️ **Delete the `node_modules` symlink and the `.env` before committing.** `.env.db` line 1 is the
+production connection string.
+
+**Scope:** ⚠️ **ALL THREE ITEMS ARE BLOCKERS.** A real client's lease cannot ship until they are
+done. **Do not descope and do not deliver two of three silently** — if one is genuinely blocked,
+finish the other two completely and say plainly which is unfinished and why.
+
+**Trust, but verify:** the *"current state, established"* sections below are researched fact, not
+guesses — **do not re-derive them.** But **do verify anything you are about to depend on**,
+particularly that no `CONTRACT`-kind invitation has ever been issued, which makes that path unproven
+rather than working.
+
+**Before building anything, grep for it.** This codebase's most common defect is a second
+implementation of something that already exists. **Three of the fixes made the same day as this
+document were removals.**
+
+**Verify:** `npm run typecheck`, `npm run typecheck:api`, `npm run lint`, and **`npm run build`** —
+the build is the only one that catches an invalid Tailwind utility.
+
+**When you are done:** write `docs/reports/P1-CONTRACT-SHIP-REPORT.md` — what you built, what you
+did not, **each validation criterion below with the evidence you checked it against**, and anything
+you could not verify. **Commit. DO NOT PUSH.**
+
+---
 
 ⚠️ **READ THIS FIRST — what was already done today, so you do not redo it.**
 - A saved-but-not-sent client now shows the horse card, so a horse can be added before the
@@ -162,7 +200,7 @@ commits in the canonical checkout.**
   implementation of something that already exists. Three of today's fixes were removals.
 - **Report honestly:** what was built, what was not, and what you could not verify.
 
-## The one test that matters
+## THE ONE TEST THAT MATTERS
 ⚠️ **Pamela Godde (`f80e944a-0043-4358-9488-fa73c1eff43b`) — no account, no address, no horse — must
 be able to receive ONE email, claim her account, be asked only for what is missing, and land on her
 lease reading the finished text.** Everything above is in service of that.
