@@ -517,10 +517,28 @@ medication field.
 1. ~~The cadence inside `med_schedule` is free text.~~ **MOOT — see §9.3.** Nothing generates from
    it, so the prose `schedule` sub-field is fine as it is. Left recorded only so nobody
    "fixes" it for a consumer that must not exist.
-2. **`contract_fields` has ZERO rows in production.** The engine is built and no live contract
-   currently exercises it — the only documents in prod are the seven onboarding releases (no lease,
-   no bill of sale). So this is untested against real data, and anything built on it must be proven
-   with a real contract first, not assumed from the schema.
+2. **`contract_fields` has zero rows in production — but that is NOT "unproven".** ⚠️ **An earlier
+   draft of this caveat said the engine was untested against real data. That was wrong, and the
+   owner caught it.** The lease templates are authored and live:
+
+   | Template | Kind | Version | Active | Field defs |
+   |---|---|---|---|---|
+   | `HORSE_LEASE_V2` / `_FULL` / `_SIMPLE` | `HORSE_LEASE` | 3 | yes | **114 each** |
+   | `HORSE_SALE_V2` | `HORSE_SALE` | 1 | yes | 65 |
+   | `HORSE_BILL_OF_SALE` | `HORSE_BILL_OF_SALE` | 1 | yes | 48 |
+
+   And lease documents **were issued and exercised**: `status_events` holds **236 events pointing at
+   222 distinct documents**, while only **67 documents exist**. So roughly **155 documents were
+   created and later hard-deleted**, between 2026-07-26 and 2026-08-22.
+   `contract_fields.document_id` is **`ON DELETE CASCADE`**, so purging those documents took their
+   field values with them.
+
+   **The accurate statement:** the engine has been exercised; there is simply **no lease document in
+   production right now** to read a live `structured` value from. Anything built on it needs a
+   freshly issued lease to test against — which is a fixture problem, not a maturity problem.
+   ⚠️ Do not confuse `contract_field_defs` (**667 rows** — the authored definitions) with
+   `contract_fields` (**0 rows** — per-document values). Conflating the two is what produced the
+   wrong claim.
 3. **The purchase side is NOT built and the owner said so** — *"unlikely to codified from the
    purchase."* Do not build purchase-side requirement capture on spec. **The contract path is the
    one with the machinery**; if certain purchases later need it, they can reuse the same
