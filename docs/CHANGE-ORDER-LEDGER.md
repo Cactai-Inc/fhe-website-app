@@ -1107,12 +1107,27 @@ content that is already visible.
 **ANIMATION** — the widening is a **smooth stretch at a comfortable speed**, ⚠️ **not an instant jump
 from half-width to full**. The card grows, then the content appears below it.
 
+### CR-57b · mobile, owner 2026-08-25
+**SAID** *"on mobile all of this is moot, but the arrows need to be the down arrow on closed and up
+arrow on opened."*
+
+⚠️ **THE ARROW IS DIFFERENT ON MOBILE, AND THAT IS CORRECT — the rule is consistent even though the
+glyph is not.** The arrow still points at what the next click does; on mobile the card is already
+full width, so there is no sideways growth to point at — the content simply opens downward.
+
+| | collapsed | expanded |
+|---|---|---|
+| **desktop** *(half width → full)* | **→ right** — about to widen | **↑ up** — about to close |
+| **mobile** *(already full width)* | **↓ down** — about to open downward | **↑ up** — about to close |
+
+**No widening and no stretch animation on mobile** — *"all of this is moot"*.
+
 **ASK-REPO**
 1. Do expanding cards animate anywhere today, or do they all snap?
-2. Is there an existing transition duration/easing in the design system to reuse rather than pick a
+2. Is there an existing transition duration/easing in the design system to reuse rather than picking a
    new number? *(Standing Q1.)*
-3. On mobile a card is already full width — what does "expand" mean there, and what should the arrow
-   do? **Find out how it behaves today before deciding.**
+3. ⚠️ Is the breakpoint where a card stops being half-width **the same everywhere**? The arrow now
+   depends on it, so an inconsistent breakpoint becomes a visible bug rather than a layout quirk.
 
 ⚠️ **A REPEAT REQUEST.** Find out where it was previously asked and why it did not land — a request
 that has been dropped once will be dropped again.
