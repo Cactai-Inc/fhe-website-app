@@ -1837,6 +1837,55 @@ rather than housekeeping.
 4. Can a feed post already reference an existing stored file, or only a fresh upload?
 5. Is there any existing tagging concept on a post?
 
+## CR-71 · G1/G2 · captured — the horse record holds its own limits, and they drive availability
+**SAID**
+> *"we need to add the ability for the horse record to hold the activity restrictions and limits,
+> something like the number of hours per day and per week and consecutive days and then this
+> information controls the availability of the horse, we can also make it so certain days the horse
+> cant be used or the usage is day specific (ie: on tuesdays and thursdays the horse can only be used
+> 1 hour, other days the horse can be used 2 hours, and never more than 5 consecutive days, no
+> jumping, no trails, etc...)"*
+
+⚠️ **THE HORSE BECOMES A CONSTRAINT ON THE CALENDAR, NOT JUST A FIELD ON A BOOKING.**
+
+**Two kinds of limit, and they behave differently:**
+| | Examples | Nature |
+|---|---|---|
+| **VOLUME** | hours per day · hours per week · **max consecutive days** *(e.g. never more than 5)* | ⚠️ **cumulative — needs history to evaluate.** "Consecutive days" cannot be answered by looking at one booking |
+| **KIND** | **no jumping · no trails** | ⚠️ **categorical — evaluated against the offering**, not against a clock |
+
+**And a third thing that is neither:**
+| **DAY-SPECIFIC** | *"on tuesdays and thursdays the horse can only be used 1 hour, other days 2 hours"* · certain days **not at all** | a per-weekday schedule of volume limits |
+
+⚠️ **"CONSECUTIVE DAYS" IS THE HARD ONE.** Every other limit can be checked against the day being
+booked. Consecutive-day limits require **looking backwards and forwards across existing bookings**,
+and they can be **broken retroactively** — cancelling a rest day can put a horse over its limit
+without anyone touching that horse's booking. **Design for that or it will be wrong quietly.**
+
+⚠️ **THIS IS THE OTHER HALF OF A PAIR.** A lease already captures **"Reserved days of use"** as
+structured data *(CR-23)* — **what a lessee is entitled to.** This is **what the horse can take.**
+Both constrain the same calendar and **they can contradict each other**: a lease may reserve four
+days a week on a horse whose record allows three. **Which wins, and who is told?**
+
+⚠️ **Standing Q2 — there is already a horse time-conflict check** used when booking. **That is the
+seam**; these limits extend it rather than needing a new one.
+
+**ASK-REPO**
+1. What does the existing horse time-conflict check actually enforce today?
+2. Is there anywhere a horse's schedule is read across a date range, or only per booking?
+   *(CR-70's Schedule tab and the missing horse-appointments read are both relevant.)*
+3. Do offerings carry anything that says "this is jumping" / "this is a trail ride" — i.e. is the
+   categorical limit checkable at all today?
+4. Does the lease's reserved-days structure share a shape with this, or are they unrelated?
+
+**ASK-OWNER**
+1. **A lease reserves more than the horse's limit allows — which wins?**
+2. **Are limits a hard block or a warning staff can override?** *(A vet says three days; Claire knows
+   why the fourth is fine.)*
+3. **Do the limits apply to everything, or only to riding?** Does a farrier visit consume an hour?
+4. **Who sets them — the owner, or us?** ⚠️ For a client-owned horse these are the owner's
+   instructions; for a lease horse they may be ours.
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
@@ -1871,6 +1920,8 @@ answer."*
 | **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
 | **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
 | **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **CR-71 ↔ CR-23** | the lease says what a lessee may use; the horse record says what the horse can take — they can contradict |
+| **CR-71 → CR-03, CR-07** | horse limits are a second input to what the calendar may offer |
 | **CR-69 → CR-51, CR-68** | three change requests now hinge on whether the horse intake form is one component or several |
 | **CR-70c → feed media** | tagging writes to another member's horse record — a permission question, and it makes the media constraints load-bearing |
 | **CR-68a → G9** | outside-click-closes destroys unsaved input; 33 hand-rolled overlays share the pattern |
