@@ -1329,6 +1329,54 @@ specified in CR-59), not in the nav** — which is exactly why the nav slot is t
 1. Confirm: **card = summary + doorway, page = the work.** Applied to all eleven.
 2. Does anything genuinely belong ONLY on a card, with no page behind it?
 
+## CR-64 · G6/G8 · captured — DELETE the "nothing to do here" page ⚠️ SECOND LYING PAGE
+**SAID**
+> *"on the abby account, the dashboard notification that says book your evaluation lesson takes me to
+> the last page of onboarding and shows me "nothing to do here. you're all squared away -- theres no
+> onboarding waiting on you. and a big button to go "back to your dashboard"...this is another painful
+> example of a page that should never exist and its a liar. there is something to do, book an
+> evaluation lesson. so something is routing me to this page and its the same page i got to when i
+> finished the document signing flow and if it didnt exist where would i go? simple, dashboard if
+> notifications are present, community feed otherwise. and the broken link on the current notification
+> needs to be investigated and determined to be a bug that is due to my account being in the state it
+> was in when the changes were implemented to the flow or its a true bug and it needs to be fixed
+> because other people will be affected by it..."*
+
+⚠️ **THE SECOND PAGE THAT ASSERTS A FALSE STATE.** *(CR-52 was the first.)* Asked on 2026-08-25
+whether there were others, he answered *"not that I can remember right now"* — **and then found one
+within the hour. Assume there are more; go looking rather than asking.**
+
+**Why it is a lie:** it says *"there's no onboarding waiting on you"* **while a dashboard notification
+is telling him to book an evaluation lesson.** Both cannot be true, and the notification is right.
+
+**Two ways in, both reported:**
+1. **the `book your evaluation lesson` notification** — a broken link;
+2. **the end of the document-signing flow** — ⚠️ **this is where CR-59 says the person should exit
+   "straight back to the dashboard."**
+
+**✅ THE LANDING RULE, given plainly:**
+> *"if it didnt exist where would i go? simple, dashboard if notifications are present, community
+> feed otherwise."*
+
+⚠️ **THIS RESOLVES A RECORDED CONTRADICTION.** A prior thread noted he had asked for
+*"no notifications → land on the community feed"*, while the code deliberately lands everyone on the
+dashboard **unconditionally**, on his own earlier instruction, because a freshly-activated member
+still owes their profile details. **That was surfaced and never settled. It is settled now: the
+landing is CONDITIONAL.** ⚠️ The old reasoning still needs honouring — *"complete your profile"* is
+itself a notification *(CR-59)*, so someone owing profile details **has** a notification and still
+lands on the dashboard. **The two rules agree once the profile prompt counts as a notification.
+Verify that it does.**
+
+**ASK-REPO** *(assignments — produce, do not ask)*
+1. **Find the page and every route into it.** Two are known.
+2. ⚠️ **Diagnose the broken notification link and say which it is:** an artefact of this one account's
+   state when the flow changed, **or a live bug that will hit everyone.** He asked for the
+   determination explicitly — **answer it, do not report both possibilities.**
+3. Sweep for **every** page that asserts a state the system cannot be in. **Two found by him; find
+   the rest.**
+4. Where else does the app decide where to send someone after finishing something? Apply one landing
+   rule.
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
@@ -1363,6 +1411,8 @@ answer."*
 | **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
 | **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
 | **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **CR-64 ⟶ CR-52** | second page asserting a false state; the sweep is now a task, not a question |
+| **CR-64 ⟶ CR-59** | the signing flow's exit currently lands on the page CR-64 deletes |
 | **CR-59 ⟶ CR-27** | approving the order IS the promotion — the approval nothing can currently perform |
 | **CR-60 ↔ CR-28** | three rungs here, two there; the vocabulary must be reconciled before either is built |
 | **CR-61 ↔ CR-50** | the avatar toggle lives in preferences, which a lead cannot see |
