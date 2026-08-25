@@ -795,6 +795,47 @@ which is **exactly why "visitor" is the more accurate word.**
 names, template wording. ⚠️ Distinguish **displayed words** from **stored values** — changing a
 stored value is a migration with readers.
 
+## CR-49 · G6/G8 · captured — the lead's own app: self-activation, and what they see
+**SAID**
+> *"it would be the same shape as the hidden url /sign/* pathway, except the form is different and
+> the only thing they see when they sign in the first time since they are a lead is their order with
+> the form they submitted and the catalog where they can edit their order by changing things, adding
+> things, or removing things...they can even cancel it so we know not to put too much effort into
+> contacting them and not worry if they dont respond to us..."*
+
+**Same shape as the existing self-service door; different form.** ⚠️ That door already exists and
+already creates accounts — so this is a **variant of a built pathway**, not a new one.
+
+**What a LEAD sees on first sign-in — and nothing else:**
+| | |
+|---|---|
+| **their order** | as submitted |
+| **the form they submitted** | their own words, back to them |
+| **the catalog** | to **change, add or remove** items on that order |
+| **cancel** | ⚠️ **the signal that matters** — *"so we know not to put too much effort into contacting them and not worry if they dont respond to us"* |
+
+⚠️ **A cancellation is a lead-management signal, not just an order state.** It tells Claire to stop
+chasing. It should reach whatever surface shows people waiting on a reply — and it is arguably a
+fourth exit alongside CR-44's three, except **the lead pulls it themselves.**
+
+⚠️ **This is CR-43's answer made concrete:** the account exists, the app is nearly empty, and the
+client designation — with its emails, notifications and headcount — is withheld until they are
+accepted. The gate is doing real work rather than being cosmetic.
+
+**ASK-REPO**
+1. The existing self-service door — what does it share with this, and can one pathway serve both
+   with a different form?
+2. Is there any concept today of an app surface that shows **only** an order?
+3. When a lead edits their own order, does the existing order-editing machinery already permit it, or
+   is it staff-only?
+4. **Standing Q2** — the member's own shop already lets someone build an order. **Is that the
+   catalog surface this describes, already built?**
+
+**ASK-OWNER**
+1. Does a lead's edit to their own order need review before it counts, or is their order simply
+   theirs until accepted?
+2. Does cancelling remove them from the lead list, or mark them cancelled and leave them visible?
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
@@ -829,6 +870,7 @@ answer."*
 | **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
 | **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
 | **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **CR-49 → CR-43/CR-45** | self-activation is only safe because the client designation is withheld; the empty lead app is what makes the gate real |
 | **CR-45 → CR-43** | an account costs nothing; the CLIENT DESIGNATION is what triggers everything — so create accounts freely and withhold the designation |
 | **CR-44/45 → new app zones** | marketing zone and dungeon do not exist; both are surfaces, not flags |
 | **CR-43 → CR-27** | "accepted as a client" is a state change nothing can currently make |
