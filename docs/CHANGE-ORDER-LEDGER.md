@@ -1128,6 +1128,11 @@ full width, so there is no sideways growth to point at — the content simply op
    new number? *(Standing Q1.)*
 3. ⚠️ Is the breakpoint where a card stops being half-width **the same everywhere**? The arrow now
    depends on it, so an inconsistent breakpoint becomes a visible bug rather than a layout quirk.
+4. ⚠️ **ASSIGNED BY THE OWNER, 2026-08-25** — *"I'm assuming mobile shows single column not two,
+   please confirm during your research in step 2."*
+   **Confirm mobile is a single column, everywhere cards appear.** ⚠️ **His whole mobile ruling
+   (CR-57b) rests on this assumption**, so if any surface is two-up on a small screen, the
+   down-arrow rule is wrong there and the exception has to be found before the build, not after.
 
 ⚠️ **A REPEAT REQUEST.** Find out where it was previously asked and why it did not land — a request
 that has been dropped once will be dropped again.
