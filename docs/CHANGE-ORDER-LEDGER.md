@@ -144,7 +144,45 @@ Those requirements carry forward into it; that is where they land.
   ⚠️ **And it dissolves the addressability question rather than answering it:** a client record page
   is never shared, so it needs no shareable address.
 
+### 🔒 RULING — LEADS LEAVE THE RECORDS PAGE ENTIRELY (owner, 2026-08-25)
+> *"We get rid of leads as a record tab from the record page and they exist as a notification on the
+> dashboard that when clicked opens the modal to show us the submission and the buttons for handling
+> it. and then based on how it is handled, it goes to the appropriate location and remains visible
+> from there as an entry. What this means for when a lead is promoted to a client[:] Their submission
+> is retained and becomes part of their client record visible on a surface that shows their account
+> history[,] that would be an appropriate replacement for an activity Log as a dedicated page. The
+> activity log should be accessed from the account history page as a text link or small button,
+> probably in the top right."*
+
+**A LEAD IS NOT A RECORD. IT IS AN INBOX ITEM.**
+| | |
+|---|---|
+| **Leads tab on the Records page** | ⚠️ **DELETED** |
+| **where a lead lives** | **a notification on the dashboard** |
+| **clicking it** | opens **the modal** — the submission, and the buttons for handling it |
+| **after handling** | it **moves to the appropriate location and remains visible there as an entry** |
+
+⚠️ **This resolves the modal-vs-page tension completely.** The modal was never meant to be a record
+surface — **it is the handling surface for an inbox item**, which is why it felt wrong as a person's
+record and right as a lead's. **Both instincts were correct.**
+
+**AND THE SUBMISSION SURVIVES PROMOTION:**
+- the submission is **retained** and becomes **part of the client record**
+- it is shown on a surface for **ACCOUNT HISTORY**
+- ⚠️ **that surface REPLACES the Activity Log as a dedicated page**
+- the **activity log becomes a link from account history** — a text link or small button, **top
+  right**
+
+⚠️ **CR-35 IS ANSWERED BY THIS.** *"Keep a snapshot of what they send us … so we can spot trends."*
+**The snapshot's home is Account History**, and it is what makes the snapshot worth keeping — the
+submission and everything that happened after it, on one surface.
+⚠️ **CR-63 is affected:** the account card list includes Activity. **Activity is demoted** — it stops
+being a destination and becomes a link inside Account History.
+
 **ASK-OWNER — remaining**
+0. **Does the marketing-zone entry and the dungeon entry also carry the submission**, the way a
+   promoted client's record does? *(“remains visible from there as an entry” — an entry of what?)*
+0b. **Is Account History a TAB on the client record page, or a page of its own?**
 1. ⚠️ **RAISED BY HIM IN REVIEW:** *"in addition to a promote button, does a lead have other options
    … and can I delete the lead?"* — **CR-44 already gives three exits** (make them a client ·
    marketable lead · cancel into the dungeon). **DELETE is not among them and has never been
