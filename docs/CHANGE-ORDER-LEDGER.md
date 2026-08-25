@@ -507,7 +507,7 @@ plan lapse?
 
 # G8 · THE REQUEST → ORDER SPINE
 
-## CR-27 · G8 · ⚠️ LOCKING — lifecycle settled 2026-08-25, three questions remain
+## CR-27 · G8 · 🔒 LOCKED 2026-08-25
 **SAID** *"it doesnt appear the pending status is working properly and likely the approval process for
 a request isnt working properly either"*
 **FOUND** Both are the same thing, and it is worse than a bug: **the steps were designed and never
@@ -574,12 +574,37 @@ read a happy path as a complete vocabulary. **The rule is: every state that corr
 OPTION must exist.** The options above — declined, cancelled-by-us, cancelled-by-them, rescheduled,
 credited, unpaid-but-attended — **are all real, so their states are all needed.**
 
-**ASK-OWNER — REMAINING to lock CR-27**
-1. **Who may approve — Claire only, or CJ as well?**
-2. ⚠️ **The eight requests already stuck at stage one, and Rachel's £880 order that should never have
-   been created** — leave, migrate, or delete?
-3. **Is "declined" the same as CR-44's dungeon exit, or a separate thing?** A declined *purchase* and
-   a not-a-fit *person* may not be the same decision.
+**✅ ALL ANSWERED, owner 2026-08-25:**
+1. **Who may approve?** — *"Both"* — **Claire and CJ.**
+2. **The eight stuck requests and Rachel's order?** — *"Leave them."* ⚠️ **No migration, no cleanup.**
+3. **Is "declined" the dungeon?** — *"No, they're separate. We don't[ ]decline, we just change or
+   cancel the request."*
+   ⚠️ **THERE IS NO DECLINE.** A request is **changed** or **cancelled** — that is the whole
+   vocabulary for a no. Declining a purchase and marking a person not-a-fit *(CR-45)* remain
+   entirely separate acts, and **neither is called "declined".**
+
+---
+
+## 🔒 CR-27 — LOCKED. VALIDATION CRITERIA
+
+1. **Claire or CJ can approve a request to purchase, and that act creates the order.** No other path
+   creates one from a request.
+2. **An unapproved request has NO order.** A submission writes a request; it does not write a
+   purchase.
+3. **The client is told their order has been PROCESSED, and receives a payment request.** ⚠️ The word
+   *approved* appears nowhere the client can see.
+4. **Booking is a separate act, performed after order creation**, and can be completed **with no
+   payment recorded**.
+5. **Payment blocks FULFILMENT, not booking.** An unpaid order and an unpaid booking both persist.
+6. **Before payment:** the client can reschedule the booking and cancel the order.
+   **After payment:** the client can reschedule per policy, or cancel the booking and **receive a
+   credit**.
+7. **Non-payment is handled by people, not automatically:** a no-pay-but-attends is asked to pay; a
+   no-pay-no-show **may** have the order cancelled — never automatically.
+8. **A request is CHANGED or CANCELLED. There is no "decline".**
+9. ⚠️ **Every state that corresponds to a real option is written by a real path.** The acceptance test
+   for this one: **no state in the vocabulary is left with nothing that can produce it.**
+10. **The eight existing requests and Rachel Page's order are untouched.**
 
 ---
 
