@@ -1050,6 +1050,44 @@ CR-50's three.
 3. **using the back button after signing the last document.**
 **If duplicated data → fix the cause. If duplicated code → delete the duplicate.**
 
+**EVIDENCE — screenshots, 2026-08-25.** ⚠️ **The two sets are NOT identical renderings.** They carry
+different subtitles and a different order, which points at **two components reading two shapes**
+rather than one component fed twice:
+| | Set A | Set B |
+|---|---|---|
+| under the title | *"You sign as client."* + *"✓ You've signed this document."* | *"✓ Signed · 8/24/2026"* |
+| buttons | `Read` · **`Download signed PDF`** · `Resend a copy to me` | `Read` · `Resend a copy to me` |
+| order | Participant · Human Emergency · Company Policies · Facility Rules | Human Emergency · Participant · Facility Rules · Company Policies |
+
+⚠️ **Set A knows the ROLE; set B knows the SIGNED DATE.** Neither knows both. **Start there** — the
+question is which read each is using, not whether rows were inserted twice. **Also visible:** the
+`Contracts you've signed` heading from CR-56 sits between the card and set A.
+
+## CR-58 · G9 · captured — the add controls disagree on the same card
+**SAID**
+> *"One thing i noticed on the stable card, add a horse is a nice button band then the other two
+> sections use brown text with a +, no button, i like the look of the non button version, so the Add a
+> horse button should be replaced with a + Add a Horse in brown to match the other two (Gear and
+> Supplies)."*
+
+**On one card, three sections, two different add controls:**
+| Section | Today | Wanted |
+|---|---|---|
+| **Horses** | a **button band**, right-aligned: `+ Horse` | **`+ Add a Horse`** — brown text, no button |
+| **Gear** | `+ Add gear` — brown text | unchanged |
+| **Supplies** | `+ Add a supply` — brown text | unchanged |
+
+**He prefers the text version, and the wording gains "Add a".**
+
+⚠️ **THIS IS A GLOBALIZATION ITEM, NOT A ONE-CARD FIX (G9).** Three add-controls on a single card
+already disagree. **Find every "add" affordance in the app** and establish which are buttons and
+which are text.
+⚠️ **AND IT MAY CONFLICT WITH CR-15**, where he asked for the offerings add-control to be *"an
+outline that holds space for a new line item … an unfilled button … square"*. **Two different
+answers for "how do you add a thing"** — an outline button there, brown text here. **Reconcile in
+review**: they may be genuinely different cases *(adding a line to an order vs adding a record to a
+list)*, or one may be the standard. **Do not silently pick one.**
+
 ## CR-55 · G7 · captured — the "read" view is broken; replace it
 **SAID**
 > *"the read button opens a really funky view that turns a 4 page doc into 7 and a lot of titles left
