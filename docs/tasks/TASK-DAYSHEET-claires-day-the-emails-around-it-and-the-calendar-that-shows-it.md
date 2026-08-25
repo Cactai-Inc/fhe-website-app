@@ -411,7 +411,7 @@ the content — each `❓ QUESTIONS` block holds the detail and the evidence beh
 | **14** | The monthly cycle | 4 — 30 days' notice, dunning vehicle, non-payers, the lead-alert email |
 | **15** | Changing an ordered offering | 3 — price follows or holds, paid orders, recurring days |
 | **16** | Two surfaces, one job | 2 — what `Admin.tsx` uniquely does, does TASK-ROSTER stand |
-| **18** | The offerings picker | 3 — where `JUMPER_TRAINING` sorts, does the order apply elsewhere, does the gate apply to existing clients |
+| **18** | The offerings & paperwork pickers | 4 — where `JUMPER_TRAINING` sorts, does the order apply elsewhere, does the gate apply to existing clients, does PaperworkEditor get rows too |
 | **17** | Surfaces & pricing | 7 — lead tabs, route vs modal, the other three cadences, +$20 on weekly, which rate anchors, what "unlock" means when late, are `products`/`tiers` dead |
 
 **Answered and closed** — kept for the record, do not re-ask:
@@ -1225,6 +1225,34 @@ shop) with no paragraph explaining why. **One mechanism serving both rulings.**
 
 `typecheck 0 · typecheck:api 0 · lint 0 errors · build clean.`
 
+### 18.4 The paperwork is rows too — BUILT
+> *"the same for the paperwork, we can preselect and make rows for the documents they should be
+> signing but that comes after the selection of offerings … just show a row with the menu to select
+> a new document and the placeholder selection says select a document to add it, and when i select
+> something it becomes a row and the x is there to delete it and the new empty selectable row
+> appears below the one i just added and moves up when something is deleted."*
+
+**Order fixed first.** Paperwork sat ABOVE the offerings, prefilled from a choice the reader had not
+made yet — so *"the offerings you chose prefill this"* was shown before there were any. Reading
+order now matches causal order.
+
+**The grid becomes rows.** Was a three-column grid of ticked and un-ticked checkboxes; now each
+document on the record is a row with an X, and **the last row is always an empty menu** reading
+*"Select a document to add it…"*. Adding pushes a fresh empty row down, deleting pulls the list up,
+and no button has to be pressed first — the old `+ Add another document` link and its `addingDoc`
+state are gone.
+
+⚠️ **Un-ticking and deleting became the SAME ACT**, which is what makes the trailing menu honest:
+everything not on a row is in it. The old `shownDocKeys` carried un-ticked suggestions as visible
+rows; `docRowKeys` is only what is ON — the prefill from the offerings, plus anything added by hand,
+minus anything removed.
+
+⚠️ **A signed document has NO X.** It is evidence they were asked and agreed and is never removed
+(NOSTRIP §4). The NOSTRIP panel below — *"they already owe paperwork this selection doesn't
+cover"*, with the named reason before anything stops being asked for — is **untouched**.
+
+`typecheck 0 · lint 0 errors · build clean.`
+
 ### ❓ QUESTIONS — §18
 1. **Where does `JUMPER_TRAINING` go?** The owner named five service types; the rider segment also
    has `JUMPER_TRAINING`, which currently sorts after clipping with everything unlisted. That is
@@ -1234,6 +1262,9 @@ shop) with no paragraph explaining why. **One mechanism serving both rulings.**
 3. **Should the evaluation gate apply to the ORDERS tab's "Add offerings" too?** That control adds
    offerings to an existing client, who may already have had their evaluation. The rule as written
    is about a NEW rider.
+4. **Should the same row treatment go to the ORDERS tab's paperwork and the Paperwork tab?**
+   `PaperworkEditor` is a separate surface and was not touched — two shapes for one job is the
+   pattern this task keeps finding.
 
 ---
 
