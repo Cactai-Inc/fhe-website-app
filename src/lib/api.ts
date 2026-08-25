@@ -308,6 +308,16 @@ export interface OnboardingPrefill {
   riding_background: string | null;
 }
 
+/** P1 ITEM 2 — a contract this member is a party to and has not signed. The
+ *  onboarding surface asks three questions (documents, purchase, standing slot)
+ *  and used to answer "Nothing to do here" when all three were no — while a lease
+ *  sat unsigned. This is the fourth question. */
+export interface WaitingContract {
+  document_id: string;
+  title: string | null;
+  workflow_state: string;
+}
+
 /** my_onboarding_state(): `needed` flips false once every doc is EXECUTED. */
 export interface OnboardingState {
   needed: boolean;
@@ -322,6 +332,9 @@ export interface OnboardingState {
   horse_needed: boolean;
   /** Contact-sourced prefill for the details form (null when no contact). */
   prefill: OnboardingPrefill | null;
+  /** Live contracts they are a party to and have not signed. Optional so a
+   *  cached payload from before this field still type-checks. */
+  contracts_waiting?: WaitingContract[];
 }
 
 /** Attach a created horse to the caller's purchase (own-horse services). */

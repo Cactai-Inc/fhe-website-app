@@ -574,6 +574,18 @@ export default function Onboarding() {
         // Asking for the step by name wins over everything; an unchosen slot wins
         // over "nothing to do".
         const slotOutstanding = sl.some((x) => !x.chosen);
+        /* P1 ITEM 2 — A WAITING CONTRACT OUTRANKS THE WIZARD.
+           Owner, 2026-08-25: a counterparty claims her account and "on activation
+           she sees the contract". If she is here at all with a lease unsigned,
+           the lease is the thing to do — so we leave, rather than walking her
+           through a wizard about lessons she has not bought. Routed through the
+           contract's own gate, which asks for anything the document still needs
+           and forwards straight to it when nothing is missing. */
+        const waiting = s.contracts_waiting ?? [];
+        if (waiting.length > 0 && !s.needed && !wantsShop && !wantsSlots) {
+          navigate(`/app/contracts/${waiting[0].document_id}/start`, { replace: true });
+          return;
+        }
         if (wantsShop) setStep('shop');
         else if (wantsSlots && sl.length > 0) setStep('slots');
         else if (!s.needed) setStep(slotOutstanding ? 'slots' : 'done');
@@ -835,7 +847,17 @@ export default function Onboarding() {
   // do here" while their standing time was unchosen and their calendar was empty.
   // Anyone holding a weekly plan gets the wizard — to choose the time if it is
   // outstanding, and to see what they hold if it is not.
-  if (state && !state.needed && !state.purchase && standing.length === 0) {
+  //
+  // ⚠️ P1 ITEM 2 / CR-64 — `contractsWaiting.length === 0` IS THE FOURTH CONDITION,
+  // and it is the same defect one more time. This screen asked about documents, a
+  // purchase and a standing slot, and never asked whether a CONTRACT was waiting —
+  // so a lease counterparty, who by design has none of the other three, was told
+  // she had nothing to do while her lease sat unsigned. The effect above routes
+  // her to it before this renders; this condition is the guarantee, so no path
+  // into this component can produce that sentence for someone with a contract open.
+  const contractsWaiting = state?.contracts_waiting ?? [];
+  if (state && !state.needed && !state.purchase && standing.length === 0
+      && contractsWaiting.length === 0) {
     return (
       <div className="max-w-3xl">
         <p className="eyebrow mb-2">Onboarding</p>
@@ -850,10 +872,35 @@ export default function Onboarding() {
     );
   }
 
+  // A contract is waiting and the wizard still has something of its own to do
+  // (unsigned paperwork, an unpaid order, an unchosen slot) — so we did NOT
+  // redirect. Say the contract is there rather than hiding it behind the wizard.
+  const contractBanner = contractsWaiting.length > 0 ? (
+    <section className="bg-gold-50 border border-gold-500/40 rounded-xl p-5 mb-6">
+      <h2 className="font-serif text-green-900 mb-1">
+        {contractsWaiting.length === 1
+          ? `${contractsWaiting[0].title?.trim() || 'A contract'} is waiting for you.`
+          : `${contractsWaiting.length} contracts are waiting for you.`}
+      </h2>
+      <p className="text-[13px] text-green-900/75 mb-3">
+        You can read and sign it now, or finish what's below first — it will still be there.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {contractsWaiting.map((c) => (
+          <Link key={c.document_id} to={`/app/contracts/${c.document_id}/start`}
+            className="btn-outline-gold text-xs">
+            Open {c.title?.trim() || 'the contract'} <ArrowRight size={14} />
+          </Link>
+        ))}
+      </div>
+    </section>
+  ) : null;
+
   return (
     <div className="max-w-3xl">
       <p className="eyebrow mb-2">Welcome aboard</p>
       <h1 className="heading-section text-green-800 mb-6">Let's get you set up.</h1>
+      {contractBanner}
       <Steps
         current={step}
         showHorse={step === 'horse' || (state?.horse_needed ?? false)}
