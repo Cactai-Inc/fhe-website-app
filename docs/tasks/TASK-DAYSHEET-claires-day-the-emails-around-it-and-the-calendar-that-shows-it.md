@@ -77,9 +77,32 @@ booking outside business hours is invisible and therefore uneditable, and a mult
 draws only in its first row. Both want fixing, but the FIRST thing to build is the modal from §0 —
 with it, the month view alone is enough to reach any item regardless of the grid's range.
 
-**Root cause of the 00:00–13:00 value itself is NOT yet established.** It predates every calendar
-change this month (created 2026-08-02). Do not repair the row before finding what wrote it — a
-data fix on an unexplained write is how the same row comes back.
+**Root cause — owner, 2026-08-24, and the data corroborates it:**
+
+> *"the midnight booking was likely a typo or the 8am preset was changed to 12 and the am didnt
+> change since there is a 12pm noon booking it seems most likely either of those two options are the
+> explanation."*
+
+**Everything on 2026-08-28 supports the 12 AM / 12 PM slip:**
+
+| | midnight row | the noon row |
+|---|---|---|
+| starts | **00:00** | **12:00** |
+| ends | **13:00** | **13:00** |
+| offering | *2x Weekly Lessons* | *2x Weekly Lessons* |
+| purchase | yes | yes |
+| created | 2026-08-02 | 2026-08-03 |
+
+**Both end at 13:00. Both are the same offering. Both carry a purchase.** The midnight row is
+almost certainly the same intended 12:00–13:00 slot with the START entered as 12 **AM** — in a
+`datetime-local` control, noon is `12:00` and midnight is `00:00`, one keystroke apart — and the
+end time, being unambiguous in 24-hour form, came out right. It was re-entered correctly the next
+day.
+
+**So the row is a data-entry artefact, not a system fault**, and the fix is §11: make the time a
+*selection* rather than something typed, so this class of error cannot be expressed. ⚠️ Still
+confirm the two rows belong to the same client before deleting either — a duplicate is safe to
+remove, a genuine second booking at the wrong time is not.
 
 ---
 
@@ -320,11 +343,15 @@ the control is built — both reference `horse_id` but their pickers were not re
    **Claire's call at scheduling time**, not a derived property. So it is one record type with an
    optional time (`kind='task'`, `is_flexible` carrying "no specific time"), and the answer opened
    a larger question about where the requirement comes from.
-4. **Does the 9am client email go to a client with MULTIPLE items that day** as one email? Assumed
-   yes — one email, all their items.
+4. ~~Does a client with multiple items that day get one email or several?~~ **ANSWERED, owner
+   2026-08-24: "clients get 1 email."** One email per client per send, listing everything they have
+   that day. ⚠️ Note this applies to the 09:00 email; the **1-hour-prior reminder is per item by
+   definition** — two lessons three hours apart get two reminders, because each is an hour before a
+   different thing.
 5. **Client no-show vs horse unavailable** — one status with a logged reason, or two statuses?
    Recommend one.
-6. **What wrote the 00:00–13:00 booking?** Needs finding before the row is touched.
+6. ~~What wrote the 00:00–13:00 booking?~~ **ANSWERED — a 12 AM / 12 PM slip, corroborated by the
+   data. See §1.** The remaining action is to confirm the duplicate and remove it.
 7. **Where does an unclaimed horse name get claimed?** (§6b) A tab on the horse records page, or a
    prompt on the booking itself when someone next opens it. Recommend the horse records page — it
    is where someone with the authority to create a record already is.
@@ -604,6 +631,44 @@ columns, this regex should go.** Do not add a second name-matcher for the 90 min
 
 ⚠️ **`publish_open_slots_all(p_slot_minutes := 60)` also hardcodes an hour**, but it is being
 retired by §5 — do not "fix" it, delete it.
+
+---
+
+## 11. THE TIME PICKER — a selection, not a typed value
+
+**Owner, 2026-08-24:** *"the time selection should be a dropdown list of the 30 minute increments a
+person can choose and it should account for what is on the calendar and the duration of the
+booking."*
+
+**Today it is `<input type="datetime-local">`** — `CalendarItemPanel.tsx:500` (Start) and `:505`
+(End). Two free-form datetime controls, no increments, no awareness of anything. That is what
+allowed §1's midnight row, and it is also why the end time is a second thing to get wrong rather
+than a consequence of the first.
+
+### What to build
+1. **Date, then a start-time dropdown in 30-minute increments.** Not a typed time. 12 AM stops
+   being one keystroke from 12 PM because neither is typed.
+2. **The end time is DERIVED from the offering's duration** (§10.4), displayed, not entered.
+   Claire can still override it — she sets the exception; the offering sets the default.
+3. **Offer only start times that actually fit.** A slot is offered when the booking's full duration
+   is free from it. A 90-minute evaluation is not offered at a time where only 60 minutes are open.
+4. **Bound the list by business hours** — the same `openHour`/`closeHour` the grid uses
+   (`CalendarPage.tsx:305`), with an explicit way to schedule outside them rather than the current
+   situation where out-of-hours bookings can be created but never seen (§1).
+
+### ⚠️ THIS DEPENDS ON TWO OTHER SECTIONS — build them first
+- **§10.4 `offerings.duration_minutes`.** "Account for the duration" is not implementable while
+  nothing records a duration. This is the third section that needs that column; it should be built
+  once, early.
+- **§5, retiring published open slots.** "What is on the calendar" must mean *real* bookings. While
+  494 generated `available` rows exist, every hour of every day already looks occupied, and a
+  collision check would refuse everything.
+
+### The payoff worth naming
+This is the one item on the list that makes a whole class of defect **unexpressible** rather than
+merely fixed. §1's booking is not a bug in code anyone wrote — it is a control that accepted a
+value nobody meant. A dropdown of valid, non-colliding, duration-aware start times cannot produce a
+13-hour lesson at midnight.
 
 ---
 
