@@ -683,6 +683,109 @@ them in one pass or the same tables get read five times.
 removes is real, the door it opens is already open, and the mechanism to hold community back already
 exists. The work is not hCaptcha — it is CR-27 and one careful re-wording of ruling 11.
 
+## CR-44 · G6 · captured — the lead card, and the three-way choice
+**SAID**
+> *"a person submits a contact form or an order form. we get a lead card that (currently doesnt show
+> us what they sent) will show us what they sent us and give us quick access to the contact
+> information from a phone or computer so we can reach out to them, and it give us the choice of how
+> to handle the lead; make them a client with an order and a scheduled booking, leave them as a
+> marketable lead and send them to the marketing page, or cancel the lead designation so it doesnt
+> count in our conversion calculations and send them to the dungeon never to be contacted again."*
+
+**The lead card is a submission, a way to reach them, and exactly three exits:**
+| Exit | Result |
+|---|---|
+| **Make them a client** | with an order **and a scheduled booking** |
+| **Marketable lead** | to the **marketing zone** — ⚠️ *does not exist in the app yet* |
+| **Cancel the lead** | ⚠️ **removed from conversion calculations**, sent to the **dungeon** |
+
+**ASK-REPO**
+1. Does a conversion calculation exist anywhere today? *(If yes, it currently counts people it
+   should not.)*
+2. Is there an existing archive surface that is already the dungeon in all but name?
+3. **Standing Q2** — do Partners, Vendors and other people-lists need the same three exits?
+
+## CR-45 · G6 · captured — not-a-fit, and the two zones
+**SAID**
+> *"the issue that claire was worried about is when a person isnt the right fit then they are in our
+> system and they arent a client and we need to make sure we have a way to mark client records
+> appropriately … a lead that didnt work out but is still an account, thats a market able contact for
+> later, so a quick note and away to mark them is all we need … either a designated future
+> opportunity that we use the notes to know when and why and how to contact them or they are
+> designated a permanent non opportunity and we basically block the pursuit of that person from ever
+> happening but we dont block them from coming back to try again later if the thing that made them
+> not a fit changes … leads that we may market to in the future go into a marketing zone that doesnt
+> exist yet in the app, and the ones that we wont market to go into another zone in the app that is
+> essentially the dungeon and we can go in there if we need to but we dont want to look at it every
+> day."*
+
+⚠️ **THE KEY DISTINCTION — the account is not the risk:**
+> *"the promotion to account holder is not in and of itself an issue, the payment and booking and
+> client designation is the issue because its a lot to unwind and a lot [of] emails and notifications
+> are build off of those things triggering them and it leaves the door open to bloat, confusion,
+> frustration, and undue notifications or the surfacing of illegitimate data like client headcount
+> that includes people who were not the right fit and never bought from us."*
+
+**So: an account costs nothing. A CLIENT DESIGNATION costs a great deal** — it triggers emails and
+notifications, and it inflates headcount with people who never bought. **This is the answer to CR-43
+as well: create accounts freely; withhold the client designation.**
+
+**Two markings, each with free text:**
+- **Future opportunity** → marketing zone. Notes say **when, why and how** to contact them.
+- **Permanent non-opportunity** → the dungeon. **Blocks our pursuit of them, never their return** —
+  if the thing that made them not a fit changes, they can come back.
+
+**ASK-REPO**
+1. What exactly is triggered by "client designation" today, and can an account exist without it?
+2. What does "client headcount" count today?
+3. Is any of the note/marking machinery already present (status logs, notes on a contact)?
+
+## CR-46 · G6 · captured — creating a client from scratch
+**SAID**
+> *"if i want to create a client record from scratch, i click the button to add a client and then add
+> the information about them (including adding a horse or a contract or deal), then select their
+> offering if one should be added to create an order, then confirm or adjust the documents they need
+> to complete and when applicable like with a deal party account i select when they sign or if they
+> sign them partly based on if there is an order created and based on the offerings in it the
+> paperwork is selected and i can designate when they sign it relative to the contract/deal they are
+> part of, and then i either save it (not finished and ready to send) or send it."*
+
+**The order of the cover page, in his words:** person → *(horse / contract / deal)* → offering →
+order → documents → **when they sign** → **save or send**.
+
+⚠️ **"When they sign" is a per-document choice**, and for a deal party it is **relative to the
+contract** — this is the disposition concept, and it already exists in part.
+
+## CR-47 · G6/G8 · captured — what actually makes an account active
+**SAID**
+> *"either way they are now an active account and they just dont have access to the app or their
+> records until they click the link so the send itself doesnt do anything, the completion of the
+> first sign in from the clicking of the link is what claims the account and makes it accessible.
+> somewhere in there we need to identify the exact triggers that set status as draft or active, and
+> tag their account properly for rider/owner/deal party/[visitor]."*
+
+⚠️ **THE SEND DOES NOTHING.** The account is active either way. **Claiming — the first sign-in after
+clicking the link — is what grants access.**
+
+**ASK-REPO** *(this is a fact-finding assignment, not a question for him)*
+1. **Enumerate every trigger that sets an account to draft or active today**, and every place that
+   reads it. He has asked for the list — **produce it, do not ask for it.**
+2. Where is the tag set, and is it derived or written?
+3. Does anything currently confuse *sent* with *active*?
+
+## CR-48 · ALL · captured — vocabulary
+**SAID**
+> *"i prefer the word visitor over guest, guest is a bit too ambiguous as to what it means in context
+> of our business, visitor is clearer, it should read to anyone that they are someone who visited us
+> physically."*
+
+**GUEST → VISITOR**, everywhere. ⚠️ Touches the tag, the self-service door, the document set, and the
+rule that this is the one tag that obligates paperwork on the strength of being on the property —
+which is **exactly why "visitor" is the more accurate word.**
+**ASK-REPO** Every place the word appears: UI copy, tag values, document requirement rows, sign-path
+names, template wording. ⚠️ Distinguish **displayed words** from **stored values** — changing a
+stored value is a migration with readers.
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
@@ -717,6 +820,8 @@ answer."*
 | **CR-03 → CR-07** | while generated slots exist, every hour looks busy and a clash check refuses everything |
 | **CR-27 → CR-09, CR-25, G5** | nothing can approve a request or open an order; the billing cycle has nothing to hang on |
 | **CR-29 → CR-28** | three cadences make every date in the billing cycle relative to the period |
+| **CR-45 → CR-43** | an account costs nothing; the CLIENT DESIGNATION is what triggers everything — so create accounts freely and withhold the designation |
+| **CR-44/45 → new app zones** | marketing zone and dungeon do not exist; both are surfaces, not flags |
 | **CR-43 → CR-27** | "accepted as a client" is a state change nothing can currently make |
 | **CR-43 → ruling 11** | community is gated by ACCOUNT today; leads with accounts would see it immediately |
 | **CR-38…CR-42 → CR-16** | changing an offering is one case of line-item editing; build the model, not the button |
