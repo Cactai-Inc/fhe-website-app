@@ -114,11 +114,13 @@ have a static daily view"*. ⚠️ Retire the SEND, keep the rows if anything re
 deleting (D32).
 
 ### ⚠️ THREE THINGS THAT WILL BITE
-1. **THERE IS NO TENANT TIMEZONE.** No `time_zone` column exists on `organizations` or
-   `org_settings` — confirmed. `calendar-reminders.ts` hardcodes `America/Los_Angeles` in
-   `pacificHour()`. "7am" and "1 hour prior" are timezone statements, so this must be settled
-   first. Same finding as TASK-LESSONREQUEST, still unaddressed. **Put it in tenant settings, do
-   not hardcode it a second time** (MEDIA_RELEASE class).
+1. ~~**THERE IS NO TENANT TIMEZONE.**~~ **SETTLED, owner 2026-08-24:** *"all activity is rooted in
+   pst, Los Angeles."* The VALUE is `America/Los_Angeles`. **Still store it as tenant config, not a
+   constant** — no `time_zone` column exists on `organizations` or `org_settings` today, and
+   `calendar-reminders.ts` hardcodes the zone inside `pacificHour()`. A tenant fact frozen into
+   code is the MEDIA_RELEASE class; seed the setting to `America/Los_Angeles` and read it. Note
+   "PST" is the winter abbreviation — the barn is on PDT for most of the year, which is exactly why
+   the stored value must be the IANA zone name and never a fixed UTC offset.
 2. **Vercel cron granularity.** The current schedule is hourly. 07:00 and 09:00 are fine on an
    hourly tick; **"1 hour prior" is not** — a 10:30 lesson wants a 09:30 send. Either run the
    endpoint more often (`*/15`) and let it decide, or accept hour-granularity reminders. **This is
@@ -292,7 +294,8 @@ the control is built — both reference `horse_id` but their pickers were not re
 
 ## 7. OPEN QUESTIONS FOR THE OWNER
 
-1. **What timezone is the barn in, and where does it live?** Blocks every time in §2.
+1. ~~What timezone is the barn in?~~ **ANSWERED: `America/Los_Angeles`.** Only "where it lives"
+   remains, and that is settled by precedent — tenant settings, not a constant.
 2. **How precise must "1 hour prior" be?** Hourly cron gives up to an hour of slop. `*/15` costs a
    plan tier — worth it?
 3. **Is a task (supplements, medication, call the vet) a `booking` row?** It has a day but often no
@@ -308,6 +311,102 @@ the control is built — both reference `horse_id` but their pickers were not re
 7. **Where does an unclaimed horse name get claimed?** (§6b) A tab on the horse records page, or a
    prompt on the booking itself when someone next opens it. Recommend the horse records page — it
    is where someone with the authority to create a record already is.
+
+---
+
+## 8. THE SCHEDULING PANEL ASKS ITS QUESTIONS IN THE WRONG ORDER
+
+**Owner, 2026-08-24:**
+
+> *"the repeat weekly is weird … first the primary selection is "just once" which literally reads
+> repeat this one time. but more importantly we are being asked to select a product before we
+> select the client and the inverse is the right approach. we select a client, then we see what the
+> client has available … we only show horse care services for clients with a horse … we dont need
+> to add any text to the ui to explain this, its self evident … it should honor our rules not
+> ignore them."*
+
+### 8.1 "Repeat weekly for → Just once"
+Confirmed, `CalendarItemPanel.tsx:784`. The label is **"Repeat weekly for"** and the default option
+is `'1' → 'Just once'`, so the control reads *"repeat weekly for: just once."* It is the first
+value in the list, so it is also what everyone sees.
+
+### 8.2 The order is inverted — and the code proves it
+Render order today: **Start · End · Offering (`:512`) · Client (`:526`) · Assign to purchase
+(`:559`) · … · Horse (`:697`)**.
+
+The dependency runs the wrong way and the code says so out loud — the CLIENT field's own label is
+computed from the selected OFFERING:
+```
+Client{selectedOffering?.segment !== 'horse' ? ' (required to book)' : ''}   // :527
+```
+You cannot know whether a client is required until a product is chosen. That is backwards.
+
+**The order the owner wants: client → what that client has → the item.**
+
+### 8.3 Nothing is filtered by the client. Anything.
+Three separate reads, all client-blind:
+
+| Read | What it fetches | Filtered by client? |
+|---|---|---|
+| `fetchOfferings()` `:143` | `all.filter(o => o.segment === 'rider' \|\| o.segment === 'horse')` | **no** |
+| `listScheduleHorses()` `api-lessons.ts:841` | every row in `horses` where `deleted_at is null` | **no** |
+| `fetchClientPurchases(clientId)` `:174` | `client_purchases(p_client_id)` | yes — but only feeds "Assign to purchase", AFTER the offering is already picked |
+
+So **all 32 rider + horse offerings** are offered for every client, and **every horse in the
+system** is offered on every booking. The one client-aware read exists and is used for the wrong
+job.
+
+### 8.4 What to build
+1. **Client first.** Move the client field above the offering field; everything below reacts to it.
+2. **Then show what that client HAS.** `client_purchases(p_client_id)` is already the seam —
+   surface credits and any standing/monthly plan *as the primary choice*, not as a post-hoc
+   "assign to purchase" dropdown.
+3. **Filter the offering list to what is relevant to that client.**
+4. **If the client has no matching paid offering, the booking GENERATES it.** Owner: *"if they dont
+   have a paid offering purchased that matches the selection … we generate that offering by
+   creating the scheduled booking. if they have that offering we see it and we are using what they
+   purchased."* One act, two paths — consume an entitlement, or create the obligation.
+   ⚠️ This is the same seam as OFFERINGDOCS ruling 6 (documents arrive when the order opens). A
+   booking that generates a purchase must open that order through the SAME spine, or it becomes a
+   second write path (D18) and the paperwork silently does not fire.
+5. **Horse care only for clients with a horse.** `offerings.segment = 'horse'` is the set to hide
+   (16 of the 32). **No explanatory text** — the owner was explicit.
+6. **Filter the horse picker to that client's horses too.** Same rule, same reason.
+
+### 8.5 ⚠️ "HAS A HORSE" IS NOT ONE COLUMN
+`horses` carries **both** `current_owner_contact_id` **and** `lessee_contact_id`. **A lessee has a
+horse in their care without owning it** — gate on ownership alone and every lease client loses
+access to care services. Use both.
+
+Also `horses.owner_name_text` exists — a free-text owner name for a horse whose owner is not yet a
+contact. **That is §6b's pattern already in the schema, in the mirror direction**, and it is the
+precedent to copy rather than invent.
+
+⚠️ **Scale check before building the gate:** there is exactly **ONE horse** in production and it
+has an owner. So this rule currently hides horse services from every client but one. That is
+correct behaviour and it will look like a bug — verify against the rule, not against the screen.
+
+### 8.6 Weekly recurring belongs on the client card, not here
+Owner: *"this is not the surface for setting a weekly lesson, though its not a bad option, the
+primary option is the client card where they or us can set their weekly riding day and time which
+then appears automatically on the calendar until its renewed at the end of the month for the next
+month. if we do want to repeat a lesson it would be because they have credits or they intend on
+purchasing a punch card."*
+
+**The machinery already exists and is in the wrong place.** `CalendarItemPanel.tsx:594–670` already
+holds the standing-weekly editor — `fetchClientMonthlyPlans`, `setRecurringDays`,
+`setRecurringPlanEnd`, `generateThisMonth`, and a monthly plan with `recurring_days` /
+`weekly_frequency`. `my_standing_slots` is the member-side read.
+
+**So this is a MOVE, not a build:**
+- the standing weekly day+time moves to the **client card**, settable by staff or by the client;
+- it materialises on the calendar for the month, renewed at month end;
+- the panel keeps only a repeat that means **credits or a punch card** — and it must be worded as
+  that. "Repeat weekly for → Just once" goes.
+
+⚠️ TASK-WALK2 recorded the standing-slot recurring feature as **unreachable on two identities**.
+Moving it to the client card is likely the fix for that as well — check before treating them as
+separate work.
 
 ---
 
