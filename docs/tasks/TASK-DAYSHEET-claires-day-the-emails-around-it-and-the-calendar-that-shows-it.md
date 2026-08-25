@@ -816,6 +816,124 @@ clients and silently applied to everyone, so Claire sees "Reserved" on her own b
 
 ---
 
+## 14. THE RACHEL PAGE CASE — a lead, an order nobody was told about, and the monthly cycle
+
+Owner, 2026-08-24, on a real lead. Three separate problems; the third is the largest piece of
+unbuilt work in this document.
+
+### 14.1 THE LEAD SURFACE — everything he wants is already captured
+
+> *"what i really need to see is their for[m] submission and contact information and contact
+> preference. two clicks and im either calling, texing or email and fully equipped."*
+
+**The request row already holds all of it.** Rachel Page, `requests` id `33517d94…`:
+
+| Field | Value |
+|---|---|
+| `contact_method` | **`text`** ← the contact preference, captured |
+| `contact_phone` | (858) 354-2941 |
+| `contact_email` | msrachelpage@gmail.com |
+| `notes` | the full form submission — her history, goals, riding experience, preferred times, days |
+| `proposed_times` | `[{days: "Sun, Fri, Sat", time: "Weekdays AM & PM · Weekends AM & PM"}]` |
+| `status` | `new` |
+
+So this is **a rendering job, not a capture job**. `LeadWorkDrawer` shows an overview; it should
+lead with the submission, the contact details, and the preference, with `tel:` / `sms:` / `mailto:`
+actions on them. *"Two clicks"* is the acceptance test.
+
+⚠️ **ONE REAL DEFECT UNDERNEATH IT: the preference never reaches the contact record.**
+`requests.contact_method = 'text'`, but **`contacts.preferred_contact` is EMPTY** for her. The
+answer is captured on the enquiry and never propagated, so the moment she becomes a client the
+preference is lost. Fix the propagation, not just the drawer — otherwise the drawer has to read the
+request forever.
+
+### 14.2 THE ORDER NOBODY WAS TOLD ABOUT — two independent causes
+
+> *"it appears she placed an order, thats great, i didnt notice any big notification, no email
+> alert, nothing, telling me we got an order for a monthly subscriber riding weekly 2x."*
+
+**Cause 1 — there is no such notification. At all.** Every notification kind ever written:
+`party_signed · document_executed · request_new · payment_received · contract_in_review ·
+booking_reminder_1h/2h · booking_time_requested · contract_cancelled · contract_terminated ·
+contract_termination_requested · purchase_unpaid · contract_locked · insurance_unresolved ·
+member_hi`. **Nothing for an order being placed.** The alert he expected does not exist to fail.
+
+**Cause 2 — her order never opened.** `purchases 3947a545…`, Rachel Page, **£880 · `2x Weekly
+Lessons` · `status = 'draft'` · `payment_status = 'unpaid'`**, created 2026-08-22, and it is
+**the only purchase in the system that came from a request** (`request_id` set). Every other order
+is `awaiting_payment`.
+
+That matters because both order triggers test the same thing:
+```
+IF coalesce(OLD.status,'') <> 'draft' OR coalesce(NEW.status,'') = 'draft' THEN RETURN NULL;
+```
+`purchases_assign_documents` and `purchases_mint_credits` both fire only on `draft → not-draft`.
+**Her order is still draft, so she got no documents and no credits either.** ⚠️ This is the same
+seam as OFFERINGDOCS ruling 6 — **the request→order path leaves the purchase in `draft` and nothing
+opens it.** That is very likely the same missing act as §6's non-existent approval.
+
+✅ **The LEAD alert did work** — two `request_new` notifications for her on 2026-08-22, both
+`emailed_at` set. ⚠️ But only **2 of 12** `request_new` rows have ever been emailed, so the
+delivery path is not reliably working for everyone. Worth a look while in here.
+
+**Build:** an `order_placed` notification + email on the act that opens the order, through the same
+spine as everything else (D18).
+
+### 14.3 THE MONTHLY CYCLE — the copy is wrong and the cycle is unbuilt
+
+> *"we say we need 30 days notice for cancellation and we collect payment every month the day prior
+> to the start of the next month, so we need to set it to fill out the month ahead when payment is
+> confirmed…"*
+
+**First, the copy is describing behaviour that does not exist.** `StandingSlotPicker.tsx:326`:
+> *"every week is put on the calendar for the next three months, rolling forward as it is read"*
+
+**There is no three-month generation anywhere.** `set_recurring_days` re-trues **this month only**
+(`period_start = date_trunc('month', current_date)`), and the generator is literally named
+`_generate_plan_month`. **The engine is already month-shaped — the sentence is the lie.** Rewrite it
+to describe the cycle below.
+
+#### The cycle to build
+| # | When | What |
+|---|---|---|
+| 1 | payment confirmed | **the month ahead is materialised** on the calendar |
+| 2 | 3 days before month end | **email the client**: payment due within 3 days |
+| 3 | 3 days before → onward | **in-app countdown**: "due in 3 days" → "due in 2" → **"due today"** → **"past due by N days"** |
+| 4 | day prior to month start | **email the client again**: due today |
+| 5 | client declares payment | **notify US to check** |
+| 6 | always | **a list of monthly riders who owe payment**, so nobody is chased by memory |
+
+#### Booking status through the cycle — this is what makes it visible
+- **unpaid** → the client's scheduled lessons appear as **`pending_payment`**, NOT reserved
+- **payment confirmed** → they become **`confirmed`** and reserved
+- **pending** → the client **may change their lesson schedule**
+- **past due** → they **may not**
+
+✅ **`pending_payment` and `confirmed` are ALREADY in `bookings_status_check`** — see §4. They are
+two of the eight values nothing has ever written. **This ruling is what finally drives them.**
+
+#### ⚠️ What this needs that does not exist
+1. **A billing period on the plan.** Nothing records "paid through". `mint_recurring_allotments`
+   runs daily (`20 8 * * *`) but mints entitlement, it does not bill.
+2. **`purchase_unpaid` exists as a notification kind and has fired exactly ONCE.** It is the nearest
+   thing to a dunning notice and is effectively unused — check whether it is the right vehicle
+   before minting a new kind.
+3. **The client's "I paid" declaration already exists** — `report_my_payment`,
+   `confirm_payment_claim`, `decline_payment_claim`, and `purchases.client_claim_status`
+   (`none · pending · confirmed · declined`). **Item 5 is a surfacing job, not a build.**
+4. **30 days' notice for cancellation is stated and nowhere enforced.** It needs a home — the plan
+   record, and the contract wording.
+5. ⚠️ **Nothing may re-materialise a month that is already paid.** The copy's *"changing it
+   re-materialises from today; weeks already past are untouched"* must become *"…and weeks already
+   PAID are untouched"*, or a schedule change silently rewrites a month the client has bought.
+
+### 14.4 Sequencing
+14.1 is small and independent — do it first. 14.2 is blocked on the same missing act as §6
+(nothing opens an order). 14.3 is the big one and depends on §4's disposition work, because
+`pending_payment → confirmed` is the same status machinery.
+
+---
+
 ## THE REACH
 
 Claire's day sheet is the dashboard she already lands on; the next-up card and the past list are
