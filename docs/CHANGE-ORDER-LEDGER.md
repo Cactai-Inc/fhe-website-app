@@ -123,12 +123,37 @@ Those requirements carry forward into it; that is where they land.
 4. What happens to the **other** places a person is shown (Partners, Vendors, Archived, Review) —
    do they all become this page?
 
-**ASK-OWNER** *(added by this answer)*
-1. Is **promote** purely internal until you press *send the activation link* — i.e. no email leaves
-   on promotion? *(The save/send split already exists on the provisioning form.)*
-2. A lead you decide **against** — does it get an outcome (declined, archived), or just sit?
-3. If there is **no submission** — staff creating a client from scratch — what does the cover page
-   show?
+**✅ ANSWERED IN REVIEW, owner 2026-08-25:**
+- **Does a lead ever need the full record?** — *"CR 53's implication is correct"* → **no.**
+- **Do the five things only the client page carries survive?** — *"Yes for now. Revise later."* →
+  **tags, guardian/dependent links, invite state, last activity, the agreed-lesson panel and the
+  account status log all carry over.**
+- **Does the client record page get a shareable address?** — **NO**, and the reasoning is a ruling of
+  its own:
+  > *"I don't understand why we would ever do this. The one thing to check is if the information on
+  > the client record and the information[ ]the user enters into their UI fields are the same
+  > resource. It's important that they are. Therefore, we would never share a client record page. The
+  > client has their own surfaces to modify the fields we make available[ ]to them. That information
+  > is then visible on the client record in the appropriate locations."*
+
+  ⚠️ **ONE RESOURCE, TWO VIEWS.** The client edits their own fields on their own surfaces; **staff see
+  the same data** on the client record. **Not a copy, not a sync — the same record.**
+  ⚠️ **He embedded a VERIFICATION TASK in it:** *"the one thing to check is if… they are the same
+  resource."* **Prove it before anything is built** — if the client's profile fields and the staff
+  record read different columns anywhere, that is a defect standing in front of the rebuild.
+  ⚠️ **And it dissolves the addressability question rather than answering it:** a client record page
+  is never shared, so it needs no shareable address.
+
+**ASK-OWNER — remaining**
+1. ⚠️ **RAISED BY HIM IN REVIEW:** *"in addition to a promote button, does a lead have other options
+   … and can I delete the lead?"* — **CR-44 already gives three exits** (make them a client ·
+   marketable lead · cancel into the dungeon). **DELETE is not among them and has never been
+   specified.** ⚠️ The dungeon deliberately RETAINS the person — *"we dont block them from coming back
+   to try again later"* — so **delete is a genuinely destructive fourth option** that would break
+   that. Needs a ruling.
+2. Is **promote** purely internal until *send the activation link* — no email on promotion?
+3. **Do Partners, Vendors and Archived accounts get this same rebuilt surface, or keep the modal?**
+   *(Re-asked — the first phrasing was too ambiguous.)*
 
 ---
 
