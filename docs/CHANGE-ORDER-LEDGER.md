@@ -1083,7 +1083,36 @@ Card buttons become **download pdf** and **resend**; **read is removed.**
 > when its expanded."*
 
 1. **An expanded card expands to the full width of its container.**
-2. **The arrow points DOWN when collapsed and UP when expanded.**
+2. ~~The arrow points DOWN when collapsed and UP when expanded.~~ **SUPERSEDED — see below.**
+
+### CR-57a · refinement, owner 2026-08-25
+**SAID**
+> *"on the desktop version since the card is half the width and it will expand to twice the width and
+> then show the content below it, keep the right facing arrow on collapsed state and it has the down
+> arrow when its open it should show the up arrow to indicate the contents are hidden on click just
+> like the right arrow indicates youre going to expand the card to open it. the switch to an expanded
+> state should look like a stretching animation smoothly and at a comfortable speed not an instant
+> switch from 50% wide to 100% wide."*
+
+**The arrow points at what the NEXT CLICK does, not at the current state:**
+| State | Arrow | Because the next click will |
+|---|---|---|
+| **collapsed** | **→ right** *(keep as-is)* | **widen** the card — a sideways move |
+| **expanded** | **↑ up** *(today it is a down arrow — wrong)* | **hide** the contents |
+
+⚠️ **The correction is that the arrow is an instruction, not a status.** Right means *"this is about
+to grow sideways"*; up means *"this is about to close"*. A down arrow on an open card points at
+content that is already visible.
+
+**ANIMATION** — the widening is a **smooth stretch at a comfortable speed**, ⚠️ **not an instant jump
+from half-width to full**. The card grows, then the content appears below it.
+
+**ASK-REPO**
+1. Do expanding cards animate anywhere today, or do they all snap?
+2. Is there an existing transition duration/easing in the design system to reuse rather than pick a
+   new number? *(Standing Q1.)*
+3. On mobile a card is already full width — what does "expand" mean there, and what should the arrow
+   do? **Find out how it behaves today before deciding.**
 
 ⚠️ **A REPEAT REQUEST.** Find out where it was previously asked and why it did not land — a request
 that has been dropped once will be dropped again.
