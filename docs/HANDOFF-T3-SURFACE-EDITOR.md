@@ -78,6 +78,10 @@ repo keeps producing. **A named gap is a result; a silent partial migration is a
 
 - **Worktree, never the canonical checkout:**
   `git worktree add ~/Downloads/claude-code-repo/wt-surfaceeditor -b task/surfaceeditor origin/main`
+- ⚠️ **COPY `.env.db` AND `.env.test` INTO THE WORKTREE EXPLICITLY.** They are gitignored and do
+  **NOT** propagate from the main checkout: `cp ../fhe-website-app/.env.db ../fhe-website-app/.env .`
+  ⚠️ **`npm run build` also needs `.env`** — the prerender step instantiates a Supabase client and
+  dies with `supabaseUrl is required` without it.
 - **Migrations**: connection string is the **first line of `.env.db`**. Dry-run in
   `BEGIN; … ROLLBACK;`, apply, verify, commit. ⚠️ **Never apply a migration that depends on unshipped
   code.**
@@ -89,7 +93,36 @@ repo keeps producing. **A named gap is a result; a silent partial migration is a
 - **COMMIT AS YOU GO. DO NOT PUSH.**
 - **Report to `docs/reports/TASK-SURFACEEDITOR-REPORT.md`** and commit it.
 
-## 4. VALIDATION — what "done" means
+## 4. THE REACH
+
+**What does a person click, from which page, to use this — and is that the only way?**
+
+⚠️ **THIS THREAD IS MOSTLY REACH, WHICH IS WHY IT IS LAST.** One admin entry page listing every
+editable surface by name, reached from the admin nav, with a row in `src/lib/pageRegistry.ts` and a
+route in `src/App.tsx`. ⚠️ **`docs/ORCHESTRATOR.md` §3b lists eight features that work and that
+nothing reaches** — the ops dashboard, the calendar, the whole credit engine. **Do not add a ninth.**
+
+⚠️ **AND IT MUST BE THE ONLY WAY.** The three editors you replace keep their routes (D32) but
+**nothing may still link to them.** Removing something in this codebase is a **grep**, not an edit:
+find every nav row, `pageRegistry` entry and `<Link>` pointing at the old editors, and say in your
+report what you found and what you left.
+
+## 5. THE TELL
+
+**What does the person SEE, and how is it undone?**
+
+The surface states the version it is on. The version list reads **`v8 · from v4 · who · when`** —
+**the parent is visible, not merely stored.** Undo is **Restore**, which mints forward.
+⚠️ **An executed document must visibly state the version it was signed against**, so it is obvious
+it is not following the template — otherwise the first person to edit a lease template will assume
+signed copies changed too.
+
+## 6. TEARDOWN
+
+Kill any dev server, watcher or `psql` session you started. Leave no background process running.
+Report the worktree path and branch so the orchestrator can archive and remove it.
+
+## 7. VALIDATION — what "done" means
 
 **The owner's own test, from the spec:**
 > Change a menu option on the horse intake form **by opening the horse intake form**. Save. The form
