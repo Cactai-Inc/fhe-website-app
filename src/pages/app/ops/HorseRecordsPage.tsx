@@ -55,18 +55,49 @@ function EditableRecord({
    * that this one didn't. `displayValue`, when given, overrides only the
    * read-mode text; the edit-mode input still edits the raw code, same as
    * HorsesPage's own edit form does. */
-  const field = (key: keyof StaffHorseRecord & string, label: string, displayValue?: string) => (
+  /* ⚠️ A CODED FIELD NEEDS ITS LIST (owner, 2026-08-25): "breed and color and other
+     fields that use a select menu dont show the menu outside of the original intake
+     form and they should."
+
+     Every field rendered a bare text box while editing, so breed and colour — which
+     are lookup CODES, resolved to names on the read path just below — had to be
+     typed as raw codes to be saved correctly. `options` renders the same list the
+     intake form offers. The free-text branch is unchanged for everything else. */
+  const field = (
+    key: keyof StaffHorseRecord & string,
+    label: string,
+    displayValue?: string,
+    options?: { value: string; label: string }[],
+  ) => (
     <div key={key}>
       <p className="text-[10.5px] tracking-wide uppercase text-muted font-semibold mb-0.5">{label}</p>
       {editing ? (
-        <input className={input}
-          defaultValue={(r[key] as string | number | null) ?? ''}
-          onChange={(e) => setPatch((p) => ({ ...p, [key]: e.target.value }))} />
+        options ? (
+          <select className={input}
+            defaultValue={(r[key] as string | null) ?? ''}
+            onChange={(e) => setPatch((p) => ({ ...p, [key]: e.target.value }))}>
+            <option value="">—</option>
+            {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        ) : (
+          <input className={input}
+            defaultValue={(r[key] as string | number | null) ?? ''}
+            onChange={(e) => setPatch((p) => ({ ...p, [key]: e.target.value }))} />
+        )
       ) : (
         <p className="text-sm text-green-900">{displayValue ?? String(r[key] ?? '—')}</p>
       )}
     </div>
   );
+
+  /* Kept in step with HorseIntakeForm's own Sex options. ⚠️ Two hardcoded copies of
+     one vocabulary is the smaller of two evils only until `lookup_options` gets the
+     editor it is still missing — see the standing D13 gap in the ledger. */
+  const SEX_OPTIONS = [
+    { value: 'MARE', label: 'Mare' }, { value: 'GELDING', label: 'Gelding' },
+    { value: 'STALLION', label: 'Stallion' }, { value: 'FILLY', label: 'Filly' },
+    { value: 'COLT', label: 'Colt' },
+  ];
 
   async function genAvailability() {
     setBusy(true); setErr(null); setOkMsg(null);
@@ -125,10 +156,12 @@ function EditableRecord({
            (the incumbent) already labels it Nickname. horses.home_barn /
            current_barn are the actual barn columns and are a different thing. */}
         {field('nickname', 'Nickname')}
-        {field('breed', 'Breed', lookupName(breeds, r.breed))}
-        {field('color', 'Color', lookupName(colors, r.color))}
+        {field('breed', 'Breed', lookupName(breeds, r.breed),
+          breeds.filter((b) => b.active || b.code === r.breed).map((b) => ({ value: b.code, label: b.display_name })))}
+        {field('color', 'Color', lookupName(colors, r.color),
+          colors.filter((c) => c.active || c.code === r.color).map((c) => ({ value: c.code, label: c.display_name })))}
         {field('markings', 'Markings')}
-        {field('sex', 'Sex')}
+        {field('sex', 'Sex', undefined, SEX_OPTIONS)}
         {field('height', 'Height')}
         {field('current_location', 'Location')}
         {field('fair_market_value', 'Fair market value')}
