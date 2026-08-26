@@ -655,14 +655,10 @@
 
 /* 5 · THE STICKY DASHBOARD HEADER. The greeting, the KPI ribbon and the view
  *     toggle stay reachable while the zones scroll under them. */
-.dash-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: rgba(250, 248, 244, 0.86);
-  backdrop-filter: blur(14px) saturate(1.4);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
-}
+/* `.dash-sticky` was retired 2026-08-25. It pinned the dashboard's greeting and
+   KPI ribbon to the top of the viewport, so the zones scrolled beneath a band
+   that never left — worst on a phone, where it held about a third of the screen.
+   The header is an ordinary block now and scrolls with everything else. */
 
 @media (prefers-reduced-motion: reduce) {
   .dash-enter {

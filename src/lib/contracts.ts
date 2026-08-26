@@ -427,12 +427,20 @@ export async function advanceWorkflow(documentId: string, to: string): Promise<s
   return data as string;
 }
 
+/** `signerTitle` is the capacity the signer signs IN, and it is REQUIRED when the
+ *  contract treats that party as an ENTITY — a company has no hand of its own, so
+ *  a person signs for it and must say in what role. The server writes it (and the
+ *  typed name) into `{ROLE}.ENTITY_SIGNER_TITLE` / `_NAME` before it evaluates the
+ *  lock blockers, so the signature SUPPLIES those two required fields instead of
+ *  being blocked by them (migration 20260826T0910). Omit it for an individual —
+ *  they sign in their own name and the server ignores it. */
 export async function lockAndSign(
-  documentId: string, partyRole: string, typedName: string,
+  documentId: string, partyRole: string, typedName: string, signerTitle?: string | null,
 ): Promise<string> {
   const { data, error } = await supabase.rpc('lock_and_sign_contract', {
     p_document_id: documentId, p_party_role: partyRole,
     p_typed_name: typedName, p_esign_consent: true,
+    p_signer_title: signerTitle?.trim() || null,
   });
   if (error) throw error;
   return data as string;

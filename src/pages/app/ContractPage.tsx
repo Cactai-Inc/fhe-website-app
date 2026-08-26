@@ -315,6 +315,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // Staff signing on a party's behalf (barn-office wet-signing): one typed-name
   // draft per party role. Keyed by role so multiple parties can be signed here.
   const [behalfNames, setBehalfNames] = useState<Record<string, string>>({});
+  /* The capacity the signer signs IN, per role. Required for an ENTITY party:
+     a company has no hand of its own, so a person signs for it and must say in
+     what role. Written into {ROLE}.ENTITY_SIGNER_TITLE by the signature itself
+     (migration 20260826T0910) — it is not authored ahead of time, because WHO
+     signs and in WHAT capacity is only known at the moment of signing. */
+  const [behalfTitles, setBehalfTitles] = useState<Record<string, string>>({});
   // Document body is visible by default (DocuSign principle: you sign what you
   // see). Parties can collapse it while filling fields, but it no longer hides.
   const [showBody, setShowBody] = useState(true);
@@ -638,8 +644,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      against the signed-in contact, so staff who just completed the company's
      seat are never pushed into a client's own paperwork — for them the numbered
      strip and its "Continue to…" button are still there, unchanged. */
-  const signAndContinue = useCallback(async (role: string, typedName: string) => {
-    await lockAndSign(id!, role, typedName);
+  const signAndContinue = useCallback(async (role: string, typedName: string, signerTitle?: string) => {
+    await lockAndSign(id!, role, typedName, signerTitle);
     deliverExecutedCopy();
     setNote('Signed.');
     try {
@@ -2310,23 +2316,36 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             <div className="border-t border-green-800/10 pt-4">
               <p className="text-sm text-secondary mb-1">Sign on behalf of the company</p>
               <p className="form-hint mb-3">
-                {companyContactName} has no individual signer — as staff, you complete
-                its signature here. This seals the signature and is recorded in the audit trail.
+                {companyContactName} has no hand of its own — you sign for it. Type your
+                own full legal name and the title you sign in; both are printed on the
+                document as &ldquo;By&rdquo; and &ldquo;Title&rdquo;, and the signature is recorded in the audit trail.
               </p>
               <div className="flex flex-col gap-2.5">
                 {companyPendingRoles.map((r) => {
                   const rl = r.charAt(0) + r.slice(1).toLowerCase();
-                  const name = behalfNames[r] ?? companyContactName;
+                  /* YOUR name, not the company's. The person signs; the company is
+                     who they sign FOR, and the capacity below says so. Defaulting
+                     to the company name here was what made "By: ___ / Title: ___"
+                     unfillable. */
+                  const name = behalfNames[r] ?? (profile?.display_name
+                    || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
+                    || '');
+                  const title = behalfTitles[r] ?? '';
+                  const ready = name.trim().length > 0 && title.trim().length > 0;
                   return (
                     <div key={r} className="flex flex-wrap items-center gap-2">
                       <span className="text-sm text-green-900 w-20 shrink-0">{rl}</span>
                       <input value={name}
                         onChange={(e) => setBehalfNames((m) => ({ ...m, [r]: e.target.value }))}
-                        placeholder={`${companyContactName}'s full legal name`}
+                        placeholder="Your full legal name"
                         className="px-3 py-2 rounded-lg border border-green-800/15 text-sm focus-ring w-64" />
-                      <button type="button" className="btn-primary text-sm" disabled={!name.trim()}
-                        onClick={() => void act(() => signAndContinue(r, name.trim()))}>
-                        <PenLine size={14} /> Sign as {name.trim() || companyContactName}
+                      <input value={title}
+                        onChange={(e) => setBehalfTitles((m) => ({ ...m, [r]: e.target.value }))}
+                        placeholder="Your title (e.g. Owner)"
+                        className="px-3 py-2 rounded-lg border border-green-800/15 text-sm focus-ring w-48" />
+                      <button type="button" className="btn-primary text-sm" disabled={!ready}
+                        onClick={() => void act(() => signAndContinue(r, name.trim(), title.trim()))}>
+                        <PenLine size={14} /> Sign for {companyContactName}
                       </button>
                     </div>
                   );
