@@ -2063,7 +2063,18 @@ looking at.**
 | **PAGE** | a record with **more than its fields** — the things attached to it | ⚠️ taking someone somewhere to show them what the card could have shown |
 
 ⚠️ **THIS REPLACES "card = summary and doorway, page = the work"** *(CR-63, my formulation, which he
-accepted and has now corrected)*. **A card may be the work. A modal may not.**
+accepted and has now corrected)*.
+
+⚠️ **AND A SECOND CORRECTION, owner 2026-08-25 — "a modal CAN be the work":**
+> *"a modal can be the work, if we ask a person for payment with a notification we open notifications
+> as modals for quick view and quick action items and payment is exactly that, they click the
+> notification, the modal opens[,] the[y] make their selections for payment and click done and the
+> modal closes and the notification should go away."*
+
+**The test is not whether it is WORK. It is whether the work is QUICK and whether the page behind it
+should stay.** ⚠️ **Notifications open as modals** — quick view, quick action, and the notification
+clears when the action completes. **Payment is exactly that shape.** What a modal must not hold is
+**content with enough information to fill a page**, not *work*.
 
 ⚠️ **AND IT REFINES "every record is a page"** *(CR-30)*: that ruling was aimed at **modals** being
 used as record surfaces, and it stands against modals. **It does not stand against an expanding
@@ -2137,6 +2148,49 @@ that will find it faster:
 **ASK-OWNER** *(after testing, not before)*
 1. **Where did the line land?** Which level stopped being readable.
 2. Does a document expand **in place**, or is a document the point where a page is right?
+
+## CR-76 · G5/G6 · captured + researched — is a "My Payments" surface needed?
+**SAID**
+> *"do we need a "My Payments" card on the account page and a "My Payments" page that lists all their
+> payments? i think its more obvious than assuming that they can see and edit their payment on the
+> order itself from the my orders page or card...we need to see how a person can see and edit their
+> payment selection and information at present and decide how to proceed if changes are worth
+> making."*
+
+### ✅ FOUND — a member CAN already see and change payment, in two places
+| Where | What they can do |
+|---|---|
+| **My Orders** *(the account card and `/app/orders` — same content)* | ⚠️ on an **unpaid** order, a **"Manage payment"** button opens **a MODAL** — payment method, and **transferring who pays** *(a parent taking over a rider's payment)* |
+| **the order itself** *(`/order/:id`)* | the fuller panel — **declare Zelle or cash, with a reference** |
+
+⚠️ **"MANAGE PAYMENT" IS ALREADY A MODAL** — the exact shape he just described as correct for
+payment. **The pattern is not missing; it is unreachable from where he expects it.**
+
+⚠️ **It appears on UNPAID orders only.** So a member has **no way to look back at what they paid** —
+which is a different need from changing a payment, and the one a "My Payments" surface would
+actually serve.
+
+### THE RECOMMENDATION
+**Two different things are being conflated, and only one of them is missing.**
+1. **Managing a payment** — ⚠️ **already built, twice.** A third surface would be a **third
+   implementation of one job**, which is the defect this ledger keeps finding. **Fix the REACH, not
+   the surface count.**
+2. **A payment HISTORY** — ⚠️ **genuinely absent.** *"A list of all their payments"*, including paid
+   ones, is not reachable anywhere.
+
+**So: no "My Payments" editor. A payment history, if he wants one — and the honest question is
+whether that belongs as its own card or as paid orders being visible in My Orders**, since a payment
+is an attribute of an order rather than a thing a person owns separately.
+
+⚠️ **And the notification path he described is the real answer to discoverability:** *"they click the
+notification, the modal opens … and the notification should go away."* **That is the reach problem
+solved** — the person is told there is a payment due and acts on it in place, instead of being
+expected to go looking under Orders.
+
+**ASK-OWNER**
+1. **Do you want a payment HISTORY**, or is *"paid orders stay visible in My Orders"* enough?
+2. Should **"Manage payment"** also appear on a **paid** order — to view what was paid, not change
+   it?
 
 ---
 
