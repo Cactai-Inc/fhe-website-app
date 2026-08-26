@@ -2132,11 +2132,21 @@ that will find it faster:
    > *"yes i agree about the quick close necessity for the expanded view approach and an obvious close
    > button in the top right that collapses everything and saves their work is the right approach."*
 
+   **Refined moments later, and this is the settled version:**
+   > *"right now clicking the header of the card opens and closes and its obvious, easy, and works
+   > well. clicking the highest level cards header will obviously close everything"*
+
    | | |
    |---|---|
-   | **an obvious CLOSE button, top right** | not a hunt for the arrow that opened it |
-   | ⚠️ **it collapses EVERYTHING** | one press exits all levels — not one level at a time |
+   | **the close affordance** | ⚠️ **the CARD HEADER ITSELF** — it already opens and closes, and it *"works well"*. **No separate close button.** |
+   | **closing a nested level** | that card's own header |
+   | **closing everything** | ⚠️ **the top-level card's header** — collapsing a parent takes its children with it, which happens **for free** in a nesting model |
    | ⚠️ **and it SAVES THEIR WORK** | **closing is never a discard** |
+
+   ⚠️ **The top-right close button is NOT needed** — he proposed it and then found the existing
+   affordance already does the job. **Do not build one.**
+   ⚠️ **The one thing that does not come for free is the saving.** Collapsing is inherent to
+   nesting; **committing edits on collapse is not, and is the part to build.**
 
    ⚠️ **"Saves their work" is the load-bearing half.** These are **editable** surfaces nested inside
    each other; a close that abandoned edits would make the whole pattern hostile — and **it is the
