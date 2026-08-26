@@ -103,6 +103,7 @@ import NewContractPage from './pages/app/ops/NewContractPage';
 import DealsPage, { DEALS_STANDALONE_RETIRED } from './pages/app/ops/DealsPage';
 import DealPage from './pages/app/ops/DealPage';
 import AdminFormsPage from './pages/app/ops/admin/AdminFormsPage';
+import AdminMenusPage from './pages/app/ops/admin/AdminMenusPage';
 import AdminPageVisibilityPage from './pages/app/ops/admin/AdminPageVisibilityPage';
 import NavGroupCardsPage from './pages/app/ops/NavGroupCardsPage';
 import PaymentReviewPage from './pages/app/ops/PaymentReviewPage';
@@ -445,6 +446,9 @@ export function AppRoutes() {
               <Route path="ops/admin/branding" element={<ProtectedRoute requireAdmin><AdminBrandingPage /></ProtectedRoute>} />
               <Route path="ops/admin/products" element={<ProtectedRoute requireAdmin><AdminProductsPage /></ProtectedRoute>} />
               <Route path="ops/admin/forms" element={<ProtectedRoute requireAdmin><AdminFormsPage /></ProtectedRoute>} />
+              {/* Every dropdown list in the app and its contents — the 5 shared
+                  vocabularies plus the 119 option lists living inside form schemas. */}
+              <Route path="ops/admin/menus" element={<ProtectedRoute requireAdmin><AdminMenusPage /></ProtectedRoute>} />
               {/* TASK-TEXTEDIT — edit template wording without SQL (D13). */}
               <Route path="ops/admin/templates" element={<ProtectedRoute requireAdmin><AdminTemplatesPage /></ProtectedRoute>} />
               <Route path="ops/admin/templates/:templateKey" element={<ProtectedRoute requireAdmin><AdminTemplateEditorPage /></ProtectedRoute>} />

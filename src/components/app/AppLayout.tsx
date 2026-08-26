@@ -597,6 +597,7 @@ const SETTINGS_GROUP: NavItem[] = [
   { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield, adminOnly: true },
   { to: '/app/ops/admin/products', label: 'Products', icon: Shield, adminOnly: true },
   { to: '/app/ops/admin/forms', label: 'Forms', icon: Shield, adminOnly: true },
+  { to: '/app/ops/admin/menus', label: 'Menus', icon: ListChecks, adminOnly: true },
   /* TASK-PAGEMERGE (2026-08-15): AdminTemplatesPage (TASK-TEXTEDIT) had no
      permanent nav row — it only ever had one in the Review section, and
      ab45b18 removed Review's nav group same-day, leaving the page reachable

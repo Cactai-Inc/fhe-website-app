@@ -1137,6 +1137,69 @@ export async function unskipRequiredDocument(
 }
 
 // ─── Intake form required-field control ──────────────────────────────────────
+
+/* ─── MENUS: every dropdown list in the app, in one place ─────────────────────
+ * Owner, 2026-08-25: *"i need a way to see and edit all of the menu contents
+ * throughout the app."* There are two kinds and they are stored differently:
+ *   VOCABULARY — horse_breeds / horse_colors / lookup_options. 5 menus, shared
+ *                across the horse record, horse intake and the contracts.
+ *   FORM       — an `options` array on one field of one form_definitions schema.
+ *                119 of them, across all 28 intake and engagement forms.
+ * `menu_inventory()` returns both in one list so the editor is one page. */
+export interface MenuSummary {
+  source: 'vocabulary' | 'form';
+  /** 'horse_breeds', or 'FORM_KEY::field_key' for a form option list. */
+  menu_key: string;
+  label: string;
+  used_by: string;
+  total: number;
+  active: number;
+  form_key?: string;
+  field_key?: string;
+}
+export interface MenuValue { code: string; display_name: string; active: boolean }
+
+export async function menuInventory(): Promise<MenuSummary[]> {
+  const { data, error } = await supabase.rpc('menu_inventory');
+  if (error) throw error;
+  return (data ?? []) as MenuSummary[];
+}
+
+/** A vocabulary's values, INCLUDING switched-off ones — an editor that cannot see
+ *  what it turned off cannot turn it back on. */
+export async function menuVocabularyValues(key: string): Promise<MenuValue[]> {
+  const { data, error } = await supabase.rpc('menu_vocabulary_values', { p_key: key });
+  if (error) throw error;
+  return (data ?? []) as MenuValue[];
+}
+
+/** Rename a value, or switch it on/off. ⚠️ The CODE never changes: horses.breed
+ *  and horses.color are foreign keys to it, and saved records already hold it, so
+ *  renaming moves the WORDS and leaves every record pointing where it points.
+ *  Switching off is how a value is retired — it leaves every dropdown and stays
+ *  valid on the records that already carry it. */
+export async function setMenuValue(
+  key: string, code: string, patch: { display_name?: string; active?: boolean },
+): Promise<void> {
+  const { error } = await supabase.rpc('set_menu_value', {
+    p_key: key, p_code: code,
+    p_display_name: patch.display_name ?? null,
+    p_active: patch.active ?? null,
+  });
+  if (error) throw error;
+}
+
+/** Replace one form field's option list. Keys, labels, types and required flags
+ *  are left exactly as found, so no stored answer is orphaned. */
+export async function setFormFieldOptions(
+  formKey: string, fieldKey: string, options: string[],
+): Promise<void> {
+  const { error } = await supabase.rpc('set_form_field_options', {
+    p_form_key: formKey, p_field_key: fieldKey, p_options: options,
+  });
+  if (error) throw error;
+}
+
 export interface AdminFormDefinition {
   form_key: string;
   title: string;
@@ -1144,6 +1207,9 @@ export interface AdminFormDefinition {
   purpose: string | null;
   schema: { sections: { heading: string; fields: {
     key: string; label: string; type: string; required?: boolean;
+    /** The field's own menu, when it offers choices — 119 fields across the 28
+     *  forms carry one. Edited by the Menus page via set_form_field_options. */
+    options?: string[];
   }[] }[] };
 }
 
