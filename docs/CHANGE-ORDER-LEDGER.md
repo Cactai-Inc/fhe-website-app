@@ -2294,6 +2294,75 @@ first rung are unverified, but only one has a declaration behind it.
 
 ---
 
+## CR-76b · G5 · 🔒 LOCKED — MY PAYMENTS IS A HISTORY LEDGER, NOT AN OUTSTANDING LIST
+
+**SAID** *(owner, 2026-08-25, closing the last open question on CR-76)*:
+> *"My Payments is a history ledger showing every time a payment page was engaged with and what it
+> saved and what its assocaited with, when it was done, all the changes made if any exist, and the
+> fuller picture of the status and timestamps. each entry is linked to some type of transaction, as
+> of now that can only be an order, so we would create a payment number along side an order number
+> and the entries would show the meta data for things like when the order was submitted, when it was
+> approved, when payment was submitted, when it was marked paid, what payment method was used, and if
+> there were any issues. from this entry the link to the order should be clickable to open the orders
+> history page and scroll to that order number and expand it."*
+
+**🔒 LOCKED. It answers the open question: the page carries EVERYTHING, not only what is outstanding.**
+⚠️ **And it is not a payments list — it is an AUDIT TRAIL with a payment as its subject.** Every
+engagement, every change, every timestamp. **A record of what happened, not a to-do.**
+
+### FOUND — the ledger, the vocabulary and the order number ALL EXIST. Almost nothing writes to them.
+This is the repo's standing pattern again *(§6 of the restart doc)*.
+
+| | |
+|---|---|
+| the ledger table | ✅ **`status_events`** — `entity_type` · `entity_id` · `status` · `detail` · `actor_user_id` · `created_at` |
+| `entity_type = 'order'` | ✅ **already a live type**, 48 events |
+| the order number | ✅ **`purchases.display_code`** — `PUR-000318` |
+| **a payment number** | ❌ **does not exist. This is the one genuinely new identifier he is asking for.** |
+
+⚠️ **THE VOCABULARY ALREADY NAMES ALMOST EVERY LINE HE DESCRIBED.** `status_events_vocab` defines
+**20 terms** for `order`, including `submitted` · `payment_requested` · `payment_pending_zelle` ·
+`payment_pending_cash` · `payment_reported` · `partial_payment` · `paid` · `claim_confirmed` ·
+`claim_declined` · `client_flagged` · `item_voided` · `items_moved` · `split` · `grant_reversed`.
+**"What payment method was used" and "if there were any issues" are already named terms**, not new ones.
+
+### ⚠️ TWO MEASURED PROBLEMS, AND THE SECOND ONE IS A DATA FAULT
+1. ⚠️ **COVERAGE IS ALMOST NIL.** Eight live orders: **seven carry exactly ONE event, one carries two.**
+   Only `submitted` · `paid` · `pending` · `payment_reported` · `payment_pending_*` · `claim_confirmed`
+   · `enquiry` have ever been written. **A ledger built on this today would render one line per order.**
+   **The build is the WRITES, not the page.**
+2. ⚠️ **39 ORDER EVENTS ON 16 ENTITY_IDS MATCH NO PURCHASE THAT EXISTS** — two-thirds of the order
+   history points at nothing. `status_events` has **no foreign key** on `entity_id` *(it cannot have
+   one — it is polymorphic)*. **Establish what those 16 were before building a page that reads them.**
+
+### ⚠️ CROSS-FINDING — THE LEDGER SPANS TWO ENTITIES, AND CR-27 IS WHY
+He asks one entry to carry **"when the order was submitted"** AND **"when it was approved."**
+⚠️ **Under CR-27's ruling, approving IS creating the order — so those two facts live on DIFFERENT
+ROWS:** the *submission* is a `requests` row; the *order* is the `purchases` row that approval
+creates. **One payment entry must therefore stitch a request to a purchase.** There is no
+`payment_requested`→`request` edge in the vocabulary today. **Settle this before the schema.**
+*(It also explains the 16 orphans as a likely candidate — check whether they are request ids.)*
+
+### THE REACH
+`/app/payments` and a **My Payments** card, presence-gated like the rest. **Each entry links to its
+order and the orders history page opens on that order number, expanded** — ⚠️ **which is CR-75's
+expanding-row pattern doing exactly the job it was ruled for: deep-link, scroll, expand in place.**
+
+### THE TELL
+An order with a changed payment method shows **both** choices and when each was made — **not the
+current value with the earlier one lost.** ⚠️ **That is the acceptance test: a CHANGE is visible as a
+change.** *(CR-76 already ruled a pending payment is client-editable; this is where that edit becomes
+evidence.)*
+
+### ⚠️ STILL OPEN — ONE QUESTION, AND IT IS NOT A DETAIL
+**Is the payment number per ORDER, or per PAYMENT ATTEMPT?** *"a payment number along side an order
+number"* reads one-to-one — but the same order can be declared Zelle, changed to cash, declined and
+re-declared. **One number for the order's whole payment life, or a new number each time money is
+declared?** ⚠️ **This decides whether the ledger has one row per order or many, and it cannot be
+changed later without renumbering.**
+
+---
+
 ## CR-77 · G7 · captured + researched — ⚠️ THE SIGNER'S NAME AND TITLE ARE AUTHORED, NOT SIGNED
 
 **SAID** *(owner, 2026-08-25, on being told the company signer tokens print empty)*:
@@ -2412,6 +2481,8 @@ answer."*
 | **CR-43 → ruling 11** | community is gated by ACCOUNT today; leads with accounts would see it immediately |
 | **CR-38…CR-42 → CR-16** | changing an offering is one case of line-item editing; build the model, not the button |
 | **CR-41 → CR-29** | a public rate card and three cadence prices are the same pricing rebuild |
+| **CR-76b ⟶ CR-27** | ⚠️ one payment entry must stitch a `requests` row to a `purchases` row, because approval is what creates the order |
+| **CR-76b ⟶ CR-75** | the orders page opening on a number and expanding it IS the expanding-row pattern; do not build a second mechanism |
 | **CR-77 → CR-78** | the lock blocker is what makes the "it is your turn" notification meaningful — one gate, one signal |
 | **CR-78 ↔ SPEC-first-contact-flow** | ⚠️ the one-email ruling covers the send at the START of her flow; this is the send at the END |
 | **G9 ← everything** | each group's fix should carry its globalization, or the refactor inherits 34 pop-ups instead of 33 |
