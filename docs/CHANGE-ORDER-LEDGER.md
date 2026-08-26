@@ -2073,6 +2073,71 @@ card** — the card does not cover the page, does not trap focus, and leaves the
 expanding editable card** — the fields are right there. **The page remains for what the card cannot
 hold**: documents, schedule, activity, photos. **They are complements, not rivals.**
 
+## CR-75 · G6/G9 · captured — ⚠️ THE CLIENT RECORD BECOMES AN EXPANDING ROW, AND THE PATTERN NESTS
+**SAID**
+> *"we can use the same thing for the client records. click the card and it opens to expand to fill
+> the page and show the full content. the only slight issue with this is on desktop its a grid of
+> cards not rows and thats superior because it shows more information in a denser but very readable
+> way but its not alphabetized and even if it was how it reads will be weird so im ok with switching
+> to condensed rows with client names and clicking it expands the row into a space that shows all the
+> content we discussed having on a client records page. this is definitely superior to the option of
+> taking me to a deeper page. the breaking point will be where we draw a line in the sand. does the
+> horse record still use the same click to expand approach inside of the expanded space for the client
+> record, i vote yes. but, does a document do the same? this one needs to be tested, i vote yes, use
+> this principle everywhere it works and see how it plays out."*
+
+### ⚠️ THIS REVISES TODAY'S SURFACE MODEL — read CR-30 and CR-32 alongside it
+Earlier today: *"a lead is a submission plus a promote button; a client gets a PAGE."* **The client
+half of that is now an expanding row on the records list instead.** ⚠️ **The lead half is
+untouched** — a lead is still a dashboard notification opening a modal *(CR-44)*.
+
+### The list itself changes shape
+| | |
+|---|---|
+| **today, desktop** | **a grid of cards** — ⚠️ **he rates the grid HIGHER for density and readability** |
+| **why it loses anyway** | **it is not alphabetised**, and *"even if it was how it reads will be weird"* — ⚠️ **a grid has no reading order a person can rely on.** Density loses to findability |
+| **wanted** | **condensed rows, client names**, clicking expands the row into a space carrying everything a client record page would have |
+
+### ⚠️ AND THE PATTERN NESTS — deliberately, and to be TESTED
+| Level | Expands into | His call |
+|---|---|---|
+| the client row | the full client record | **yes** |
+| **the horse inside it** | the horse's fields *(the card he rates best in the app)* | **"i vote yes"** |
+| **a document inside that** | ? | ⚠️ **"this one needs to be tested, i vote yes"** |
+
+> *"use this principle everywhere it works and see how it plays out."*
+
+⚠️ **HE NAMED THE RISK HIMSELF: "the breaking point will be where we draw a line in the sand."**
+**This is an instruction to find that line by building, not to decide it in advance.** Three things
+that will find it faster:
+1. **A DOCUMENT IS THE LIKELIEST BREAK.** A horse's fields fit in a row's worth of space; **a
+   contract is pages of prose.** Expanding one inside an expanded horse inside an expanded client is
+   three levels of nesting around content that has its own scroll. **Test that case first — it is
+   the one that decides the rule.**
+2. **MOBILE ALREADY HAS NO ROOM TO NEST.** Everything is full width at one column *(confirmed
+   below 1024px)*, so each level of expansion is the whole screen. ⚠️ **The line may be in a
+   different place on a phone than on a desktop**, and the phone is his working device.
+3. **HOW DOES SOMEONE GET BACK OUT?** Three levels deep with no page change means no browser back
+   button. **Collapsing has to be as easy as expanding, at every level.**
+
+### What is already settled and should be reused
+- **CR-57/57a/57b — the expand behaviour itself:** full width, smooth stretch, **right arrow when
+  collapsed on desktop · down arrow on mobile · up arrow when expanded**. ⚠️ **That rule was written
+  for one level. It needs to hold at three.**
+- **CR-74 — why an expanding card beats a page:** *do not move someone to see or edit something they
+  are already looking at.* **Nesting is that principle applied recursively**, which is exactly why it
+  is worth testing rather than assuming.
+
+**ASK-REPO**
+1. Is the Clients list a grid today, and what would rows cost?
+2. Does anything already nest an expansion inside an expansion anywhere in the app? *(If so, that is
+   the prototype.)*
+3. What is on the client record page that must fit inside an expanded row?
+
+**ASK-OWNER** *(after testing, not before)*
+1. **Where did the line land?** Which level stopped being readable.
+2. Does a document expand **in place**, or is a document the point where a page is right?
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
