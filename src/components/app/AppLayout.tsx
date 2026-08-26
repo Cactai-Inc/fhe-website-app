@@ -15,8 +15,7 @@ import {
   BookOpen,
   ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, ListChecks,
   PanelLeftClose, PanelLeftOpen, Activity, Compass, Grid3x3, Bookmark,
-  Receipt, Eye, Library, NotebookPen,
-} from 'lucide-react';
+  Receipt, Eye, Library, NotebookPen, CreditCard,} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useStaffLanding } from '../../lib/dashboard/landing';
 import { usePrefersReducedMotion } from '../../lib/hooks';
@@ -366,7 +365,7 @@ function useInboundOpenCount(enabled: boolean): number {
  *  are discoverability links, not a gate. */
 function useNavPresence(enabled: boolean): NavPresence {
   const [presence, setPresence] = useState<NavPresence>({
-    orders: false, documents: false, stable: false, posts: false, saved: false,
+    orders: false, payments: false, documents: false, stable: false, posts: false, saved: false,
   });
   useEffect(() => {
     if (!enabled) return;
@@ -429,6 +428,7 @@ const QUICK: { label: string; icon: typeof GraduationCap; to: string; end?: bool
  *  destination, for visual continuity between the nav and the Account page. */
 const PRESENCE_LINKS: { key: keyof NavPresence; label: string; icon: typeof ShoppingBag; to: string; section?: string }[] = [
   { key: 'orders', label: 'My Orders', icon: ReceiptText, to: '/app/orders' },
+  { key: 'payments', label: 'My Payments', icon: CreditCard, to: '/app/payments' },
   { key: 'documents', label: 'My Documents', icon: FileText, to: '/app/documents' },
   /* D2 resolved: /app/stable shipped with ACCOUNTSURFACE, so this points at the
      real route. `section` MUST be dropped alongside it — isActive falls back to
@@ -1090,6 +1090,7 @@ function ClientNavItems({ bellCount, dmCount, presence, lessonsOn, onNavigate }:
           collision the rule exists to prevent. */}
       {lessonsOn && <RailLink to="/app/lessons" label="My Lessons" icon={GraduationCap} />}
       {presence.orders && <RailLink to="/app/orders" label="My Orders" icon={ReceiptText} />}
+      {presence.payments && <RailLink to="/app/payments" label="My Payments" icon={CreditCard} />}
       <RailLink to="/app/catalog" label="Catalog" icon={ShoppingBag} />
       {presence.documents && <RailLink to="/app/documents" label="My Documents" icon={FileText} />}
       <RailLink to="/app/messages" label="Messages" icon={MessageSquare} badge={dmCount} />

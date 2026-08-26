@@ -52,6 +52,7 @@ import MyPosts from './pages/app/MyPosts';
 import Schedule from './pages/app/Schedule';
 import CalendarPage from './pages/app/CalendarPage';
 import Orders from './pages/app/Orders';
+import MyPayments from './pages/app/MyPayments';
 import Gifts from './pages/app/Gifts';
 import Stable from './pages/app/Stable';
 import CatalogPage from './pages/app/CatalogPage';
@@ -269,6 +270,7 @@ export function AppRoutes() {
               {/* /app/book retired — booking lives on the full calendar (Phase 6) */}
               <Route path="book" element={<Navigate to="/app/calendar" replace />} />
               <Route path="orders" element={<Orders />} />
+              <Route path="payments" element={<MyPayments />} />
               <Route path="gifts" element={<Gifts />} />
               <Route path="catalog" element={<CatalogPage />} />
               <Route path="checkout" element={<Checkout />} />

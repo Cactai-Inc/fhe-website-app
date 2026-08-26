@@ -285,7 +285,7 @@ export default function Onboarding() {
   // needs the same live presence + module gate as AppLayout threads in.
   const lessonsOn = hasModule('mod.lessons');
   const [presence, setPresence] = useState<NavPresence>({
-    orders: false, documents: false, stable: false, posts: false, saved: false,
+    orders: false, payments: false, documents: false, stable: false, posts: false, saved: false,
   });
   const [state, setState] = useState<OnboardingState | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
