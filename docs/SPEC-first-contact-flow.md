@@ -115,6 +115,48 @@ to this agreement"* — rather than attaching it silently or asking.
 
 ---
 
+## 3c. ⚠️ IT IS A CHECKLIST THAT RESUMES — not a one-pass wizard
+
+> *"yes she needs to pick up where she left off. the system should have a checklist it builds for the
+> steps the person needs to complete in the order they get presented and if things are optional its
+> not strict about completion of one gating the others but either way it needs to resume and the
+> requirement selection is what dictates if they can skip or close out of what they are shown on login
+> or refresh of the page."*
+
+**The flow is a CHECKLIST the system builds for that person** — the steps they owe, **in the order
+they are presented**.
+
+| | |
+|---|---|
+| ⚠️ **it RESUMES** | she picks up where she left off. **Leaving is not abandoning** |
+| ⚠️ **it is re-evaluated on LOGIN and on REFRESH** | not computed once and carried. Finish a step and what follows reflects it |
+| **optional items do not gate** | *"its not strict about completion of one gating the others"* — an optional step left undone **does not block the next** |
+| ⚠️ **THE REQUIREMENT LEVEL DECIDES WHETHER THEY CAN SKIP** | *"the requirement selection is what dictates if they can skip or close out of what they are shown"* |
+
+### ✅ THE SKIP RULE ALREADY EXISTS — do not invent a second one
+**The disposition on an assignment already carries exactly this**, and it was built for it:
+| Disposition | Behaviour |
+|---|---|
+| **`AT_LOGIN`** | presented on sign-in |
+| **`WITH_CONTRACT`** | presented with the contract — **this is what places documents before or after it** |
+| **`WHEN_READY`** | ⚠️ **surfaced every sign-in, DISMISSABLE, never blocking** |
+
+⚠️ **So "can she skip this?" is already answered per item by its disposition.** **The checklist reads
+it; it does not decide it.** *(And it is owner-editable, which is the point — the same setting that
+orders the steps also decides which of them can be closed out of.)*
+
+### What this means for the build
+1. **The checklist is DERIVED, not stored as a wizard position.** *"Where she left off"* is
+   **whatever is still outstanding**, recomputed — so it is correct after a refresh, after staff
+   change something, and after she completes anything.
+2. ⚠️ **Every entry point must produce the same checklist** — the emailed link, a fresh login, a
+   refresh mid-flow. **One builder, not one per entry.**
+3. **A blocking item stops the ones after it. A dismissable one does not.**
+4. ⚠️ **A dismissed item is not a completed one** — it returns next sign-in *(that is what
+   `WHEN_READY` means)*. **Dismissal must not read as done anywhere.**
+
+---
+
 ## 4. WHAT THIS CHANGES ABOUT WHAT WAS ALREADY BUILT
 
 | | |
@@ -123,6 +165,7 @@ to this agreement"* — rather than attaching it silently or asking.
 | **the intake gate** | ✅ built, and correctly placed **first** — ⚠️ but see the fail-open note below |
 | **contract → documents → exit** | ⚠️ **the chaining is NOT built.** Today signing ends somewhere else |
 | **the sequence itself** | ⚠️ **must be COMPUTED from what is outstanding (§3b), not hard-coded.** §3 is one instance of it |
+| **resuming** | ⚠️ **NOT built.** A checklist that rebuilds on login and refresh (§3c), where the disposition decides what may be skipped |
 | **attaching a horse created mid-flow** | ⚠️ **not built — and it should be automatic, not a prompt** |
 | **the final email** | ⚠️ must fire on **finishing the whole sequence**, carrying **both** |
 
