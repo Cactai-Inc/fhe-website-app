@@ -1158,9 +1158,9 @@ export async function listHorseBreeds(): Promise<LookupCode[]> {
     .from('horse_breeds')
     .select('*')
     .eq('active', true)
-    .order('sort_order');
+    .order('display_name');
   if (error) throw error;
-  return (data ?? []) as LookupCode[];
+  return pinNone((data ?? []) as LookupCode[]);
 }
 
 export async function listHorseColors(): Promise<LookupCode[]> {
@@ -1168,9 +1168,9 @@ export async function listHorseColors(): Promise<LookupCode[]> {
     .from('horse_colors')
     .select('*')
     .eq('active', true)
-    .order('sort_order');
+    .order('display_name');
   if (error) throw error;
-  return (data ?? []) as LookupCode[];
+  return pinNone((data ?? []) as LookupCode[]);
 }
 
 /** Generic vocabulary lookup for select-or-other fields that live in lookup_options
@@ -1182,9 +1182,51 @@ export async function listLookupOptions(lookupKey: string): Promise<LookupCode[]
     .select('code, display_name, active, sort_order')
     .eq('lookup_key', lookupKey)
     .eq('active', true)
-    .order('sort_order');
+    .order('display_name');
   if (error) throw error;
-  return (data ?? []) as LookupCode[];
+  return pinNone((data ?? []) as LookupCode[]);
+}
+
+/** ALPHABETICAL, WITH ONE EXCEPTION (owner, 2026-08-25: *"everywhere we have
+ *  things shown in a list it should be alphabetical"*).
+ *
+ *  Menu vocabularies now order by display name rather than by the curated
+ *  `sort_order`, which had Warmblood first and Haflinger at 900 — an ordering only
+ *  its author could predict. `sort_order` stays on the row, unused for display, so
+ *  nothing is lost and the Menus editor can still show it.
+ *
+ *  The exception is a NONE code. "No passport" and "Not registered" are not values
+ *  in the vocabulary, they are the ABSENCE of one, and filing them under N puts
+ *  them in the middle of the list where they read as a choice among equals. They
+ *  are pinned first, where an escape belongs. */
+function pinNone(rows: LookupCode[]): LookupCode[] {
+  const none = rows.filter((r) => r.code === 'NONE');
+  return none.length ? [...none, ...rows.filter((r) => r.code !== 'NONE')] : rows;
+}
+
+/**
+ * "Other — enter manually" IS how a menu grows (owner, 2026-08-25).
+ *
+ * ⚠️ THE REASON FREE TEXT NEVER PRINTED IN A CONTRACT IS A FOREIGN KEY, not the
+ * document engine. `horses.breed` and `horses.color` reference their lookup
+ * tables' `code`, so a typed-in value has no matching row, the FK rejects the whole
+ * patch, and nothing is saved for the document to import. (`horse_field_token_value`
+ * already falls back to the raw stored value, so it would print free text happily
+ * if a column could ever hold it — which is exactly why farrier and vet, plain text
+ * columns with no key, have always worked.)
+ *
+ * So the typed value is made a REAL MENU ENTRY at the moment it is typed, and this
+ * returns the CODE to store. Existing values match case-insensitively, so typing
+ * "haflinger" finds Haflinger instead of minting a twin.
+ */
+export async function addLookupValue(
+  lookupKey: string, rawValue: string,
+): Promise<{ code: string; display_name: string; created: boolean }> {
+  const { data, error } = await supabase.rpc('add_lookup_value', {
+    p_lookup_key: lookupKey, p_raw_value: rawValue,
+  });
+  if (error) throw error;
+  return data as { code: string; display_name: string; created: boolean };
 }
 
 /** Capture an "Other" free-text entry for periodic review (best-effort; never blocks
