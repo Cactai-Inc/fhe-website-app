@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Landmark, CreditCard, Copy, Check, Smartphone, Banknote } from 'lucide-react';
+import { Copy, Check, Smartphone, Banknote } from 'lucide-react';
 import QRCode from 'qrcode';
 import { markAwaitingPayment, configValue, reportMyPayment } from '../../lib/api';
-import { startStripeCheckout } from '../../lib/payments';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { BRAND } from '../../lib/brand';
-import type { Order, OrderItem, Payment, PaymentMethod } from '../../lib/types';
+import type { Order, OrderItem, Payment } from '../../lib/types';
 
 const usd = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
@@ -40,10 +39,13 @@ function CopyRow({ label, display, copyValue }: { label: string; display: string
   );
 }
 
-// Card payments stay HIDDEN until Stripe is configured (owner directive).
-// Flip to true after the Stripe account + webhook are live — see SETUP.md.
-const STRIPE_ENABLED = false;
-const STRIPE_FEE_RATE = 0.03;
+/* CARD AND STRIPE ARE GONE FROM THIS SCREEN (owner, 2026-08-26): "make sure
+   stripe or credit card is not a payment option on any surface or mentioned on
+   any histry surface."
+   They had been behind a STRIPE_ENABLED = false flag since the account was never
+   set up — hidden, but still one boolean away from appearing, and still shaping
+   this file's state, copy and fee arithmetic. There are TWO methods (CR-76):
+   Zelle and cash. */
 
 /**
  * ONBOARD §6 — "I've sent it" and "I'll pay cash".
@@ -166,15 +168,13 @@ export default function OrderPayment({
   payment: Payment | null;
   onChange: () => void;
 }) {
-  // ⚠️ NOT `order.payment_method` — that column now carries 'cash' the moment the
-  //  buyer declares it (report_my_payment writes the method they said they'd use),
-  //  and every panel below sat behind `method === 'zelle'`. So declaring cash
-  //  emptied this entire card: no confirmation, no way back, nothing but a heading.
-  //  This state is the CARD's mode, not the order's settled method — the order's
-  //  method is read directly where it matters.
-  const [method, setMethod] = useState<PaymentMethod>(
-    order.payment_method === 'stripe' ? 'stripe' : 'zelle',
-  );
+  /* ⚠️ NOT `order.payment_method` — that column carries 'cash' the moment the
+     buyer declares it (report_my_payment writes the method they said they'd use),
+     and every panel below sat behind `method === 'zelle'`. So declaring cash
+     emptied this entire card: no confirmation, no way back, nothing but a heading.
+     With card gone there is one mode left and it is a constant, kept named rather
+     than inlined so the panels below still read as "the Zelle panels". */
+  const method = 'zelle' as const;
   const [working, setWorking] = useState(false);
   // Zelle's only sanctioned "one tap": the bank-issued receive QR. Its embedded
   // link preselects US as recipient — scannable on desktop, tappable on mobile.
@@ -195,24 +195,12 @@ export default function OrderPayment({
   // The unique-cents amount is assigned server-side when the order moves to
   // awaiting_payment. Until then we show the plain total for orientation.
   const zelleAmount = order.unique_amount ?? order.amount;
-  const cardTotal = order.amount * (1 + STRIPE_FEE_RATE);
 
   async function chooseZelle() {
     setWorking(true);
     try {
       await markAwaitingPayment(order.id, 'zelle');
       onChange();
-    } finally {
-      setWorking(false);
-    }
-  }
-
-  async function chooseStripe() {
-    setWorking(true);
-    try {
-      await markAwaitingPayment(order.id, 'stripe');
-      // Hands off to the Stripe Checkout session created by the serverless function.
-      await startStripeCheckout(order.id);
     } finally {
       setWorking(false);
     }
@@ -240,9 +228,7 @@ export default function OrderPayment({
     <div className="bg-white border border-green-800/10 p-8 mb-8">
       <h2 className="font-serif font-medium text-green-800 text-xl mb-2">Payment</h2>
       <p className="body-text text-sm mb-6">
-        {STRIPE_ENABLED
-          ? 'Zelle is instant and our preferred method. A card option is available with a small disclosed fee.'
-          : 'We accept Zelle — instant, no fees, straight from your bank app.'}
+        We accept Zelle &mdash; instant, no fees, straight from your bank app &mdash; or cash at the barn.
       </p>
 
       {payment?.status === 'review' && (
@@ -251,39 +237,7 @@ export default function OrderPayment({
         </div>
       )}
 
-      {/* Method toggle (card appears once Stripe is configured) */}
-      {STRIPE_ENABLED && (
-      <div role="radiogroup" aria-label="Payment method" className="grid grid-cols-2 gap-3 mb-6">
-        {([
-          { value: 'zelle' as const, label: 'Zelle', icon: Landmark, sub: 'Instant · preferred' },
-          { value: 'stripe' as const, label: 'Card', icon: CreditCard, sub: `+${Math.round(STRIPE_FEE_RATE * 100)}% fee` },
-        ]).map((opt) => {
-          const selected = method === opt.value;
-          const Icon = opt.icon;
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              onClick={() => setMethod(opt.value)}
-              /* Locked once the keys are assigned, not once the status says
-                 awaiting_payment — see showingZelleInstructions below. */
-              disabled={!!order.payment_reference}
-              className={`p-4 border text-left transition-all duration-200 focus-ring disabled:opacity-60 ${
-                selected ? 'border-green-800 bg-green-800/5' : 'border-green-800/15 hover:border-green-800/40'
-              }`}
-            >
-              <Icon size={18} className="text-green-800 mb-2" aria-hidden="true" />
-              <p className="text-sm font-sans font-medium text-green-900">{opt.label}</p>
-              <p className="text-xs font-sans text-muted">{opt.sub}</p>
-            </button>
-          );
-        })}
-      </div>
-      )}
-
-      {method !== 'stripe' && (
+      {method === 'zelle' && (
         <div>
           {showingZelleInstructions ? (
             <div className="bg-cream/60 border border-green-800/10 p-5">
@@ -339,16 +293,6 @@ export default function OrderPayment({
         </div>
       )}
 
-      {STRIPE_ENABLED && method === 'stripe' && !order.payment_reference && (
-        <div>
-          <p className="text-sm font-sans text-muted mb-4">
-            Card total with fee: <span className="text-green-900 font-medium">{usd(cardTotal)}</span>
-          </p>
-          <button type="button" onClick={chooseStripe} disabled={working} className="btn-primary w-full justify-center">
-            {working ? 'Redirecting…' : 'Pay by Card'}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

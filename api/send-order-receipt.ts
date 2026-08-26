@@ -1,7 +1,7 @@
 /* POST /api/send-order-receipt
  * Staff-only. CASHCONFIRM C2 — after confirm_payment_claim settles a
  * client-reported claim (zelle or cash) through mark_purchase_paid, the browser
- * calls this endpoint so the SAME receipt path Stripe/Zelle auto-confirmation
+ * calls this endpoint so the SAME receipt path Zelle auto-confirmation
  * uses (api/_lib/receipt.ts, receipt_sends) fires here too. Best-effort by the
  * same contract sendOrderReceipt already carries: it never throws, and every
  * attempt (success or failure) writes one receipt_sends row.

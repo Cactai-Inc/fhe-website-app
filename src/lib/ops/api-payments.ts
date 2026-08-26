@@ -5,7 +5,7 @@
  * candidate-purchase lookup over `purchases` by unique_amount / payment_reference —
  * the same two matching keys the server reconciler uses — so staff get manual
  * matching context. Automatic payment CONFIRMATION stays server-side (reconcile
- * / Stripe webhook); nothing here writes that path.
+ * webhook); nothing here writes that path.
  *
  * CASHCONFIRM — client-reported claims (report_my_payment, either method) are a
  * SEPARATE queue read directly off `purchases` (staff already have full RLS
@@ -191,7 +191,7 @@ export async function listPaymentClaims(status: ClaimStatus): Promise<PaymentCla
 /**
  * Confirm a pending claim: settles through confirm_payment_claim (which itself
  * calls mark_purchase_paid — the same spine a matched Zelle payment uses), then
- * best-effort triggers the same receipt email Stripe/Zelle confirmation sends.
+ * best-effort triggers the same receipt email Zelle confirmation sends.
  * The receipt call never blocks or fails the confirmation — it is fire-and-log,
  * mirroring the "a receipt must never fail a payment confirmation" contract in
  * api/_lib/receipt.ts.
@@ -313,7 +313,9 @@ export async function listPaidOrders(limit = 25): Promise<OrderRow[]> {
 }
 
 export interface MarkOrderPaidResult {
-  status: 'paid' | 'already_paid';
+  /** `part_paid` = the money was recorded but the order is not settled yet — a
+   *  split, with a balance still outstanding. No receipt is sent for a part. */
+  status: 'paid' | 'part_paid' | 'already_paid';
   receipt: { sent: boolean; reason?: string };
   /** True when this settled a pending CASHCONFIRM claim (via
    *  confirm_payment_claim) rather than a fresh mark_purchase_paid call —
@@ -325,10 +327,14 @@ export interface MarkOrderPaidResult {
  *  half is `/api/orders-mark-paid` (reuses mark_purchase_paid — or, when a
  *  claim is pending, confirm_payment_claim — plus the receipt trail; never a
  *  second write path). */
+/** `amount` settles only that much and leaves the order open — the split between
+ *  cash and Zelle. Omit it to settle the remainder, which is the old behaviour and
+ *  what every existing caller does. */
 export async function markOrderPaid(
   purchaseId: string,
   method: 'zelle' | 'cash',
   reference?: string,
+  amount?: number,
 ): Promise<MarkOrderPaidResult> {
   const { data: sess } = await supabase.auth.getSession();
   const bearer = sess?.session?.access_token;
@@ -336,7 +342,7 @@ export async function markOrderPaid(
   const res = await fetch('/api/orders-mark-paid', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
-    body: JSON.stringify({ purchaseId, method, reference }),
+    body: JSON.stringify({ purchaseId, method, reference, amount }),
   });
   const json = (await res.json().catch(() => ({}))) as Partial<MarkOrderPaidResult> & { error?: string };
   if (!res.ok) throw new Error(json.error || 'Could not mark this order paid.');

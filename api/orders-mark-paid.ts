@@ -29,7 +29,13 @@
  * directly, as before. Still one spine either way — `confirm_payment_claim`
  * is not a competing path, it's the claim-aware wrapper around the same one.
  *
- * Body: { purchaseId: string, method: 'zelle' | 'cash', reference?: string }
+ * Body: { purchaseId, method: 'zelle' | 'cash', reference?, amount? }
+ *
+ * `amount` makes a PART payment (2026-08-26). Omitted, the order settles in full
+ * exactly as before — mark_purchase_paid reads NULL as "settle whatever is left".
+ * Given, only that much is settled: the order stays open with a running
+ * amount_paid until the settled entries cover the total, and each part becomes
+ * its own numbered payment record saying which money came which way.
  * -> 200 { status: 'paid' | 'already_paid', receipt: { sent, reason? }, claimConfirmed: boolean }
  * -> 400 bad body; 401 no/bad bearer; 403 not staff; 404 unknown purchase
  */
@@ -65,6 +71,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const purchaseId = typeof body.purchaseId === 'string' ? body.purchaseId : '';
   const method = body.method === 'cash' ? 'cash' : body.method === 'zelle' ? 'zelle' : '';
   const reference = typeof body.reference === 'string' && body.reference.trim() ? body.reference.trim() : null;
+  const rawAmount = typeof body.amount === 'number' ? body.amount
+    : typeof body.amount === 'string' && body.amount.trim() !== '' ? Number(body.amount) : null;
+  if (rawAmount !== null && (!Number.isFinite(rawAmount) || rawAmount <= 0)) {
+    return res.status(400).json({ error: 'amount must be a positive number' });
+  }
   if (!purchaseId) return res.status(400).json({ error: 'purchaseId required' });
   if (!method) return res.status(400).json({ error: "method must be 'zelle' or 'cash'" });
 
@@ -97,7 +108,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else {
       const { data, error: rpcErr } = await asUser.rpc('mark_purchase_paid', {
         p_purchase_id: purchaseId,
-        p_amount: order.amount,
+        // NULL settles the remainder; a number settles exactly that much.
+        p_amount: rawAmount,
         p_reference: reference,
         p_method: method,
       });
@@ -106,7 +118,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Same provable trail an automatic match gets — never a silent second path.
-    const receipt = status === 'paid' ? await sendOrderReceipt(db, purchaseId) : { sent: false, reason: status ?? 'unknown' };
+    // ⚠️ A PART PAYMENT SENDS NO RECEIPT. A receipt says the order is settled,
+    // and it is not — the balance is still owed.
+    const receipt = status === 'paid'
+      ? await sendOrderReceipt(db, purchaseId)
+      : { sent: false, reason: status ?? 'unknown' };
 
     return res.status(200).json({ status, receipt, claimConfirmed: hasPendingClaim });
   } catch (err) {
