@@ -343,6 +343,14 @@ export async function listContactOptions(): Promise<ContactOption[]> {
     .from('contacts')
     .select('id, display_code, first_name, last_name')
     .is('deleted_at', null)
+    /* FAMILY ORDER, not merely alphabetical (owner, 2026-08-26): `family_sort_key`
+       is the person's own name, or their GUARDIAN's when they have one, so a
+       dependent lands directly beneath whoever is responsible for them. The two
+       terms after it keep the guardian at the head of their own group and sort
+       siblings among themselves. First-name ordering is unchanged for everyone
+       who is not in a family. */
+    .order('family_sort_key')
+    .order('guardian_contact_id', { nullsFirst: true })
     .order('first_name')
     .order('last_name');
   if (error) throw error;
