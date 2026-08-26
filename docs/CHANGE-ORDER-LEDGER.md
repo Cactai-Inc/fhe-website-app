@@ -2249,14 +2249,33 @@ notification, the modal opens … and the notification should go away."* **That 
 solved** — the person is told there is a payment due and acts on it in place, instead of being
 expected to go looking under Orders.
 
+### ✅ BOTH ANSWERED, owner 2026-08-25
+
+**1. What may a client change?** — *"thats it there are only two choices for payment"*
+⚠️ **The method, between TWO options, and nothing else.** Not the amount, **not who pays.**
+
+⚠️ **AND THE UI DISAGREES WITH HIM TODAY — TWO WAYS.** The Manage-payment dropdown offers **four**:
+```
+const PAYMENT_METHODS = ['Zelle', 'Check', 'Cash', 'Card'];
+```
+- ⚠️ **`Check` and `Card` are not real options.** The declaration path only ever offers **zelle** or
+  **cash**, and production has only ever held `zelle` (5), `cash` (1) and blank (2). **Two of the
+  four choices lead nowhere.**
+- ⚠️ **AND THE CASING DOES NOT MATCH.** The dropdown writes **`'Zelle'` / `'Cash'`** capitalised; the
+  declaration path writes **`'zelle'` / `'cash'`** lowercase, which is what every row in production
+  actually holds. **Anyone using that dropdown writes a value nothing matching on the lowercase form
+  will find.** ⚠️ **Latent, and it would land exactly on the client-editable path he has just asked
+  for.**
+
+**2. What does "pending" mean?** — *"pending means we havent verified we received the money."*
+⚠️ **ONE STATE, NOT TWO.** It spans **undeclared** and **declared-but-unverified** alike. **The
+dividing line is our verification, not their declaration** — which is precisely why they may keep
+changing it: *"we wont mark it as paid until we see the zelle anyway."*
+✅ **This simplifies CR-60's ladder question.** *Awaiting payment* and *payment pending* are both
+**pending** by his definition; **only `paid` is on the other side of the line.**
+
 **ASK-OWNER — remaining**
-1. ⚠️ **What may a client change while pending, beyond the method?** The amount, no. **Who pays?**
-   That control exists today and is a bigger act than switching Zelle to cash.
-2. **What does "pending" mean exactly** — unpaid and undeclared, or also *declared and awaiting our
-   confirmation*? ⚠️ **A declaration we are actively looking for money against is a different case
-   from one never made**, and CR-60's ladder *(awaiting payment → payment pending → paid)* has a rung
-   for each.
-3. **Does the payments page list paid history too**, or only what is outstanding?
+1. **Does the payments page list paid history too**, or only what is outstanding?
 
 ---
 
