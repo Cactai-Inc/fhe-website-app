@@ -181,12 +181,15 @@ export interface OrgFileRow extends FileRow {
  *  `files_staff_rw` (RLS) already admits any staff member to every row in
  *  their org — no separate RPC needed, unlike the member-scoped reads above
  *  which rely on `files_owner_rw` matching the caller's own contact. */
-export async function listOrgFiles(): Promise<OrgFileRow[]> {
-  const { data, error } = await supabase
+export async function listOrgFiles(includeDeleted = false): Promise<OrgFileRow[]> {
+  /* `includeDeleted` is what makes a soft delete recoverable rather than merely
+     invisible: without a way to SEE a tombstone there is nothing to restore, and
+     "soft delete" would be indistinguishable from destruction. */
+  let q = supabase
     .from('files')
-    .select('*, contacts(first_name, last_name)')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false });
+    .select('*, contacts(first_name, last_name)');
+  if (!includeDeleted) q = q.is('deleted_at', null);
+  const { data, error } = await q.order('created_at', { ascending: false });
   if (error) throw error;
   type Row = FileRow & { contacts: { first_name: string | null; last_name: string | null } | null };
   return ((data ?? []) as Row[]).map((r) => {
@@ -217,24 +220,66 @@ export async function fileDownloadUrl(f: Pick<FileRow, 'bucket_id' | 'storage_pa
 }
 
 /**
- * Remove a file the caller owns.
+ * SOFT DELETE — the file stops being reachable, the object stays.
  *
- * The bytes go — it is the owner's property and "remove" has to mean removed —
- * but the row is SOFT-deleted, so the record that a file was here, and any
- * surfacing history on other records, survives as a tombstone.
+ * Owner, 2026-08-26: *"remove the url leave the object in the db unless i go in
+ * and hard delete it or if you give the option to soft or hard delete from admin
+ * ui that is best."*
  *
- * This is NOT account deletion. Per the owner ruling, what happens to a
- * person's files when their account is deleted is an open question, and nothing
- * in this task cascade-deletes them.
+ * ⚠️ THIS IS A BEHAVIOUR CHANGE. It used to delete the stored object as well, on
+ * an earlier reading that "remove has to mean removed". Under the ruling above a
+ * soft delete is RECOVERABLE: the row is tombstoned so nothing lists or links it
+ * and no signed URL is ever minted for it again, but the bytes are still there
+ * for staff to restore or to hard-delete deliberately.
+ *
+ * Its links go with it — a tombstoned file must not stay surfaced on a booking or
+ * a horse record it was attached to.
  */
-export async function removeMyFile(f: FileRow): Promise<void> {
+export async function softDeleteFile(f: Pick<FileRow, 'id'>): Promise<void> {
+  const now = new Date().toISOString();
   assertWrote(
     await supabase.from('files')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ deleted_at: now })
       .eq('id', f.id).is('deleted_at', null).select(),
     'Removing the file',
   );
-  await supabase.storage.from(f.bucket_id || FILES_BUCKET).remove([f.storage_path]);
+  // Not assertWrote: a file with no links is normal, and zero rows is not a failure.
+  await supabase.from('file_links')
+    .update({ deleted_at: now }).eq('file_id', f.id).is('deleted_at', null);
+}
+
+/** Put a soft-deleted file back. The object was never removed, so this is a
+ *  straight untombstone — which is the whole point of the two-step. */
+export async function restoreFile(f: Pick<FileRow, 'id'>): Promise<void> {
+  assertWrote(
+    await supabase.from('files')
+      .update({ deleted_at: null })
+      .eq('id', f.id).not('deleted_at', 'is', null).select(),
+    'Restoring the file',
+  );
+}
+
+/**
+ * HARD DELETE — the bytes go, and the row with them.
+ *
+ * ⚠️ IRREVERSIBLE, and that is the point: it is the answer to a file that should
+ * never have been uploaded. The object is removed from storage FIRST, so a
+ * failure there leaves the row behind pointing at something real rather than a
+ * row-less orphan in the bucket that nothing can find to clean up.
+ */
+export async function hardDeleteFile(f: Pick<FileRow, 'id' | 'bucket_id' | 'storage_path'>): Promise<void> {
+  const { error: rmErr } = await supabase.storage
+    .from(f.bucket_id || FILES_BUCKET).remove([f.storage_path]);
+  if (rmErr) throw rmErr;
+  await supabase.from('file_links').delete().eq('file_id', f.id);
+  const { error } = await supabase.from('files').delete().eq('id', f.id);
+  if (error) throw error;
+}
+
+/** @deprecated Use `softDeleteFile`. Kept so existing callers keep working while
+ *  they move over; it no longer destroys the object. */
+export async function removeMyFile(f: FileRow): Promise<void> {
+  await softDeleteFile(f);
 }
 
 /** Where one of the caller's files is currently surfaced. Reads through
