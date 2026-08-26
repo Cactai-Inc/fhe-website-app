@@ -2194,7 +2194,45 @@ payment. **The pattern is not missing; it is unreachable from where he expects i
 which is a different need from changing a payment, and the one a "My Payments" surface would
 actually serve.
 
-### THE RECOMMENDATION
+### 🔒 OWNER RULING — MY RECOMMENDATION IS OVERRULED (2026-08-25)
+> *"i disagree with you, the two surfaces you mentioned are on the same location[;] we strip the more
+> complicated one unless it has genuinely more information to display[,] then we keep both[,] and we
+> add a payments page and card[.] and while the payment is pending it can be changed. a zelle never
+> sent needs to be switched to cash by someone if they changed their mind and we wont mark it as paid
+> until we see the zelle anyway, so might as well give them the power to change it so we dont have to.
+> it saves time and discussions and confusion."*
+
+**The decision:**
+1. ⚠️ **BUILD the "My Payments" card AND page.** *(My "no payments editor" recommendation is
+   withdrawn.)*
+2. **The two existing surfaces are in one location — consolidate.** ⚠️ *"Strip the more complicated
+   one UNLESS it has genuinely more information to display, then we keep both."*
+3. ⚠️ **A PENDING PAYMENT IS CLIENT-EDITABLE.** *"A Zelle never sent needs to be switched to cash by
+   someone if they changed their mind."*
+
+**⚠️ HIS REASONING IS THE PART TO KEEP, AND IT IS BETTER THAN MINE:**
+> *"we wont mark it as paid until we see the zelle anyway, so might as well give them the power to
+> change it so we dont have to. it saves time and discussions and confusion."*
+
+**The barn already refuses to mark anything paid until the money is seen. So a client changing a
+declaration they have not acted on costs the business NOTHING — and every change they cannot make
+becomes a message someone has to read and act on.** ⚠️ **I weighed "don't add a third
+implementation" and missed that the surfaces are two halves of one job in one place, and that the
+operational saving is the point.**
+
+### ✅ AND THE "UNLESS" CLAUSE IS ALREADY ANSWERED — they are NOT the same thing
+Checked. **Each carries something the other does not**, so **both survive his own test:**
+| Surface | Carries |
+|---|---|
+| **"Manage payment"** *(modal, My Orders)* | the payment **method**, and ⚠️ **transferring WHO PAYS to another account** — a parent taking over a rider's payment |
+| **the order's own panel** *(`/order/:id`)* | **declaring the payment** — Zelle or cash — with ⚠️ **a memo / reference**, which is what lets it be matched to money received |
+
+⚠️ **Neither is "the more complicated one".** One changes the ARRANGEMENT *(how, and who)*; the
+other makes the DECLARATION *(I have paid, here is the reference)*. **Merging them loses a field
+either way — so the consolidation is bringing both into ONE control on the payments surface, not
+choosing a winner.**
+
+### THE ORIGINAL RECOMMENDATION — superseded, kept only to show what was weighed
 **Two different things are being conflated, and only one of them is missing.**
 1. **Managing a payment** — ⚠️ **already built, twice.** A third surface would be a **third
    implementation of one job**, which is the defect this ledger keeps finding. **Fix the REACH, not
@@ -2211,10 +2249,14 @@ notification, the modal opens … and the notification should go away."* **That 
 solved** — the person is told there is a payment due and acts on it in place, instead of being
 expected to go looking under Orders.
 
-**ASK-OWNER**
-1. **Do you want a payment HISTORY**, or is *"paid orders stay visible in My Orders"* enough?
-2. Should **"Manage payment"** also appear on a **paid** order — to view what was paid, not change
-   it?
+**ASK-OWNER — remaining**
+1. ⚠️ **What may a client change while pending, beyond the method?** The amount, no. **Who pays?**
+   That control exists today and is a bigger act than switching Zelle to cash.
+2. **What does "pending" mean exactly** — unpaid and undeclared, or also *declared and awaiting our
+   confirmation*? ⚠️ **A declaration we are actively looking for money against is a different case
+   from one never made**, and CR-60's ladder *(awaiting payment → payment pending → paid)* has a rung
+   for each.
+3. **Does the payments page list paid history too**, or only what is outstanding?
 
 ---
 
