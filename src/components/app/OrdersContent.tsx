@@ -14,7 +14,21 @@ import { toErrorMessage } from '../../lib/ops/errors';
  * Orders.tsx unchanged.
  */
 
-const PAYMENT_METHODS = ['Zelle', 'Check', 'Cash', 'Card'];
+/* ⚠️ TWO METHODS, AND THE STORED VALUE IS LOWERCASE (owner, 2026-08-25).
+   "card is not a valid option, we didnt setup stripe yet and check is not valid
+   either[,] i never authorized that option, we cant take a check[,] it takes time to
+   clear and we dont want to monitor for that, if they can write a check they can use
+   zelle."
+
+   ⚠️ AND THE CASING WAS WRONG. This list wrote 'Zelle' / 'Cash' capitalised while the
+   declaration path (report_my_payment) writes 'zelle' / 'cash', which is what every
+   row in production holds — so anyone using this dropdown wrote a value nothing
+   matching the lowercase form would find. The value is now what is stored; the label
+   is what is read. */
+const PAYMENT_METHODS: { value: string; label: string }[] = [
+  { value: 'zelle', label: 'Zelle' },
+  { value: 'cash', label: 'Cash' },
+];
 
 const STATUS_LABEL: Record<string, string> = {
   draft: 'In progress', awaiting_payment: 'Awaiting payment', paid: 'Paid',
@@ -90,7 +104,10 @@ export function OrdersContent() {
 function ManagePaymentModal({ order, onClose, onChanged }: {
   order: Order; onClose: () => void; onChanged: () => void;
 }) {
-  const [method, setMethod] = useState(order.payment_method ?? 'Zelle');
+  /* Match case-insensitively so an order already carrying a capitalised value from
+     the old list still selects correctly rather than silently reading as Zelle. */
+  const [method, setMethod] = useState(
+    (order.payment_method ?? '').toLowerCase() === 'cash' ? 'cash' : 'zelle');
   const [people, setPeople] = useState<PayerCandidate[]>([]);
   const [payer, setPayer] = useState('');
   const [busy, setBusy] = useState(false);
@@ -122,7 +139,7 @@ function ManagePaymentModal({ order, onClose, onChanged }: {
         <label className="block text-xs text-muted mb-1" htmlFor="pay-method">Payment method</label>
         <div className="flex gap-2 mb-4">
           <select id="pay-method" className="form-input flex-1" value={method} onChange={(e) => setMethod(e.target.value)}>
-            {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+            {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
           </select>
           <button type="button" className="btn-primary" disabled={busy} onClick={saveMethod}>Save</button>
         </div>
