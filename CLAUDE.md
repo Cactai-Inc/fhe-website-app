@@ -801,3 +801,28 @@ reporting success.
   invoked tool for his own test identities (D1's 5g routine). **It is not a pattern to extend or
   generalize — `TASK-ARCHIVE` is the actual D32-compliant tool**, and the rebuild's job is to
   ask whether `purge_account` should exist at all once a real archive mechanism does.
+
+- **D33 — A TEMPLATE VERSION CHANGE NEVER OBLIGES A PAST SIGNER (owner, 2026-08-26).**
+  Asked directly — *"on the contract version change and past signers, no and no"* — whether
+  editing a template should mint a version on the lease trio now, and whether past signers must
+  re-sign when a template changes. **Both no.**
+
+  **An executed document is frozen against the version it was signed at, and that is sufficient.**
+  `documents.signed_template_version` carries it on all 67 executed documents (zero nulls,
+  verified 2026-08-26), and `regenerate_contract_document` returns the stored body without writing
+  when the versions differ on an executed document. **So a template edit cannot reach signed
+  paper, and there is nothing for a past signer to re-affirm.**
+
+  ⚠️ **THEREFORE: NEVER BUILD A RE-SIGN PROMPT, A "YOUR CONTRACT HAS CHANGED" NOTICE, OR A
+  RE-EXECUTION FLOW TRIGGERED BY A TEMPLATE EDIT.** If a signed agreement genuinely needs to
+  change, that is a new document — an amendment or a superseding contract — not a version bump.
+
+  **Standing consequence, and it is deliberate:** the four lease templates currently sit one
+  clause ahead of their retained version 3 (`LEASE_FEE.NO_FEE_CONSIDERATION`, applied
+  2026-08-26 by migration `20260826T1900`). The owner declined to mint v4 for it. **Restore-to-v3
+  therefore refuses on those templates until the next publish mints v4 — that is correct
+  behaviour, not a defect, and the next wording change is what resolves it.**
+
+  ⚠️ **AND THE RULE THAT CAUSED IT: a migration that changes template wording must call
+  `save_contract_template_version` afterwards.** The migration above did not, which is how the
+  drift was created — found by TASK-VERSIONSPINE, against the orchestrator's own work.
