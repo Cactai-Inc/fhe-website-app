@@ -2003,6 +2003,52 @@ is worse than inert — it is a lock condition.**
 2. Does anything else read the confirmation — a token, a printed line in a contract body, a party
    view?
 
+## CR-74 · G9 · captured — ⚠️ THE EXPAND-IN-PLACE CARD MAY BE THE STANDARD, NOT THE PAGE
+**SAID**
+> *"if i click on the horse records tab on the records page the list of horses as rows works really
+> well as cards, surfaces I can click on and quickly make changes, its bug free and works great …
+> this exact card with click to expand and editable surface is what we should show and use on the
+> client record where the horse is shown. right now it opens a full horse record page, im not sure if
+> there is a difference and if there is there are bigger decisions to make, i didnt scrutinize the two
+> approaches to seeing the horse record, but i used both to make changes to sundance's record
+> information and one is clearly superior ux and ui and its the one that is shown on the horse records
+> tab."*
+
+⚠️ **THIS SITS AGAINST HIS OWN RULING AND THE TENSION IS THE POINT.**
+- **CR-30:** *"every record is a page. [Modals] are for surfacing information quickly, not
+  information dense or operationally intensive surfaces."*
+- **CR-63:** *"card = summary and doorway, page = the work"* — **my recommendation, which he
+  accepted.**
+- **Now:** he used both surfaces on the same horse and **the expand-in-place editable card won.**
+
+**These are reconcilable, and the distinction is worth naming rather than choosing between:**
+an expanding card is **not a modal** — it does not cover the page, it does not trap focus, and it
+keeps the list visible. **The rule may be "no MODALS for dense work" rather than "no CARDS for
+work"** — in which case CR-63's *page = the work* is the part that needs revising, not CR-30's.
+
+⚠️ **Two horse surfaces exist and he has not compared them.** *"im not sure if there is a difference
+and if there is there are bigger decisions to make."* **Establish whether the page does anything the
+card cannot** before either is adopted as the standard — if it does not, one of them should stop
+existing; if it does, the difference is the design question.
+
+✅ **FIXED SAME DAY — the one fault he named on the card.** Breed, colour and sex rendered as bare
+text boxes while editing, and breed/colour are lookup CODES resolved to names on the read path — so
+editing meant typing a raw code correctly on the surface he rates highest. They now render their
+lists. *(Retired codes are excluded unless the record already holds one.)*
+
+**ASK-REPO**
+1. **What can the horse record PAGE do that the card cannot?** Tabs, documents, schedule, activity —
+   the card has none of those. **That is probably the honest answer, and it means the two are not
+   rivals: the card is for the record's FIELDS, the page is for everything attached to it.**
+2. Where else does an expand-in-place editable card already exist, and where is a page used for the
+   same job?
+
+**ASK-OWNER**
+1. **Does CR-63's "page = the work" survive?** Or is the rule **"a card may be the work; a modal may
+   not"**?
+2. On the client record, does the horse show as **this card**, with the page still reachable for the
+   things the card does not carry?
+
 ---
 
 # G9 · GLOBALIZATION INVENTORY
