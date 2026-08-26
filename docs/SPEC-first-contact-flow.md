@@ -74,6 +74,47 @@ end, **triggered by her finishing** — not by each signature.
 
 ---
 
+## 3b. ⚠️ THE SEQUENCE IS COMPUTED, NOT FIXED
+
+> *"for a situation where any of those things i setup are different it should adjust the flow
+> accordingly"*
+
+**§3 is one worked instance. The flow is assembled from what is actually outstanding, every time.**
+
+### The rules that generate it
+| Rule | |
+|---|---|
+| **a step appears only when it is outstanding** | nothing is shown to someone who does not owe it |
+| **intake leads, when anything it collects is missing** | *"if there was no missing information for her account she would go straight into the contract on sign in"* |
+| **documents sit where their DISPOSITION puts them** | ⚠️ *"if i selected have the docs signed first she would see them before the contract"* — **the setting he already has decides the order** |
+| **the horse comes before the contract that needs one** | *"if there was no horse on the contract and no horse record she would be shown the horse intake form first"* |
+| ⚠️ **the EXIT follows the landing rule** | **dashboard when notifications exist · community feed when they do not** |
+
+### The exit, spelled out
+> *"if she has an order that needs payment and scheduling or she has unsigned docs she would exit the
+> flow from the contract into the dashboard after she sees the overview modal"*
+
+| After finishing | She lands on |
+|---|---|
+| nothing else outstanding *(§3, Pamela)* | ⚠️ **the community feed** |
+| **an order needing payment or scheduling**, or **unsigned documents** | ⚠️ **the dashboard** — the notifications are there and that is where they live |
+
+⚠️ **The overview modal comes first either way**, on a first sign-in. **The landing rule decides only
+what is behind it.**
+
+### ⚠️ THE HORSE CASE — and an improvement he asked for
+**As described:** no horse on the contract and no horse record → **horse intake form first**, then
+**the contract asks her to add her horse to it.**
+
+> *"unless we can make that happen automatically which would be superior ux"*
+
+⚠️ **IT SHOULD BE AUTOMATIC, AND HE IS RIGHT THAT IT IS BETTER.** A horse created **inside a contract
+flow, for a contract that needs a horse**, has exactly one plausible destination. **Asking her to
+attach it is asking her to repeat herself.** ⚠️ **Attach it and say so** — *"Sundance has been added
+to this agreement"* — rather than attaching it silently or asking.
+
+---
+
 ## 4. WHAT THIS CHANGES ABOUT WHAT WAS ALREADY BUILT
 
 | | |
@@ -81,6 +122,8 @@ end, **triggered by her finishing** — not by each signature.
 | **the account-or-not branch** | ⚠️ **wrong question.** Replace with **auth-method-or-not** |
 | **the intake gate** | ✅ built, and correctly placed **first** — ⚠️ but see the fail-open note below |
 | **contract → documents → exit** | ⚠️ **the chaining is NOT built.** Today signing ends somewhere else |
+| **the sequence itself** | ⚠️ **must be COMPUTED from what is outstanding (§3b), not hard-coded.** §3 is one instance of it |
+| **attaching a horse created mid-flow** | ⚠️ **not built — and it should be automatic, not a prompt** |
 | **the final email** | ⚠️ must fire on **finishing the whole sequence**, carrying **both** |
 
 ⚠️ **AND A RISK TO SETTLE BEFORE THIS SHIPS:** run against a caller with no party role,
