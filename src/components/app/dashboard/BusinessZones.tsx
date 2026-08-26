@@ -103,11 +103,19 @@ export function MirrorZone({ items, onOpenTrainer }: {
 }
 
 /* ── B3 · DEALS & CONTRACTS ─────────────────────────────────────────────── */
+/* ⚠️ A `deal_open` ROW IS NOW ALWAYS A THING TO DO (owner, 2026-08-26: "I dont
+   need to see the deal unless there is something to do for it that isnt
+   involving a signable document"). `dash_deals_contracts` suppresses the deal
+   whenever its governing document is already listed here on its own, so the
+   envelope and the contract stopped being two cards for one fact. The tag was
+   "Deal in motion", which described a state rather than an ask — the row now
+   carries its reason in `detail` ("No lessee named", "Not sent for signature
+   yet", "Signed by everyone — ready to close"), so the tag names the ask. */
 const DEAL_TAG: Record<DealRow['kind'], { tag: string; tone: 'urgent' | 'today' | 'new' | 'neutral' }> = {
   proposal: { tag: 'Needs accept / reject', tone: 'urgent' },
   change_request: { tag: 'Open change', tone: 'today' },
   awaiting_signature: { tag: 'Awaiting signature', tone: 'today' },
-  deal_open: { tag: 'Deal in motion', tone: 'neutral' },
+  deal_open: { tag: 'Deal needs attention', tone: 'today' },
 };
 
 export function DealsZone({ items }: { items: DealRow[] }) {
