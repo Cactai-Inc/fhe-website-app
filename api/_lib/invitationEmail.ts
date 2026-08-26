@@ -51,6 +51,21 @@ export interface InvitationEmailInput {
    * the client reads is what the person who booked it saw.
    */
   agreedTime?: string | null;
+  /**
+   * P1 ITEM 1 — THE CONTRACT THIS ONE EMAIL ALSO CARRIES.
+   *
+   * Owner, 2026-08-25: *"i dont want to send her two emails since that is
+   * confusing and these should be able to be married up as a unified single
+   * email send."* Set only when staff sent a CONTRACT to a counterparty who has
+   * no account: the account invitation is what goes out, and it must say both
+   * things — your account is ready to claim, and there is a contract waiting.
+   *
+   * Raw, not escaped, matching how `DOC.TITLE` has always been passed to the
+   * CONTRACT_INVITE template — the value is a document title staff typed in the
+   * app, and it renders into the SUBJECT line as well as the body, where an
+   * escaped ampersand would read as `&amp;`.
+   */
+  contractTitle?: string | null;
 }
 
 /** Invitation email via the shared transport (Google SMTP first, Resend dormant),
@@ -59,7 +74,7 @@ export async function sendInvitationEmail(
   db: ReturnType<typeof getSupabaseAdmin>,
   input: InvitationEmailInput,
 ): Promise<InvitationSendResult> {
-  const { orgId, to, registerUrl, offeringLabel, checklist, expiresAt, agreedTime } = input;
+  const { orgId, to, registerUrl, offeringLabel, checklist, expiresAt, agreedTime, contractTitle } = input;
   const isResend = input.kind === 'resend';
 
   // No org = no brand identity = no from-address. That is a real failure with a
@@ -85,6 +100,7 @@ export async function sendInvitationEmail(
     'ORG.FOOTER': identity.footer,
     'MSG.IS_RESEND': isResend ? '1' : '',
     'MSG.AGREED_TIME': agreedTime ?? '',
+    'MSG.CONTRACT_TITLE': contractTitle ?? '',
     'MSG.OFFERING_LABEL': offeringLabel ?? '',
     'MSG.CHECKLIST': pending.map((c) => ({ TITLE: c.title, ACTION: c.action.toLowerCase() })),
     'MSG.LINK': registerUrl,

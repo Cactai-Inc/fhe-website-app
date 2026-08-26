@@ -38,7 +38,11 @@ export default function RegisterComplete() {
         if (active) setState('invalid');
         return;
       }
-      let stash: { token: string; email: string; request_id: string | null; kind?: string };
+      let stash: {
+        token: string; email: string; request_id: string | null; kind?: string;
+        /** P1 ITEM 1 — the contract this ACCOUNT invitation also carries. */
+        document_id?: string | null;
+      };
       try {
         stash = JSON.parse(raw);
       } catch {
@@ -88,11 +92,20 @@ export default function RegisterComplete() {
           dest = `/app/contracts/${documentId}`;
         } else {
           await redeemInvitation(stash.token);
-          // paperwork assigned → straight into the document flow
-          try {
-            const state = await myOnboardingState();
-            if (state?.needed) dest = '/app/onboarding';
-          } catch { /* dashboard fallback */ }
+          /* P1 ITEM 1 — an ACCOUNT invitation that also carries a contract.
+             Prefer the invitation row we just re-validated over the stash: the
+             stash is whatever the browser wrote before the Google round-trip,
+             the row is the server's own answer. */
+          const carried = invitation.document_id ?? stash.document_id ?? null;
+          if (carried) {
+            dest = `/app/contracts/${carried}/start`;
+          } else {
+            // paperwork assigned → straight into the document flow
+            try {
+              const state = await myOnboardingState();
+              if (state?.needed) dest = '/app/onboarding';
+            } catch { /* dashboard fallback */ }
+          }
         }
       } catch (err) {
         // Redemption genuinely failed — do NOT pretend it worked. Surface the

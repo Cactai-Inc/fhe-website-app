@@ -360,6 +360,94 @@ function ListCard({ title, empty, children }: { title?: string; empty: string; c
 
 /** A prefilled editor for the core record fields, saved via update_horse_record.
  *  (Locations, medications, and lease are edited from their own surfaces.) */
+/* ⚠️ THESE TWO LIVED INSIDE `RecordEditor` AND THAT IS WHY YOU COULD ONLY TYPE
+   ONE CHARACTER AT A TIME.
+
+   Owner, 2026-08-25: *"when i click the edit button and i click something to
+   edit, i can only type one character and i need to click again to be able to
+   type another one."*
+
+   `const T = (...) => …` inside a component body creates a BRAND-NEW FUNCTION on
+   every render. React identifies an element by its `type` — a reference compare —
+   so a new function is a DIFFERENT COMPONENT: it unmounts the old subtree and
+   mounts a fresh one. Typing a character called `setF`, which re-rendered
+   `RecordEditor`, which minted new `T` and `L`, which threw away the real `<input>`
+   DOM node and built another. The browser's focus went with the node it was on.
+   One keystroke per click, exactly as reported.
+
+   Defined at module scope they have ONE stable identity for the life of the
+   module, so React updates the existing input in place and focus survives. This
+   is the only fix — `useCallback` would not help, because its deps must include
+   the form state that changes on every keystroke.
+
+   ⚠️ DO NOT MOVE THESE BACK INSIDE A COMPONENT, and do not define a new one
+   inline "just for this form". See docs/reports/P1-CONTRACT-SHIP-REPORT.md. */
+function RecordField({
+  label, value, onChange, area,
+}: {
+  label: string; value: string; onChange: (v: string) => void; area?: boolean;
+}) {
+  return (
+    <div className={area ? 'sm:col-span-2' : ''}>
+      <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{label}</label>
+      {area
+        ? <textarea rows={2} className={`${RECORD_INPUT} resize-y`} value={value} onChange={(e) => onChange(e.target.value)} />
+        : <input className={RECORD_INPUT} value={value} onChange={(e) => onChange(e.target.value)} />}
+    </div>
+  );
+}
+
+/** A lookup-backed select. Keeps an unrecognised current value as an option so
+ *  editing an unrelated field cannot silently change breed/colour. */
+function RecordSelect({
+  label, value, onChange, opts, toCode,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  opts: LookupCode[]; toCode: (o: LookupCode[], v: string) => string;
+}) {
+  const known = opts.some((o) => o.code === value || o.display_name.toLowerCase() === value.toLowerCase());
+  return (
+    <div>
+      <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{label}</label>
+      <select className={RECORD_INPUT} value={toCode(opts, value)} onChange={(e) => onChange(e.target.value)}>
+        <option value="">—</option>
+        {!known && value && <option value={value}>{value} (not in list)</option>}
+        {opts.map((o) => <option key={o.code} value={o.code}>{o.display_name}</option>)}
+      </select>
+    </div>
+  );
+}
+
+const RECORD_INPUT = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white';
+
+/** The edit form, as data — so the grid below is one map rather than 22 hand-placed
+ *  elements, and adding a field is adding a row. `opts` names the lookup a field is
+ *  backed by; absent means free text. */
+const TEXT_FIELDS: { k: string; label: string; area?: boolean; opts?: 'breeds' | 'colors' }[] = [
+  { k: 'nickname', label: 'Nickname' },
+  { k: 'registered_name', label: 'Full Name (registered name, if registered)' },
+  { k: 'breed', label: 'Breed', opts: 'breeds' },
+  { k: 'color', label: 'Color', opts: 'colors' },
+  { k: 'markings', label: 'Markings' },
+  { k: 'sex', label: 'Sex' },
+  { k: 'height', label: 'Height' },
+  { k: 'fair_market_value', label: 'Fair market value' },
+  { k: 'registration_number', label: 'Registration #' },
+  { k: 'registration_org', label: 'Registration org' },
+  { k: 'microchip_id', label: 'Microchip' },
+  { k: 'passport_number', label: 'Passport #' },
+  { k: 'passport_country', label: 'Passport country' },
+  { k: 'vet_name', label: 'Veterinarian' },
+  { k: 'vet_phone', label: 'Vet phone' },
+  { k: 'farrier_name', label: 'Farrier' },
+  { k: 'farrier_phone', label: 'Farrier phone' },
+  { k: 'medical_history', label: 'Medical history', area: true },
+  { k: 'behavioral_history', label: 'Behavioral concerns', area: true },
+  { k: 'known_conditions', label: 'Known conditions', area: true },
+  { k: 'training_history', label: 'Training history', area: true },
+  { k: 'competition_history', label: 'Competition history', area: true },
+];
+
 function RecordEditor({
   horseId, record, onCancel, onSaved,
 }: {
@@ -385,7 +473,6 @@ function RecordEditor({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const set = (k: string) => (v: string) => setF((p) => ({ ...p, [k]: v }));
-  const input = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white';
 
   // breed/color are FK-constrained to horse_breeds(code) / horse_colors(code),
   // but horse_page_detail returns their DISPLAY NAMES (it coalesces through the
@@ -426,31 +513,6 @@ function RecordEditor({
     catch (e) { setErr(toErrorMessage(e, 'Could not save changes.')); setBusy(false); }
   }
 
-  /** A lookup-backed select. Keeps an unrecognised current value as an option so
-   *  editing an unrelated field cannot silently change breed/colour. */
-  const L = ({ label, k, opts }: { label: string; k: string; opts: LookupCode[] }) => {
-    const cur = f[k];
-    const known = opts.some((o) => o.code === cur || o.display_name.toLowerCase() === cur.toLowerCase());
-    return (
-      <div>
-        <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{label}</label>
-        <select className={input} value={toCode(opts, cur)} onChange={(e) => set(k)(e.target.value)}>
-          <option value="">—</option>
-          {!known && cur && <option value={cur}>{cur} (not in list)</option>}
-          {opts.map((o) => <option key={o.code} value={o.code}>{o.display_name}</option>)}
-        </select>
-      </div>
-    );
-  };
-  const T = ({ label, k, area }: { label: string; k: string; area?: boolean }) => (
-    <div className={area ? 'sm:col-span-2' : ''}>
-      <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{label}</label>
-      {area
-        ? <textarea rows={2} className={`${input} resize-y`} value={f[k]} onChange={(e) => set(k)(e.target.value)} />
-        : <input className={input} value={f[k]} onChange={(e) => set(k)(e.target.value)} />}
-    </div>
-  );
-
   return (
     <section className="bg-white border border-green-800/10 rounded-xl p-5">
       <div className="flex items-center justify-between mb-3">
@@ -460,20 +522,14 @@ function RecordEditor({
       <p className="text-[12px] text-muted mb-4">Location, medications, and lease are edited from their own sections.</p>
       {err && <p role="alert" className="form-error mb-3">{err}</p>}
       <div className="grid sm:grid-cols-2 gap-3">
-        <T label="Nickname" k="nickname" /><T label="Full Name (registered name, if registered)" k="registered_name" />
-        <L label="Breed" k="breed" opts={breeds} /><L label="Color" k="color" opts={colors} />
-        <T label="Markings" k="markings" /><T label="Sex" k="sex" />
-        <T label="Height" k="height" /><T label="Fair market value" k="fair_market_value" />
-        <T label="Registration #" k="registration_number" /><T label="Registration org" k="registration_org" />
-        <T label="Microchip" k="microchip_id" />
-        <T label="Passport #" k="passport_number" /><T label="Passport country" k="passport_country" />
-        <T label="Veterinarian" k="vet_name" /><T label="Vet phone" k="vet_phone" />
-        <T label="Farrier" k="farrier_name" /><T label="Farrier phone" k="farrier_phone" />
-        <T label="Medical history" k="medical_history" area />
-        <T label="Behavioral concerns" k="behavioral_history" area />
-        <T label="Known conditions" k="known_conditions" area />
-        <T label="Training history" k="training_history" area />
-        <T label="Competition history" k="competition_history" area />
+        {TEXT_FIELDS.map((fd) => (fd.opts
+          ? (
+            <RecordSelect key={fd.k} label={fd.label} value={f[fd.k]} onChange={set(fd.k)}
+              opts={fd.opts === 'breeds' ? breeds : colors} toCode={toCode} />
+          ) : (
+            <RecordField key={fd.k} label={fd.label} value={f[fd.k]} onChange={set(fd.k)} area={fd.area} />
+          )
+        ))}
       </div>
       <div className="flex justify-end gap-2 mt-4">
         <button type="button" className="btn-secondary text-sm" onClick={onCancel}>Cancel</button>

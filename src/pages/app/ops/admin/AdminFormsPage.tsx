@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useDocumentTitle } from '../../../../lib/hooks';
 import {
-  adminFormDefinitions, setFormRequired, type AdminFormDefinition,
+  adminFormDefinitions, setFormRequired, addFormField, editFormField, removeFormField,
+  type AdminFormDefinition,
 } from '../../../../lib/admin';
+import { toErrorMessage } from '../../../../lib/ops/errors';
 
 /**
  * FORMS (/app/ops/admin/forms) — see and decide which fields on the intake
@@ -15,7 +17,87 @@ import {
  *
  * The two fixed system forms are listed read-only at the bottom so the whole
  * "what users must fill in" picture lives on one page.
+ *
+ * ⚠️ FIELDS ARE EDITABLE HERE NOW (owner, 2026-08-25) — rename, retype, remove, add.
+ * That was previously unsafe: `booking_forms.answers` is keyed by field `key`, and
+ * `form_definitions` held ONE mutable row per form with `max(version)` still 1
+ * across all 28, so renaming or removing a field detached real submitted answers.
+ * `form_definition_versions` + `booking_forms.form_version` (20260825T1740) gave
+ * forms the version-on-change documents already had, so every mutator snapshots the
+ * outgoing shape first and nothing is orphaned. The MENUS a field offers are edited
+ * on the Menus page, which covers these 119 lists and the 5 shared vocabularies
+ * together.
  */
+
+/** The field types the renderer understands. Kept beside the editor because
+ *  changing a field to a type nothing renders is the one edit that silently breaks
+ *  a form. */
+const FIELD_TYPES = ['text', 'longtext', 'number', 'date', 'phone', 'email', 'select', 'checkbox', 'radio'];
+
+/** One field's row in edit mode. Module scope on purpose — a component defined
+ *  inside a render is a new type every keystroke, which is what made the horse
+ *  record editor eat every character (2026-08-25). */
+function FieldEditRow({
+  field, onSave, onCancel, busy,
+}: {
+  field: { key: string; label: string; type: string };
+  onSave: (patch: { label: string; type: string; new_key: string }) => void;
+  onCancel: () => void;
+  busy: boolean;
+}) {
+  const [label, setLabel] = useState(field.label);
+  const [type, setType] = useState(field.type);
+  const [key, setKey] = useState(field.key);
+  return (
+    <div className="sm:col-span-2 xl:col-span-3 border border-gold-500/40 bg-gold-50 rounded-lg p-3 flex flex-wrap items-end gap-2">
+      <label className="flex-1 min-w-[160px]">
+        <span className="block text-[10px] uppercase tracking-wide text-muted mb-1">Label</span>
+        <input className="form-input text-sm" value={label} onChange={(e) => setLabel(e.target.value)} />
+      </label>
+      <label className="w-36">
+        <span className="block text-[10px] uppercase tracking-wide text-muted mb-1">Type</span>
+        <select className="form-input text-sm" value={type} onChange={(e) => setType(e.target.value)}>
+          {FIELD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </label>
+      <label className="w-44">
+        <span className="block text-[10px] uppercase tracking-wide text-muted mb-1">Key</span>
+        <input className="form-input text-sm font-mono" value={key} onChange={(e) => setKey(e.target.value)} />
+      </label>
+      <button type="button" className="btn-primary text-xs" disabled={busy}
+        onClick={() => onSave({ label, type, new_key: key })}>Save</button>
+      <button type="button" className="text-xs text-muted underline" onClick={onCancel}>Cancel</button>
+      <p className="w-full text-[11px] text-muted">
+        Renaming the key is safe — answers already collected stay readable against the
+        form version they were collected under.
+      </p>
+    </div>
+  );
+}
+
+/** The "add a field" row for one section. */
+function AddFieldRow({ onAdd, busy }: { onAdd: (f: { key: string; label: string; type: string }) => void; busy: boolean }) {
+  const [label, setLabel] = useState('');
+  const [type, setType] = useState('text');
+  const auto = label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  return (
+    <div className="sm:col-span-2 xl:col-span-3 flex flex-wrap items-end gap-2">
+      <label className="flex-1 min-w-[160px]">
+        <span className="sr-only">New field label</span>
+        <input className="form-input text-sm" placeholder="Add a field…" value={label}
+          onChange={(e) => setLabel(e.target.value)} />
+      </label>
+      <select className="form-input text-sm w-36" aria-label="New field type"
+        value={type} onChange={(e) => setType(e.target.value)}>
+        {FIELD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+      </select>
+      <button type="button" className="btn-outline-gold text-xs" disabled={busy || !auto}
+        onClick={() => onAdd({ key: auto, label: label.trim(), type })}>
+        <Plus size={13} /> Add
+      </button>
+    </div>
+  );
+}
 
 const AUDIENCE_LABEL: Record<string, string> = {
   CLIENT: 'Client-facing',
@@ -27,10 +109,27 @@ const AUDIENCE_LABEL: Record<string, string> = {
   COMPANY: 'Internal — staff fill these in',
 };
 
-function FormCard({ form }: { form: AdminFormDefinition }) {
+function FormCard({ form, onError }: { form: AdminFormDefinition; onError: (m: string) => void }) {
   const [open, setOpen] = useState(false);
   const [schema, setSchema] = useState(form.schema);
   const [saved, setSaved] = useState(true);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  /** Every field mutation is a server round-trip that VERSIONS the form, so the
+   *  page re-reads rather than patching local state — the schema it shows must be
+   *  the one that was just written, not a guess at it. */
+  async function mutate(fn: () => Promise<void>) {
+    setBusy(true);
+    try {
+      await fn();
+      const fresh = (await adminFormDefinitions()).find((x) => x.form_key === form.form_key);
+      if (fresh) setSchema(fresh.schema);
+      setEditingKey(null);
+    } catch (e) {
+      onError(toErrorMessage(e, 'Could not change that field.'));
+    } finally { setBusy(false); }
+  }
 
   const requiredCount = schema.sections.flatMap((s) => s.fields).filter((f) => f.required).length;
   const fieldCount = schema.sections.flatMap((s) => s.fields)
@@ -76,18 +175,38 @@ function FormCard({ form }: { form: AdminFormDefinition }) {
               <div key={`${si}-${section.heading}`} className={si > 0 ? 'mt-5' : ''}>
                 <p className="text-[10px] tracking-widest uppercase text-muted font-semibold mb-2">{section.heading}</p>
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2">
-                  {fields.map((f) => (
-                    <label key={f.key}
-                      className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border cursor-pointer ${
-                        f.required ? 'border-green-700 bg-green-50' : 'border-green-800/15 hover:bg-green-50/50'
+                  {fields.map((f) => (editingKey === f.key ? (
+                    <FieldEditRow key={f.key} busy={busy}
+                      field={{ key: f.key, label: f.label, type: f.type }}
+                      onCancel={() => setEditingKey(null)}
+                      onSave={(patch) => void mutate(() => editFormField(form.form_key, f.key, {
+                        label: patch.label, type: patch.type,
+                        new_key: patch.new_key !== f.key ? patch.new_key : undefined,
+                      }))} />
+                  ) : (
+                    <div key={f.key}
+                      className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg border ${
+                        f.required ? 'border-green-700 bg-green-50' : 'border-green-800/15'
                       }`}>
-                      <input type="checkbox" className="accent-green-700 w-[17px] h-[17px]"
+                      <input type="checkbox" className="accent-green-700 w-[17px] h-[17px] cursor-pointer"
+                        aria-label={`${f.label} is required`}
                         checked={f.required === true} onChange={() => void toggle(si, f.key)} />
-                      <span className={`text-[13.5px] leading-snug ${f.required ? 'text-green-900 font-medium' : 'text-secondary'}`}>
+                      <span className={`text-[13.5px] leading-snug flex-1 min-w-0 truncate ${f.required ? 'text-green-900 font-medium' : 'text-secondary'}`}
+                        title={`${f.label} · ${f.type}`}>
                         {f.label}
+                        {f.options && <span className="text-[10px] text-gold-800 ml-1">({f.options.length})</span>}
                       </span>
-                    </label>
-                  ))}
+                      <button type="button" aria-label={`Edit ${f.label}`} disabled={busy}
+                        className="text-muted hover:text-green-800 focus-ring rounded p-0.5"
+                        onClick={() => setEditingKey(f.key)}><Pencil size={13} /></button>
+                      <button type="button" aria-label={`Remove ${f.label}`} disabled={busy}
+                        className="text-muted hover:text-red-700 focus-ring rounded p-0.5"
+                        onClick={() => { if (window.confirm(`Remove “${f.label}” from this form?\n\nAnswers already collected keep their meaning — they stay readable against the version of the form they were collected under.`)) void mutate(() => removeFormField(form.form_key, f.key)); }}>
+                        <Trash2 size={13} /></button>
+                    </div>
+                  )))}
+                  <AddFieldRow busy={busy}
+                    onAdd={(nf) => void mutate(() => addFormField(form.form_key, section.heading, nf))} />
                 </div>
               </div>
             );
@@ -138,7 +257,7 @@ export default function AdminFormsPage() {
           </p>
           <div className="flex flex-col gap-3">
             {(forms ?? []).filter((f) => f.audience === aud).map((f) => (
-              <FormCard key={f.form_key} form={f} />
+              <FormCard key={f.form_key} form={f} onError={setError} />
             ))}
           </div>
         </div>

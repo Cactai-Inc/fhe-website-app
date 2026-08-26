@@ -718,6 +718,55 @@ export async function regenerateContractDocument(documentId: string): Promise<st
   return (data as string | null) ?? null;
 }
 
+/**
+ * P1 ITEM 2 — WHAT THIS CONTRACT STILL NEEDS FROM THE PERSON READING IT.
+ *
+ * Owner, 2026-08-25: *"if there is information we need like her address which i
+ * dont have she is prompted with an intake page to add the missing information we
+ * need for the contract … this applies to both her account (personal information)
+ * and her horse record."*
+ *
+ * NOT the same question as `documentPartiesSummary().missing`, which is "the four
+ * fields every lease party must have" for the staff Parties card. This reads the
+ * TOKENS THIS TEMPLATE ACTUALLY PRINTS and reports only those whose underlying
+ * record is empty — so a contract that never prints a phone number never asks for
+ * one, and nothing already on file is asked for twice.
+ */
+export interface ContractIntakeNeed {
+  /** contact: name | email | phone | address. horse: a capture_horse_record_info patch key. */
+  key: string;
+  label: string;
+  /** horse only — 'address' asks for the four components as one group. */
+  kind?: 'text' | 'address';
+}
+export interface ContractIntakeRequirements {
+  document_id: string;
+  title: string | null;
+  workflow_state: string;
+  my_roles: string[];
+  contact: { contact_id: string | null; missing: ContractIntakeNeed[] };
+  horse: {
+    horse_id: string | null;
+    /** The horse tokens on this contract belong to a role the caller holds. */
+    mine: boolean;
+    /** Hers to supply, but none attached — the contract page's own HorseGate
+     *  owns that case; this only names it so the gate can hand over. */
+    needs_horse: boolean;
+    missing: ContractIntakeNeed[];
+  };
+  complete: boolean;
+}
+
+export async function contractIntakeRequirements(
+  documentId: string,
+): Promise<ContractIntakeRequirements> {
+  const { data, error } = await supabase.rpc('contract_intake_requirements', {
+    p_document_id: documentId,
+  });
+  if (error) throw error;
+  return data as ContractIntakeRequirements;
+}
+
 /** The required contact fields a lease party must have (owner directive 2026-07-22). */
 export type PartyField = 'name' | 'address' | 'email' | 'phone';
 
@@ -776,11 +825,21 @@ export async function captureContactInfo(
   // recomputes automatically from the components we set here.
   const { error: upErr } = await supabase.from('contacts').update(patch).eq('id', contactId);
   if (upErr) throw upErr;
-  // refill the doc's party tokens from the now-updated contact, then re-merge
-  const { error: fillErr } = await supabase.rpc('fill_party_fields_from_contacts', { p_document_id: documentId });
-  if (fillErr) throw fillErr;
-  const { error: mergeErr } = await supabase.rpc('remerge_contract_from_clauses', { p_document_id: documentId });
-  if (mergeErr) throw mergeErr;
+  /* ⚠️ ONE RPC, BECAUSE THE TWO-STEP LEFT THE DOCUMENT DESTROYED IN BETWEEN.
+     This used to call `fill_party_fields_from_contacts` and then
+     `remerge_contract_from_clauses`. The first ENDS by calling
+     `remerge_contract_from_fields`, which composes from
+     `contract_templates.body` — and every clause-composed template stores the
+     literal string "(composed from clauses)" there, 23 characters. So between
+     those two calls the lease's `merged_body` WAS that string, and anything that
+     stopped the second call from landing (a dropped connection, a thrown error,
+     a closed tab) left the contract with no text at all.
+     `regenerate_contract_document` is one RPC — therefore one transaction — and
+     does strictly more: the horse tokens, the party tokens, the clause re-merge
+     and the signature replay, dispatching correctly for flat templates too. It is
+     already what the contract page calls when a document is opened. */
+  const { error: regenErr } = await supabase.rpc('regenerate_contract_document', { p_document_id: documentId });
+  if (regenErr) throw regenErr;
 }
 
 /**
@@ -802,8 +861,12 @@ export async function captureHorseRecord(
     p_document_id: documentId, p_patch: patch,
   });
   if (capErr) throw capErr;
-  const { error: mergeErr } = await supabase.rpc('remerge_contract_from_clauses', { p_document_id: documentId });
-  if (mergeErr) throw mergeErr;
+  // Same hazard, same fix as captureContactInfo above: capture_horse_record_info
+  // also ends on `remerge_contract_from_fields`, so a clause-composed document is
+  // left holding the template's 23-character placeholder until this lands. One
+  // RPC, one transaction, and the flat/clause dispatch handled server-side.
+  const { error: regenErr } = await supabase.rpc('regenerate_contract_document', { p_document_id: documentId });
+  if (regenErr) throw regenErr;
 }
 
 /** Explicit save: re-compose the document from its clauses/fields and persist the

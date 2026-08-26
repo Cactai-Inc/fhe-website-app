@@ -66,6 +66,7 @@ import ContentPostDetail from './pages/app/ContentPostDetail';
 // Slice 4 — purpose-built dashboards + community/library surfaces
 import Support from './pages/app/Support';
 import ContractPage from './pages/app/ContractPage';
+import ContractIntake from './pages/app/ContractIntake';
 import AccountHub from './pages/app/AccountHub';
 import HorseIntakePage from './pages/app/HorseIntakePage';
 import AcquisitionIntakePage from './pages/app/AcquisitionIntakePage';
@@ -102,6 +103,7 @@ import NewContractPage from './pages/app/ops/NewContractPage';
 import DealsPage, { DEALS_STANDALONE_RETIRED } from './pages/app/ops/DealsPage';
 import DealPage from './pages/app/ops/DealPage';
 import AdminFormsPage from './pages/app/ops/admin/AdminFormsPage';
+import AdminMenusPage from './pages/app/ops/admin/AdminMenusPage';
 import AdminPageVisibilityPage from './pages/app/ops/admin/AdminPageVisibilityPage';
 import NavGroupCardsPage from './pages/app/ops/NavGroupCardsPage';
 import PaymentReviewPage from './pages/app/ops/PaymentReviewPage';
@@ -296,6 +298,10 @@ export function AppRoutes() {
               {/* Negotiated contracts (Update A): owner authoring + counterparty
                   intake→review→sign. Notification links target this route. */}
               <Route path="contracts/:id" element={<ContractPage />} />
+              {/* P1 ITEM 2 — the gate between claiming an account and reading the
+                  contract it carried. It forwards to the document when nothing is
+                  missing, so it is safe to route through unconditionally. */}
+              <Route path="contracts/:id/start" element={<ContractIntake />} />
               {/* TASK-RECORDS (2026-08-12): Records — Leads · Clients · Partners ·
                   Vendors · Horses, one tab strip over independent renderers.
                   Supersedes TASK-ONEPEOPLE. /app/records bare = the All tab. */}
@@ -440,6 +446,9 @@ export function AppRoutes() {
               <Route path="ops/admin/branding" element={<ProtectedRoute requireAdmin><AdminBrandingPage /></ProtectedRoute>} />
               <Route path="ops/admin/products" element={<ProtectedRoute requireAdmin><AdminProductsPage /></ProtectedRoute>} />
               <Route path="ops/admin/forms" element={<ProtectedRoute requireAdmin><AdminFormsPage /></ProtectedRoute>} />
+              {/* Every dropdown list in the app and its contents — the 5 shared
+                  vocabularies plus the 119 option lists living inside form schemas. */}
+              <Route path="ops/admin/menus" element={<ProtectedRoute requireAdmin><AdminMenusPage /></ProtectedRoute>} />
               {/* TASK-TEXTEDIT — edit template wording without SQL (D13). */}
               <Route path="ops/admin/templates" element={<ProtectedRoute requireAdmin><AdminTemplatesPage /></ProtectedRoute>} />
               <Route path="ops/admin/templates/:templateKey" element={<ProtectedRoute requireAdmin><AdminTemplateEditorPage /></ProtectedRoute>} />

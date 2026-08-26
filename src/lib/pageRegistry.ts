@@ -199,6 +199,7 @@ export const PAGE_REGISTRY: PageEntry[] = [
   { key: 'settings.branding', path: '/app/ops/admin/branding', label: 'Branding', group: 'settings' },
   { key: 'settings.products', path: '/app/ops/admin/products', label: 'Products', group: 'settings' },
   { key: 'settings.forms', path: '/app/ops/admin/forms', label: 'Forms', group: 'settings' },
+  { key: 'settings.menus', path: '/app/ops/admin/menus', label: 'Menus', group: 'settings' },
   {
     key: 'settings.page_visibility', path: '/app/ops/admin/pages', label: 'Page visibility',
     group: 'settings', protected: true,

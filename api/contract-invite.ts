@@ -1,12 +1,34 @@
 /* POST /api/contract-invite — issue + email a contract-counterparty invitation
- * (Update A, spec G). Staff-only (Bearer token). Body: { documentId, contactId,
- * email }. Calls invite_contract_counterparty (service role) then emails the
- * branded register link carrying the token; the register flow redeems it via
- * redeem_contract_invitation and lands the counterparty on the contract. */
+ * (Update A, spec G). Staff-only (Bearer token). Body: { documentId, partyRole,
+ * email? }.
+ *
+ * ⚠️ P1 ITEM 1 — TWO EMAILS BECAME ONE, DECIDED BY WHETHER THEY HAVE AN ACCOUNT.
+ *
+ * Owner, 2026-08-25: *"the only option is for me to send the contract to her and
+ * send the invitation to activate her account, i dont want to send her two emails
+ * since that is confusing."*
+ *
+ * The reason there were two is structural, not cosmetic: `redeem_contract_invitation`
+ * requires an already signed-in user whose email matches, so the CONTRACT link
+ * assumes the account exists. A unified send must therefore CLAIM THE ACCOUNT FIRST
+ * and route to the document second. So this endpoint now branches on the one fact
+ * that decides it:
+ *
+ *   HAS AN ACCOUNT  → invite_contract_counterparty + CONTRACT_INVITE, unchanged.
+ *                     This is a real case and that path serves it well.
+ *   HAS NO ACCOUNT  → invite_contract_party_account: their ACCOUNT invitation
+ *                     (kind COMMUNITY), reused if one already exists, with
+ *                     `document_id` stamped on it — and ONE email, the INVITATION
+ *                     template, which now names both the claim and the contract.
+ *
+ * Neither `redeem_contract_invitation` nor the CONTRACT kind is removed; they
+ * simply stop being used for people who have no account.
+ */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
 import { renderEmailTemplate } from './_lib/emailTemplates.js';
+import { sendInvitationEmail, recordInvitationDelivery, type ChecklistRow } from './_lib/invitationEmail.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
@@ -81,6 +103,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { data: c } = await db.from('contacts').select('email').eq('id', party.contact_id).maybeSingle();
       email = c?.email ?? undefined;
       if (!email) return res.status(200).json({ ok: true, emailed: false, reason: 'no email on file for this party' });
+    }
+
+    // ── P1 ITEM 1: DOES THIS PERSON HAVE AN ACCOUNT? ─────────────────────
+    //
+    // `profiles` IS the account (CLAUDE.md: profiles ↔ auth.users, the 1:1
+    // bridge). Two ways to be linked to one: the contact is the profile's
+    // contact, or the address itself already signs in. Both are checked because
+    // a counterparty contact created for a contract may not be linked yet even
+    // though the person has been a member for a year.
+    const { data: byContact } = await db
+      .from('profiles').select('user_id').eq('contact_id', party.contact_id).limit(1).maybeSingle();
+    const { data: byEmail } = byContact ? { data: null } : await db
+      .from('profiles').select('user_id').ilike('email', email).limit(1).maybeSingle();
+    const hasAccount = Boolean(byContact || byEmail);
+
+    if (!hasAccount) {
+      // ONE invitation, carrying the contract. The RPC reuses a live or SAVED
+      // (draft) account invitation rather than minting a second one, so the link
+      // staff already saved is the link the client receives and nothing is
+      // superseded — see PAMELA §A.
+      const { data: acct, error: acctErr } = await db.rpc('invite_contract_party_account', {
+        p_document_id: documentId, p_contact_id: party.contact_id, p_email: email,
+      });
+      if (acctErr) {
+        return /already signed/i.test(acctErr.message)
+          ? res.status(409).json({ code: 'ALREADY_SIGNED', error: acctErr.message })
+          : res.status(400).json({ error: acctErr.message });
+      }
+      const issued = acct as { invitation_id: string; token: string; expires_at: string };
+      const origin = req.headers.origin || `https://${req.headers.host}`;
+      // NO `&kind=contract`: this is the ACCOUNT claim, and the document it
+      // carries is read off the invitation row, never off the URL.
+      const registerUrl = `${origin}/activate?token=${issued.token}`;
+
+      // The same paperwork lines the ordinary account invitation carries — a
+      // counterparty who also owes onboarding documents should be told once, in
+      // this one email, rather than discovering them after signing in.
+      let checklist: ChecklistRow[] = [];
+      try {
+        const { data: cl } = await db.rpc('contact_checklist', { p_contact_id: party.contact_id });
+        checklist = (cl as ChecklistRow[]) ?? [];
+      } catch { /* the invite still goes out */ }
+
+      const sent = await sendInvitationEmail(db, {
+        orgId: doc.org_id, to: email, registerUrl,
+        contractTitle: doc.title ?? null,
+        expiresAt: issued.expires_at, checklist,
+      });
+      await recordInvitationDelivery(db, issued.invitation_id, sent);
+      return res.status(200).json({
+        ok: true, emailed: sent.ok, accountClaim: true,
+        ...(sent.ok ? {} : { reason: sent.error }),
+      });
     }
 
     // Invitation language derives from THIS party's document controls + whether
