@@ -2453,6 +2453,32 @@ confirmed send on this path.
 
 ---
 
+## CR-79 · G7 · captured — ⚠️ AN UPLOADED FILE CANNOT BE VIEWED OR DELETED
+
+**SAID** *(owner, 2026-08-26)*:
+> *"need a way to delete files. there are two test files from walk4 that i cant delete or even see i
+> can only download them, need a button to view and a method to select and delete"*
+
+**Two separate defects in one sentence, and neither is cosmetic:**
+1. **NO VIEW.** The only affordance is DOWNLOAD. A file has to leave the app to be identified, which
+   makes "is this the one I want to remove?" a round trip through the Downloads folder.
+2. **NO DELETE.** ⚠️ **Test files uploaded during a walk are now permanent.** Anything uploaded by
+   mistake — or containing something it should not — cannot be taken back through the browser.
+
+**He asked for SELECT-AND-DELETE, i.e. multiple at once**, not a per-row bin icon.
+
+⚠️ **THIS COLLIDES WITH D32 (nothing is removed) AND WITH THE EXECUTED-DOCS RULE.** A signed document
+is evidence and must never be sweepable. **So the delete has to distinguish an UPLOADED FILE from a
+GENERATED DOCUMENT** — the `files` / `file_links` spine (TASK-UPLOADS) is the former; `documents` is
+the latter. **Deleting must be a soft delete on `files`, never a path that can reach an executed
+document.**
+
+**ASK-REPO:** does `files` carry `deleted_at`, and is there any existing delete RPC? Does the storage
+object get removed, or only the row — and if only the row, is the object still reachable by URL?
+**ASK-OWNER:** who may delete — staff only, or the person who uploaded it?
+
+---
+
 # G9 · GLOBALIZATION INVENTORY
 
 ## CR-37 · G9 · researched
