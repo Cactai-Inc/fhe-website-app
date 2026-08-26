@@ -431,6 +431,37 @@ function renderToken(
   // HORSE.* imports read-only from the horse record — to change one, the horse
   // record is edited, not the contract. Label-resolved for display.
   const isHorseImport = token.startsWith('HORSE.');
+  /* ⚠️ A PRINTED NAME IS IMPORTED, NEVER TYPED INTO THE CONTRACT.
+     Owner, 2026-08-26, twice: "the printed name section needs to be made wider
+     ... its cutting off the last letter n", and after the first attempt widened
+     the signature grid, "the contract still cuts the name short ... 'French
+     Heritage Equestria' is all thats visible."
+
+     WIDENING WAS THE WRONG FIX AND WOULD ALWAYS HAVE BEEN. A `contract_fields`
+     row exists for LESSEE.PRINTED_NAME, so this branch rendered it as an inline
+     INPUT, and an input cannot wrap: InlineInput sizes itself with a hidden
+     `max-w-full overflow-hidden` sizer, so whenever the value is wider than the
+     track it is CLIPPED rather than wrapped, and the last glyph is what falls
+     off. Any width I pick is one long name away from the same bug.
+
+     It is also wrong on the merits, per D22. `.PRINTED_NAME` is one of the five
+     party tokens `fill_party_fields_from_contacts` writes FROM the contact
+     record, and D22 §3 makes the name the one value that locks with the
+     signature, because it is what the signature attests to. `AUTOFILL_HINT`
+     below already declares every *.PRINTED_NAME an import ("Lessee name on
+     file"). Rendering it as a fillable blank let a party type a printed name
+     that differs from the record their signature is bound to.
+
+     So it takes the imported-record path: a span that wraps freely, with the
+     dotted-underline lock cue and the tooltip naming where the name is actually
+     edited. The clipping cannot recur at any width, on any template. */
+  const isPrintedName = /\.PRINTED_NAME$/.test(token);
+  if (isPrintedName) {
+    return (
+      <ImportedRecordToken key={key} value={valueByKey[token] ?? ''}
+        tip={importedSourceTip(token, valueByKey)} />
+    );
+  }
   if (field && field.can_edit !== undefined && !isHorseImport) {
     // A field whose OWN conditional_on is unmet is INOPERABLE — the composer
     // drops its line, so accepting input there would be a lie. (This is also
