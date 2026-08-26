@@ -98,15 +98,21 @@ export default function ContractIntake() {
         const patch: Parameters<typeof captureHorseRecord>[1] = {};
         for (const m of req.horse.missing) {
           if (m.key === 'vet_address') {
+            const parts = ['vet_address_line1', 'vet_city', 'vet_state', 'vet_postal'] as const;
+            // An OPTIONAL address left entirely blank is a real answer ("this vet
+            // has no address"), not an omission — writing four empty strings over
+            // four nulls would be a pointless record touch. Skip it.
+            if (m.optional && parts.every((k) => val(k) === '')) continue;
             patch.vet_address_line1 = val('vet_address_line1');
             patch.vet_city = val('vet_city');
             patch.vet_state = val('vet_state');
             patch.vet_postal = val('vet_postal');
           } else {
+            if (m.optional && val(m.key) === '') continue;
             (patch as Record<string, string>)[m.key] = val(m.key);
           }
         }
-        await captureHorseRecord(id, patch);
+        if (Object.keys(patch).length > 0) await captureHorseRecord(id, patch);
       }
 
       navigate(`/app/contracts/${id}`, { replace: true });
@@ -209,25 +215,43 @@ export default function ContractIntake() {
             <p className="text-sm text-muted mb-4">
               The contract names these, and the record doesn’t have them yet.
             </p>
+            {/* ⚠️ AN OPTIONAL NEED IS OFFERED, NEVER REQUIRED (owner, 2026-08-26:
+                "we need to removed the required status of ... the vets address").
+                Sundance's veterinarian travels to the horse and publishes no
+                address, so a `required` input here was one nobody could satisfy —
+                and it was the ONLY thing standing between the Lessor and her
+                contract. It is still asked, because a vet who HAS an address
+                should give it once; it just cannot hold the page shut. */}
             {req.horse.missing.map((m) => (
               m.kind === 'address' ? (
                 <fieldset key={m.key} className="mb-4">
-                  <legend className="form-label mb-2">{m.label}</legend>
-                  <input className="form-input mb-2" required placeholder="Street address"
+                  <legend className="form-label mb-2">
+                    {m.label}
+                    {m.optional && <span className="ml-1 font-normal text-muted">— optional</span>}
+                  </legend>
+                  {m.optional && (
+                    <p className="text-xs text-muted mb-2">
+                      Leave this blank if the veterinarian travels to the horse and has no street address.
+                    </p>
+                  )}
+                  <input className="form-input mb-2" required={!m.optional} placeholder="Street address"
                     aria-label={`${m.label} — street`} value={form.vet_address_line1 ?? ''} onChange={set('vet_address_line1')} />
                   <div className="grid grid-cols-2 gap-3 mb-2">
-                    <input className="form-input" required placeholder="City"
+                    <input className="form-input" required={!m.optional} placeholder="City"
                       aria-label={`${m.label} — city`} value={form.vet_city ?? ''} onChange={set('vet_city')} />
-                    <input className="form-input" required placeholder="State"
+                    <input className="form-input" required={!m.optional} placeholder="State"
                       aria-label={`${m.label} — state`} value={form.vet_state ?? ''} onChange={set('vet_state')} />
                   </div>
-                  <input className="form-input" required placeholder="ZIP code"
+                  <input className="form-input" required={!m.optional} placeholder="ZIP code"
                     aria-label={`${m.label} — ZIP`} value={form.vet_postal ?? ''} onChange={set('vet_postal')} />
                 </fieldset>
               ) : (
                 <label key={m.key} className="block mb-4">
-                  <span className="form-label">{m.label}</span>
-                  <input className="form-input" required value={form[m.key] ?? ''} onChange={set(m.key)} />
+                  <span className="form-label">
+                    {m.label}
+                    {m.optional && <span className="ml-1 font-normal text-muted">— optional</span>}
+                  </span>
+                  <input className="form-input" required={!m.optional} value={form[m.key] ?? ''} onChange={set(m.key)} />
                 </label>
               )
             ))}
