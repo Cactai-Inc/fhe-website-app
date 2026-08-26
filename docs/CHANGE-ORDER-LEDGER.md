@@ -2128,8 +2128,22 @@ that will find it faster:
 2. **MOBILE ALREADY HAS NO ROOM TO NEST.** Everything is full width at one column *(confirmed
    below 1024px)*, so each level of expansion is the whole screen. ⚠️ **The line may be in a
    different place on a phone than on a desktop**, and the phone is his working device.
-3. **HOW DOES SOMEONE GET BACK OUT?** Three levels deep with no page change means no browser back
-   button. **Collapsing has to be as easy as expanding, at every level.**
+3. ~~How does someone get back out?~~ ✅ **ANSWERED, owner 2026-08-25:**
+   > *"yes i agree about the quick close necessity for the expanded view approach and an obvious close
+   > button in the top right that collapses everything and saves their work is the right approach."*
+
+   | | |
+   |---|---|
+   | **an obvious CLOSE button, top right** | not a hunt for the arrow that opened it |
+   | ⚠️ **it collapses EVERYTHING** | one press exits all levels — not one level at a time |
+   | ⚠️ **and it SAVES THEIR WORK** | **closing is never a discard** |
+
+   ⚠️ **"Saves their work" is the load-bearing half.** These are **editable** surfaces nested inside
+   each other; a close that abandoned edits would make the whole pattern hostile — and **it is the
+   exact bug already recorded in CR-68a**, where clicking outside a modal erases everything typed.
+   **Same principle, opposite control: closing commits.**
+   ⚠️ **So an expanded card needs no separate save.** If closing saves, a save button is a second way
+   to do one thing — decide that deliberately rather than shipping both.
 
 ### What is already settled and should be reused
 - **CR-57/57a/57b — the expand behaviour itself:** full width, smooth stretch, **right arrow when
