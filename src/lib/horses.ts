@@ -410,7 +410,11 @@ export function horseRecordCompleteness(rec: Record<string, unknown>): HorseReco
     ['name', answered(rec.nickname) || answered(rec.registered_name)],
     ...HORSE_DOC_REQUIRED_KEYS.map((k) =>
       [k as string, answered(rec[k as string])] as [string, boolean]),
-    ['euthanasia_authorization', rec.euthanasia_authorization === 'A' || rec.euthanasia_authorization === 'B'],
+    /* ⚠️ EUTHANASIA IS NO LONGER A REQUIRED FIELD (owner, 2026-08-25). The block
+       was removed from the intake form the same day and the authorisation is now a
+       STATEMENT in the Emergency Vet Authorization, not a choice the client makes.
+       Leaving it counted here made every horse permanently "partially complete",
+       with staff invited to chase a field the form no longer has. */
     ['location', answered(rec.current_location) || rec.current_location_id != null || rec.home_location_id != null],
   ];
   for (const [key, ok] of checks) {
