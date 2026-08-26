@@ -1192,10 +1192,11 @@ export async function setMenuValue(
 /** Replace one form field's option list. Keys, labels, types and required flags
  *  are left exactly as found, so no stored answer is orphaned. */
 export async function setFormFieldOptions(
-  formKey: string, fieldKey: string, options: string[],
+  formKey: string, fieldKey: string, options: string[], fromVersion?: number,
 ): Promise<void> {
   const { error } = await supabase.rpc('set_form_field_options', {
     p_form_key: formKey, p_field_key: fieldKey, p_options: options,
+    p_from_version: fromVersion ?? null,
   });
   if (error) throw error;
 }
@@ -1216,11 +1217,13 @@ export async function setFormFieldOptions(
 export async function addFormField(
   formKey: string, sectionHeading: string,
   field: { key: string; label: string; type?: string; options?: string[] },
+  fromVersion?: number,
 ): Promise<void> {
   const { error } = await supabase.rpc('add_form_field', {
     p_form_key: formKey, p_section_heading: sectionHeading,
     p_key: field.key, p_label: field.label,
     p_type: field.type ?? 'text', p_options: field.options ?? null,
+    p_from_version: fromVersion ?? null,
   });
   if (error) throw error;
 }
@@ -1230,20 +1233,23 @@ export async function addFormField(
 export async function editFormField(
   formKey: string, fieldKey: string,
   patch: { label?: string; type?: string; new_key?: string },
+  fromVersion?: number,
 ): Promise<void> {
   const { error } = await supabase.rpc('edit_form_field', {
     p_form_key: formKey, p_field_key: fieldKey,
     p_label: patch.label ?? null, p_type: patch.type ?? null,
-    p_new_key: patch.new_key ?? null,
+    p_new_key: patch.new_key ?? null, p_from_version: fromVersion ?? null,
   });
   if (error) throw error;
 }
 
 /** The field leaves the LIVE shape; the version that carried it is retained and
  *  every answer set already collected names that version. */
-export async function removeFormField(formKey: string, fieldKey: string): Promise<void> {
+export async function removeFormField(
+  formKey: string, fieldKey: string, fromVersion?: number,
+): Promise<void> {
   const { error } = await supabase.rpc('remove_form_field', {
-    p_form_key: formKey, p_field_key: fieldKey,
+    p_form_key: formKey, p_field_key: fieldKey, p_from_version: fromVersion ?? null,
   });
   if (error) throw error;
 }
@@ -1253,6 +1259,8 @@ export interface AdminFormDefinition {
   title: string;
   audience: string;
   purpose: string | null;
+  /** The live version. Every save mints the next one; TASK-VERSIONSPINE. */
+  version: number;
   schema: { sections: { heading: string; fields: {
     key: string; label: string; type: string; required?: boolean;
     /** The field's own menu, when it offers choices — 119 fields across the 28
@@ -1268,9 +1276,66 @@ export async function adminFormDefinitions(): Promise<AdminFormDefinition[]> {
 }
 
 /** Bulk-stamp required flags onto a form's fields ({field_key: bool}). */
-export async function setFormRequired(formKey: string, required: Record<string, boolean>): Promise<void> {
+export async function setFormRequired(
+  formKey: string, required: Record<string, boolean>, fromVersion?: number,
+): Promise<void> {
   const { error } = await supabase.rpc('set_form_required', {
-    p_form_key: formKey, p_required: required,
+    p_form_key: formKey, p_required: required, p_from_version: fromVersion ?? null,
   });
   if (error) throw error;
+}
+
+/* ─── Form VERSIONS: the list, one version, and restore ───────────────────────
+ * TASK-VERSIONSPINE (owner, 2026-08-26): "save and its vx+1 with the older
+ * version stored in a version list that i can click to see from the page im
+ * editing the thing on… i can restore it, or create a superseding version from
+ * it by editing it and saving it."
+ *
+ * ⚠️ THE NUMBER SAYS WHEN; THE PARENT SAYS WHAT IT CAME FROM. Editing v1 when v2
+ * exists mints v3 stamped "from v1", so a reader knows v3 does not contain what
+ * was unique to v2. parent_version is null in the ordinary case — edited from the
+ * version immediately before.
+ *
+ * ⚠️ RESTORE MINTS A NEW VERSION. It never moves a pointer backwards and never
+ * removes a row: restore and supersede are the same act with a different amount
+ * of editing, and the database refuses UPDATE and DELETE on the history outright. */
+export interface FormVersion {
+  version: number;
+  parent_version: number | null;
+  is_current: boolean;
+  edited_by: string | null;
+  edited_by_name: string | null;
+  created_at: string;
+}
+
+export async function formVersionList(formKey: string): Promise<FormVersion[]> {
+  const { data, error } = await supabase.rpc('form_version_list', { p_form_key: formKey });
+  if (error) throw error;
+  return (data ?? []) as FormVersion[];
+}
+
+export interface FormVersionDetail extends Pick<FormVersion, 'version' | 'parent_version' | 'is_current'> {
+  title: string;
+  audience: string;
+  purpose: string | null;
+  schema: AdminFormDefinition['schema'];
+  created_at: string;
+}
+
+export async function formVersionAt(formKey: string, version: number): Promise<FormVersionDetail | null> {
+  const { data, error } = await supabase.rpc('form_version_at', {
+    p_form_key: formKey, p_version: version,
+  });
+  if (error) throw error;
+  return ((data ?? [])[0] as FormVersionDetail | undefined) ?? null;
+}
+
+/** Mints a NEW version carrying this one's content, stamped "from v<n>".
+ *  Returns the number it minted. */
+export async function restoreFormVersion(formKey: string, version: number): Promise<number> {
+  const { data, error } = await supabase.rpc('restore_form_definition_version', {
+    p_form_key: formKey, p_version: version,
+  });
+  if (error) throw error;
+  return data as number;
 }
