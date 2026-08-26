@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CreditCard, UserRoundCheck } from 'lucide-react';
 import {
@@ -39,6 +39,13 @@ const usd = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', c
 export function OrdersContent() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  /* CR-76b: an entry on My Payments links here BY ORDER NUMBER — "the link to the
+     order should be clickable to open the orders history page and scroll to that
+     order number and expand it." The scroll and the highlight are here; EXPANDING
+     the row in place is CR-75's rebuild of this list and is not done yet, so the
+     row still opens the order's own page. */
+  const wanted = new URLSearchParams(window.location.search).get('order');
+  const wantedRef = useRef<HTMLDivElement | null>(null);
 
   const [managing, setManaging] = useState<Order | null>(null);
   const reload = () => listMyOrders().then(setOrders).catch(() => setOrders([]));
@@ -50,6 +57,13 @@ export function OrdersContent() {
     return () => { active = false; };
   }, []);
 
+  /* Runs after the list paints, which is why it keys on `orders` rather than
+     firing on mount — the target node does not exist until the rows do. */
+  useEffect(() => {
+    if (!wanted || !wantedRef.current) return;
+    wantedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [wanted, orders]);
+
   return (
     <div className="mt-2.5 mb-1">
       {loading ? (
@@ -60,13 +74,18 @@ export function OrdersContent() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {orders.map((o) => (
-            <div key={o.id} className="bg-white border border-green-800/10 p-5">
+          {orders.map((o) => {
+            const isWanted = !!wanted && o.display_code === wanted;
+            return (
+            <div key={o.id} ref={isWanted ? wantedRef : undefined}
+              className={`bg-white border p-5 ${isWanted
+                ? 'border-gold-400 ring-1 ring-gold-400/40'
+                : 'border-green-800/10'}`}>
               <Link to={`/order/${o.id}`}
                 className="flex items-center justify-between hover:opacity-90 focus-ring">
                 <div>
                   <p className="text-sm font-sans font-medium text-green-900">
-                    Order · {new Date(o.created_at).toLocaleDateString()}
+                    {o.display_code ?? 'Order'} · {new Date(o.created_at).toLocaleDateString()}
                   </p>
                   <p className="text-xs text-muted mt-0.5">
                     {STATUS_LABEL[o.status] ?? o.status}
@@ -86,7 +105,8 @@ export function OrdersContent() {
                 </button>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

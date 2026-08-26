@@ -186,7 +186,13 @@ export interface Order {
    *  before the trigger existed. */
   current_status: string | null;
   payment_method: PaymentMethod | null;
-  /** Inline payment state on the purchase row (payments table retired). */
+  /** Inline payment state on the purchase row. ⚠️ NO LONGER THE SOURCE OF TRUTH:
+   *  `payments` (CR-76b, 2026-08-26) carries one numbered record per input on the
+   *  payment screen, which is what makes a split between cash and Zelle
+   *  expressible. This column is kept in step by the same five doors and is safe
+   *  to read for "is this order settled" — but the METHOD and the history live on
+   *  the payment records. (An older `payments` table was retired long before
+   *  this one; they share only a name.) */
   payment_status: 'unpaid' | 'pending' | 'paid';
   amount: number;
   payment_reference: string | null;

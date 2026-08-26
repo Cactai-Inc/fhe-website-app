@@ -183,7 +183,13 @@ export default function OwnerDashboard() {
     <div>
       <Helmet><title>Dashboard</title></Helmet>
 
-      <header className="dash-sticky -mx-4 mb-5 px-4 pb-3 pt-1 sm:-mx-6 sm:px-6">
+      {/* The greeting, the view toggle and the KPI ribbon SCROLL WITH THE PAGE.
+          They used to sit in a `position: sticky; top: 0` bar (`.dash-sticky`),
+          which pinned roughly a third of a phone screen permanently and made the
+          zones scroll underneath it — owner, 2026-08-25: "they need to be part of
+          the page and move with the rest of the content on scroll." The negative
+          margins stay: they let `.dash-dawn`'s gradient bleed to the gutters. */}
+      <header className="-mx-4 mb-5 px-4 pb-3 pt-1 sm:-mx-6 sm:px-6">
         <div className="dash-dawn pb-3 pt-2">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <h1 className="font-serif text-[1.7rem] leading-tight text-green-900">

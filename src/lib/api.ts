@@ -816,6 +816,9 @@ export async function myWallState(): Promise<WallState> {
  *  security gate, so failures are swallowed to an all-false default. */
 export interface NavPresence {
   orders: boolean;
+  /** CR-76b: present once there is a payment ENTRY. An order with no method
+   *  chosen is awaiting payment — the absence of an entry, not an entry. */
+  payments: boolean;
   documents: boolean;
   stable: boolean;
   posts: boolean;
