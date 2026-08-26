@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, X } from 'lucide-react';
 import type { ZoneDef, DashboardView } from '../../../lib/dashboard/registry';
-import { VIEW_LABEL } from '../../../lib/dashboard/registry';
+import { VIEW_LABEL, zonesFor } from '../../../lib/dashboard/registry';
 
 /**
  * The parts every zone is made of. Kept in one file on purpose: they are small,
@@ -116,8 +116,34 @@ export function Ring({ pct, label }: { pct: number; label: string }) {
  * to name them in the all-quiet footer.
  */
 export function Zone({
-  def, count, index, children,
-}: { def: ZoneDef; count: number; index: number; children: ReactNode }) {
+  def, count, index, children, collapsible = false,
+}: {
+  def: ZoneDef;
+  count: number;
+  index: number;
+  children: ReactNode;
+  /** ⚠️ OPT-IN, AND ONLY THE NOTIFICATIONS ZONE USES IT (owner, 2026-08-26:
+   *  "collapsable"). Every other zone is already short — it caps its list at
+   *  CAP and links onward — so a collapse control on all sixteen would be
+   *  sixteen more things to click and nothing gained. The state is remembered
+   *  for the session, per zone: collapse a long list once and it stays that way
+   *  until the browser closes, which is the same lifetime as the view toggle's
+   *  own memory and for the same reason (tomorrow is a fresh day). */
+  collapsible?: boolean;
+}) {
+  const storageKey = `fhe.dash.zone.${def.view}.${def.key}.collapsed`;
+  const [collapsed, setCollapsed] = useState(() => {
+    if (!collapsible || typeof window === 'undefined') return false;
+    try { return sessionStorage.getItem(storageKey) === '1'; } catch { return false; }
+  });
+  const toggle = () => {
+    setCollapsed((was) => {
+      const next = !was;
+      try { sessionStorage.setItem(storageKey, next ? '1' : '0'); } catch { /* private mode */ }
+      return next;
+    });
+  };
+
   return (
     <section
       className="dash-enter mb-7"
@@ -138,13 +164,29 @@ export function Zone({
             {count}
           </span>
         )}
+        {collapsible && (
+          <button
+            type="button"
+            onClick={toggle}
+            aria-expanded={!collapsed}
+            data-testid={`zone-${def.key}-collapse`}
+            className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[0.66rem] font-medium text-green-800/55 transition-colors duration-320 ease-glide hover:text-green-900 focus-ring"
+          >
+            <ChevronDown
+              size={13}
+              className={`transition-transform duration-320 ease-glide ${collapsed ? '-rotate-90' : ''}`}
+              aria-hidden="true"
+            />
+            {collapsed ? 'Show' : 'Hide'}
+          </button>
+        )}
         {def.hint && (
           <span className="ml-auto hidden max-w-[46ch] text-right text-[0.72rem] text-green-800/45 sm:block">
             {def.hint}
           </span>
         )}
       </div>
-      {children}
+      {!collapsed && children}
     </section>
   );
 }
@@ -198,11 +240,17 @@ export function Card({
  */
 export function QuietFooter({ absent, view }: { absent: ZoneDef[]; view: DashboardView }) {
   if (absent.length === 0) return null;
+  /* ⚠️ COUNTED, NOT HARDCODED. This read `(view === 'trainer' ? 10 : 6)` — the
+     zone counts as they stood on 2026-08-22 — so adding the notifications zone
+     would have silently retired "Nothing needs you right now", the one line that
+     distinguishes a genuinely quiet day from a half-loaded board. The registry
+     already knows how many zones a view has. */
+  const total = zonesFor(view).length;
   return (
     <p className="mt-2 border-t border-green-900/12 pt-3 text-[0.76rem] leading-relaxed text-green-800/45">
       <span className="font-medium text-green-800/60">All quiet:</span>{' '}
       {absent.map((z) => z.quiet).join(' · ')}.
-      {absent.length === (view === 'trainer' ? 10 : 6) && ' Nothing needs you right now.'}
+      {absent.length === total && ' Nothing needs you right now.'}
     </p>
   );
 }

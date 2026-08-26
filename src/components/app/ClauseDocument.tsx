@@ -571,13 +571,24 @@ export function ClauseProse({
     // three columns inside ~320px crushed each cell so a long printed name
     // ("French Heritage Equestrian") overlapped the Date beside it. A signature
     // block that renders unreadably is worse than one that takes three lines.
+    /* ⚠️ THE PRINTED-NAME TRACK IS SIZED FOR THE COMPANY'S OWN NAME (owner,
+       2026-08-26: "the printed name section needs to be made wider… its cutting
+       off the last letter n"). The middle track was 1.4fr, which on the live
+       HORSE_LEASE_V2 left "French Heritage Equestrian" (26 chars, the real
+       LESSEE.PRINTED_NAME) a few pixels short — and the value renders in an
+       inline input whose sizer is `max-w-full overflow-hidden`, so an input
+       cannot wrap the overflow the way prose does: it clips, and the trailing
+       "n" is what falls off. Widened to 1.9fr, taken from the Date track, which
+       only ever holds a short date and had the most slack. The tenant's own
+       name is the longest string this block ever has to hold, so it is the one
+       to size against. */
     const isSigTriple = cells.length === 3
       && cells.some((c) => c.token.startsWith('SIG.'))
       && cells.map((c) => c.label.toLowerCase()).join('|') === 'signature|printed name|date';
     if (isSigTriple) {
       const key = bi++;
       blocks.push(
-        <div key={`sig${key}`} className="grid grid-cols-1 gap-y-1.5 my-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,0.8fr)] sm:gap-x-6 sm:gap-y-1 sm:items-baseline">
+        <div key={`sig${key}`} className="grid grid-cols-1 gap-y-1.5 my-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.9fr)_minmax(0,0.7fr)] sm:gap-x-6 sm:gap-y-1 sm:items-baseline">
           {cells.map((c, j) => cell(c, j))}
         </div>,
       );

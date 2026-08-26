@@ -746,6 +746,11 @@ export interface ContractIntakeNeed {
   label: string;
   /** horse only — 'address' asks for the four components as one group. */
   kind?: 'text' | 'address';
+  /** ⚠️ OFFERED BUT NOT REQUIRED, and it does NOT count toward `complete`
+   *  (owner, 2026-08-26 — a mobile vet who travels to the horse has no address
+   *  to give, and Sundance's does not). Asked once so a vet who HAS an address
+   *  still gets one on file; never able to hold a contract open. */
+  optional?: boolean;
 }
 export interface ContractIntakeRequirements {
   document_id: string;

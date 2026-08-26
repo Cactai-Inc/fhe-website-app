@@ -6,7 +6,7 @@ import {
   fetchNotesLoop, fetchStableBoard, fetchDocumentsOnboarding, fetchCommunityPulse,
   fetchEvaluationsDue, fetchGifts, fetchMoneyHealth, fetchClairesPlate,
   fetchDealsContracts, fetchActivityReadback, fetchCatalogHygiene,
-  fetchOnboardingPipeline, fetchTrainerKpis, fetchBusinessKpis,
+  fetchOnboardingPipeline, fetchTrainerKpis, fetchBusinessKpis, fetchNotifications,
   type ZoneResult, type TrainerKpis, type BusinessKpis, type RevenueWindow,
 } from '../../../lib/ops/api-dashboard';
 import { fetchRevenue } from '../../../lib/ops/api-calendar';
@@ -25,6 +25,7 @@ import {
 import {
   MoneyHealthZone, MirrorZone, DealsZone, PipelineZone, HygieneZone, ActivityZone,
 } from '../../../components/app/dashboard/BusinessZones';
+import { NotificationsZone } from '../../../components/app/dashboard/NotificationsZone';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { timeOfDayWord } from '../../../lib/formatDateTime';
 
@@ -63,6 +64,9 @@ const SESSION_VIEW_KEY = 'fhe.dashboard.view';
 type Loader = () => Promise<ZoneResult<unknown>>;
 
 const LOADERS: Record<string, Loader> = {
+  /* One loader, both views — N1 is registered twice in the zone registry (once
+     per desk) under the same key, because it is the same list either way. */
+  N1: fetchNotifications as Loader,
   C1: fetchTodayPlan as Loader,
   C2: fetchWeekStrip as Loader,
   C3: fetchMoneyWaiting as Loader,
@@ -216,7 +220,13 @@ export default function OwnerDashboard() {
       {!loading && present.map((def, i) => {
         const st = zones[def.key];
         return (
-          <Zone key={def.key} def={def} count={st?.result?.count ?? 0} index={i}>
+          <Zone
+            key={def.key}
+            def={def}
+            count={st?.result?.count ?? 0}
+            index={i}
+            collapsible={def.key === 'N1'}
+          >
             {st?.error
               ? <ZoneError message={st.error} />
               : renderZone(def.key, st?.result?.items ?? [], refresh, chooseView)}
@@ -246,6 +256,7 @@ function renderZone(
 ) {
   switch (key) {
     /* eslint-disable @typescript-eslint/no-explicit-any */
+    case 'N1':  return <NotificationsZone items={items as any} onDone={refresh} />;
     case 'C1':  return <TodayZone items={items as any} />;
     case 'C2':  return <WeekZone items={items as any} />;
     case 'C3':  return <MoneyZone items={items as any} onDone={refresh} />;
