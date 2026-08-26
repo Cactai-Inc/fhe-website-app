@@ -1,12 +1,25 @@
 /* GET/POST /api/calendar-reminders — the hourly calendar sweep (Phase 6).
  *
- * Two jobs each run:
- *  1. calendar_reminder_sweep() — inserts the 1h + 2h in-app reminders for
- *     upcoming bookings and stamps them so they fire once.
- *  2. Emails the un-emailed calendar notifications (kind LIKE 'booking_%') to
- *     each recipient right away (the daily notifications-nudge is too slow for
- *     reminders), with a copy of every reminder to hello@fhequestrian.com so the
- *     shared ops inbox sees all upcoming calendar items.
+ * ⚠️ TWO CALENDAR EMAILS EXIST, AND ADMIN GETS NEITHER (owner, 2026-08-26:
+ * "I dont want admin getting calendar update or notification emails, and we only
+ *  need the daily one at the start of the day and then the one that is sent 1 hour
+ *  prior to start time. they go to hello@fhequestrian.com, and the client gets the
+ *  1 hour prior notification only.")
+ *
+ *   THE 1-HOUR NOTICE   → the client, and a consolidated copy to the ops inbox
+ *   THE START OF DAY    → the ops inbox only, once, at 07:00 Pacific
+ *
+ * The 2-hour reminder is retired (migration 20260826T1700), and the sweep no
+ * longer calls notify_staff — that was fanning every reminder out to EVERY admin
+ * profile, which is how admin@fhequestrian.com came to be emailed about every
+ * session. The per-user loop below independently skips staff accounts, so a stray
+ * booking_* notification written by some other path cannot reintroduce it.
+ *
+ * Jobs each run:
+ *  1. calendar_reminder_sweep() — the 1h in-app reminder, stamped so it fires once.
+ *  2. Emails un-emailed calendar notifications (kind LIKE 'booking_%') to MEMBERS,
+ *     with one consolidated copy to the ops inbox.
+ *  3. At 07:00 Pacific only: the day sheet to the ops inbox.
  *
  * WINDOW: emails only 06:00–21:00 America/Los_Angeles (the in-app rows are
  * still written outside the window; we just don't email overnight).
@@ -21,6 +34,8 @@ import { authorizeCronRequest } from './_lib/cronAuth.js';
 /** 5d: the ops inbox is org-level config (CONTACT/OPS_INBOX_FALLBACK), not a constant.
  *  The literal below is only the last-resort fallback when config is absent. */
 const OPS_INBOX_FALLBACK = 'hello@fhequestrian.com';
+/** 07:00 America/Los_Angeles — the start-of-day rundown. */
+const DAY_SHEET_HOUR = 7;
 const WINDOW_START = 6;
 const WINDOW_END = 21;
 const PER_USER_CAP = 10;
@@ -83,14 +98,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       byUser.set(r.user_id, list);
     }
 
+    /* ⚠️ STAFF ARE NOT EMAILED INDIVIDUALLY. `notify_staff` writes an in-app row
+       to every ADMIN/MANAGER/EMPLOYEE/OWNER profile, and this loop would turn each
+       of those into an email — which is the complaint. The in-app notification is
+       left alone (it is useful in the app); only the EMAIL is withheld, and the
+       shared inbox gets the consolidated copy below instead. */
+    const STAFF_ROLES = new Set(['ADMIN', 'MANAGER', 'EMPLOYEE', 'OWNER', 'SUPERADMIN', 'SUPER_ADMIN']);
+
     const identityByOrg = new Map<string, TenantEmailIdentity>();
     const opsDigest: string[] = [];
     let emailed = 0;
 
     for (const [userId, digest] of byUser) {
       try {
-        const { data: profile } = await db.from('profiles').select('email, org_id').eq('user_id', userId).maybeSingle();
-        const email = (profile?.email as string | null | undefined)?.trim();
+        const { data: profile } = await db.from('profiles').select('email, org_id, role').eq('user_id', userId).maybeSingle();
+        const isStaff = STAFF_ROLES.has(String(profile?.role ?? '').toUpperCase());
+        const email = isStaff ? undefined : (profile?.email as string | null | undefined)?.trim();
         const orgId = (profile?.org_id as string | null | undefined) || digest[0].org_id;
         if (!orgId) continue;
 
@@ -140,7 +163,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    return res.status(200).json({ swept, emailed });
+    /* ── THE START OF DAY ──────────────────────────────────────────────────
+       Gated on the Pacific hour rather than given its own cron entry, because the
+       barn is on PDT most of the year and a UTC cron would drift an hour twice a
+       year. The hourly sweep already knows what time it is where the horses are. */
+    let daySheet: 'sent' | 'empty' | 'skipped' = 'skipped';
+    if (hour === DAY_SHEET_HOUR) {
+      try {
+        /* ⚠️ THE ORG MUST BE PASSED. `ops_day_sheet` defaults to current_org(),
+           which is NULL under the service role — so a cron call with no org would
+           silently report an empty day. It is also the only reason this works on a
+           quiet hour, when there are no notifications to borrow an org from. */
+        const { data: orgRow } = await db
+          .from('organizations').select('id').is('deleted_at', null)
+          .order('created_at', { ascending: true }).limit(1).maybeSingle();
+        const orgId = (orgRow?.id as string | undefined) ?? rows[0]?.org_id ?? null;
+        if (!orgId) throw new Error('no organization to build a day sheet for');
+        const { data: sheet } = await db.rpc('ops_day_sheet', { p_org: orgId });
+        const items = ((sheet as { items?: { at: string; who: string; what: string; horse: string | null }[] } | null)?.items) ?? [];
+        if (items.length === 0) {
+          // A quiet day is not an email. Nothing to do is not news.
+          daySheet = 'empty';
+        } else {
+          const ident = identityByOrg.get(orgId)
+            ?? await resolveTenantEmailIdentity(db, orgId).catch(() => undefined);
+          if (ident?.fromEmail) {
+            const rendered = await renderEmailTemplate(db, 'CALENDAR_DAY_SHEET', {
+              'MSG.DAY': String((sheet as { day?: string } | null)?.day ?? ''),
+              'MSG.COUNT': String(items.length),
+              'MSG.ITEMS': items.map((i) => escapeHtml(
+                `${i.at} — ${i.what} — ${i.who}${i.horse ? ` (${i.horse})` : ''}`)),
+            });
+            if (rendered) {
+              const sent = await sendViaProvider({
+                to: ident.opsInbox ?? OPS_INBOX_FALLBACK, fromName: ident.fromName,
+                fromEmail: ident.fromEmail, subject: rendered.subject, html: rendered.html,
+              });
+              daySheet = sent.ok ? 'sent' : 'skipped';
+            }
+          }
+        }
+      } catch (e) { console.error('day sheet', e); }
+    }
+
+    return res.status(200).json({ swept, emailed, daySheet });
   } catch (err) {
     console.error('calendar-reminders error', err);
     return res.status(500).json({ error: 'could not run calendar reminders' });
