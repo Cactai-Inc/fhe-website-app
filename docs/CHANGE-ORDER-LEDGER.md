@@ -2473,9 +2473,20 @@ GENERATED DOCUMENT** — the `files` / `file_links` spine (TASK-UPLOADS) is the 
 the latter. **Deleting must be a soft delete on `files`, never a path that can reach an executed
 document.**
 
-**ASK-REPO:** does `files` carry `deleted_at`, and is there any existing delete RPC? Does the storage
-object get removed, or only the row — and if only the row, is the object still reachable by URL?
-**ASK-OWNER:** who may delete — staff only, or the person who uploaded it?
+**🔒 ANSWERED AND BUILT, 2026-08-26.** Owner: *"staff and uploader, we already ruled on this, delete
+is soft delete unless its a sensitive file and then i can hard delete from db"* and *"remove the url
+leave the object in the db unless i go in and hard delete it or if you give the option to soft or hard
+delete from admin ui that is best."*
+
+- **REMOVE** — tombstones the `files` row **and its `file_links`**; the bytes stay, so **Restore** is a
+  straight untombstone. ⚠️ **This CHANGED existing behaviour:** `removeMyFile` had been deleting the
+  stored object on what it called a soft delete.
+- **DELETE PERMANENTLY** — takes the object too. Confirms, and names the count.
+- **`listOrgFiles(includeDeleted)`** — without a way to SEE a tombstone there is nothing to restore,
+  and a soft delete would be indistinguishable from destruction.
+- **VIEW** — images, video, audio and PDFs render in place; anything else opens in a tab.
+- ⚠️ **The table never touches `documents`.** A generated or signed record is evidence and is not
+  sweepable from here; separate spines, separate tabs.
 
 ---
 
