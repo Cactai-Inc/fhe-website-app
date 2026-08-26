@@ -94,8 +94,13 @@ column, 2026-08-26.)*
 
 ## 5. ⚠️ FLAGGED BEFORE STARTING
 
-- **RESTORE IS ALSO A NEW VERSION.** "Restore v4" must mint v9-from-v4, not move the pointer
-  backwards — otherwise the version list stops being append-only and the lineage lies.
+- 🔒 **RESTORE IS ALSO A NEW VERSION — CONFIRMED BY THE OWNER, 2026-08-26** *("this is the right
+  move")*. **"Restore v4" mints v9-from-v4.** It does NOT move the pointer backwards.
+  ⚠️ **So RESTORE and SUPERSEDE are the same act with a different amount of editing** — restore is
+  supersede with no changes made. There is no second code path, and there is no operation anywhere in
+  this design that decreases the version number or removes a row from the list.
+  **The list is append-only, which is what makes the lineage trustworthy:** every version's parent is
+  a version that still exists and can still be read.
 - **DELETION INSIDE A VERSION IS SAFE; DELETION OF A VALUE IS NOT.** Removing a section from a
   document mints a new version and the old one still has it. Removing a MENU VALUE still has to obey
   `TASK-CONTRACTMENUS` rule 1: **deactivate, never re-code**, because 208 conditions name option
