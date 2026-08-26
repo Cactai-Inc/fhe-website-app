@@ -1133,8 +1133,14 @@ function InlineInput({
       {prefix && local && <span className="text-green-900">{prefix}</span>}
       <span className="inline-grid">
         {/* invisible sizer sets the column width; the input overlays it */}
+        {/* ⚠️ THE SIZER CARRIES A TRAILING SPACE, exactly as InlineTextarea's
+            does below. Without it the column is measured to the text's own
+            width and the input's content box lands on the same figure, so
+            sub-pixel rounding clips the final glyph — the "cutting off the
+            last letter n" the owner reported on the lease's printed name
+            (2026-08-26). A textarea wraps out of that; an input cannot. */}
         <span className="col-start-1 row-start-1 invisible whitespace-pre px-1 text-[13.5px] max-w-full overflow-hidden" aria-hidden="true">
-          {sizer || placeholder}
+          {(sizer || placeholder) + ' '}
         </span>
         <input
           type={type}
