@@ -1200,6 +1200,54 @@ export async function setFormFieldOptions(
   if (error) throw error;
 }
 
+
+/* ─── Form FIELDS: add, edit, remove ──────────────────────────────────────────
+ * Owner, 2026-08-25: the form editor *"was supposed to let me edit the fields, add
+ * and remove fields"*, and on the orphaning worry — *"we established that changes
+ * create versions of the file they are changing for forms and docs, so nothing can
+ * be orphaned."*
+ *
+ * Right, and now true for forms as well as documents. Until 2026-08-25 the version
+ * history existed only for documents; `form_definitions` had ONE mutable row per
+ * form_key and `max(version)` was still 1 across all 28. `form_definition_versions`
+ * plus `booking_forms.form_version` closed that, so every mutator here snapshots
+ * the outgoing shape first and a removed or renamed field stays resolvable against
+ * the version its answers were collected under. */
+export async function addFormField(
+  formKey: string, sectionHeading: string,
+  field: { key: string; label: string; type?: string; options?: string[] },
+): Promise<void> {
+  const { error } = await supabase.rpc('add_form_field', {
+    p_form_key: formKey, p_section_heading: sectionHeading,
+    p_key: field.key, p_label: field.label,
+    p_type: field.type ?? 'text', p_options: field.options ?? null,
+  });
+  if (error) throw error;
+}
+
+/** Label, type, or the KEY itself. Renaming the key is safe for the reason above —
+ *  the old key is still resolvable against the retained version. */
+export async function editFormField(
+  formKey: string, fieldKey: string,
+  patch: { label?: string; type?: string; new_key?: string },
+): Promise<void> {
+  const { error } = await supabase.rpc('edit_form_field', {
+    p_form_key: formKey, p_field_key: fieldKey,
+    p_label: patch.label ?? null, p_type: patch.type ?? null,
+    p_new_key: patch.new_key ?? null,
+  });
+  if (error) throw error;
+}
+
+/** The field leaves the LIVE shape; the version that carried it is retained and
+ *  every answer set already collected names that version. */
+export async function removeFormField(formKey: string, fieldKey: string): Promise<void> {
+  const { error } = await supabase.rpc('remove_form_field', {
+    p_form_key: formKey, p_field_key: fieldKey,
+  });
+  if (error) throw error;
+}
+
 export interface AdminFormDefinition {
   form_key: string;
   title: string;
