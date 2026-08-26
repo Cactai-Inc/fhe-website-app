@@ -86,17 +86,60 @@ adding "Bell boots" on 2026-08-26 required writing **both** places.
 - **The version bump**, and a `contract_menu_dependents(p_template_key, p_field_key, p_code)` read so
   the editor can say *"3 clauses and 1 document depend on this"* before anything is pressed.
 
-## 5. ⚠️ THE ONE DECISION THAT IS THE OWNER'S
+## 5. 🔒 SETTLED — A DRAFT TAKES THE NEW OPTIONS, AND A RETIRED SELECTION IS CLEARED
 
-**When a value is deactivated, what happens to a DRAFT document that has already selected it?**
-- **(a) It keeps it** — the selection stands, and only new documents lose the option. *Safest; means
-  a retired option can still appear on a contract that goes out tomorrow.*
-- **(b) It is cleared and the field becomes unanswered** — the document is forced back to a valid
-  state. *Cleaner, but silently un-answers a question someone already answered.*
+**Owner, 2026-08-26:** *"a draft document gets the new options so a selected old option is cleared."*
 
-**This is not a technical toss-up.** (a) risks shipping a term he thought he had retired; (b) risks
-a contract going out with a blank where an answer used to be. **Executed documents are out of scope
-either way — they keep everything.**
+So option **(b)**. A draft is not evidence — it is work in progress, and it should reflect the
+current truth of the template.
+
+⚠️ **WHAT THIS OBLIGES, and it is more than a delete:**
+- The cleared field becomes **unanswered**, so it **re-enters `contract_lock_blockers`** if it is
+  required. That is correct — it must be answered again before the document can reach *ready to
+  sign* — but it means **retiring an option can un-ready a contract that was ready**, and the person
+  who retired it should be told which drafts they just re-opened.
+- ⚠️ **The clearing must be LOGGED.** `log_contract_change` already exists and already records a
+  field's before/after. A value disappearing from a draft with no trace is indistinguishable from a
+  bug, and the author will assume they never answered it.
+- **EXECUTED AND SIGNED DOCUMENTS ARE STILL UNTOUCHED.** The ruling says *draft*. A signed contract
+  keeps its snapshot, its value and its version.
+
+## 6. 🔒 SETTLED — THE EDITOR IS THE SURFACE, NOT A LIST OF MENUS
+
+**Owner, 2026-08-26:**
+> *"every item needs to be listed as part of the group its shown on, so a document is selected or a
+> page is selected or a form is selected from a list on the editor entry page and then the list of
+> items as they appear on the screen is shown and with enough information around it that the item can
+> be edited. it would be most effective to just render the entire thing that the thing im editing
+> lives on, so if its a menu option on the horse intake form, clicking on the horse intake form from
+> the entry page opens the horse intake form and then i can edit anything on the form, including the
+> menu items."*
+
+⚠️ **THIS SUPERSEDES §4's "212 more rows in the menus list".** A flat inventory of 336 menus was
+never going to be usable, and the reason is not length — it is that **a menu means nothing away from
+the thing it appears on**. "Front boots / wraps" is only meaningful while looking at the equipment
+question on a lease.
+
+**THE SHAPE:**
+- **THE ENTRY PAGE IS A LIST OF SURFACES**, not of menus: documents, pages, forms.
+- **CHOOSING ONE RENDERS THAT SURFACE**, as it actually appears.
+- **EVERYTHING ON IT IS EDITABLE IN PLACE** — labels, wording, and the menu contents — because you
+  are looking at the real thing, in its real context.
+
+⚠️ **THE MENUS EDITOR BUILT ON `task/p1ship` IS THEREFORE A STAGING POST, NOT THE DESTINATION.** It
+is a flat list of 124 menus. Its `menu_inventory` / `set_menu_value` spine stays useful as the WRITE
+layer; the flat LIST becomes a fallback for menus with no surface to render (a vocabulary used in
+six places), not the primary way in.
+
+⚠️ **AND THIS IS THE SAME PATTERN AS CR-74/CR-75, ARRIVED AT FROM A DIFFERENT DIRECTION:** *do not
+move someone away from the thing to edit the thing*. The editor is the surface, expanded in place —
+exactly as a client record is a row that opens rather than a page you travel to. **Build it as one
+pattern, not two**, or the globalization pass inherits a third editing idiom.
+
+**WHAT THAT COSTS, honestly:** the three existing template editors (wording, forms, menus) and the
+document renderer become **one surface with an edit mode**, rather than four screens. That is a
+larger build than adding a source to a list — and it is the one that ends the question rather than
+deferring it.
 
 ## THE REACH
 `/app/ops/admin/menus`, the surface the P1 branch built — one more source in the same list.
