@@ -85,7 +85,7 @@ export function HorseForm({ breeds, colors, owners, horse, onSubmit, onCancel }:
         )}
       </FormField>
 
-      <FormField label="Registered name">
+      <FormField label="Full Name (registered name, if registered)">
         {({ id, errorClass }) => (
           <input
             id={id}

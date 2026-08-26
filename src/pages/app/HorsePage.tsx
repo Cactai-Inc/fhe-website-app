@@ -460,7 +460,7 @@ function RecordEditor({
       <p className="text-[12px] text-muted mb-4">Location, medications, and lease are edited from their own sections.</p>
       {err && <p role="alert" className="form-error mb-3">{err}</p>}
       <div className="grid sm:grid-cols-2 gap-3">
-        <T label="Nickname" k="nickname" /><T label="Registered name" k="registered_name" />
+        <T label="Nickname" k="nickname" /><T label="Full Name (registered name, if registered)" k="registered_name" />
         <L label="Breed" k="breed" opts={breeds} /><L label="Color" k="color" opts={colors} />
         <T label="Markings" k="markings" /><T label="Sex" k="sex" />
         <T label="Height" k="height" /><T label="Fair market value" k="fair_market_value" />

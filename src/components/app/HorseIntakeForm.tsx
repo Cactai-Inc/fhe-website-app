@@ -1085,7 +1085,7 @@ export function HorseIntakeForm({
 
       <Section title="Horse identity">
         <Field label="Nickname" value={f.nickname} onChange={set('nickname')} showError={showError} required placeholder="Everyday name (e.g. Beau)" />
-        <Field label="Registered name" value={f.registered_name} onChange={set('registered_name')} showError={showError} required />
+        <Field label="Full Name (registered name, if registered)" value={f.registered_name} onChange={set('registered_name')} showError={showError} required />
         <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')} showError={showError} required />
         <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={false} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" placeholder="Registry name" />
         <Field span label="Microchip number (checked first)" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" showError={showError} required />

@@ -31,6 +31,20 @@ import { AddHorseModal } from './AddHorseModal';
  *    contract_lock_blockers' `party_name_required`, and this card must not imply a
  *    nameless party is merely untidy when it is unsignable.
  */
+/** ⚠️ The barn name leads. Elsewhere in the app a horse is its nickname, and this
+ *  list was the odd one out showing the registered name first — which for an
+ *  unregistered horse is either empty or the literal 'N/A' sentinel. */
+function horseLabel(h: { nickname: string | null; registered_name: string | null }): string {
+  const real = (v: string | null) => {
+    const t = (v ?? '').trim();
+    return t && t.toUpperCase() !== 'N/A' ? t : '';
+  };
+  const barn = real(h.nickname);
+  const reg = real(h.registered_name);
+  if (barn && reg && barn !== reg) return `${barn} · ${reg}`;
+  return barn || reg || 'Horse';
+}
+
 export function PartiesHorseCard({
   documentId, canEdit, onChanged, footer,
 }: {
@@ -71,8 +85,17 @@ export function PartiesHorseCard({
   useEffect(() => {
     if (!editing || contacts.length) return;
     contractPartyOptions().then(setContacts).catch(() => setContacts([]));
-    staffHorseRecords().then(setHorses).catch(() => setHorses([]));
   }, [editing, contacts.length]);
+
+  /* ⚠️ RELOAD WHEN THE OWNER CHANGES (owner, 2026-08-25): "i can change a lessor
+     from one client to another but for some reason the horse options doesnt update
+     to match the new person". The load used to sit in the effect above, keyed on
+     `editing` and the CONTACT list — so it ran once and never again, whatever the
+     Lessor became. */
+  useEffect(() => {
+    if (!editing) return;
+    staffHorseRecords().then(setHorses).catch(() => setHorses([]));
+  }, [editing, summary?.parties]);
 
   if (!summary) return null;
   const roleLabel = (r: string) => r === 'LESSEE' ? 'Lessee' : r === 'LESSOR' ? 'Lessor'
@@ -85,6 +108,23 @@ export function PartiesHorseCard({
   // on a sale. A new horse added here belongs to them.
   const ownerParty = summary.parties.find((p) => p.party_role === 'LESSOR' || p.party_role === 'SELLER');
   const ownerRole = ownerParty?.party_role;
+
+  /* ⚠️ ONLY THIS OWNER'S HORSES (owner, 2026-08-25): "the list contains options it
+     shouldnt, Secret and Tiz are shown as selectable options after i changed lessor
+     to Pamela and it should only show her horse, Sundance."
+
+     `staffHorseRecords()` takes no argument — it returns EVERY horse in the org, and
+     nothing here narrowed it. In a lease the Lessor owns the horse, so the owner
+     party is the filter.
+
+     ⚠️ Unowned horses are kept in the list deliberately: a horse whose owner has not
+     been set yet is exactly the one somebody is here to attach, and hiding it would
+     leave no way to reach it. The horse already on the document is always kept, so
+     changing the Lessor can never make the current selection disappear. */
+  const horseOptions = horses.filter((h) =>
+    h.id === summary.horse_id
+    || h.owner_contact_id == null
+    || (ownerParty?.contact_id != null && h.owner_contact_id === ownerParty.contact_id));
 
   async function reassign(role: string, contactId: string) {
     setBusy(true); setErr(null);
@@ -235,7 +275,9 @@ export function PartiesHorseCard({
               <select className="form-input" disabled={busy} value={summary.horse_id ?? ''}
                 onChange={(e) => void reassignHorse(e.target.value)}>
                 {!summary.horse_id && <option value="">Select…</option>}
-                {horses.map((h) => <option key={h.id} value={h.id}>{h.registered_name || h.nickname || 'Horse'}</option>)}
+                {horseOptions.map((h) => (
+                  <option key={h.id} value={h.id}>{horseLabel(h)}</option>
+                ))}
               </select>
               <button type="button" className="btn-outline-gold text-xs px-2.5 py-1 self-start"
                 disabled={busy} onClick={() => setIntakeOpen(true)}>
