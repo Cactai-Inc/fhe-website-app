@@ -51,6 +51,23 @@ export interface ZoneDef {
 }
 
 export const ZONES: ZoneDef[] = [
+  /* ── Both desks · what wants you ────────────────────────────────────── */
+  /* ⚠️ ONE KEY, TWO VIEWS, ONE LOADER. Owner, 2026-08-26: "the one thing i dont
+     see is a clear set of notifications." `notifications` was being written all
+     day and read back only by `DashboardPanel`, which DashboardHome shows to
+     MEMBERS -- staff are routed to OwnerDashboard, which had no such zone. 77
+     unread for admin@ and 60 for hello@ on the day it was found.
+
+     It sits first because it is the only zone whose contents can come from
+     anywhere in the app; everything below it is one department's work. It is
+     `collapsible` (the only zone that is) and it is NOT sticky -- same ruling as
+     the greeting bar on 2026-08-25, "they need to be part of the page and move
+     with the rest of the content on scroll." */
+  { key: 'N1', view: 'trainer', order: 5, title: 'Notifications',
+    quiet: 'no unread notifications', to: '/app/ops/activity' },
+  { key: 'N1', view: 'business', order: 5, title: 'Notifications',
+    quiet: 'no unread notifications', to: '/app/ops/activity' },
+
   /* ── Claire · the day sheet ─────────────────────────────────────────── */
   { key: 'C1', view: 'trainer', order: 10, title: 'Today',
     quiet: 'nothing scheduled today', to: '/app/calendar',

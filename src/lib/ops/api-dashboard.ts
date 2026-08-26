@@ -276,6 +276,25 @@ export interface PipelineRow {
 }
 export const fetchOnboardingPipeline = () => zone<PipelineRow>('dash_onboarding_pipeline');
 
+/* ── N1 · notifications ────────────────────────────────────────────────── */
+/**
+ * ⚠️ THE ONE ZONE WHOSE `items` ARE NEVER CAPPED. Owner, 2026-08-26: "dashboard
+ * zone, full list of notifications, collapsable, never sticky." Every other
+ * reader may cap and let `count` carry the true total; a notification list that
+ * hides notifications is the complaint that produced this zone, so
+ * `dash_notifications` returns all of them and the component renders all of them.
+ */
+export interface NotificationRow {
+  id: string;
+  kind: string;
+  category: string | null;
+  title: string;
+  body: string | null;
+  link: string | null;
+  created_at: string;
+}
+export const fetchNotifications = () => zone<NotificationRow>('dash_notifications');
+
 /* ── The two KPI ribbons ───────────────────────────────────────────────── */
 export interface TrainerKpis {
   today_lessons: number;
