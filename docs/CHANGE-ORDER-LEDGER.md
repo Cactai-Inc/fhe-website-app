@@ -2294,6 +2294,68 @@ first rung are unverified, but only one has a declaration behind it.
 
 ---
 
+## CR-77 · G7 · captured + researched — ⚠️ THE SIGNER'S NAME AND TITLE ARE AUTHORED, NOT SIGNED
+
+**SAID** *(owner, 2026-08-25, on being told the company signer tokens print empty)*:
+> *"we never signed a contract as the company yet but my understanding of how its designed and this
+> is the way it should work, when the lessor has entered their information i review it, they have
+> signed it if i entered my information already which as the author i have, and so im the last to
+> sign, i open the document with their signature on it and i scroll to the bottom and i need to do
+> the same thing as them, type my full name and since im signing on behalf of the company i have to
+> include my title and then those fields are populated along with the digital signature being applied
+> and the final document is sent to both of us as a pdf."*
+
+**FOUND — his model and the build disagree, and the build is what is blocking him TODAY.**
+`LESSEE.ENTITY_SIGNER_NAME` / `_TITLE` are ordinary `contract_field_defs` rows in the `SIGNATURES`
+section, `owner_role = LESSEE`, `is_optional = false`, shown only when `LESSEE.PARTY_TYPE = ENTITY`.
+⚠️ **Nothing in `src/` or `api/` writes them** — no signing surface collects them. They are
+**authoring fields that must be filled before the document can lock.**
+
+⚠️ **Measured on the live lease — `contract_lock_blockers` returns ONE blocker with THREE fields:**
+`Signing individual — name` · `Signing individual — title` · `Lessor prohibits the use of rider aids`.
+
+⚠️ **AND THE THIRD ONE IS A CHICKEN-AND-EGG.** `TXN.RIDER_AIDS_PROHIBITED` is `owner_role = LESSOR`
+— **Pamela's field** — and it is required to LOCK. **She cannot answer it until the contract reaches
+her, and it cannot reach her until it locks.** *(`TXN.RIDER_AIDS` is a second, DEAL-owned copy of the
+same question, also empty and also required.)*
+
+**ASK-OWNER:** should capacity (name + title) move to the **signature act**, as he describes, leaving
+only the party's own facts as authored fields? And **must a counterparty-owned field block the lock**,
+or should lock require only the fields whose owner is the sender?
+
+**A/B for shipping today, independent of the design:** fill the three fields in the authoring surface
+and lock — **or** decide the lock rule first. ⚠️ **The two signer fields are ours and cost nothing to
+fill. The rider-aids pair is Pamela's and filling it for her is answering on her behalf.**
+
+---
+
+## CR-78 · G4 · captured — ⚠️ THE SENDER IS NOT TOLD WHEN IT IS HIS TURN
+
+**SAID** *(owner, 2026-08-25, walking the counter-side of the flow)*:
+> *"for pamela she will sign and then she will see and sign her docs but her email will only be the
+> docs it wont include the contract because she cant get that until i sign, if i sign first, which is
+> possible but unlikely since she needs to add information that in its absence is preventing me from
+> signing, she is most likely to sign after adding the info and i will get a notification (i should
+> get a notification when the document is signable, meaning all fields have been completed, and
+> likely another email when they sign) telling me to sign it."*
+
+**TWO NOTIFICATIONS ASKED FOR, and they are different events:**
+1. ⚠️ **SIGNABLE** — every required field is now filled. **This is not a signature event**; it fires
+   when the last blocker clears, which may be a party editing a field and never touching a signature.
+2. **SIGNED** — the counterparty has signed and it is now his turn.
+
+⚠️ **HE ALSO STATED THE ORDERING CONSTRAINT AS A FACT, AND IT SHOULD BE CONFIRMED, NOT ASSUMED:**
+that Pamela's own send carries **her documents but not the contract**, because the executed contract
+does not exist until he signs last. **The one-email ruling in `docs/SPEC-first-contact-flow.md`
+describes the send at the START of her flow; this is the send at the END of it, and they are not the
+same email.** ⚠️ **Reconcile the two before either is built.**
+
+**ASK-REPO:** does anything fire on "the last blocker cleared"? `contract_lock_blockers` is a READ —
+nothing appears to watch it. The execution-time bundle (`api/deliver-documents.ts`) is the only
+confirmed send on this path.
+
+---
+
 # G9 · GLOBALIZATION INVENTORY
 
 ## CR-37 · G9 · researched
@@ -2350,6 +2412,8 @@ answer."*
 | **CR-43 → ruling 11** | community is gated by ACCOUNT today; leads with accounts would see it immediately |
 | **CR-38…CR-42 → CR-16** | changing an offering is one case of line-item editing; build the model, not the button |
 | **CR-41 → CR-29** | a public rate card and three cadence prices are the same pricing rebuild |
+| **CR-77 → CR-78** | the lock blocker is what makes the "it is your turn" notification meaningful — one gate, one signal |
+| **CR-78 ↔ SPEC-first-contact-flow** | ⚠️ the one-email ruling covers the send at the START of her flow; this is the send at the END |
 | **G9 ← everything** | each group's fix should carry its globalization, or the refactor inherits 34 pop-ups instead of 33 |
 
 # ⚠️ ALREADY BUILT — carry the requirement, not the code
