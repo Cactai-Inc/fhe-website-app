@@ -28,13 +28,26 @@ editing them survivable, plus the reads an editor needs to warn before someone b
 | | |
 |---|---|
 | option lists in `contract_field_defs.options` | **212**, across 6 templates (171 `select`, 41 `buttons`) |
-| ⚠️ conditions naming option values as bare strings | **208** |
+| ⚠️ **FIELD**-level conditions (`contract_field_defs.conditional_on`) | **208** |
+| ⚠️⚠️ **CLAUSE**-level conditions (`contract_clause_defs.conditional_on`) | **449** — **413 of them name a field that HAS an option list**, and **389 use `equals`/`contains` on its values** |
 | per-document option snapshots in `contract_fields.options` | **42** |
 | `contract_field_defs` active/version column | ❌ **neither — only `closed`** |
 
-A condition looks like `{"equals": ["LESSEE"], "field_key": "TXN.VET_ARRANGE"}`. ⚠️ **So a value's
+A condition looks like `{"equals": ["LESSEE"], "field_key": "TXN.VET_ARRANGE"}`, or nested:
+`{"all": [{"contains": ["TRAIL"], "field_key": "TXN.PERMITTED_ACTIVITIES"}, …]}`. ⚠️ **So a value's
 CODE is a contract in its own right. Renaming it does not error — the clause silently stops
 appearing.**
+
+⚠️⚠️ **CORRECTION TO AN EARLIER DRAFT OF THIS FILE, MADE BEFORE YOU STARTED.** It named only the 208
+FIELD-level conditions. **`clause_condition_met` is called on BOTH** — `remerge_contract_from_clauses`
+evaluates `contract_clause_defs.conditional_on` for every section and clause, and
+`contract_field_defs.conditional_on` for every line. **The clause-level set is more than twice the
+size and is where most of the exposure is.** ⚠️ **`contract_menu_dependents` MUST search both tables.
+A dependents read that only covers field conditions would report "nothing depends on this" for the
+majority of real dependencies — which is worse than no read at all, because someone would trust it.**
+
+⚠️ **Note the `contains` operator on comma-joined multi-selects** (`TXN.PERMITTED_ACTIVITIES`).
+Deactivating a value there is not the same shape as an `equals` — **check both.**
 
 ### §1 — A VALUE IS DEACTIVATED, NEVER DELETED, NEVER RE-CODED
 There is no `active` column and the list is JSON, so each option entry gains **`"active": true|false`**.
