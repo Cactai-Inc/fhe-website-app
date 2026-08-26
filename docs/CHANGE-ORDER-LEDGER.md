@@ -2354,12 +2354,26 @@ current value with the earlier one lost.** ⚠️ **That is the acceptance test:
 change.** *(CR-76 already ruled a pending payment is client-editable; this is where that edit becomes
 evidence.)*
 
-### ⚠️ STILL OPEN — ONE QUESTION, AND IT IS NOT A DETAIL
-**Is the payment number per ORDER, or per PAYMENT ATTEMPT?** *"a payment number along side an order
-number"* reads one-to-one — but the same order can be declared Zelle, changed to cash, declined and
-re-declared. **One number for the order's whole payment life, or a new number each time money is
-declared?** ⚠️ **This decides whether the ledger has one row per order or many, and it cannot be
-changed later without renumbering.**
+### 🔒 ANSWERED — THE PAYMENT NUMBER IS PER INPUT, NOT PER ORDER
+> *"yes we need to have a payment number as an identifier that is unique to each input on the payment
+> screen."*
+
+⚠️ **So the ledger is MANY rows per order, and the payment record is its own entity** — an order has
+a payment number the way it has line items. **This is the schema decision, and it is now made.**
+
+### 🔒 AND IT ANSWERS A QUESTION HE ASKED IN THE SAME BREATH — **NO, A PAYMENT CANNOT BE SPLIT TODAY**
+> *"can a user currently split payment among cash and zelle?"*
+
+**No.** `purchases.payment_method` is **ONE text column ON THE ORDER** — one method, one order.
+⚠️ **`amount_paid` exists and `partial_payment` is a defined vocabulary term — used ZERO times** — so
+a partial AMOUNT is modelled while the METHOD that paid it has nowhere to live. Production bears it
+out: every order is a single method, and `amount_paid` is either `0` or the full amount.
+
+⚠️ **HIS OWN RULING IS THE FIX.** A payment record per input — with its own number, method and amount
+— **is** split payment: two inputs against one order, one Zelle, one cash, each with its own number
+and timestamp. **The identifier decision and the split capability are the same build.** *(It also
+retires the single `payment_method` column as the source of truth, which is where the `'Zelle'` vs
+`'zelle'` casing bug in CR-76 lives.)*
 
 ---
 
@@ -2383,10 +2397,24 @@ section, `owner_role = LESSEE`, `is_optional = false`, shown only when `LESSEE.P
 ⚠️ **Measured on the live lease — `contract_lock_blockers` returns ONE blocker with THREE fields:**
 `Signing individual — name` · `Signing individual — title` · `Lessor prohibits the use of rider aids`.
 
-⚠️ **AND THE THIRD ONE IS A CHICKEN-AND-EGG.** `TXN.RIDER_AIDS_PROHIBITED` is `owner_role = LESSOR`
-— **Pamela's field** — and it is required to LOCK. **She cannot answer it until the contract reaches
-her, and it cannot reach her until it locks.** *(`TXN.RIDER_AIDS` is a second, DEAL-owned copy of the
-same question, also empty and also required.)*
+⚠️ **CORRECTION, 2026-08-26 — I CALLED THE THIRD FIELD A DEADLOCK. IT IS NOT.**
+`TXN.RIDER_AIDS_PROHIBITED` is `owner_role = LESSOR` — Pamela's — and I wrote that it deadlocks,
+because she cannot answer it until the contract reaches her and it cannot reach her until it locks.
+⚠️ **THE SECOND HALF IS FALSE. SENDING DOES NOT REQUIRE LOCKING.** `sendForReview`
+(`src/lib/contracts.ts:551`) advances the document to `in_review` **when it is not locked** and sends
+anyway; its own comment says sending a locked document is merely *also* legitimate. **A counterparty
+fills their own fields in `in_review`, before any lock exists.** So the sequence is
+**send → she fills → THEN it can lock → both sign.** No deadlock, and her two fields are hers to
+answer, not ours.
+
+⚠️ **AND `locked` DOES NOT MEAN SEALED. IT MEANS "READY TO SIGN"** — `ContractPage.tsx:1221` already
+labels it exactly that. It freezes the TEXT so signatures attach to a fixed document; `executed` is
+the finished state after signatures. **Nothing reverted:** the blocker removed on 2026-08-25 was
+`horse_unconfirmed` *(migration `20260825T1200`)*; what blocks today is `required_fields`, a
+different code that was never removed and is **the very gate the owner describes wanting** —
+*"once the document has all fields filled there should be a button that becomes active."*
+⚠️ **THE WORD IS THE PROBLEM, NOT THE MECHANISM. `locked` should be retired from every surface and
+message in favour of READY TO SIGN** — it reads as *sealed and finished* to the person using it.
 
 **ASK-OWNER:** should capacity (name + title) move to the **signature act**, as he describes, leaving
 only the party's own facts as authored fields? And **must a counterparty-owned field block the lock**,
