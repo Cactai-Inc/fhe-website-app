@@ -203,8 +203,11 @@ cancel-into-the-dungeon exit removes them from the numbers *(CR-44)*, and deleti
 
 | | |
 |---|---|
-| **a record** | **always a PAGE** |
+| **a record** | **not a MODAL** |
 | **a modal** | **quick surfacing only** — never information-dense, never operationally intensive |
+⚠️ **REFINED BY CR-74 (same day):** this was aimed at modals, and against modals it stands. **An
+expanding full-width card IS an acceptable record surface** and is preferred over a deeper page when
+it can show the same information. **Read CR-74 for the settled rule.**
 
 **So Partners, Vendors and Archived accounts all become pages too.** ✅ Answers the re-asked question.
 
@@ -1486,12 +1489,10 @@ middle**. Nothing moves; the lead's world is a prefix of the client's.
 **MY TAKE — recorded here for step 3, and given briefly in-thread because he is blocked from
 testing it:**
 
-**1–3. Nav and card should not be two implementations.** A card that expands into a working surface
-and a page that is a different working surface is the same defect this ledger keeps finding —
-two things doing one job, drifting apart. **The card should be a SUMMARY with a way through to the
-page; the page is where the work happens.** That gives one surface to build and maintain, and the
-account page becomes a consistent index rather than eleven small apps.
-⚠️ **This is a G9 rule, not a lessons fix** — it decides the behaviour of all eleven cards.
+**1–3. Nav and card should not be two implementations** of the same working surface — that is the
+defect this ledger keeps finding, two things doing one job and drifting apart.
+⚠️ **The rule for WHICH surface is CR-74's, not the one I proposed here.** A card may be the work; a
+page is for what the card cannot hold. **Read CR-74.**
 
 **4. Yes — swap Documents out of the nav for Orders.** His reasoning holds: **the nav should carry
 what recurs.** Orders are ongoing; documents are two or three events in a lifetime. Documents stay a
@@ -2043,11 +2044,34 @@ lists. *(Retired codes are excluded unless the record already holds one.)*
 2. Where else does an expand-in-place editable card already exist, and where is a page used for the
    same job?
 
-**ASK-OWNER**
-1. **Does CR-63's "page = the work" survive?** Or is the rule **"a card may be the work; a modal may
-   not"**?
-2. On the client record, does the horse show as **this card**, with the page still reachable for the
-   things the card does not carry?
+## 🔒 RULING — THE SURFACE RULE, SETTLED (owner, 2026-08-25)
+> *"modal and card are not the same. an expanded card with editable fields is perfectly the right
+> choice, dont take me to an editor page if im already looking at the thing i want to change. but dont
+> use a modal when there is enough information to take up a whole page. modals are sort of temporary
+> views, they dont feel like full rich content, and so we should use them when we need to see or do
+> something quick without taking the person away from the page they are on. Whereas an expanded card
+> opens space on that page to show the content and if its full width like it is on the horse records
+> page its far superior to taking the user to a deeper page to show them the same information."*
+
+⚠️ **THE GOVERNING PRINCIPLE:** **do not move someone to see or edit something they are already
+looking at.**
+
+| Surface | Use it for | Never |
+|---|---|---|
+| **MODAL** | something **quick** — see it or do it **without leaving the page you are on**. A temporary view | ⚠️ **anything with enough information to fill a page.** *"They don't feel like full rich content"* |
+| **EXPANDED CARD** *(full width, in place)* | **the record's own fields, viewed AND edited**, in the list you found it in. ⚠️ **Far superior to a deeper page showing the same information** | — |
+| **PAGE** | a record with **more than its fields** — the things attached to it | ⚠️ taking someone somewhere to show them what the card could have shown |
+
+⚠️ **THIS REPLACES "card = summary and doorway, page = the work"** *(CR-63, my formulation, which he
+accepted and has now corrected)*. **A card may be the work. A modal may not.**
+
+⚠️ **AND IT REFINES "every record is a page"** *(CR-30)*: that ruling was aimed at **modals** being
+used as record surfaces, and it stands against modals. **It does not stand against an expanding
+card** — the card does not cover the page, does not trap focus, and leaves the list visible.
+
+**What this means for the horse, concretely:** on the client record the horse shows as **the
+expanding editable card** — the fields are right there. **The page remains for what the card cannot
+hold**: documents, schedule, activity, photos. **They are complements, not rivals.**
 
 ---
 
