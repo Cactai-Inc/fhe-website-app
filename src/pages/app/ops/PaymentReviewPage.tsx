@@ -61,6 +61,37 @@ const BUCKETS: { key: Bucket; label: string }[] = [
   { key: 'orders', label: 'Orders' },
 ];
 
+const usdShort = (n: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+
+/** Record part of what an order owes. The remaining balance is the default and
+ *  the maximum — a part payment can never settle more than is outstanding, and
+ *  the database refuses it independently if this is ever bypassed. */
+function PartPaymentPanel({ order, onRecord, onCancel }: {
+  order: { amount: number; amount_paid: number };
+  onRecord: (method: 'zelle' | 'cash', amount: number) => void;
+  onCancel: () => void;
+}) {
+  const owed = Math.max(order.amount - order.amount_paid, 0);
+  const [amount, setAmount] = useState(String(owed.toFixed(2)));
+  const n = Number(amount);
+  const valid = Number.isFinite(n) && n > 0 && n <= owed + 0.005;
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-green-800/15 bg-cream-100/40 p-3">
+      <span className="text-xs text-muted">Outstanding {usdShort(owed)} — record</span>
+      <input value={amount} onChange={(e) => setAmount(e.target.value)}
+        inputMode="decimal" aria-label="Part payment amount"
+        className="w-28 rounded-lg border border-green-800/15 px-2.5 py-1.5 text-sm focus-ring" />
+      <AsyncButton className="btn-secondary" pendingLabel="Recording…" disabled={!valid}
+        onClick={async () => onRecord('zelle', n)}>Zelle</AsyncButton>
+      <AsyncButton className="btn-secondary" pendingLabel="Recording…" disabled={!valid}
+        onClick={async () => onRecord('cash', n)}>Cash</AsyncButton>
+      <button type="button" className="btn-ghost text-xs" onClick={onCancel}>Cancel</button>
+      {!valid && <span className="text-xs text-red-700">Enter an amount up to {usdShort(owed)}.</span>}
+    </div>
+  );
+}
+
 function formatReceived(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
@@ -113,22 +144,33 @@ export function PaymentReviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bucket]);
 
-  const markPaid = async (order: OrderRow, method: 'zelle' | 'cash') => {
+  /* `amount` records a PART payment: only that much is settled, the order stays
+     open with the balance outstanding, and this part becomes its own numbered
+     payment record. Omitted, the order settles in full — the behaviour every
+     existing button here has always had. */
+  const markPaid = async (order: OrderRow, method: 'zelle' | 'cash', amount?: number) => {
     try {
-      const result = await markOrderPaid(order.id, method);
+      const result = await markOrderPaid(order.id, method, undefined, amount);
       const verb = result.claimConfirmed ? 'Confirmed the client’s claim' : `Marked paid (${method})`;
       toast.success(
         result.status === 'already_paid'
           ? 'That order was already marked paid.'
-          : result.receipt.sent
-            ? `${verb} — receipt sent.`
-            : `${verb} — receipt NOT sent (${result.receipt.reason ?? 'unknown reason'}).`,
+          : result.status === 'part_paid'
+            // No receipt on a part, and saying so is the point: the balance is
+            // still owed and the client has not been told anything is settled.
+            ? `Recorded ${usdShort(amount ?? 0)} by ${method}. The balance is still outstanding.`
+            : result.receipt.sent
+              ? `${verb} — receipt sent.`
+              : `${verb} — receipt NOT sent (${result.receipt.reason ?? 'unknown reason'}).`,
       );
       await refreshOrders();
+      setSplitting(null);
     } catch (err) {
       toast.error(toErrorMessage(err, 'Could not mark this order paid.'));
     }
   };
+
+  const [splitting, setSplitting] = useState<OrderRow | null>(null);
 
   const openMatchPanel = async (row: PaymentNotification) => {
     setSelected(row);
@@ -214,6 +256,18 @@ export function PaymentReviewPage() {
             <AsyncButton className="btn-secondary" pendingLabel="Marking…" onClick={() => markPaid(r, 'cash')}>
               Cash
             </AsyncButton>
+            {/* PART PAYMENT (owner, 2026-08-26: "make it operable"). Only shown
+                where there is a balance to split — an order settles on the last
+                part, so this disappears by itself. */}
+            <button type="button" className="btn-ghost text-xs"
+              onClick={() => setSplitting(splitting?.id === r.id ? null : r)}>
+              Part payment
+            </button>
+            {splitting?.id === r.id && (
+              <PartPaymentPanel order={r}
+                onRecord={(m, a) => void markPaid(r, m, a)}
+                onCancel={() => setSplitting(null)} />
+            )}
           </div>
         ),
     },

@@ -20,7 +20,10 @@ export type RequestStatus = 'new' | 'contacted' | 'invited' | 'expired' | 'conve
 export type InvitationStatus = 'sent' | 'accepted' | 'expired' | 'revoked';
 export type OrderStatus =
   | 'draft' | 'awaiting_payment' | 'paid' | 'cancelled' | 'expired';
-export type PaymentMethod = 'zelle' | 'stripe' | 'cash';
+/** TWO METHODS. Owner, 2026-08-25: "thats it there are only two choices for
+ *  payment"; 2026-08-26: Stripe and card removed from every surface. Stripe was
+ *  never configured, so no production row has ever held 'stripe'. */
+export type PaymentMethod = 'zelle' | 'cash';
 export type PaymentStatus =
   | 'pending' | 'matched' | 'confirmed' | 'review' | 'failed' | 'refunded';
 export type BookingStatus =
@@ -218,7 +221,10 @@ export interface OrderItem {
   price_unit: PriceUnitDb;
 }
 
-/** Inline payment view read off a purchase row (the `payments` table is gone). */
+/** Inline payment view read off a purchase row. ⚠️ NOT the payment RECORD — see
+ *  `paymentLedger.ts`; `payments` was reintroduced 2026-08-26 as one numbered
+ *  entry per input on the payment screen, which is a different thing from the
+ *  older table of the same name that this comment used to say was gone. */
 export interface Payment {
   method: PaymentMethod | null;
   amount: number;

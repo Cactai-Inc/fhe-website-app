@@ -411,7 +411,7 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
           )}
           {payStatus !== 'unpaid' && (
             <select value={method} onChange={(e) => setMethod(e.target.value)} className="form-input w-28 py-1 text-sm">
-              {['Zelle', 'Cash', 'Check', 'Card', 'Other'].map((m) => <option key={m}>{m}</option>)}
+              {[{ v: 'zelle', l: 'Zelle' }, { v: 'cash', l: 'Cash' }].map((m) => <option key={m.v} value={m.v}>{m.l}</option>)}
             </select>
           )}
         </div>

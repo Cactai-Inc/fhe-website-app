@@ -1,4 +1,4 @@
-/* Post-payment receipt email. Called from both confirmation paths (Stripe
+/* Post-payment receipt email. Called from both confirmation paths (the
  * webhook + Zelle reconcile) after an order flips to confirmed.
  *
  * Best-effort by contract: a receipt must never fail a payment confirmation, so

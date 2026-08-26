@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CreditCard, UserRoundCheck } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronRight, CreditCard, UserRoundCheck } from 'lucide-react';
 import {
   listMyOrders, updatePurchasePaymentMethod, transferPaymentResponsibility,
   payerCandidates, type PayerCandidate,
@@ -30,6 +30,9 @@ const PAYMENT_METHODS: { value: string; label: string }[] = [
   { value: 'cash', label: 'Cash' },
 ];
 
+/** Lowercase in the database, capitalised for a person. Two methods only. */
+const METHOD_LABEL: Record<string, string> = { zelle: 'Zelle', cash: 'Cash' };
+
 const STATUS_LABEL: Record<string, string> = {
   draft: 'In progress', awaiting_payment: 'Awaiting payment', paid: 'Paid',
   confirmed: 'Confirmed', cancelled: 'Cancelled', expired: 'Expired',
@@ -46,6 +49,12 @@ export function OrdersContent() {
      row still opens the order's own page. */
   const wanted = new URLSearchParams(window.location.search).get('order');
   const wantedRef = useRef<HTMLDivElement | null>(null);
+  /* CR-75: the row IS the record and it opens in place. The header is the toggle
+     — no separate close control. Arriving from a payment entry (?order=PUR-…)
+     opens that row and scrolls to it, which is the whole of the owner's ask:
+     "open the orders history page and scroll to that order number and expand it." */
+  const [open, setOpen] = useState<string | null>(null);
+  useEffect(() => { if (wanted) setOpen(wanted); }, [wanted]);
 
   const [managing, setManaging] = useState<Order | null>(null);
   const reload = () => listMyOrders().then(setOrders).catch(() => setOrders([]));
@@ -76,27 +85,63 @@ export function OrdersContent() {
         <div className="flex flex-col gap-3">
           {orders.map((o) => {
             const isWanted = !!wanted && o.display_code === wanted;
+            const isOpen = open === o.display_code;
             return (
             <div key={o.id} ref={isWanted ? wantedRef : undefined}
               className={`bg-white border p-5 ${isWanted
                 ? 'border-gold-400 ring-1 ring-gold-400/40'
                 : 'border-green-800/10'}`}>
-              <Link to={`/order/${o.id}`}
-                className="flex items-center justify-between hover:opacity-90 focus-ring">
-                <div>
+              <button type="button" aria-expanded={isOpen}
+                onClick={() => setOpen(isOpen ? null : (o.display_code ?? null))}
+                className="w-full flex items-center justify-between gap-3 text-left hover:opacity-90 focus-ring">
+                <div className="min-w-0">
                   <p className="text-sm font-sans font-medium text-green-900">
                     {o.display_code ?? 'Order'} · {new Date(o.created_at).toLocaleDateString()}
                   </p>
                   <p className="text-xs text-muted mt-0.5">
                     {STATUS_LABEL[o.status] ?? o.status}
-                    {o.payment_method ? ` · ${o.payment_method}` : ''}
+                    {o.payment_method ? ` · ${METHOD_LABEL[o.payment_method] ?? o.payment_method}` : ''}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 shrink-0">
                   <span className="text-sm font-serif text-green-800">{usd(o.amount)}</span>
-                  <ArrowRight size={16} className="text-green-800/40" aria-hidden="true" />
+                  {isOpen
+                    ? <ChevronDown size={16} className="text-green-800/40" aria-hidden="true" />
+                    : <ChevronRight size={16} className="text-green-800/40" aria-hidden="true" />}
                 </div>
-              </Link>
+              </button>
+
+              {isOpen && (
+                <div className="mt-4 border-t border-green-800/10 pt-4 flex flex-col gap-3">
+                  {o.items && o.items.length > 0 && (
+                    <ul className="flex flex-col gap-1.5">
+                      {o.items.map((it) => (
+                        <li key={it.id}
+                          className="flex items-center justify-between text-sm text-green-900">
+                          <span className="truncate">{it.label ?? 'Item'}</span>
+                          <span className="font-serif text-green-800 shrink-0 ml-3">
+                            {it.price_amount != null ? usd(it.price_amount) : ''}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+                    <dt className="text-muted">Total</dt>
+                    <dd className="text-green-900">{usd(o.amount)}</dd>
+                    <dt className="text-muted">Payment</dt>
+                    <dd className="text-green-900">
+                      {o.payment_status === 'paid' ? 'Settled'
+                        : o.payment_method ? `${METHOD_LABEL[o.payment_method] ?? o.payment_method} — pending`
+                          : 'Awaiting payment'}
+                    </dd>
+                  </dl>
+                  <Link to={`/order/${o.id}`}
+                    className="inline-flex items-center gap-1.5 text-xs text-green-800 hover:text-green-700 focus-ring">
+                    Open the full order <ArrowRight size={13} aria-hidden="true" />
+                  </Link>
+                </div>
+              )}
               {/* 4d: payment method + responsibility, on unpaid orders only. */}
               {o.payment_status !== 'paid' && (
                 <button type="button" onClick={() => setManaging(o)}

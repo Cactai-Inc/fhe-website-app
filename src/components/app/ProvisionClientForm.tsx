@@ -858,7 +858,7 @@ export function ProvisionClientForm({
                 {payStatus !== 'unpaid' && (
                   <Field label="Payment method">
                     <select className="form-input w-48" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-                      {['Zelle', 'Cash', 'Check', 'Card', 'Other'].map((m) => <option key={m} value={m}>{m}</option>)}
+                      {[{ v: 'zelle', l: 'Zelle' }, { v: 'cash', l: 'Cash' }].map((m) => <option key={m.v} value={m.v}>{m.l}</option>)}
                     </select>
                   </Field>
                 )}
