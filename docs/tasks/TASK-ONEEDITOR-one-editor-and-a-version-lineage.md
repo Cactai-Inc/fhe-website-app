@@ -40,21 +40,51 @@
    produces **v8, stamped "from v4"** — so a reader knows it does not contain what was unique to v5–v7.
    **The number says WHEN; the parent says WHAT IT CAME FROM.** Both are needed and neither substitutes.
 
-## 2. WHAT ALREADY EXISTS — verified 2026-08-26, do not re-derive
+## 2. WHAT ALREADY EXISTS — ⚠️ RE-MEASURED 2026-08-26 AFTER THREAD 1 LANDED
 
-⚠️ **THIS EXACT PATTERN IS ALREADY BUILT ONCE, AND HAS NEVER BEEN USED.**
+⚠️ **THE ORIGINAL VERSION OF THIS SECTION WAS WRITTEN BEFORE TASK-VERSIONSPINE RAN AND IS NOW WRONG
+IN FIVE PLACES.** Thread 1 changed the ground it described, and re-deriving it also caught two things
+that were never true. Everything below is measured, not inherited.
 
-| Store | Shape | State |
+| Store | Shape | State, now |
 |---|---|---|
-| `content_blocks` + `content_block_versions` | `current_version` pointer + `(block_id, version, body, edited_by, created_at)` history | ⚠️ **ZERO ROWS.** Exactly the owner's model, built and undriven |
-| `form_definitions` + `form_definition_versions` | same shape — `(form_key, version, title, audience, purpose, schema, edited_by)` | Built on `task/p1ship`. ⚠️ **`max(version)` is 1 across all 28 forms — no v2 has ever been minted** |
-| `contract_templates` | a bare `version` integer, `draft_body`/`draft_subject` | ⚠️ **NO HISTORY TABLE.** Bumping the version discards what was there |
-| `email_templates` | `version` + `draft_subject`/`draft_body` | A draft/publish model — **a third idiom again** |
-| UI page copy | — | ⚠️ **NO STORE AT ALL.** Page text is in TSX |
+| `content_blocks` + `content_block_versions` | pointer + history, `parent_version` ✅ | ⚠️ **STILL ZERO ROWS, both tables.** It was the one honest instance of the owner's model and it is still undriven. **UI page copy has nowhere to come from yet — see §5 of the build.** |
+| `form_definitions` + `form_definition_versions` | pointer + history, `parent_version` ✅ | **28 history rows, `max(version)` still 1.** ⚠️ Those 28 are a same-second BACKFILL with `edited_by` NULL — **no v2 has ever been minted by a human.** The save path is live but unexercised. |
+| `contract_templates` + **`contract_template_versions`** | ⚠️ **THE HISTORY TABLE NOW EXISTS** — 26 rows, one per template | Built by Thread 1. **A version retains the CLAUSE COMPOSITION, not just `body`** — the four clause-composed templates hold a 23-character placeholder in `body`, so a body-only version would have retained nothing for the templates edited most. |
+| `template_version_events` | **12 rows, back to 2026-07-27** | ⚠️ **MISSING FROM THE ORIGINAL TABLE ENTIRELY.** It records that a bump happened; it never kept the body. |
+| `email_templates` | `version` + `draft_subject`/`draft_body` | Unchanged. ⚠️ **Still a separate idiom** — decide in §4 of the build. |
+| `lesson_plans` | `version` + `restore_lesson_plan_version` | ⚠️ **A FIFTH IDIOM, FOUND DURING THE THREAD-1 AUDIT AND IN NOBODY'S BRIEF.** It restores by re-writing forward — correct in spirit — but has **no `parent_version` and no append-only guard.** **Fold it in or exempt it explicitly.** |
+| UI page copy | — | ⚠️ **STILL NO STORE.** Page text is in TSX. |
 
-⚠️ **NOT ONE OF THEM RECORDS LINEAGE.** There is no `parent_version` anywhere. That is the single
-genuinely new column the owner's model needs, and it is the part that cannot be reconstructed later —
-once v8 is saved without saying it came from v4, that fact is gone.
+### ⚠️ THE FIVE CORRECTIONS, NAMED
+
+1. **"NOT ONE OF THEM RECORDS LINEAGE"** — **no longer true.** `parent_version` is now on **all
+   three** version tables, with a CHECK (`parent_version < version`) so following parents always
+   walks backwards. **Thread 3 consumes it; it does not add it.**
+2. **"`contract_templates` has no history table"** — **no longer true.** It has one, backfilled.
+3. **"`contract_templates`… `draft_body`/`draft_subject`"** — ⚠️ **`draft_subject` was NEVER on
+   `contract_templates`.** That column is on `email_templates`. **This was wrong when written.**
+4. **"the two already agree on their shape"** — ⚠️ **They agreed on COLUMNS and implemented OPPOSITE
+   STORAGE RULES.** `upsert_content_block` wrote the NEW version to history; `snapshot_form_definition`
+   wrote the OUTGOING one, so form history held every version **except** the current. **Thread 1
+   settled both onto the content-blocks rule and retired `snapshot_form_definition`.** ⚠️ **Never
+   assert that two stores agree because their columns match.**
+5. **The table missed `template_version_events`** and, as of the Thread-1 audit, `lesson_plans`.
+   **Five stores were listed; there are seven.**
+
+### ⚠️ WHAT WAS ALREADY LOST, AND CANNOT BE RECOVERED
+**9 templates are past v1** and `template_version_events` holds **12 bumps back to 2026-07-27** —
+**every one overwrote a body and kept nothing.** So the backfilled histories **start at each
+template's CURRENT number**: `HORSE_LEASE_V2` has a v3 and **no v1 or v2, and never will.** The table
+stops the loss from here forward; **it does not undo it.** ⚠️ **Do not build a UI that implies older
+versions can be recovered for contract templates. They cannot.**
+
+### ⚠️ AND ONE LIVE INCONSISTENCY THREAD 3 WILL MEET
+The four lease templates sit **one clause ahead of their retained v3** — `LEASE_FEE.NO_FEE_CONSIDERATION`,
+applied 2026-08-26 by a migration that did not call `save_contract_template_version`. **The owner
+declined to mint v4 for it (D33).** So **restore-to-v3 refuses on those templates until the next
+publish mints v4. That is correct behaviour, not a defect to fix** — and the version UI must say so
+in words rather than failing silently or looking broken.
 
 ## 3. THE BUILD
 
