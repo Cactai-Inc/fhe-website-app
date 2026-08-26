@@ -3,7 +3,7 @@
 **Branch** `task/p1ship` · **base** `origin/main @ 0b1b2bbe` · **9 commits, unpushed**
 **32 files changed (+3,592 / −114)** — 19 code files, 12 migrations, 2 reports
 **12 migrations APPLIED to production** (`lrstswfxfsezdmvkvukc`)
-**Written 2026-08-25 for the orchestrator thread.** Companion:
+**Written 2026-08-25 for the orchestrator thread; §8 corrected ~21:00 — see the note there.** Companion:
 `docs/reports/P1-CONTRACT-SHIP-REPORT.md` (the deep dive on the three P1 blockers).
 
 > **READ §7 BEFORE MERGING.** There is exactly one merge conflict and its resolution
@@ -284,15 +284,53 @@ I did not merge, because the merge is the orchestrator's call.
 
 ## 8. NOT BUILT / NOT VERIFIED — the honest list
 
-1. ❌ **Nobody has clicked the link in a browser.** Every routing seam is proven at
-   the data layer and the build compiles, but no end-to-end walk has been done — and
-   Item 1 sends a real email to a real client. **This is the last thing before
-   Pamela's lease goes out.** Steps are at the end of `P1-CONTRACT-SHIP-REPORT.md`.
-2. ❌ **Pamela still has no lease document.** Her contact exists (`f80e944a…`, no
-   address, no account, one invitation) but she is not a party to anything; the live
-   `HORSE_LEASE_V2` belongs to Abby Little. Every rehearsal made her the Lessor on
-   that lease inside `BEGIN; … ROLLBACK;`. **Production data was never modified by any
-   rehearsal.**
+> ⚠️ **CORRECTION, 2026-08-25 ~21:00.** Items 1 and 2 below originally said Pamela had
+> no lease. **That was stale, and the staleness was mine.** I gathered her data at
+> ~16:20 and wrote the report at ~20:00 without re-reading it. The owner assigned the
+> lease to her at **19:45** and made Sundance hers at **19:40**. The corrected state
+> and a full rehearsal on her real records are in §8.0. This is the exact failure mode
+> my own notes warn about — verify before asserting, and re-verify before reporting.
+
+### 8.0 ✅ PAMELA IS SET UP — rehearsed end to end on her real records
+
+| | |
+|---|---|
+| contact | `f80e944a…` Pamela Godde · `pgodde@earthlink.net` · phone on file · **address blank** |
+| account | **none yet** — no `profiles` row, no `auth.users` row. Correct: that is what the invitation is for. |
+| lease | `7adcd08f…` *Horse Lease Agreement — Standard*, `editable` — **Pamela is LESSOR**, FHE is LESSEE |
+| horse | **Sundance** `19ece013…` — attached to the lease, `current_owner_contact_id` = Pamela |
+| invitation | one row, still `draft`, `document_id` NULL — nobody has pressed send yet, which is the act that stamps it |
+
+**Rehearsed against production inside `BEGIN; … ROLLBACK;`** — the real send, then a
+simulated claim, then the gate:
+
+```
+STEP 1  staff send the contract to the Lessor
+        → {"reused": true, "invitation_id": "2735fd45…", "document_id": "7adcd08f…"}
+        → her invitation rows: 1 · now sent: 1 · carrying the lease: 1 · superseded: 0
+          (her SAVED DRAFT is promoted in place — the link staff already hold is the
+           link she receives)
+
+STEP 3  what she is actually asked for, as LESSOR on this lease:
+        contact.missing → [ Mailing address ]
+        horse.missing   → [ Veterinarian — address ]   (Sundance's record)
+        …and nothing else. Name, email and phone are on file and are not asked;
+        Sundance's farrier and vet name/phone are on file and are not asked.
+```
+
+That is the owner's acceptance criterion, on the real data: *"she is prompted with an
+intake page to add the missing information we need for the contract, this applies to
+both her account and her horse record."*
+
+**None of this was written by my rehearsals.** Every one rolled back, and the two
+changes that define the new state — `documents.horse_id` and
+`horses.current_owner_contact_id` — are columns **no command I ran ever touched**.
+
+1. ❌ **Nobody has clicked the link in a browser.** Every seam is now proven at the
+   data layer, on Pamela's own records, and the build compiles — but no end-to-end
+   walk has been done, and pressing send emails a real client. **This is the one
+   remaining thing.** Steps are at the end of `P1-CONTRACT-SHIP-REPORT.md`.
+2. ✅ *(was: "Pamela has no lease document")* — **superseded by §8.0.**
 3. ⚠️ **Horse IDENTITY fields are not on the contract intake page** (breed, colour,
    sex, microchip). It writes through `capture_horse_record_info`, the one existing
    path, which covers farrier and vet only. Identity comes from the horse record via
@@ -300,12 +338,21 @@ I did not merge, because the merge is the orchestrator's call.
    duplicate-implementation defect this codebase keeps removing.
 4. ⚠️ **No horse-attach on the intake page** — same reason; `HorseGate` owns it, and
    `Continue` lands where it runs.
-5. ⚠️ **"Everywhere we have things shown in a list it should be alphabetical" is
-   applied to the menu vocabularies only.** That is the context it was raised in. A
-   blanket sweep would hit lists that are *deliberately* ordered — workflow steps,
-   `onboarding_order`, role rank, offering display order, signing order — and
-   reordering those breaks meaning. **Needs a ruling on which lists are exempt before
-   anyone widens it.**
+5. ⚠️ **Alphabetical — the ruling arrived, and half of it is outstanding.**
+   Owner, 2026-08-25: *"the alphabetical was only relative to things like menus and
+   pages that show content like client lists horses etc… documents should probably be
+   chronological or grouped by client or type or filtered based on status."*
+
+   | | state |
+   |---|---|
+   | menu vocabularies | ✅ done — the only ordering this branch changed |
+   | content lists (clients, horses, …) | ❌ **not done** — in scope per the ruling, not built |
+   | documents | ✅ correctly untouched — and per the ruling should be chronological / grouped / filtered, which is a separate design task |
+   | deliberately ordered lists (workflow steps, `onboarding_order`, role rank, signing order) | ✅ untouched, and must stay that way |
+
+   Audited: this branch contains exactly three ordering changes, all three in the menu
+   vocabulary readers (`listHorseBreeds`, `listHorseColors`, `listLookupOptions`), plus
+   `pinNone`. No client, horse or document list was reordered.
 6. ⚠️ **Form section editing** (add/rename/reorder sections) is not built; fields
    within existing sections are.
 7. ⚠️ **`test:db` is 51 files red on `main`** and out of this branch's scope, but it
