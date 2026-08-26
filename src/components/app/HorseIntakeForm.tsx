@@ -10,7 +10,7 @@ import {
   fetchLocations, fetchContactLocations,
   type CalendarLocation,
 } from '../../lib/ops/api-calendar';
-import { listHorseBreeds, listHorseColors, listLookupOptions, recordLookupSuggestion } from '../../lib/api';
+import { listHorseBreeds, listHorseColors, listLookupOptions, addLookupValue } from '../../lib/api';
 import { adminClientAccounts, type ClientAccountRow } from '../../lib/admin';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePropertyTerm } from '../../contexts/BrandProvider';
@@ -95,6 +95,30 @@ function Field({
 
 const OTHER = '__other__';
 
+/** Splice a just-added menu value into a loaded vocabulary, alphabetically, without
+ *  re-reading the whole list — and never twice, since `add_lookup_value` returns the
+ *  EXISTING code when the value was already there. */
+function addOpt(prev: LookupCode[], o: { value: string; label: string }): LookupCode[] {
+  if (prev.some((x) => x.code === o.value)) return prev;
+  const next = [...prev, { code: o.value, display_name: o.label, active: true, sort_order: 900 }];
+  return next.sort((a, b) => a.display_name.localeCompare(b.display_name));
+}
+
+/* THE SAME ANTI-PATTERN THAT BROKE THE HORSE RECORD EDITOR (HorsePage.tsx), found
+   by the 2026-08-25 sweep. Three identical copies of this label wrapper were
+   defined INSIDE three component bodies, so each render minted a new component
+   type and React threw the <label> DOM away and rebuilt it.
+
+   ⚠️ Here it was NOT stealing focus, and the honest reason is position, not
+   design: these wrap the LABEL, and the <input> is its SIBLING —
+   `<div><L>Name</L><input/></div>` — so React remounted the label and left the
+   input alone. In `RecordEditor` the input was INSIDE the regenerated component,
+   which is why that one ate every keystroke. One stable module-level definition
+   fixes the waste here and removes the trap for whoever edits this file next. */
+function L({ children }: { children: React.ReactNode }) {
+  return <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{children}</label>;
+}
+
 /** HEIGHT IN HANDS — a closed UNIT vocabulary, generated, not configured.
  *  A hand is four inches, so the only valid fractions are .0–.3 and the practical
  *  range for a horse or pony is 8–19 hands. Free text produced "16.2hh",
@@ -113,21 +137,34 @@ const HEIGHT_OPTIONS: { value: string; label: string }[] = (() => {
 })();
 
 /** SELECT-OR-OTHER: a dropdown of known options plus an "Other" escape that reveals
- *  a free-text box. When the user types an "Other" value it's stored as the value AND
- *  captured (record_lookup_suggestion) so the barn can promote frequent entries into
- *  the official list later. A stored value that isn't a known option code is treated
- *  as a prior "Other" entry and shown in the text box. Keeps the N/A escape. */
+ *  a free-text box.
+ *
+ *  ⚠️ TYPING AN "OTHER" VALUE NOW ADDS IT TO THE MENU (owner, 2026-08-25), rather
+ *  than queueing a suggestion for someone to promote later. It used to store the
+ *  typed TEXT and file a `lookup_suggestion` — and for breed and colour that text
+ *  could not be stored at all, because those columns are foreign keys to their
+ *  lookup tables: the FK rejected the patch, the save failed, and the contract had
+ *  nothing to import. (The `invalid` prop below exists to colour that failure red;
+ *  it is now unreachable for a promoted value.)
+ *
+ *  `addLookupValue` returns the CODE, which is what goes in the field, so the value
+ *  saves and the document prints it. Existing entries match case-insensitively, so
+ *  this adds nothing when the value is already on the list. The review queue is not
+ *  gone — it still exists for anything added this way, marked settled. */
 function SelectOrOther({
-  label, value, onChange, options, lookupKey, placeholder, span, showError, required, invalid, hint,
+  label, value, onChange, options, lookupKey, onOptionAdded, placeholder, span, showError, required, invalid, hint,
 }: {
   label: string;
   value?: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
-  /** The vocabulary an "Other" entry is queued against for the barn to promote
-   *  later. OMITTED for a generated unit list (height in hands) — there is no
-   *  tenant vocabulary behind it, so there is nothing to suggest an addition to. */
+  /** The vocabulary an "Other" entry is ADDED TO. OMITTED for a generated unit
+   *  list (height in hands) — there is no tenant vocabulary behind it, so there is
+   *  nothing to add to, and the typed value is simply stored. */
   lookupKey?: string;
+  /** Told when a value was added, so the caller can put it in the dropdown without
+   *  re-reading the whole vocabulary. */
+  onOptionAdded?: (o: { value: string; label: string }) => void;
   placeholder?: string;
   span?: boolean;
   showError?: boolean;
@@ -165,13 +202,31 @@ function SelectOrOther({
           else { setOtherOpen(false); onChange(e.target.value); }
         }}>
         <option value="">Select…</option>
-        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        {/* Owner, 2026-08-25: the escape sits HIGH, not buried under a long
+            alphabetical list. The stored "Other / Crossbred" breed that used to
+            appear alongside it — the second "Other" — is switched off in the data. */}
         <option value={OTHER}>Other (enter manually)…</option>
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
       {(otherOpen || isOther) && !na && (
         <input className={`${cls} mt-1.5`} disabled={na} value={isKnown ? '' : (value ?? '')} placeholder={placeholder ?? 'Type the value'}
           onChange={(e) => onChange(e.target.value)}
-          onBlur={(e) => { const v = e.target.value.trim(); if (v && lookupKey) recordLookupSuggestion(lookupKey, v).catch(() => {}); }} />
+          onBlur={(e) => {
+            const v = e.target.value.trim();
+            if (!v || !lookupKey) return;
+            /* Add it to the vocabulary and keep the CODE, not the text — the code
+               is what the record's foreign key will accept. Failure is swallowed
+               and the typed text is left in place: for a free-text vocabulary that
+               still saves, and for a key-constrained one the field's own `invalid`
+               state already says so. Nothing here may block the form. */
+            void addLookupValue(lookupKey, v)
+              .then((r) => {
+                onOptionAdded?.({ value: r.code, label: r.display_name });
+                onChange(r.code);
+                setOtherOpen(false);
+              })
+              .catch(() => {});
+          }} />
       )}
       {hint && <p className="text-[10px] text-muted mt-1">{hint}</p>}
     </div>
@@ -245,9 +300,6 @@ function VetBlock({
   const setNa = (on: boolean) => parts.forEach((k) => set(k)(on ? NA : ''));
   const val = (k: keyof HorseIntakePayload) => (na ? '' : ((f[k] as string | undefined) ?? ''));
   const cls = (bad: boolean) => `${input}${showError && bad ? ' border-red-400' : ''}`;
-  const L = ({ children }: { children: React.ReactNode }) => (
-    <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{children}</label>
-  );
   return (
     <div className="sm:col-span-2 rounded-lg border border-green-800/10 p-3">
       <div className="flex items-center justify-between mb-2">
@@ -339,9 +391,6 @@ function LocationEntry({
   const isKnown = !!v.name && known.some((o) => o.value === v.name);
   const [otherOpen, setOtherOpen] = useState(!!v.name && !isKnown);
   const showOther = otherOpen || (!!v.name && !isKnown) || known.length === 0;
-  const L = ({ children }: { children: React.ReactNode }) => (
-    <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{children}</label>
-  );
   return (
     <div className="rounded-lg border border-green-800/15 p-3">
       {title && <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold mb-0.5">{title}</p>}
@@ -421,9 +470,6 @@ function MedicationBlock({
   onRemove: () => void;
 }) {
   const set = (patch: Partial<HorseMedication>) => onChange({ ...v, ...patch });
-  const L = ({ children }: { children: React.ReactNode }) => (
-    <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{children}</label>
-  );
   const noun = kind === 'SUPPLEMENT' ? 'supplement' : 'medication';
   return (
     <div className="rounded-lg border border-green-800/15 p-3">
@@ -1087,10 +1133,10 @@ export function HorseIntakeForm({
         <Field label="Nickname" value={f.nickname} onChange={set('nickname')} showError={showError} required placeholder="Everyday name (e.g. Beau)" />
         <Field label="Registered name" value={f.registered_name} onChange={set('registered_name')} showError={showError} required />
         <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')} showError={showError} required />
-        <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={false} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" placeholder="Registry name" />
+        <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={false} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" onOptionAdded={(o) => setRegOrgOpts((prev) => addOpt(prev, o))} placeholder="Registry name" />
         <Field span label="Microchip number (checked first)" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" showError={showError} required />
         <Field label="Passport number" value={f.passport_number} onChange={set('passport_number')} showError={false} />
-        <SelectOrOther label="Passport country" value={f.passport_country} onChange={set('passport_country')} showError={false} options={toOpts(passportCountryOpts)} lookupKey="horse_passport_country" placeholder="Country" />
+        <SelectOrOther label="Passport country" value={f.passport_country} onChange={set('passport_country')} showError={false} options={toOpts(passportCountryOpts)} lookupKey="horse_passport_country" onOptionAdded={(o) => setPassportCountryOpts((prev) => addOpt(prev, o))} placeholder="Country" />
         <Field label="Current fair market value" type="text" inputMode="numeric" value={f.fair_market_value}
           onChange={set('fair_market_value')} placeholder="$0.00" showError={showError} required
           onBlurFormat={(v) => {
@@ -1102,13 +1148,13 @@ export function HorseIntakeForm({
       <Section title="Description">
         <SelectOrOther label="Breed" value={f.breed} onChange={set('breed')} showError={showError} required
           invalid={showError && !isKnownCode(f.breed, breedOpts)}
-          options={breedOpts} lookupKey="horse_breeds" placeholder="Breed name"
-          hint="Choose from the list — a typed-in breed can’t be stored on the record." />
+          options={breedOpts} lookupKey="horse_breeds" onOptionAdded={(o) => setBreeds((prev) => addOpt(prev, o))} placeholder="Breed name"
+          hint="Not listed? Choose “Other (enter manually)” and type it — it joins the list." />
         <SelectOrOther label="Color" value={f.color} onChange={set('color')} showError={showError} required
           invalid={showError && !isKnownCode(f.color, colorOpts)}
-          options={colorOpts} lookupKey="horse_colors" placeholder="Color"
-          hint="Choose from the list — a typed-in color can’t be stored on the record." />
-        <SelectOrOther label="Markings" value={f.markings} onChange={set('markings')} showError={false} options={toOpts(markingOpts)} lookupKey="horse_markings" placeholder="Describe the markings" />
+          options={colorOpts} lookupKey="horse_colors" onOptionAdded={(o) => setColors((prev) => addOpt(prev, o))} placeholder="Color"
+          hint="Not listed? Choose “Other (enter manually)” and type it — it joins the list." />
+        <SelectOrOther label="Markings" value={f.markings} onChange={set('markings')} showError={false} options={toOpts(markingOpts)} lookupKey="horse_markings" onOptionAdded={(o) => setMarkingOpts((prev) => addOpt(prev, o))} placeholder="Describe the markings" />
         <Field label="Sex" value={f.sex} onChange={set('sex')} showError={showError} required
           options={[
             { value: 'MARE', label: 'Mare' }, { value: 'GELDING', label: 'Gelding' },
