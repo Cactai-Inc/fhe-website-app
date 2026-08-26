@@ -2267,12 +2267,27 @@ const PAYMENT_METHODS = ['Zelle', 'Check', 'Cash', 'Card'];
   will find.** ⚠️ **Latent, and it would land exactly on the client-editable path he has just asked
   for.**
 
-**2. What does "pending" mean?** — *"pending means we havent verified we received the money."*
-⚠️ **ONE STATE, NOT TWO.** It spans **undeclared** and **declared-but-unverified** alike. **The
-dividing line is our verification, not their declaration** — which is precisely why they may keep
-changing it: *"we wont mark it as paid until we see the zelle anyway."*
-✅ **This simplifies CR-60's ladder question.** *Awaiting payment* and *payment pending* are both
-**pending** by his definition; **only `paid` is on the other side of the line.**
+**2. What does "pending" mean?** — refined by him to the precise version:
+> *"pending is used when they declared they made or will make the payment once they select their
+> choice from the payment screen. until they make a selection its awaiting payment. and when we
+> verify payment was received its marked paid."*
+
+⚠️ **THREE DISTINCT STATES — and this is CR-60's ladder exactly, confirmed:**
+| State | Begins when | Set by |
+|---|---|---|
+| **awaiting payment** | the order exists and **they have not chosen yet** | approving the order *(CR-27: approval creates it)* |
+| **payment pending** | ⚠️ **they SELECT their choice on the payment screen** — declaring they have paid **or will** | **the client** |
+| **paid** | ⚠️ **we verify the money was received** | **an admin** |
+
+⚠️ **The trigger for `pending` is THEIR SELECTION, not our uncertainty.** Both the middle and the
+first rung are unverified, but only one has a declaration behind it.
+✅ **CR-60 is confirmed rather than simplified** — three rungs, three triggers, unchanged.
+
+⚠️ **WHAT THEY MAY DO, BY STATE:**
+- **awaiting payment** → **make a selection** *(this is what moves it to pending)*
+- **pending** → ⚠️ **CHANGE the selection** — Zelle to cash and back — *"a zelle never sent needs to
+  be switched to cash"*
+- **paid** → nothing; it is settled.
 
 **ASK-OWNER — remaining**
 1. **Does the payments page list paid history too**, or only what is outstanding?
