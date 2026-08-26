@@ -78,6 +78,10 @@ adds the option to future documents and leaves the live one without it.**
 
 - **Worktree, never the canonical checkout** (a pre-commit hook blocks it):
   `git worktree add ~/Downloads/claude-code-repo/wt-contractoptions -b task/contractoptions origin/main`
+- ⚠️ **COPY `.env.db` AND `.env.test` INTO THE WORKTREE EXPLICITLY.** They are gitignored and do
+  **NOT** propagate from the main checkout: `cp ../fhe-website-app/.env.db ../fhe-website-app/.env .`
+  ⚠️ **`npm run build` also needs `.env`** — the prerender step instantiates a Supabase client and
+  dies with `supabaseUrl is required` without it.
 - **Migrations**: connection string is the **first line of `.env.db`**. **Dry-run in
   `BEGIN; … ROLLBACK;` against production, apply, verify with a query, commit.**
 - ⚠️ **`CREATE OR REPLACE` with a new defaulted argument OVERLOADS.** `DROP FUNCTION` explicitly.
@@ -88,7 +92,34 @@ adds the option to future documents and leaves the live one without it.**
 - **COMMIT AS YOU GO. DO NOT PUSH.**
 - **Report to `docs/reports/TASK-CONTRACTOPTIONS-REPORT.md`** and commit it.
 
-## 3. VALIDATION — what "done" means
+## 3. THE REACH
+
+**What does a person click, from which page, to use this — and is that the only way?**
+
+⚠️ **NOTHING, IN THIS THREAD — AND THAT IS THE POINT, SO SAY IT PLAINLY IN YOUR REPORT.** You are
+building the semantics and the reads; **Thread 3 builds the surface that reaches them.** So this
+thread ends with **no new route and no new button**, and its RPCs are provably callable but not yet
+clicked. ⚠️ **List them explicitly in your report as awaiting a caller**, or they join the eight
+entries in `docs/ORCHESTRATOR.md` §3b — correct code nothing reaches.
+
+## 4. THE TELL
+
+**What does the person SEE, and how is it undone?**
+
+- Deactivating a value that has dependents: the **dependents are named before it is applied** —
+  "3 clauses and 1 draft depend on this."
+- A draft whose selection was cleared: ⚠️ **a `log_contract_change` row exists for it**, and the RPC
+  **returns which documents it re-opened**. **A value vanishing with no trace is indistinguishable
+  from a bug.**
+- Undo: **reactivate the value.** ⚠️ **It never lost its code, which is precisely why undo is possible
+  — that is the whole reason deactivation replaces deletion.**
+
+## 5. TEARDOWN
+
+Kill any dev server, watcher or `psql` session you started. Leave no background process running.
+Report the worktree path and branch so the orchestrator can archive and remove it.
+
+## 6. VALIDATION — what "done" means
 
 1. Adding a value appears on a **new** document AND on an existing **draft**, and **not** on an
    executed one.

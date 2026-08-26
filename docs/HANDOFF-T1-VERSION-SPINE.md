@@ -76,6 +76,10 @@ save mints a version, a modal lists them, opening one shows it, restore mints a 
 
 - **Work in a worktree**, never the canonical checkout — a pre-commit hook blocks code commits there:
   `git worktree add ~/Downloads/claude-code-repo/wt-versionspine -b task/versionspine origin/main`
+- ⚠️ **COPY `.env.db` AND `.env.test` INTO THE WORKTREE EXPLICITLY.** They are gitignored and do
+  **NOT** propagate from the main checkout: `cp ../fhe-website-app/.env.db ../fhe-website-app/.env .`
+  ⚠️ **`npm run build` also needs `.env`** — the prerender step instantiates a Supabase client and
+  dies with `supabaseUrl is required` without it.
 - **Migrations**: timestamped files in `supabase/migrations/`. The connection string is the **first
   line of `.env.db`** (gitignored, in the canonical checkout). Discipline: **dry-run inside
   `BEGIN; … ROLLBACK;` against production, apply, verify with a query, commit.**
@@ -88,7 +92,30 @@ save mints a version, a modal lists them, opening one shows it, restore mints a 
 - **COMMIT AS YOU GO. DO NOT PUSH.** The orchestrator merges.
 - **Report to `docs/reports/TASK-VERSIONSPINE-REPORT.md`** and commit it.
 
-## 4. VALIDATION — what "done" means
+## 4. THE REACH
+
+**What does a person click, from which page, to use this — and is that the only way?**
+
+`/app/ops/admin/forms` (`AdminFormsPage.tsx`), the screen that already exists. **Save** mints a
+version; a **Versions** control on that same screen opens the list; opening a row shows it; **Restore**
+mints a new one. ⚠️ **No new route and no new nav row** — this thread adds behaviour to a surface the
+owner can already reach. **If a person cannot get to it from the admin nav in the browser, it is not
+done**, however green the RPC is.
+
+## 5. THE TELL
+
+**What does the person SEE that confirms what happened, and how is it undone?**
+
+After a save, the screen states the version it is now on. The list reads **`v8 · from v4 · who ·
+when`** — ⚠️ **the parent is shown, not just stored; a lineage nobody can see is not traceability.**
+Undo is **Restore**, which mints forward and never removes anything.
+
+## 6. TEARDOWN
+
+Kill any dev server, watcher or `psql` session you started. Leave no background process running.
+Report the worktree path and branch so the orchestrator can archive and remove it.
+
+## 7. VALIDATION — what "done" means
 
 1. `parent_version` exists on **every** version table, and is populated correctly by the save path.
 2. `contract_template_versions` exists, has the same shape, and is **backfilled** — no template has
