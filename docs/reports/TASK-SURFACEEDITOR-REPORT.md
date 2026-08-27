@@ -2,7 +2,7 @@
 
 **Thread 3 of three.** Branch `task/surfaceeditor`, worktree
 `~/Downloads/claude-code-repo/wt-surfaceeditor`, cut from `origin/main` at `55c89b76`.
-**Two migrations, both applied to production.** Seven commits plus this report, **unpushed**.
+**Two migrations, both applied to production.** Nine commits, **unpushed**.
 
 **Prerequisites confirmed before starting:** `TASK-VERSIONSPINE` is on `main` (merge `baabdc11`)
 and `TASK-CONTRACTOPTIONS` is on `main` (`aeda9941` + report `e10624e0`).
@@ -392,8 +392,7 @@ retraction) · `src/pages/SignStart.tsx` · `src/pages/app/ops/lessons/SessionAc
 **Retired to a route that still resolves**
 `AdminFormsPage.tsx` · `AdminMenusPage.tsx` · `AdminTemplatesPage.tsx` · `AdminTemplateEditorPage.tsx`
 
-**Commits** — `beaf2cdf`, `ea843347`, `9d7d10b0`, `d51da7e0`, `6f80711a`, `1c9c798f`, `192aa233`, plus this
-report. **Not pushed.**
+**Commits** — `beaf2cdf`, `ea843347`, `9d7d10b0`, `d51da7e0`, `6f80711a`, `1c9c798f`, `192aa233`, `d320b1cf`, plus this report. **Not pushed.**
 
 **Worktree** `~/Downloads/claude-code-repo/wt-surfaceeditor`, branch `task/surfaceeditor` — ready to
 archive and remove. No dev server, watcher or `psql` session left running.
