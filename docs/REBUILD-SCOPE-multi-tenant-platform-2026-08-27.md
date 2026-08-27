@@ -87,3 +87,52 @@ now has this file's context to work from (once pointed at it, or once this repo 
 document's only job is to make sure that ruling — and whichever orchestrator thread ends up running
 after it — doesn't have to reconstruct the platform framing from a compacted conversation, or worse,
 proceed on ORCH5's already-superseded scope without knowing it changed.
+
+---
+
+## ✅ DONE — the ruling artifact WAS re-checked against this framing (ORCH5, 2026-08-27)
+
+**All 85 rows re-examined item by item, exactly as this file asked**, with attention on anything
+filed "build now" that touches identity, tenancy, or capability configuration.
+
+**The board now runs the three-way test**, plus a fourth column for items that are not a live ruling
+at all: **Keep — build now · Discard the fix · Wait on · Already settled.** *"Already settled"* is
+kept separate deliberately — an item that is already built or already answered is none of the owner's
+three buckets, and filing it as one would misrepresent it as a decision.
+
+**Before → after: 22 / 49 / 14 → 20 keep · 5 discard · 46 wait on · 14 settled.**
+
+### The two rows the framing moved OUT of "build now", and they moved for one reason
+**Both fixes are a per-tenant setting**, which is the capability-tuning layer the platform
+introduces.
+- **CR-13** *(the trainer is always Claire)* — the fix was "keep her in settings rather than code."
+  A one-off settings row now is the interim shape.
+- **CR-24** *(the barn's timezone is hardcoded)* — ⚠️ **re-checking changed the FINDING, not just the
+  bucket: it is hardcoded to Los Angeles and the barn is in Los Angeles, so it is not a live defect.**
+  It is only wrong for tenant number two. It was in "build now" on a misreading.
+
+### The five new discards — the complaint stays, the fix does not
+`CR-12` *(move the weekly-lesson editor to a surface being replaced)* · `CR-48` *(Guest→Visitor as a
+migration inside the tag model D31 already replaces)* · `CR-50` *(the three-boolean lead/client/account
+model — the exact thing user-independent-of-tenant answers differently)* · `CR-58` *(reconcile this
+app's add-controls, when a new app has one design system from day one)* · `CR-63` *(edit the current
+nav, when CR-66 says the person picks their own menu anyway)*.
+**Each row names where its requirement is already recorded**, so discarding the fix loses nothing.
+
+### ⚠️ RE-CHECKED AND IT STILL SHIPS: `TASK-ORIGIN`
+It adds origin and channel to the person record — squarely the identity model the platform redesigns,
+so it is the obvious candidate for reclassification. **It stays in "build now", and the reasoning
+generalises: the DATA is what ports; the columns are only the vessel.** He is about to enter it by
+hand. Captured now it survives into whatever the platform's person model becomes; not captured, it
+never exists at all and no later schema can recover it.
+
+### Two questions this framing ADDS to `docs/handoff/04-OPEN-QUESTIONS.md`
+1. ⚠️ **What does "contributing to the community" mean?** The owner's sentence ends on it and it has
+   no precedent in the current app. **Genuinely open — ask, do not infer.** It decides whether the
+   community layer is a tenant feature or the platform's reason to exist.
+2. **Does per-tenant capability tuning extend D13/D21** from content and formulas to *which
+   capabilities a tenant has at all*? That is a materially bigger claim, and it decides whether the
+   platform ships a capability editor or a fixed feature set.
+
+**Where it is:** the published board, revised in place at the same URL. **This file's request is
+discharged; the chat thread still owns the actual ruling.**
