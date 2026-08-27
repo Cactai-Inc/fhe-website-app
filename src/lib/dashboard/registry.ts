@@ -93,35 +93,18 @@ export const ZONES: ZoneDef[] = [
     quiet: 'no gifts waiting to be redeemed', to: '/app/records/clients' },
 
   /* ── CJ · the business desk ─────────────────────────────────────────── */
-  /* ⚠️ ORGANISED BY WHOSE MOVE IT IS, NOT BY DEPARTMENT (owner, 2026-08-26).
-     *"I dont need a section dedicated to contracts and deals, or anything
-     specific like that, I need to just have visibility over what is happening
-     and what is waiting for a next action by me or a client. Then i need kpi's.
-     Thats it."*
-
-     FOUR DEPARTMENT ZONES WERE RETIRED INTO THE TWO BELOW — B1 money, B3 deals
-     & contracts, B8 catalog setup, B9 onboarding pipeline. Each answered "what
-     is happening in THIS subsystem"; none answered the only question actually
-     being asked. Their rows all survive, re-sorted by whose move it is, in
-     `_waiting_items()`.
-
-     Two things did NOT survive the fold, deliberately: B8's cover-image and
-     staff-title rows (tidiness, not a next action — they are what made that
-     zone nine rows long), and every `display_code` (*"an obscure string of
-     characters ... completely fucking useless to me"*).
-
-     B2 stays because D26 makes Claire's plate a second pair of eyes, not a
-     department; B6 stays because it IS "visibility over what is happening". */
-  { key: 'W1', view: 'business', order: 10, title: 'Waiting on you',
-    quiet: 'nothing is waiting on you', to: '/app/records/documents',
-    hint: 'The next move is yours on every row here.' },
-  { key: 'W2', view: 'business', order: 20, title: 'Waiting on a client',
-    quiet: 'nobody owes you anything', to: '/app/records/clients',
-    hint: 'Sent, and not yet acted on. Nothing here needs you today.' },
-  { key: 'B2', view: 'business', order: 30, title: "Claire's plate",
+  { key: 'B1', view: 'business', order: 10, title: 'Money that has not landed',
+    quiet: 'every payment is in and every receipt sent', to: '/app/ops/payments/review' },
+  { key: 'B2', view: 'business', order: 20, title: "Claire's plate",
     quiet: 'nothing on her plate needs a second pair of eyes', to: '/app/dashboard',
     hint: 'Money and reply-time mirror here. Her routine work does not, unless it has gone overdue.' },
-  { key: 'B6', view: 'business', order: 40, title: 'What the app has been doing',
+  { key: 'B3', view: 'business', order: 30, title: 'Deals & contracts',
+    quiet: 'no deal or document is waiting', to: '/app/records/deals' },
+  { key: 'B9', view: 'business', order: 40, title: 'Onboarding pipeline',
+    quiet: 'nobody is stuck part-way in', to: '/app/records/clients' },
+  { key: 'B8', view: 'business', order: 50, title: 'Catalog & tenant setup',
+    quiet: 'the catalog and the roster are complete', to: '/app/ops/admin/products' },
+  { key: 'B6', view: 'business', order: 60, title: 'What the app has been doing',
     quiet: 'nothing recorded in the last two weeks', to: '/app/ops/activity',
     hint: 'D19: five ledgers the app writes and never read back. This is the read.' },
 ];
