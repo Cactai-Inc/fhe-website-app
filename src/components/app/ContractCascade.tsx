@@ -1446,6 +1446,26 @@ export function InlineFieldControl({
   return <span className="align-baseline">{control}{marks}</span>;
 }
 
+/* ⚠️ RETRACTED IN PLACE — TASK-SURFACEEDITOR, 2026-08-26.
+ *
+ * TASK-CONTRACTOPTIONS' report (§7.5) named these as "a second source of
+ * vocabulary outside the option-list system entirely", and TASK-SURFACEEDITOR's
+ * handoff carried that forward as a thing the new editor would show fields it
+ * did not govern.
+ *
+ * MEASURED ON PRODUCTION, AND IT IS NOT TRUE TODAY: zero rows in
+ * contract_field_defs and zero rows in contract_fields carry
+ * input_kind = 'responsibility' or format_type = 'party'. Every one of the 212
+ * live option lists is stored data, governed by contract_menu_*, and editable in
+ * the Editor. These four constants are the fallback for a field kind nothing
+ * uses — the comment above ResponsibilityControl's caller already says "legacy
+ * responsibility (kept for any field still on input_kind)", and there is none.
+ *
+ * So they are DEAD DEFAULTS, not a rival vocabulary. Left in place under D32's
+ * spirit rather than deleted, because a template author could still create such
+ * a field and would then get sensible options instead of an empty picker — but
+ * if that ever happens, THE FIX IS TO GIVE THAT FIELD REAL OPTIONS, not to edit
+ * this file. */
 const COST_OPTS = [
   { value: 'LESSOR', label: 'Lessor' }, { value: 'LESSEE', label: 'Lessee' },
   { value: 'SHARED', label: 'Shared (split %)' },

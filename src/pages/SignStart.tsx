@@ -28,7 +28,7 @@
  * The difference is `PATH_REQUIRES_ADDRESS` below — a constant map, the same idiom
  * PATH_SEGMENTS / PATH_CATEGORIES / WELCOME_COPY already use to vary this page by
  * path. It is deliberately NOT configuration: owner-ruled 2026-08-20, recorded in
- * D22 §0. `form_definitions` + /app/ops/admin/forms exists and could back this, and
+ * D22 §0. `form_definitions` + the Editor (/app/ops/admin/editor) exists and could back this, and
  * the answer was no — do not propose it again.
  *
  * api/sign-start.ts writes the address through fill_claimant_details on both

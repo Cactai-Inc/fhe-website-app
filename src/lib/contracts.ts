@@ -177,6 +177,11 @@ export interface ContractDetail {
     workflow_state: 'editable' | 'editing' | 'in_review' | 'locked' | 'executed' | 'void' | 'terminated';
     recipient_editing: boolean;
     execution_hash: string | null;
+    /** THE TELL (TASK-SURFACEEDITOR): the template version this document was
+     *  signed against, and where the template sits now. An executed document
+     *  renders the version it was signed against forever, and says so. */
+    signed_template_version?: number | null;
+    template_version_now?: number | null;
     merged_body: string | null;
     is_originator: boolean;
     horse_section_confirmed_at: string | null;

@@ -48,6 +48,7 @@ import { PartiesHorseCard } from '../../components/app/PartiesHorseCard';
 import { AddHorseModal } from '../../components/app/AddHorseModal';
 import { ClauseDocument } from '../../components/app/ClauseDocument';
 import { SendCopiesMenu } from '../../components/app/SendCopiesMenu';
+import { SignedVersionNote } from '../../components/ops/documents/SignedVersionNote';
 import { ContractActivityCard } from '../../components/app/ContractActivityCard';
 import { FlatDocument } from '../../components/app/FlatDocument';
 import {
@@ -1787,6 +1788,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           <p className="inline-flex items-center gap-2 text-green-800 font-medium text-sm mb-3">
             <CheckCircle2 size={16} /> Executed{doc.execution_hash ? ` · ${doc.execution_hash.slice(0, 12)}…` : ''}
           </p>
+          <SignedVersionNote signedVersion={doc.signed_template_version}
+            templateVersionNow={doc.template_version_now} />
           <div className="document-paper prose-sm whitespace-pre-line text-[13px] leading-relaxed text-green-950">
             <ContractBody body={doc.merged_body} />
           </div>

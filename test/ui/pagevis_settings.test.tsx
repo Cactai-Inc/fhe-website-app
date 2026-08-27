@@ -142,7 +142,7 @@ describe('PAGEVIS — the Page visibility settings page', () => {
 
   it('leaves the other Settings pages hideable — this one is enough to undo them', () => {
     renderPage(<AdminPageVisibilityPage />);
-    for (const k of ['settings.branding', 'settings.products', 'settings.forms', 'settings.team']) {
+    for (const k of ['settings.branding', 'settings.products', 'settings.editor', 'settings.team']) {
       expect(screen.getByTestId(`pagevis-toggle-${k}`)).toBeEnabled();
     }
   });

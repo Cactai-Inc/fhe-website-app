@@ -103,6 +103,7 @@ import AccountInvitePage from './pages/app/ops/AccountInvitePage';
 import NewContractPage from './pages/app/ops/NewContractPage';
 import DealsPage, { DEALS_STANDALONE_RETIRED } from './pages/app/ops/DealsPage';
 import DealPage from './pages/app/ops/DealPage';
+import AdminEditorPage from './pages/app/ops/admin/AdminEditorPage';
 import AdminFormsPage from './pages/app/ops/admin/AdminFormsPage';
 import AdminMenusPage from './pages/app/ops/admin/AdminMenusPage';
 import AdminPageVisibilityPage from './pages/app/ops/admin/AdminPageVisibilityPage';
@@ -447,6 +448,10 @@ export function AppRoutes() {
               <Route path="ops/admin/registry" element={<ProtectedRoute requireSuperAdmin><AdminRegistryPage /></ProtectedRoute>} />
               <Route path="ops/admin/branding" element={<ProtectedRoute requireAdmin><AdminBrandingPage /></ProtectedRoute>} />
               <Route path="ops/admin/products" element={<ProtectedRoute requireAdmin><AdminProductsPage /></ProtectedRoute>} />
+              {/* TASK-SURFACEEDITOR — the ONE editor. Forms, documents, emails and
+                  the shared lists, each opened as the surface it is. The three
+                  routes it replaces are kept below and unlinked (D32). */}
+              <Route path="ops/admin/editor" element={<ProtectedRoute requireAdmin><AdminEditorPage /></ProtectedRoute>} />
               <Route path="ops/admin/forms" element={<ProtectedRoute requireAdmin><AdminFormsPage /></ProtectedRoute>} />
               {/* Every dropdown list in the app and its contents — the 5 shared
                   vocabularies plus the 119 option lists living inside form schemas. */}
