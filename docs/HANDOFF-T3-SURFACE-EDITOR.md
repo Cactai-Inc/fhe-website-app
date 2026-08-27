@@ -65,6 +65,31 @@ already carry `current_version`, and have ZERO rows** — that is the store, bui
 half-extract page copy and leave the app reading from two places — that is the exact defect class this
 repo keeps producing. **A named gap is a result; a silent partial migration is a bug.**
 
+## 1b. ⚠️ WHAT THREADS 1 AND 2 FOUND THAT CHANGES YOUR JOB
+
+**Added after both threads reported. None of this was in the original brief.**
+
+1. ⚠️ **`active` IS FILTERED INSIDE `InlineFieldControl`, NOT AT THE CALL SITES.** T2's fact-find
+   mapped three call sites; **there were four** — `PartyDocumentView`, the panel the COUNTERPARTY
+   answers in, filtered nothing at all. The filter now lives in the one component every picker goes
+   through, so **a fifth call site cannot forget it. Do not move it back out.** *(The `when` gate reads
+   other fields' values and cannot move there — it stays where it was.)*
+2. ⚠️ **THERE IS A SECOND OPTION VOCABULARY OUTSIDE EVERYTHING T2 BUILT.**
+   `ContractCascade.tsx:1449` — `COST_OPTS` / `DUTY_OPTS`, hardcoded, used whenever a field has no
+   options of its own. **It cannot be deactivated, relabelled, or found by
+   `contract_menu_dependents`.** ⚠️ **Your editor will show fields whose options it does not govern.**
+   Bring it into the option system or say in your report why not — **silently editing around it is the
+   outcome to avoid.**
+3. ⚠️ **UNDO IS NOT SYMMETRICAL, AND THE EDITOR MUST SAY SO.** Reactivating a value restores the
+   OPTION, not the ANSWER — a draft whose selection was cleared stays unanswered. The old answer is in
+   `contract_change_log`. **Do not imply a restore puts the answer back.**
+4. ⚠️ **THERE IS A FIFTH VERSIONING IDIOM: `lesson_plans`** + `restore_lesson_plan_version`. Found
+   during the Thread-1 audit, in nobody's brief. It restores by re-writing forward — correct in spirit
+   — but has **no `parent_version` and no append-only guard.** **Fold it in or exempt it explicitly.**
+5. ⚠️ **`contract_menu_set_active` ALREADY BUMPS THE TEMPLATE VERSION.** It calls
+   `save_contract_template_version`, so an option edit mints a version on its own. **Your editor must
+   not mint a second one for the same act.**
+
 ## 2. ⚠️ THE RULE YOU MUST NOT BREAK
 
 **A live surface is derived. A signed document is frozen.**
