@@ -1303,7 +1303,7 @@ function fieldDisplayValue(f: ContractField): string {
  *  (party / contact / pair / location) fall back to the block FieldControl inside
  *  a compact inline-block wrapper, since they can't collapse to a single word. */
 export function InlineFieldControl({
-  f, editable, onSave, onSaveResponsibility, onSaveStructured,
+  f: rawField, editable, onSave, onSaveResponsibility, onSaveStructured,
 }: {
   f: ContractField;
   editable: boolean;
@@ -1312,6 +1312,32 @@ export function InlineFieldControl({
   onSaveStructured: SaveStructFn;
   /** Accepted for call-site compatibility; the inline comment bubble was removed. */
 }) {
+  /* ⚠️ A RETIRED VALUE IS FILTERED HERE, IN THE ONE COMPONENT EVERY PICKER GOES
+     THROUGH — NOT AT THE CALL SITES (TASK-CONTRACTOPTIONS §1).
+
+     The sweep found FOUR call sites and only two of them filtered: two in
+     ClauseDocument wrapped the field in `fieldWithAvailableOptions`,
+     `renderCustom` did not, and `PartyDocumentView` — the panel the COUNTERPARTY
+     answers in — did not either. Patching four call sites leaves the fifth
+     author to remember; putting it here means they cannot get it wrong.
+
+     `active` needs no sibling context, which is exactly why it can live here.
+     The `when` gate does (it reads other fields' values), so that one stays in
+     `fieldWithAvailableOptions` at the ClauseDocument call sites.
+     ⚠️ Consequently PartyDocumentView still does not evaluate `when` gates —
+     a PRE-EXISTING gap this build did not create and is not in scope to close,
+     recorded in the report rather than left to be rediscovered.
+
+     An already-SELECTED retired value stays visible so it can be unselected —
+     the same escape hatch the `when` filter uses, and the reason the option is
+     deactivated rather than deleted. */
+  const f = useMemo(() => {
+    const opts = rawField.options;
+    if (!opts?.some((o) => o.active === false)) return rawField;
+    const selected = (rawField.value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+    return { ...rawField, options: opts.filter((o) => o.active !== false || selected.includes(o.value)) };
+  }, [rawField]);
+
   const disabled = !editable || !f.can_edit;
   const fmt = f.format_type ?? '';
   const kind = f.input_kind ?? 'text';

@@ -14,6 +14,19 @@ export interface FieldOption {
    *  field values via clauseConditionMet; an already-SELECTED option stays
    *  visible so it can be unselected. */
   when?: FieldConditional | null;
+  /** ⚠️ RETIRED, NOT REMOVED (TASK-CONTRACTOPTIONS). A value is never deleted and
+   *  never re-coded — 208 field conditions, 449 clause conditions and 8 sibling
+   *  option gates name option values as bare strings, and every historic answer
+   *  resolves through the code. `false` means "stop OFFERING this"; the entry
+   *  stays in the list forever so the code keeps resolving.
+   *
+   *  ⚠️ ABSENT MEANS ACTIVE. All 212 live lists predate the flag.
+   *
+   *  THE ONE RULE EVERY READER FOLLOWS: **a picker filters on `active`; a label
+   *  resolver never does.** Filtering in the resolver is what would make a
+   *  historic selection render as a raw code, which is the failure deactivation
+   *  exists to prevent. */
+  active?: boolean | null;
 }
 /** A clause/field reveal gate: shown when the controlling field equals one of
  *  `equals`, or (for a multi-select control) contains one of `contains`. */

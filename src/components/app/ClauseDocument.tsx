@@ -399,7 +399,20 @@ function isDurationUnitField(f: ContractField): boolean {
 /** Availability-filter a field's options: an option with a `when` gate is only
  *  offered while the gate holds — EXCEPT when it's already selected (it must
  *  stay visible so it can be unselected). Duration-unit selects additionally
- *  narrow to singular options when the paired number is 1, plural when ≥ 2. */
+ *  narrow to singular options when the paired number is 1, plural when ≥ 2.
+ *
+ *  ⚠️ THE `when` GATE LIVES HERE AND `active` DOES NOT (TASK-CONTRACTOPTIONS §1).
+ *  A `when` gate reads OTHER fields' values, so it can only be evaluated where
+ *  `valueByKey` exists — here. A retired value needs no such context, so it is
+ *  filtered inside `InlineFieldControl` instead, which is the one component
+ *  every picker goes through and therefore the only place a future call site
+ *  cannot forget it. The sweep found four call sites and two that had already
+ *  forgotten this one.
+ *
+ *  ⚠️ AND NEITHER FILTER TOUCHES THE LABEL RESOLVERS. `optionLabel`,
+ *  `gateValueLabel` and the control's own value lookup must keep seeing the
+ *  FULL list, or a retired historic selection renders as a raw code — the exact
+ *  failure that deactivate-never-delete exists to prevent. */
 function fieldWithAvailableOptions(
   f: ContractField, valueByKey: Record<string, string>,
 ): ContractField {
@@ -1034,12 +1047,20 @@ export function ClauseDocument({
     return secs;
   }, [sections, customRows, customSectionRows, lineItems, pendingFor]);
 
+  /* ⚠️ THE THIRD CALL SITE, AND IT WAS THE ONE THAT DID NOT FILTER
+     (found by TASK-CONTRACTOPTIONS' reader sweep, 2026-08-26). `InlineFieldControl`
+     is rendered from three places in this file; the other two wrap the field in
+     `fieldWithAvailableOptions` and this one passed `f` straight through. So an
+     author-added custom field ignored option-level `when` gates already, and
+     would have ignored `active` too — a retired value would have kept being
+     offered here and nowhere else, which is the worst shape of the bug because
+     it looks like the sweep succeeded. */
   const renderCustom = (f: ContractField, num: string) => (
     <OwnedField key={f.field_key} f={f} cb={cb} block>
       <div className="flex items-baseline gap-1.5">
         <span className="text-muted tabular-nums text-[13px]">{num}</span>
         <span className="text-[13.5px] font-semibold text-green-900">{f.label ?? f.field_key}:</span>
-        <InlineFieldControl f={f} editable={cb.editable && fieldIsMine(f, cb)}
+        <InlineFieldControl f={fieldWithAvailableOptions(f, valueByKey)} editable={cb.editable && fieldIsMine(f, cb)}
           onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
           onSaveResponsibility={cb.onSaveResponsibility as never} />
       </div>
