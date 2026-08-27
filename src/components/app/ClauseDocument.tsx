@@ -617,7 +617,14 @@ export function ClauseProse({
     // block that renders unreadably is worse than one that takes three lines.
     /* ⚠️ THE PRINTED-NAME TRACK IS SIZED FOR THE COMPANY'S OWN NAME (owner,
        2026-08-26: "the printed name section needs to be made wider… its cutting
-       off the last letter n"). The middle track was 1.4fr, which on the live
+       off the last letter n"). ⚠️ THAT DIAGNOSIS WAS WRONG AND IS RETRACTED —
+       the name was CLIPPED because it rendered as an inline INPUT, which cannot
+       wrap; see the *.PRINTED_NAME branch above, which is the actual fix. This
+       width change is retained only because a wider middle track is a reasonable
+       default for every OTHER signature-block value — NOT because it solves the
+       clipping, which it never did. ⚠️ The Date track was narrowed to 0.7fr to
+       pay for it; if Date ever reads cramped, this is the trade to undo first.
+       The middle track was 1.4fr, which on the live
        HORSE_LEASE_V2 left "French Heritage Equestrian" (26 chars, the real
        LESSEE.PRINTED_NAME) a few pixels short — and the value renders in an
        inline input whose sizer is `max-w-full overflow-hidden`, so an input
