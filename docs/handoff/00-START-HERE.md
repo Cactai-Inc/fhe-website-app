@@ -5,17 +5,32 @@ is approaching compaction.** ⚠️ **This file instructs. It is not a status re
 and still have to ask the owner how to operate or what to do first, it failed — fix it rather than
 asking him.
 
+⚠️ **APPENDED 2026-08-27 — THIS FOLDER IS THE ONE CANONICAL ENTRY POINT. A PARALLEL SESSION EXISTS
+UNDER `docs/HANDOFF-ORCH<n>.md` (a single-file convention this folder replaced) AND DID NOT KNOW THIS
+FOLDER EXISTED UNTIL PARTWAY THROUGH ITS SESSION.** That session — spawned from a stale
+`HANDOFF-ORCH4.md` written 2026-08-24, before this folder existed — audited and merged
+`wt-contractoptions` and `wt-surfaceeditor` without reading `03-REMAINING-WORK.md` first, and as a
+direct result **merged `b9bc9edc` to production**, the exact half-measure dashboard commit §4 of that
+file says was deliberately rejected. **Caught and reverted within the same session** (`e3c7da6e`) —
+see §4 for the full incident note. **The T3/SURFACEEDITOR merge from that same session was correct
+and is folded into §1 below** — it is real, verified, useful work; the process collision is the
+problem, not everything that session touched. **If you are a human or a thread deciding which
+handoff format to use going forward: use this folder. Retire the single-file convention rather than
+letting both continue to accumulate state independently.**
+
 ---
 
 ## WHERE YOU ARE
 
 ```
 repo        /Users/cactai/Downloads/claude-code-repo/fhe-website-app
-branch      main — pushed and clean
+branch      main — pushed and clean, HEAD e3c7da6e as of 2026-08-27 02:41
 database    Supabase lrstswfxfsezdmvkvukc — connection string is LINE 1 of .env.db (gitignored)
-worktrees   wt-contractoptions (task/contractoptions — ⚠️ ONE COMMIT DELIBERATELY UNMERGED, see 04)
-            wt-paysign         (task/paysign — the orchestrator's own scratch branch)
-            wt-dealparty       (task/pagefit — merged long ago, safe to remove)
+worktrees   NONE LIVE as of 2026-08-27. wt-contractoptions and wt-surfaceeditor were audited,
+            merged (surfaceeditor) or correctly left with its one deliberate exclusion
+            (contractoptions — see §4), and removed by the parallel session noted above.
+            wt-paysign was found already fully merged and removed. wt-dealparty was already
+            gone before that session started.
 platform    macOS. Every path above is absolute and real.
 ```
 
