@@ -52,8 +52,10 @@ export interface VersionSource<D> {
 
 /** "v3 · from v1" — the number says WHEN, the parent says WHAT IT CAME FROM.
  *  A null parent is the ordinary case (edited from the one before), so it says
- *  nothing rather than adding noise to every row. */
-export function versionLabel(v: { version: number; parent_version: number | null }): string {
+ *  nothing rather than adding noise to every row. Deliberately NOT exported: a
+ *  non-component export here costs the file its fast refresh, and every caller
+ *  that wants this string wants the modal around it too. */
+function versionLabel(v: { version: number; parent_version: number | null }): string {
   return v.parent_version === null ? `v${v.version}` : `v${v.version} · from v${v.parent_version}`;
 }
 
