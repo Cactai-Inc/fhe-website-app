@@ -33,6 +33,15 @@ And, earlier the same day:
 client account by hand**. **If the fields do not exist when he starts, he enters everything twice.**
 That is the entire reason this jumps the queue.
 
+⚠️ **RE-CHECKED AGAINST THE MULTI-TENANT PLATFORM FRAMING (2026-08-27) AND IT STILL SHIPS.**
+`docs/REBUILD-SCOPE-multi-tenant-platform-2026-08-27.md` records that the rebuild target is a
+platform where **users are independent of tenants** — which makes this task, adding two columns to the
+person record, the obvious candidate for "wait for the rebuild." **It is not, and the reason is worth
+stating so nobody re-opens it: the DATA is what ports, and the columns are only the vessel.** He
+enters it by hand once; captured now it survives into whatever the platform's person model becomes,
+and **not captured it never exists at all — no later schema can recover a fact nobody wrote down.**
+**Build it in the current schema without apology.**
+
 ---
 
 ## 0. READ FIRST
