@@ -295,6 +295,37 @@ export interface NotificationRow {
 }
 export const fetchNotifications = () => zone<NotificationRow>('dash_notifications');
 
+/* ── W1 / W2 · whose move is it ────────────────────────────────────────── */
+/**
+ * ⚠️ THE BOARD IS ORGANISED BY WHOSE MOVE IT IS, NOT BY DEPARTMENT. Owner,
+ * 2026-08-26: "I dont need a section dedicated to contracts and deals, or
+ * anything specific like that, I need to just have visibility over what is
+ * happening and what is waiting for a next action by me or a client. Then i
+ * need kpi's. Thats it."
+ *
+ * Both readers are thin filters over ONE classifier (`_waiting_items`), so a
+ * thread cannot appear on both lists or fall off both.
+ *
+ * ⚠️ AND THERE IS NO `display_code`. Owner, same message: "shows an obscure
+ * string of characters that are undoubtedly an id number that is completely
+ * fucking useless to me." A row carries WHO it concerns and WHAT the next act
+ * is; the identifier lives on the page you land on.
+ */
+export interface WaitingRow {
+  kind: string;
+  id: string;
+  title: string;
+  who: string | null;
+  detail: string | null;
+  /** Resolved to a real route in `lib/dashboard/registry.ts`, never in SQL. */
+  link_kind: 'purchase' | 'document' | 'deal' | 'contact' | 'catalog' | null;
+  link_id: string | null;
+  since: string;
+  rank: number;
+}
+export const fetchWaitingOnYou = () => zone<WaitingRow>('dash_waiting_on_you');
+export const fetchWaitingOnClients = () => zone<WaitingRow>('dash_waiting_on_clients');
+
 /* ── The two KPI ribbons ───────────────────────────────────────────────── */
 export interface TrainerKpis {
   today_lessons: number;

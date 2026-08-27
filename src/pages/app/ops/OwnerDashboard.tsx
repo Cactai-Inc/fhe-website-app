@@ -4,9 +4,9 @@ import { useAuth } from '../../../contexts/AuthContext';
 import {
   fetchTodayPlan, fetchWeekStrip, fetchMoneyWaiting, fetchPeopleWaiting,
   fetchNotesLoop, fetchStableBoard, fetchDocumentsOnboarding, fetchCommunityPulse,
-  fetchEvaluationsDue, fetchGifts, fetchMoneyHealth, fetchClairesPlate,
-  fetchDealsContracts, fetchActivityReadback, fetchCatalogHygiene,
-  fetchOnboardingPipeline, fetchTrainerKpis, fetchBusinessKpis, fetchNotifications,
+  fetchEvaluationsDue, fetchGifts, fetchClairesPlate, fetchActivityReadback,
+  fetchTrainerKpis, fetchBusinessKpis, fetchNotifications,
+  fetchWaitingOnYou, fetchWaitingOnClients,
   type ZoneResult, type TrainerKpis, type BusinessKpis, type RevenueWindow,
 } from '../../../lib/ops/api-dashboard';
 import { fetchRevenue } from '../../../lib/ops/api-calendar';
@@ -23,9 +23,10 @@ import {
   DocumentsZone, CommunityZone, EvaluationsZone, GiftsZone,
 } from '../../../components/app/dashboard/TrainerZones';
 import {
-  MoneyHealthZone, MirrorZone, DealsZone, PipelineZone, HygieneZone, ActivityZone,
+  MirrorZone, ActivityZone,
 } from '../../../components/app/dashboard/BusinessZones';
 import { NotificationsZone } from '../../../components/app/dashboard/NotificationsZone';
+import { WaitingOnYouZone, WaitingOnClientsZone } from '../../../components/app/dashboard/WaitingZones';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { timeOfDayWord } from '../../../lib/formatDateTime';
 
@@ -77,12 +78,14 @@ const LOADERS: Record<string, Loader> = {
   C11: fetchCommunityPulse as Loader,
   C12: fetchEvaluationsDue as Loader,
   C13: fetchGifts as Loader,
-  B1: fetchMoneyHealth as Loader,
+  /* ⚠️ B1 / B3 / B8 / B9 ARE RETIRED FROM THE BUSINESS VIEW (owner, 2026-08-26)
+     and folded into W1 / W2 by whose move it is. Their reader functions are
+     left in `api-dashboard.ts` and in the database, unreferenced by this map —
+     D32 keeps them, and Claire's view may yet want the money one. */
+  W1: fetchWaitingOnYou as Loader,
+  W2: fetchWaitingOnClients as Loader,
   B2: fetchClairesPlate as Loader,
-  B3: fetchDealsContracts as Loader,
   B6: (() => fetchActivityReadback(40)) as Loader,
-  B8: fetchCatalogHygiene as Loader,
-  B9: fetchOnboardingPipeline as Loader,
 };
 
 interface ZoneState { result: ZoneResult<unknown> | null; error: string | null }
@@ -267,12 +270,10 @@ function renderZone(
     case 'C11': return <CommunityZone items={items as any} />;
     case 'C12': return <EvaluationsZone items={items as any} />;
     case 'C13': return <GiftsZone items={items as any} />;
-    case 'B1':  return <MoneyHealthZone items={items as any} />;
+    case 'W1':  return <WaitingOnYouZone items={items as any} />;
+    case 'W2':  return <WaitingOnClientsZone items={items as any} />;
     case 'B2':  return <MirrorZone items={items as any} onOpenTrainer={chooseView} />;
-    case 'B3':  return <DealsZone items={items as any} />;
     case 'B6':  return <ActivityZone items={items as any} />;
-    case 'B8':  return <HygieneZone items={items as any} />;
-    case 'B9':  return <PipelineZone items={items as any} />;
     /* eslint-enable @typescript-eslint/no-explicit-any */
     default:    return null;
   }
