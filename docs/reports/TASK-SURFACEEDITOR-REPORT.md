@@ -2,7 +2,7 @@
 
 **Thread 3 of three.** Branch `task/surfaceeditor`, worktree
 `~/Downloads/claude-code-repo/wt-surfaceeditor`, cut from `origin/main` at `55c89b76`.
-**Two migrations, both applied to production.** Six commits, **unpushed**.
+**Two migrations, both applied to production.** Seven commits plus this report, **unpushed**.
 
 **Prerequisites confirmed before starting:** `TASK-VERSIONSPINE` is on `main` (merge `baabdc11`)
 and `TASK-CONTRACTOPTIONS` is on `main` (`aeda9941` + report `e10624e0`).
@@ -292,7 +292,7 @@ page away still saw Templates. Not a defect I introduced or fixed; the Editor's 
 both, which closes it as a side effect.
 
 ### 6.3 The second option vocabulary
-§3.4 above. Both the prior report and the handfoff's item 1b.2 assert a live gap that measures zero.
+§3.4 above. Both the prior report and the handoff's item 1b.2 assert a live gap that measures zero.
 
 ---
 
@@ -392,7 +392,7 @@ retraction) · `src/pages/SignStart.tsx` · `src/pages/app/ops/lessons/SessionAc
 **Retired to a route that still resolves**
 `AdminFormsPage.tsx` · `AdminMenusPage.tsx` · `AdminTemplatesPage.tsx` · `AdminTemplateEditorPage.tsx`
 
-**Commits** — `beaf2cdf`, `ea843347`, `9d7d10b0`, `6f80711a`, `1c9c798f`, `192aa233`, plus this
+**Commits** — `beaf2cdf`, `ea843347`, `9d7d10b0`, `d51da7e0`, `6f80711a`, `1c9c798f`, `192aa233`, plus this
 report. **Not pushed.**
 
 **Worktree** `~/Downloads/claude-code-repo/wt-surfaceeditor`, branch `task/surfaceeditor` — ready to
