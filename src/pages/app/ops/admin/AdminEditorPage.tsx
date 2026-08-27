@@ -78,28 +78,25 @@ export default function AdminEditorPage() {
       .catch((e) => setError(toErrorMessage(e, 'Could not load the shared lists.')));
   }, [loadDocs, loadEmails]);
 
-  const needle = q.trim().toLowerCase();
-  const hit = (...s: (string | null | undefined)[]) =>
-    !needle || s.some((x) => (x ?? '').toLowerCase().includes(needle));
-
-  /* Alphabetical, per the owner's standing rule for lists — a grid or a natural
-     order has no reading order a person can rely on (CR-75). */
-  const shownForms = useMemo(
-    () => (forms ?? []).filter((f) => hit(f.title, f.purpose)).sort((a, b) => a.title.localeCompare(b.title)),
-    [forms, needle], // eslint-disable-line react-hooks/exhaustive-deps
-  );
-  const shownDocs = useMemo(
-    () => (docs ?? []).filter((d) => hit(d.title)).sort((a, b) => a.title.localeCompare(b.title)),
-    [docs, needle], // eslint-disable-line react-hooks/exhaustive-deps
-  );
-  const shownEmails = useMemo(
-    () => (emails ?? []).filter((e) => hit(e.title, e.description, e.subject)).sort((a, b) => a.title.localeCompare(b.title)),
-    [emails, needle], // eslint-disable-line react-hooks/exhaustive-deps
-  );
-  const shownLists = useMemo(
-    () => (lists ?? []).filter((m) => hit(m.label, m.used_by)).sort((a, b) => a.label.localeCompare(b.label)),
-    [lists, needle], // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  /* One memo for all four lists: the search predicate closes over the needle, so
+     computing them together is what keeps it out of four dependency arrays.
+     Alphabetical, per the owner's standing rule — a natural order has no reading
+     order a person can rely on (CR-75). */
+  const { shownForms, shownDocs, shownEmails, shownLists } = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const hit = (...s: (string | null | undefined)[]) =>
+      !needle || s.some((x) => (x ?? '').toLowerCase().includes(needle));
+    return {
+      shownForms: (forms ?? []).filter((f) => hit(f.title, f.purpose))
+        .sort((a, b) => a.title.localeCompare(b.title)),
+      shownDocs: (docs ?? []).filter((d) => hit(d.title))
+        .sort((a, b) => a.title.localeCompare(b.title)),
+      shownEmails: (emails ?? []).filter((e) => hit(e.title, e.description, e.subject))
+        .sort((a, b) => a.title.localeCompare(b.title)),
+      shownLists: (lists ?? []).filter((m) => hit(m.label, m.used_by))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    };
+  }, [forms, docs, emails, lists, q]);
 
   const counts: Record<Tab, number | null> = {
     forms: forms?.length ?? null,
