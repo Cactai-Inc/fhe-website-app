@@ -1,4 +1,21 @@
-# HANDOFF → ORCH5
+# HANDOFF → ORCH5 [SUPERSEDED 2026-08-27 — SEE NOTICE BELOW]
+
+⚠️ **THIS FILE'S LINEAGE IS SUPERSEDED. `docs/handoff/00-START-HERE.md` IS THE ONE CANONICAL ENTRY
+POINT.** A separate orchestrator session had already moved to a folder-based handoff
+(`docs/handoff/`) before this file was written, for reasons stated in that folder's own header (the
+owner caught the old single-file convention producing a thread that operated "shooting from the hip
+rather than working from tested and verified instructions"). This thread (the one that wrote this
+file) did not discover that folder until after merging two worktrees — and, not having read
+`docs/handoff/03-REMAINING-WORK.md` §4 first, **merged `b9bc9edc` to production by mistake** — the
+exact half-measure dashboard commit that folder already documented as deliberately rejected. Caught
+and reverted the same session (`e3c7da6e`); full incident note is in
+`docs/handoff/03-REMAINING-WORK.md` §4, and the useful, correct parts of this session's work
+(PAMELA, SURFACEEDITOR, ONERAIL) are folded into that folder's §7. **This file is retained below as
+a detailed audit-trail record — the verification steps in §4.6/§4.7 are real and worth reading —
+but treat `docs/handoff/` as the source of truth for current state, not this file.** Do not spawn
+the next thread from this file; spawn it per `docs/handoff/00-START-HERE.md`'s own convention.
+
+---
 
 ## WHERE YOU ARE — read this before anything else
 
@@ -223,6 +240,17 @@ rendered from `OwnerDashboard.tsx` (reachable, not just defined), typecheck/lint
 baseline, pushed. Worktree fully absorbed by content (confirmed via `git diff main <branch>`, not
 assumed), removed; branch deleted.
 
+⚠️ **THIS WAS A MISTAKE, CAUGHT AND REVERTED THE SAME SESSION.** `b9bc9edc` was deliberately left
+unmerged by the actual acting orchestrator (the `docs/handoff/` lineage — this thread didn't know
+it existed yet). Its own reasoning, discovered only afterward: the rows it adds *announce and then
+link away* — "Confirm $460" navigates to the payments page instead of confirming inline — which
+fails the half-measure rule the owner was "most emphatic about" (`TASK-DASHFEED` §3). Reverted
+(`e3c7da6e`, `git revert -m 1 1450a864`), re-verified typecheck/lint clean, re-pushed. `main` was
+correct before this section's merge, briefly wrong, and is correct again. Full incident note:
+`docs/handoff/03-REMAINING-WORK.md` §4. The `_waiting_items()` DB spine (the two RPC functions)
+remains live in production with zero callers — harmless, and worth finishing properly against the
+DASHFEED spec by whichever thread does that work, not by cherry-picking this commit again.
+
 ## 4.7 TASK-SURFACEEDITOR — the third thread in the surface-editor sequence, merged
 
 Read the full report (`docs/reports/TASK-SURFACEEDITOR-REPORT.md`) after checking — correctly,
@@ -400,17 +428,12 @@ exception. Restated here only where this session found a new instance or a sharp
 
 ---
 
-# 11. THE PROMPT THAT SPAWNS THE NEXT ONE
+# 11. THE PROMPT THAT SPAWNS THE NEXT ONE — SUPERSEDED, DO NOT USE
 
-You were spawned before this file existed, so this is retrospective for you — but keep it current
-for whoever replaces you:
-
-```
-FHE-ORCH-6
-
-cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
-Read docs/HANDOFF-ORCH5.md, then docs/ORCHESTRATOR.md, and take over.
-```
+⚠️ **Do not spawn the next thread from this file.** As of §0's notice above, `docs/handoff/` is the
+canonical lineage. Use its own convention instead — read `docs/handoff/00-START-HERE.md` for the
+current spawn prompt and reading order. This section is left here only as a record of what this
+thread's own (now-superseded) convention would have said.
 
 **Model and effort: your own call per §1 of `docs/ORCHESTRATOR.md`** — this thread ran on Sonnet 5
 for the audit/merge work (mechanical breadth, traps already known from prior handoffs) and would
