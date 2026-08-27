@@ -198,8 +198,14 @@ export const PAGE_REGISTRY: PageEntry[] = [
   { key: 'settings.team', path: '/app/ops/team', label: 'Team', group: 'settings' },
   { key: 'settings.branding', path: '/app/ops/admin/branding', label: 'Branding', group: 'settings' },
   { key: 'settings.products', path: '/app/ops/admin/products', label: 'Products', group: 'settings' },
-  { key: 'settings.forms', path: '/app/ops/admin/forms', label: 'Forms', group: 'settings' },
-  { key: 'settings.menus', path: '/app/ops/admin/menus', label: 'Menus', group: 'settings' },
+  /* TASK-SURFACEEDITOR (2026-08-26) — Forms, Menus and Templates were three
+     nav rows over one job. They are one row now: the Editor, which opens each
+     surface as it appears. Their routes still resolve (D32) and nothing links
+     to them, so their registry rows go — a hidden-page row for a page with no
+     nav entry has nothing to hide. Orphan org_page_visibility rows for
+     settings.forms / settings.menus are harmless: nothing reads a key the
+     registry no longer lists. */
+  { key: 'settings.editor', path: '/app/ops/admin/editor', label: 'Editor', group: 'settings' },
   {
     key: 'settings.page_visibility', path: '/app/ops/admin/pages', label: 'Page visibility',
     group: 'settings', protected: true,

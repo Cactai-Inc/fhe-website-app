@@ -596,16 +596,11 @@ const SETTINGS_GROUP: NavItem[] = [
   { to: '/app/ops/team', label: 'Team', icon: UserRound },
   { to: '/app/ops/admin/branding', label: 'Branding', icon: Shield, adminOnly: true },
   { to: '/app/ops/admin/products', label: 'Products', icon: Shield, adminOnly: true },
-  { to: '/app/ops/admin/forms', label: 'Forms', icon: Shield, adminOnly: true },
-  { to: '/app/ops/admin/menus', label: 'Menus', icon: ListChecks, adminOnly: true },
-  /* TASK-PAGEMERGE (2026-08-15): AdminTemplatesPage (TASK-TEXTEDIT) had no
-     permanent nav row — it only ever had one in the Review section, and
-     ab45b18 removed Review's nav group same-day, leaving the page reachable
-     by URL only. Placed here per reviewSection.ts's own note, written when
-     the page was built: "on acceptance its nav row belongs in SETTINGS_GROUP
-     beside Forms." NotebookPen, not another Shield — this group already has
-     three identical Shield glyphs (the icon exercise's named defect). */
-  { to: '/app/ops/admin/templates', label: 'Templates', icon: NotebookPen, adminOnly: true },
+  /* TASK-SURFACEEDITOR (2026-08-26): Forms, Menus and Templates were three rows
+     for one job — and the middle one, Menus, was a flat inventory of 124 lists
+     whose entries mean nothing away from the thing they appear on. One row now.
+     The three pages keep their routes (D32) and this is the only way in. */
+  { to: '/app/ops/admin/editor', label: 'Editor', icon: NotebookPen, adminOnly: true },
 ];
 
 // kept for compatibility with anything importing MANAGE_NAV
