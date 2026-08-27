@@ -2,9 +2,9 @@
 
 **Thread 2 of three.** Branch `task/contractoptions`, cut from `main` at `1647e11e`.
 
-⚠️ **STATUS: FACT-FIND COMPLETE, BUILD NOT STARTED.** Four owner-raised items arrived
-mid-thread and were built and applied first (§0). This section records what was measured
-before the option-list build begins, so none of it has to be re-derived.
+**STATUS: BUILT AND APPLIED.** Two migrations on production, both rehearsed in
+`BEGIN … ROLLBACK` against the live lease first. Four owner-raised items arrived mid-thread
+and were built first (§0); the option-list build is §§1–5.
 
 ---
 
@@ -175,15 +175,149 @@ retired value never reaches a new document at all.
 
 ---
 
-## 4. STILL TO BUILD
+## 4. WHAT WAS BUILT
 
-1. `"active"` semantics in `contract_field_defs.options`, the reader sweep of §2, and the
-   generation path honouring it.
-2. `contract_menu_dependents(p_template_key, p_field_key, p_code)` across **all three**
-   condition sites of §1.1, plus selected values split by document state.
-3. The mutation RPCs: deactivate / reactivate / relabel / add — refusing a re-code, writing
-   adds to BOTH stores for non-executed documents, clearing retired selections on drafts
-   with `log_contract_change`, returning which documents were re-opened, and calling
-   `save_contract_template_version`.
-4. THE REACH: **nothing, deliberately** — Thread 3 builds the surface. The RPCs will be
-   listed here as awaiting a caller.
+### 4.1 The read — `contract_menu_dependents(template_key, field_key, code)`
+
+Returns the option's label and `active` state, then **all three** condition sites plus every
+document holding the value, split by whether it can still change:
+
+```
+totals: { clauses, fields, options, conditions, documents_open, documents_frozen }
+```
+
+Two helpers do the work, and both are about being exactly right rather than roughly right:
+
+- **`_condition_names_value`** recurses through `all`/`any` and reads **only** `equals` and
+  `contains`. `gte` strips non-digits before comparing, so it can never name a code.
+- **`_value_selects_code`** tests **membership of a comma-joined list**, not equality —
+  that is how a multi-select stores itself, and what `clause_condition_met`'s `contains`
+  branch splits on. `LESSONS` inside `LESSONS,ARENA_SOLO,ARENA_GROUP` is a dependency.
+
+### 4.2 The mutations — one function per rule
+
+| | |
+|---|---|
+| `contract_menu_set_active` | deactivate / reactivate; both stores; clears, logs, reports re-opened |
+| `contract_menu_relabel` | the label may change, the code may not |
+| `contract_menu_add_value` | writes to BOTH stores; refuses an existing code, retired ones included |
+| `contract_menu_recode` | **always raises**, naming the dependent counts |
+
+**`contract_menu_recode` exists in order to refuse.** Rule 3 says refuse the unsafe edit
+rather than warn about it. A function that refuses is discoverable and testable; an absence
+is a gap someone later fills with an `UPDATE`.
+
+**Frozen = executed OR carrying any signature.** The brief says *"executed or signed"*.
+Signature-bearing is included deliberately: clearing an answer out from under a party who
+has already signed it is the one outcome no amount of logging repairs.
+
+**Every mutator calls `save_contract_template_version`** — D33's rule, so the live template
+never drifts ahead of its own retained version.
+
+### 4.3 ⚠️ THE SWEEP FOUND A HOLE WHERE §2 EXPECTED NONE
+
+§2 mapped three `InlineFieldControl` call sites in `ClauseDocument`. **There are four.** The
+fourth is `PartyDocumentView.tsx:171` — *the panel the counterparty answers in* — and it
+passed the field through unfiltered, exactly as `renderCustom` did.
+
+**So `active` is filtered inside `InlineFieldControl`, not at the call sites.** It needs no
+sibling context, so it can live in the one component every picker goes through, and a fifth
+call site cannot forget it. The `when` gate reads other fields' values and cannot move
+there; it stays in `fieldWithAvailableOptions`, which `renderCustom` now also uses.
+
+⚠️ **`PartyDocumentView` still does not evaluate `when` gates.** That is a **pre-existing**
+gap this build did not create and did not close — recorded here rather than left to be
+rediscovered.
+
+**Nothing is stripped at generation, and the label resolvers do not filter.** `optionLabel`,
+`gateValueLabel` and the control's own value lookup keep seeing the full list. Filtering
+there is what would make a retired historic selection render as a raw code — the failure the
+whole design exists to prevent.
+
+---
+
+## 5. VALIDATION — the seven items
+
+Every one rehearsed against production inside `BEGIN … ROLLBACK`, on the live
+`HORSE_LEASE_V2` document (Pamela Godde's lease), then rolled back.
+
+**1. Adding appears on a new document AND an existing draft, not on an executed one.** ✓
+`contract_menu_add_value('HORSE_LEASE_V2','HORSE.COLOR','STRAWBERRY_ROAN',…)` → template
+`true`, live draft `true`, **executed documents touched: 0**.
+
+**2. Deactivating: it leaves the picker, a historic selection still renders as its label,
+and conditions still evaluate.** ✓ The entry stays in the list with `active:false`; its
+label still resolves (`Open-ended`); conditions read stored VALUES, which are untouched.
+
+**3. `contract_menu_dependents` is right, and empty when it should be.** ✓
+`TXN.PERMITTED_ACTIVITIES = LESSONS` → 4 clauses, 1 option gate, 1 open document.
+`HORSE.COLOR = PALOMINO` → all zeros.
+
+**4. A cleared draft field is unanswered, logged, and reported as re-opened.** ✓
+
+```
+cleared:  { was: "OPEN_ENDED", now: null, required: true }
+reopened: { blockers_before: 0, blockers_after: 1 }
+log:      option_retired · TXN.LEASE_TERM_TYPE · OPEN_ENDED → (null)
+```
+
+**That `0 → 1` is the brief's warning made visible**: retiring an option un-readied a
+contract that was ready to sign, and the RPC named the document.
+
+**5. Re-coding is REFUSED, with the dependents named.** ✓
+> *a value's code can never change. HORSE_LEASE_V2 names "LESSEE": 0 clause condition(s), 4
+> field condition(s), 0 option gate(s), and 0 document(s) have it selected…*
+
+Re-adding a retired code is refused too, pointing at reactivation.
+
+**6. No reader shows a retired value.** ✓ Readers found and how each was handled:
+
+| reader | kind | treatment |
+|---|---|---|
+| `InlineFieldControl` (ContractCascade) | picker — **all 4 call sites** | **filters** `active` |
+| `fieldWithAvailableOptions` | picker context | filters `when` |
+| `optionLabel` · `gateValueLabel` · control value lookup | resolver | **never filters** |
+| `SelectWithOther` · `InlineSelect` · button arrays · `ResponsibilityControl` | sub-controls | render what they are handed — already filtered |
+| 14 SQL functions reading options | generation/composition | pass the list through whole, by design |
+
+**7. Typecheck, api-typecheck, build clean; lint at main's baseline.** ✓ 0 errors, 48
+warnings, none from the changed files.
+
+**Production verified clean after the rehearsals**: zero `active` flags anywhere, zero
+`option_retired` log rows, lease templates still at version 3, and the live lease's values
+byte-identical.
+
+---
+
+## 6. THE REACH — nothing, and that is the point
+
+⚠️ **This thread ships NO new route and NO new button.** Thread 3 builds the surface.
+
+**Awaiting a caller** — listed explicitly so they do not quietly join
+`docs/ORCHESTRATOR.md` §3b:
+
+- `contract_menu_dependents(text,text,text)`
+- `contract_menu_set_active(text,text,text,boolean)`
+- `contract_menu_relabel(text,text,text,text)`
+- `contract_menu_add_value(text,text,text,text)`
+- `contract_menu_recode(text,text,text,text)`
+
+All five are `GRANT`ed to `authenticated` and gated on `is_admin()`; all are proven callable
+by the §5 rehearsals. **No TypeScript wrapper was written**, deliberately — the shape of the
+seam belongs with the surface that uses it.
+
+---
+
+## 7. WHAT I FOUND THAT NOBODY ASKED ABOUT
+
+1. **The third condition site** (§1.1) — the single most consequential finding, and the one
+   the corrected handoff still did not have.
+2. **The fourth call site** (§4.3) — `PartyDocumentView` never filtered options at all.
+3. **`PartyDocumentView` ignores `when` gates** — pre-existing, unfixed, recorded.
+4. **Reactivation restores the OPTION, not the ANSWER.** Undo makes the value offerable
+   again; it does not re-answer the field on the party's behalf. That is deliberate — the
+   old answer is in `contract_change_log` where a person can read it and decide — but it
+   means "undo" is not symmetrical, and the editor should say so rather than imply it.
+5. **`ContractCascade.tsx:1441`** falls back to hardcoded `COST_OPTS`/`DUTY_OPTS` when a
+   field has no options — a second vocabulary outside the option-list system entirely, and
+   therefore outside everything this build governs. Out of scope; worth a look.
