@@ -25,6 +25,12 @@ problem, not everything that session touched. **If you are a human or a thread d
 handoff format to use going forward: use this folder. Retire the single-file convention rather than
 letting both continue to accumulate state independently.**
 
+⚠️ **CLOSED OUT, 2026-08-27, ON THE OWNER'S INSTRUCTION — the single-file lineage above stood down
+here.** That session's own artifact, `docs/HANDOFF-ORCH5.md`, is retained for its audit-trail detail
+on PAMELA and SURFACEEDITOR (already folded into §1/§7 below) but marks itself superseded and should
+not be used to spawn anything. **This folder is now the only live lineage.** No further
+`HANDOFF-ORCH<n>.md` will be produced.
+
 ---
 
 ## WHERE YOU ARE
