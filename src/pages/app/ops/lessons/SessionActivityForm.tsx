@@ -29,7 +29,7 @@ import { LessonPlanProgress, type PlanProgressValue } from '../../../../componen
  *
  * The fields are RENDERED FROM THE DEFINITION (`form_definitions.ACTIVITY_SESSION`
  * via booking_form()), not hardcoded — so marking a field required in
- * /app/ops/admin/forms changes this form with no code change (D13). A `checklist`
+ * the Editor (/app/ops/admin/editor) changes this form with no code change (D13). A `checklist`
  * field takes its options from the booking's own service checklist, which is
  * edited in `activity_checklists`, not in the definition.
  *
