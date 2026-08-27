@@ -57,6 +57,10 @@ export function GrantCreditDialog({
   const [mode, setMode] = useState<GrantMode>('handwrite');
   const [reason, setReason] = useState('');
   const [method, setMethod] = useState('cash');
+  // TASK-ORIGIN §4.3 — "a backfilled purchase entered today with today's
+  // timestamp is worse than no record." Defaults to today, so an ordinary
+  // (non-backfilled) grant is unaffected unless staff changes it.
+  const [paidAt, setPaidAt] = useState(() => new Date().toISOString().slice(0, 10));
   const [confirming, setConfirming] = useState(false);
   const [done, setDone] = useState<GrantCreditResult | null>(null);
   const [requestNote, setRequestNote] = useState('');
@@ -79,7 +83,8 @@ export function GrantCreditDialog({
 
   const reset = () => {
     setClientId(''); setOfferingId(''); setQuantity(1); setMode('handwrite');
-    setReason(''); setMethod('cash'); setConfirming(false); setDone(null);
+    setReason(''); setMethod('cash'); setPaidAt(new Date().toISOString().slice(0, 10));
+    setConfirming(false); setDone(null);
     setRequestNote(''); setSendState(null); setError(null);
   };
 
@@ -91,6 +96,9 @@ export function GrantCreditDialog({
       const result = await grantLessonCredit({
         clientId, offeringId, quantity, mode, reason: reason.trim(),
         paymentMethod: mode === 'handwrite' ? method : null,
+        // Bill has no paid_at until it is settled — the date field only
+        // means something for the two modes that stamp paid_at immediately.
+        paidAt: mode !== 'bill' ? paidAt : null,
       });
       setDone(result);
       setConfirming(false);
@@ -203,6 +211,13 @@ export function GrantCreditDialog({
               </>
             )}
           </p>
+          {mode !== 'bill' && paidAt !== new Date().toISOString().slice(0, 10) && (
+            <p className="text-gold-800">
+              Backdated — recorded as happening on{' '}
+              <strong>{new Date(`${paidAt}T12:00:00`).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</strong>,
+              not today.
+            </p>
+          )}
           <p className="text-green-800/80">Reason recorded: “{reason.trim()}”</p>
           <p className="text-green-800/60">
             This can be undone from the ledger until a credit is used.
@@ -288,6 +303,19 @@ export function GrantCreditDialog({
               <option value="check">Check</option>
               <option value="offline">Other / offline</option>
             </select>
+          </div>
+        )}
+
+        {mode !== 'bill' && (
+          <div>
+            <label htmlFor="grant-paid-at" className="form-label">When it happened</label>
+            <input id="grant-paid-at" type="date" className="form-input" value={paidAt}
+                   max={new Date().toISOString().slice(0, 10)}
+                   onChange={(e) => setPaidAt(e.target.value)} />
+            <p className="mt-1 text-xs text-green-800/60">
+              Defaults to today. Backdate this for a sale you are entering after the
+              fact — the monthly totals read this date, not the day it was typed in.
+            </p>
           </div>
         )}
 

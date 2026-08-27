@@ -9,10 +9,11 @@ import {
   createContact, updateContact, archiveContact, staffContactDirectory, type DirectoryContact,
   contactAddress, formatAddress, type ContactAddress,
   setContactType, CONTACT_TYPE_LABEL, type ContactType,
+  listLookupOptionsAll,
 } from '../../../lib/api';
 import { ContactDossierModal } from '../../../components/app/ContactDossierModal';
-import { contactName } from '../../../lib/ops/types';
-import type { Contact, ContactInput } from '../../../lib/ops/types';
+import { contactName, lookupName } from '../../../lib/ops/types';
+import type { Contact, ContactInput, LookupCode } from '../../../lib/ops/types';
 import { ContactForm } from '../../../components/ops/contacts/ContactForm';
 
 /**
@@ -199,6 +200,21 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // TASK-ORIGIN §6 — Leads is the surface a person who never converts is
+  // visible on at all (§4.2: "the most valuable one to capture"), so this is
+  // where the origin/channel filters live, beside the existing designation
+  // filter. Unfiltered by active (T4 applies to filters too — a deactivated
+  // code must stay findable on the records that already carry it).
+  const [originOpts, setOriginOpts] = useState<LookupCode[]>([]);
+  const [channelOpts, setChannelOpts] = useState<LookupCode[]>([]);
+  useEffect(() => {
+    if (mode !== 'leads') return;
+    listLookupOptionsAll('client_origin').then(setOriginOpts).catch(() => setOriginOpts([]));
+    listLookupOptionsAll('contact_channel').then(setChannelOpts).catch(() => setChannelOpts([]));
+  }, [mode]);
+  const [originFilter, setOriginFilter] = useState('');
+  const [channelFilter, setChannelFilter] = useState('');
+
   const load = () => {
     staffContactDirectory()
       // Filter on the STORED type. Previously this inferred membership from
@@ -255,6 +271,8 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
     const want = FILTER_MAP[filter];
     const filtered = (rows ?? []).filter((r) => {
       if (want && !designations(r).includes(want)) return false;
+      if (originFilter && r.client_origin !== originFilter) return false;
+      if (channelFilter && r.contact_channel !== channelFilter) return false;
       if (!q) return true;
       return contactName(r).toLowerCase().includes(q)
         || (r.email ?? '').toLowerCase().includes(q)
@@ -264,7 +282,7 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
     return [...filtered].sort((a, b) => sortKey === 'newest'
       ? new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       : contactName(a).localeCompare(contactName(b)));
-  }, [rows, query, filter, sortKey]);
+  }, [rows, query, filter, originFilter, channelFilter, sortKey]);
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -351,6 +369,20 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
           {filters.map((f) => <option key={f} value={f}>{f}{counts.get(f) ? ` (${counts.get(f)})` : ''}</option>)}
         </select>
       )}
+      {mode === 'leads' && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          <select className="form-input w-auto text-xs" aria-label="Filter by origin"
+            value={originFilter} onChange={(e) => setOriginFilter(e.target.value)}>
+            <option value="">Origin: all</option>
+            {originOpts.map((o) => <option key={o.code} value={o.code}>{o.display_name}</option>)}
+          </select>
+          <select className="form-input w-auto text-xs" aria-label="Filter by channel"
+            value={channelFilter} onChange={(e) => setChannelFilter(e.target.value)}>
+            <option value="">Channel: all</option>
+            {channelOpts.map((o) => <option key={o.code} value={o.code}>{o.display_name}</option>)}
+          </select>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2 mb-5">
         <input
           type="search"
@@ -404,6 +436,14 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
             </div>
             <Chips r={r} />
             {depthLine(r) && <p className="text-[11px] text-muted mt-2">{depthLine(r)}</p>}
+            {mode === 'leads' && (r.client_origin || r.contact_channel) && (
+              <p className="text-[11px] text-muted mt-1">
+                {[
+                  r.client_origin && lookupName(originOpts, r.client_origin),
+                  r.contact_channel && lookupName(channelOpts, r.contact_channel),
+                ].filter(Boolean).join(' · ')}
+              </p>
+            )}
           </button>
         ))}
       </div>

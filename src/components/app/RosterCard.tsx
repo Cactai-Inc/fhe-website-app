@@ -175,8 +175,16 @@ function flagsOf(m: ClientAccountRow, supp: RosterSupplement): Flag[] {
   return flags;
 }
 
-export function RosterCard({ m, supplement, onOpen }: {
+export function RosterCard({
+  m, supplement, onOpen, originLabel, channelLabel,
+}: {
   m: ClientAccountRow; supplement: RosterSupplement; onOpen: (key: string) => void;
+  /** TASK-ORIGIN §6 — resolved display names, not raw codes (T4: a
+   *  deactivated code must still render its option's words). Admin.tsx
+   *  resolves these once per list load, same as every other supplement
+   *  field, rather than this card knowing how to fetch a vocabulary. */
+  originLabel?: string | null;
+  channelLabel?: string | null;
 }) {
   const ring = ringOf(m);
   const badges = badgesOf(m, supplement);
@@ -256,6 +264,12 @@ export function RosterCard({ m, supplement, onOpen }: {
         <p className="text-[11px] text-muted flex items-center gap-1.5">
           {activity.live && <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" aria-hidden="true" />}
           {activity.label}
+        </p>
+      )}
+
+      {(originLabel || channelLabel) && (
+        <p className="text-[11px] text-muted">
+          {[originLabel, channelLabel].filter(Boolean).join(' · ')}
         </p>
       )}
 

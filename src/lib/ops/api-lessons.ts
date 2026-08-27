@@ -315,6 +315,10 @@ export interface GrantCreditInput {
   reason: string;
   /** handwrite only — what staff attest was received. */
   paymentMethod?: string | null;
+  /** TASK-ORIGIN §4.3 — when the sale actually happened, for a backfilled
+   *  handwrite/comp (a bill has no paid_at until it is settled). Omitted or
+   *  null keeps the old behaviour: paid_at stamps as now(). ISO date/datetime. */
+  paidAt?: string | null;
 }
 
 /** What a grant did, straight back from the RPC — the confirmation the page shows. */
@@ -376,6 +380,7 @@ export async function grantLessonCredit(input: GrantCreditInput): Promise<GrantC
     p_mode: input.mode,
     p_reason: input.reason,
     p_payment_method: input.paymentMethod ?? null,
+    p_paid_at: input.paidAt ?? null,
   });
   if (error) throw error;
   return data as GrantCreditResult;
