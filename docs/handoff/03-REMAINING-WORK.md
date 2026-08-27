@@ -10,7 +10,7 @@
 |---|---|---|
 | **T1 VERSIONSPINE** | ✅ **MERGED** `baabdc11` | `parent_version` on all three version tables with a CHECK, an append-only trigger (proven by attempting UPDATE and DELETE), `contract_template_versions` backfilled for 26 templates, save/list/restore where restore mints forward |
 | **T2 CONTRACTOPTIONS** | ✅ **MERGED** `e10624e0` | `contract_menu_dependents` searching **three** condition sites, `active` on option entries, five RPCs where `recode` exists in order to refuse |
-| **T3 SURFACEEDITOR** | ⏳ **READY, NOT STARTED** | `docs/HANDOFF-T3-SURFACE-EDITOR.md`. Prerequisites verified present on `main`. **Opus · thinking ON · effort HIGH** |
+| **T3 SURFACEEDITOR** | 🔴 **RUNNING** since 2026-08-26 18:02 in `wt-surfaceeditor` (`task/surfaceeditor`, based on `55c89b76`) | `docs/HANDOFF-T3-SURFACE-EDITOR.md`. ⚠️ **It owns `AdminMenusPage.tsx`, `src/lib/pageRegistry.ts` and `src/App.tsx`. Do not hand any other thread those three files while it is live.** |
 
 **T3's prompt:**
 ```
@@ -48,6 +48,7 @@ owner, in parallel with build threads.
 | `docs/tasks/TASK-ONEEDITOR-one-editor-and-a-version-lineage.md` | §2 reconciled after T1. T3 builds it |
 | `docs/tasks/TASK-CONTRACTMENUS-…md` | Rules still govern; its §4 build shape is superseded |
 | `docs/tasks/TASK-DAYSHEET-…md` | ⚠️ Largely **now built** — the calendar email work shipped 2026-08-26. **Re-read before assigning; it is stale.** |
+| `docs/tasks/TASK-ATTRIB-where-they-came-from.md` | ✅ **WRITTEN 2026-08-26 (ORCH5), READY TO RUN.** `69d39b39`. The `04-OPEN-QUESTIONS.md` §3b attribution field. Measured against prod; scoped clear of T3's three files. **Sonnet · effort HIGH** — the traps are all written out, so this is mechanical breadth, not judgement |
 
 ## 4. ⚠️ ONE COMMIT DELIBERATELY UNMERGED
 
