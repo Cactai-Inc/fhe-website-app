@@ -1313,7 +1313,10 @@ export async function listLeaseTemplates(): Promise<ContractTemplate[]> {
 export async function getDocument(id: string): Promise<DocumentRow | null> {
   const { data, error } = await supabase
     .from('documents')
-    .select('*')
+    // TASK-SURFACEEDITOR: the template's CURRENT version rides along, so an
+    // executed document can state what it was signed against AND what the
+    // template has moved to. The same embed DocumentQueueRow already uses.
+    .select('*, template:contract_templates(version)')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;

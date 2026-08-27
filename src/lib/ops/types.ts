@@ -187,6 +187,14 @@ export interface DocumentRow {
   execution_hash?: string | null;
   /** A8B: when the all-parties executed-copy email fired. NULL = not sent yet. */
   executed_email_sent_at?: string | null;
+  /** THE TELL (TASK-SURFACEEDITOR): the template version this document was
+   *  signed against. Non-null on all 67 executed documents; the drift guard in
+   *  regenerate_contract_document reads it, and the viewer now states it.
+   *  `select('*')` always returned it — only the type was missing. */
+  signed_template_version?: number | null;
+  /** Where the template sits TODAY, embedded by getDocument. "Signed against v1"
+   *  only reads as a guarantee next to it. */
+  template?: { version: number | null } | null;
   created_at: string;
   updated_at: string;
 }

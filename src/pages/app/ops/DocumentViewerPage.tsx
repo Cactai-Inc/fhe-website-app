@@ -8,6 +8,7 @@ import type { Column } from '../../../lib/ops';
 import { MergedBodyView } from '../../../components/ops/documents/MergedBodyView';
 import { SigningPanel } from '../../../components/ops/documents/SigningPanel';
 import { DeliveryPanel } from '../../../components/ops/documents/DeliveryPanel';
+import { SignedVersionNote } from '../../../components/ops/documents/SignedVersionNote';
 
 /** getDocument(id) + listSignatures(id): the read-only viewer's data path.
  *  Both reads are RLS org-scoped (staff sees all in-tenant; a client sees only
@@ -176,6 +177,10 @@ export default function DocumentViewerPage() {
             </div>
           )}
         </dl>
+        {isExecuted && (
+          <SignedVersionNote signedVersion={document.signed_template_version}
+            templateVersionNow={document.template?.version} />
+        )}
       </header>
 
       {/* Printable subtree: the ONLY content body.printing shows. The
