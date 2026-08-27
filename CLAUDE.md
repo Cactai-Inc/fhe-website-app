@@ -33,7 +33,9 @@ npm run lint             # eslint .
 npm run build            # vite build + prerender + seo-files
 npm run dev              # vite
 ```
-Baseline health: typecheck 0 errors, lint 0 errors (~26 pre-existing warnings).
+Baseline health: typecheck 0 errors, lint 0 errors, **48 pre-existing warnings**
+(measured on `main` 2026-08-26; the "~26" this line carried for weeks was stale,
+and a stale baseline is how a thread reports someone else's warnings as its own).
 
 ---
 
