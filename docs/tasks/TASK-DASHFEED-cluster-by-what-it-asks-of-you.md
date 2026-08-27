@@ -97,11 +97,59 @@ carry — **a header indicator is for what is NOT on the page.**
 ⚠️ **BUT IT IS BLOCKED ON §1'S FINDING.** With zero messages ever sent, **do not build a message
 indicator before the owner rules on whether messaging survives at all.** Ask; do not assume.
 
+## 4b. ⚠️ AMENDED 2026-08-26 — TWO AXES, NOT ONE. STATS GROUP BY DOMAIN; ACTIONS CLUSTER BY ASK.
+
+**The owner added a requirement that appears to contradict §2, and does not — but only once the two
+are separated.**
+
+> *"since this is still the testing stage of the new builds i will temporarily revert my early
+> requirement that 0'ed items are not shown and request that the dashboard use a more structured
+> approach with everything visible and logically grouped so when im looking at something the
+> neighbors are associated and the cluster of visible content has entourage effect in its ability to
+> convey deeper meaning than just the single items seen in isolation and also to reduce the instances
+> of 'task switching fatigue' wherein the things im seeing are at different parts of the company's
+> concerns so im switching between thinking about different parts of the business as i read through
+> the list of stats and information."*
+
+⚠️ **READ THE LAST CLAUSE CAREFULLY: "as i read through the list of STATS AND INFORMATION."** The
+fatigue he is describing is about **READING NUMBERS**, not about working a queue. And clustering by
+the ask **deliberately mixes domains** — a YOURS cluster puts a contract beside a payment beside a
+lesson. **Applied to stats, that is precisely the fatigue he is naming.**
+
+**SO THE TWO RULES OPERATE ON DIFFERENT THINGS, AND BOTH STAND:**
+
+| | Organised by | Why |
+|---|---|---|
+| **STATS / numbers** | ⚠️ **DOMAIN** — money together, lessons together, clients together | Reading is comparative. Neighbours must be **comparable** or each one costs a context switch. This is the "entourage effect" he is asking for |
+| **ACTIONS / notifications** | ⚠️ **THE ASK** — YOURS · THEIRS · TODAY | Working a queue is not comparative. What matters is *"is this mine, and can I do it now"* — the domain is irrelevant and grouping by it recreates "go to a specific place for a specific thing" |
+
+**§2 IS UNCHANGED FOR ACTIONS. §4b GOVERNS THE NUMBERS.** ⚠️ **The one thing that must not happen is
+the numbers being scattered across the action clusters** — that is the fatigue, exactly.
+
+### 🔒 HIDE-WHEN-EMPTY IS SUSPENDED — TEMPORARILY, AND THE WORD IS HIS
+> *"i will TEMPORARILY revert my early requirement that 0'ed items are not shown."*
+
+**During testing, everything renders, zero or not.** ⚠️ **This directly reverses D13's dashboard
+exception** (*"surfaces should be fluid and dynamic and only shown when there is something to show"*,
+owner 2026-08-22). **It is a testing posture, not a new principle — build it as a FLAG, not as a
+rewrite of the self-hiding logic**, so restoring the original behaviour is a setting and not another
+thread.
+
+⚠️ **AND IT MAKES §3 OF THE INCOMING METRICS SPEC SHARPER, NOT SOFTER:** with zeros now visible, a
+metric whose **inputs were never captured** is indistinguishable from a metric that is genuinely
+zero. **Every metric must declare which it is.** *"Not yet measurable"* and *"zero this month"* are
+different statements and the board must make the difference obvious.
+
 ## 5. WHAT TO BUILD
 
-1. **Retire the two VIEWS.** Trainer/business is a second axis on top of clusters and it is where the
-   duplication comes from. ⚠️ **Confirm with the owner** — the toggle was iterated with him twice
-   (`HANDOFF-ORCH4`), so it is a deliberate thing being undone.
+1. 🔒 **THE TWO VIEWS STAY — RULED 2026-08-26, and the earlier proposal to retire them was WRONG.**
+   *"no, they are wildly different"* — they are two ROLES: Claire owns lessons, requests, the schedule
+   and clients and records lead and payment activity; CJ owns the KPIs and creates contracts. ⚠️ **The
+   duplication is in the ZONE LIST, not in having two boards:** "Money waiting" and "Money that has
+   not landed" are one fact written twice. **The fix is ONE zone rendered on BOTH boards.** The
+   declared overlaps are **money, a client claiming an invite, and a contract being signed** — and
+   **the notifications differ**: support messages to CJ, client messages about purchases and
+   appointments to Claire.
 2. **One registry, three clusters**, each item declaring its cluster from its own state — not a
    hardcoded home. `src/lib/dashboard/registry.ts` is the right spine; **the zone LIST changes, the
    mechanism does not.**
