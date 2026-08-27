@@ -60,7 +60,7 @@ owner, in parallel with build threads.
 | `docs/tasks/TASK-ONEEDITOR-one-editor-and-a-version-lineage.md` | §2 reconciled after T1. T3 builds it |
 | `docs/tasks/TASK-CONTRACTMENUS-…md` | Rules still govern; its §4 build shape is superseded |
 | `docs/tasks/TASK-DAYSHEET-…md` | ⚠️ Largely **now built** — the calendar email work shipped 2026-08-26. **Re-read before assigning; it is stale.** |
-| `docs/tasks/TASK-ATTRIB-where-they-came-from.md` | ✅ **WRITTEN 2026-08-26 (ORCH5), READY TO RUN.** `69d39b39`. The `04-OPEN-QUESTIONS.md` §3b attribution field. Measured against prod; scoped clear of T3's three files. **Sonnet · effort HIGH** — the traps are all written out, so this is mechanical breadth, not judgement |
+| `docs/tasks/TASK-ATTRIB-where-they-came-from.md` | ⛔ **SUPERSEDED 2026-08-27 by `TASK-ORIGIN`** (§0), which covers it and adds contact-channel and historic-purchase-with-a-date. **Its three verified allowlist traps were folded into `TASK-ORIGIN` §4 before it was retired.** Retained under D32; do not run it |
 
 ## 4. ⚠️ ONE COMMIT DELIBERATELY UNMERGED
 

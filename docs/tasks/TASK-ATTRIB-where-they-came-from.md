@@ -1,5 +1,24 @@
 # TASK-ATTRIB — where they came from, before they hit the website
 
+> # ⛔ SUPERSEDED — DO NOT RUN THIS. BUILD `TASK-ORIGIN` INSTEAD.
+>
+> **Retired 2026-08-27 by ORCH5, the thread that wrote it.**
+> `docs/tasks/TASK-ORIGIN-three-things-he-must-be-able-to-log.md` was authored in parallel, covers
+> everything here and two things more — the **contact channel** and **recording a purchase the
+> system never saw, with the date it actually happened** — and it is already merged and named
+> build-first in `docs/handoff/03-REMAINING-WORK.md` §0.
+>
+> **The two specs agreed independently on every structural call**, which is the useful part: the
+> column belongs on `contacts` and not `clients`; the vocabulary belongs in `lookup_options`;
+> `clients.source` is row provenance and must not be overloaded.
+>
+> ⚠️ **Everything this file had that ORIGIN lacked has been folded into ORIGIN §4** — the
+> `add_lookup_value` five-key allowlist, the `update_contact_record` column allowlist, and the
+> `menu_inventory` `used_by` string. **Nothing is lost by ignoring this file.**
+>
+> **Retained, not deleted, under D32** — and because the measurements in §2 and the traps in §3 are
+> the evidence ORIGIN §4 rests on.
+
 **You are a build thread. This file is your whole assignment.** Everything you need is here or in the
 files it names. Nothing was said to you in the prompt.
 

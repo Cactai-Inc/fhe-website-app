@@ -84,12 +84,62 @@ was, including a split.
 today's timestamp is worse than no record — it will corrupt every "this month" and "this year" number
 on the dashboard he is about to specify.** **It must be possible to say when it actually happened.**
 
+### §4 — ⚠️ THREE ALLOWLISTS STAND BETWEEN §1/§2 AND A WORKING MENU
+
+**Measured against production 2026-08-26 (ORCH5). All three are real, and the first one is the one
+that would ship a half-editable menu and look finished.**
+
+**T1 — `add_lookup_value` REFUSES ANY KEY OUTSIDE A HARDCODED FIVE.** The Menus page's
+*Add a value…* control calls it, and its body reads:
+
+```
+IF v_key NOT IN ('horse_breeds', 'horse_colors', 'horse_markings',
+                 'horse_registration_org', 'horse_passport_country') THEN
+  RAISE EXCEPTION 'lookup % is not open to additions from a form', v_key;
+```
+
+⚠️ **So seeding `client_origin` and `contact_channel` and stopping there gives him menus he can
+rename and switch off but CANNOT ADD TO** — which is precisely the D13 failure §1 is written to
+avoid. **Widen it by adding the two keys. Do NOT replace the guard with "any key"** — it is reachable
+from a public-facing form path, and an open namespace lets a form invent vocabularies.
+⚠️ **Prove it by actually inserting** in `BEGIN; … ROLLBACK;` and pasting the returned JSON and the
+row count. **Proving it did not raise proves nothing.**
+
+**T2 — `update_contact_record` HAS ITS OWN COLUMN ALLOWLIST** (`v_allowed`) and raises
+`'field % is not editable here'` for anything absent from it. The two new columns must be added, or
+§2's "editable afterwards, forever" silently cannot save. **It raises rather than no-ops, which is
+the only mercy here.** Keep the guard working: it must still refuse a genuinely unknown key.
+
+**The read side needs nothing** — `contact_dossier` returns `to_jsonb(c)` for the whole row, so a new
+column reaches the UI on its own. **Verify that rather than assuming it.**
+
+**T3 — `menu_inventory()` WILL LABEL BOTH NEW MENUS AS HORSE MENUS.** It auto-discovers every
+`lookup_options` key (`GROUP BY lo.lookup_key` — which is why §1's keys appear in the editor with no
+UI work), but its `used_by` is the hardcoded string `'Horse intake · contracts'` for all of them.
+**Fix with a minimal `CASE` so each new key states where it is really used. Do not restructure it.**
+
+⚠️ **`set_menu_value` is already generic** and falls through to `lookup_options` for any key, so
+rename and on/off need no change. **That asymmetry is exactly why T1 is easy to miss.**
+
+⚠️ **`menu_inventory` and `add_lookup_value` are DATABASE functions, and `TASK-SURFACEEDITOR` is
+live in `wt-surfaceeditor` reworking the menus surface.** A function-body collision does not appear
+in a git diff. **Name both changes at the top of your report** so the merge can be checked, and
+**do not open `AdminMenusPage.tsx`, `src/lib/pageRegistry.ts` or `src/App.tsx` — that thread owns
+all three.**
+
 ## 4. ⚠️ FLAGGED BEFORE STARTING
 
 - **Ask for the two starting lists.** §1.
 - ⚠️ **The backfill date, §3.** This is the one that silently poisons the metrics work downstream.
 - **Do not touch `clients.source`.** §2.
 - **A person can have an origin and no client row.** Put the fields where the leads are.
+- ⚠️ **The three allowlists, §4.** T1 is the one that ships a menu he cannot add to.
+- **NO hard FK, and no CHECK, on the two new columns.** `lookup_options`'s primary key is
+  `(lookup_key, code)` so a plain FK is unavailable anyway — but the real reason is already written
+  into `set_menu_value`'s own comment: *"switching off is how a value is retired — it leaves every
+  dropdown and stays valid on the records that already carry it."* **Validate on WRITE against an
+  ACTIVE option; never on read.** A person who came from a channel he later switches off still came
+  from it, and their record must still render that option's words rather than a blank or a raw code.
 
 ## THE REACH
 The client/contact record, on the surface he is already going to be sitting on to review each account
