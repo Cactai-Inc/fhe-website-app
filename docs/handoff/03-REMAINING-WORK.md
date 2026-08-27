@@ -4,6 +4,18 @@
 
 ---
 
+## 0. ⚠️ BUILD THIS FIRST — AHEAD OF T3
+
+**`docs/tasks/TASK-ORIGIN-three-things-he-must-be-able-to-log.md`**
+
+The owner is about to review **every client account by hand** and log where they found us, how they
+contacted us, and what they bought. ⚠️ **If those surfaces do not exist when he starts, he enters
+everything twice.** He confirmed the sequence himself: *"before i review every client's account i
+need the surfaces to be there."*
+
+**It is small, and it is on the critical path for the metrics work**, which cannot compute an
+attribution number that was never captured.
+
 ## 1. THE BUILD SEQUENCE — three threads, two done
 
 | | | |
