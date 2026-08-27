@@ -31,23 +31,69 @@ it as a finding anyway.
   conversation reachable without hunting for the record it hangs off.
 - **(B) Messaging lives ONLY on the action surfaces**, and the collective messages page is retired.
 
-**STILL HIS TO CHOOSE.** ⚠️ **The outgoing thread's recommendation, recorded so it is not lost: (A).**
-The reason is his own stated goal — *"not needing to look at a specific place for a specific thing"* —
-and (A) is the only option where a message can reach him without him first remembering **which lesson,
-which horse, or which contract** it was attached to. (B) is cheaper and defensible, but it makes every
-conversation invisible until you already know where it lives. **⚠️ (A) is also a REACH problem, not a
-messaging problem: the threads already exist on those surfaces; what is missing is one page that
-lists them.**
+### 🔒 DECIDED — HE PROPOSED THE RIGHT MODEL AND ASKED FOR A RULING. THE RULING IS: BUILD IT.
 
-## 2. 🔒 "WHICH DASHBOARD VIEWS?" — ANSWERED BY THE ASKING
+> *"the idea of having the messages on a single collected surface page is that you can then one click
+> to the original surface. and, when we surface the message from one user to another on their
+> dashboard and they respond from the notification directly all of this is running through a message
+> that lives on the messages page, so the messaging threads that are shown on specific surfaces like
+> in a contract or on a lesson are actually just showing the message thread from the messages page, i
+> think this is globalized since the messages are centrally located and just piped into other
+> locations...maybe im wrong and this is a massive over complication. you decide."*
 
-He asked what was meant. **It is the trainer / business toggle on `OwnerDashboard`** — two views over
-largely the same facts, which is where the duplication he complained about comes from: `C3 "Money
-waiting"` and `B1 "Money that has not landed"` are one fact under two names.
+⚠️ **HE IS NOT WRONG, AND IT IS NOT OVER-COMPLICATION. IT IS THE SIMPLER MODEL, AND IT REDUCES
+IMPLEMENTATIONS RATHER THAN ADDING ONE.**
 
-⚠️ **STILL UNANSWERED: do the two views go?** They were iterated with him twice in a previous session
-(`HANDOFF-ORCH4`), so **they are a deliberate thing being undone, not an accident being cleaned up.
-Do not delete them on your own read.**
+**ONE STORE. THREE VIEWS.** A message thread has a SUBJECT (a contract, a lesson, a care activity, or
+nobody). The messages page lists **every** thread; a surface renders **the thread whose subject it
+is**; a dashboard item renders **that same thread inline**, and replying there writes to the same
+place. **Nothing is piped or copied — they are three reads of one table.**
+
+**WHY THIS IS CONVERGENCE, NOT NEW CONSTRUCTION.** There are already **four** stores doing pieces of
+this — `contract_notes` + `contract_note_messages`, `booking_notes` + `booking_note_seen`,
+`direct_messages`, `channel_messages`. ⚠️ **Centralising REPLACES four with one.** `ORCHESTRATOR.md`
+§4 — *"improve what exists, never build a second implementation alongside it"* — makes this the
+required direction, not the ambitious one.
+
+**And it is the ruling the ledger already carries:** CR-30 ruling 6, **ONE RESOURCE, TWO VIEWS** —
+*"the client edits their fields on their own surfaces; staff see the same record. Not a copy, not a
+sync."* **This is that rule applied to conversations.**
+
+⚠️ **HIS OWN CAVEAT IS THE THING TO CHECK FIRST:** *"I may have overstated how thoroughly these
+message threads exist on the surfaces."* **He did.** `contract_note_messages` is a real thread store;
+`booking_notes` is a flat note list with a seen-marker, **not a thread**. **Audit each surface before
+promising parity** — some are conversions, some are builds.
+
+⚠️ **DO NOT START THIS BEFORE T3.** It is a globalization of four stores into one and it touches the
+contract surface T3 is rebuilding. **Sequence it after.**
+
+## 2. 🔒 THE TWO DASHBOARD VIEWS STAY — AND THE OUTGOING THREAD WAS WRONG ABOUT THEM
+
+It reported the trainer/business toggle as the source of the duplication and proposed retiring it.
+**The owner answered flatly, 2026-08-26:**
+
+> *"no, they are wildly different, hers are all about the lessons, the requests, the schedule, and the
+> clients. the money is the only overlap we share. mine is all about the kpis like the giant list i
+> shared. and then we both need to see different notifications. I need to see support messages, she
+> needs to see client messages about their purchases and up coming appointments. we might both want to
+> see when a client claims an invite or when a contract is signed, and she is the one that is supposed
+> to be using the app to record her activity with respect to leads and payments, im the one that is
+> supposed to create contracts and assist with their completion."*
+
+⚠️ **THEY ARE TWO ROLES, NOT TWO VIEWS OF ONE DATASET. DO NOT MERGE THEM.**
+
+| | Claire *(trainer)* | CJ *(business)* |
+|---|---|---|
+| **owns** | lessons · requests · the schedule · clients | the KPIs |
+| **records** | her activity on **leads and payments** | — |
+| **creates** | — | **contracts**, and assists their completion |
+| **notifications** | **client** messages — purchases, upcoming appointments | **support** messages |
+| **shared** | ⚠️ **money**, a client claiming an invite, a contract being signed | |
+
+⚠️ **THE DUPLICATION IS REAL BUT IT IS IN THE ZONE LIST, NOT IN HAVING TWO BOARDS.** `C3 "Money
+waiting"` and `B1 "Money that has not landed"` are one fact written twice. **The fix is ONE zone
+rendered on BOTH boards — not one board.** Money is the declared overlap; so are invite-claimed and
+contract-signed. **Everything else belongs to exactly one of them.**
 
 ## 3. ⚠️ THE DASHBOARD NUMBERS — HE HAS ROUTED THIS ELSEWHERE. DO NOT GUESS THEM.
 
