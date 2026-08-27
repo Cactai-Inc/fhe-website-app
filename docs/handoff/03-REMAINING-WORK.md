@@ -56,7 +56,7 @@ owner, in parallel with build threads.
 | `docs/tasks/TASK-ONEEDITOR-one-editor-and-a-version-lineage.md` | §2 reconciled after T1. T3 builds it |
 | `docs/tasks/TASK-CONTRACTMENUS-…md` | Rules still govern; its §4 build shape is superseded |
 | `docs/tasks/TASK-DAYSHEET-…md` | ⚠️ Largely **now built** — the calendar email work shipped 2026-08-26. **Re-read before assigning; it is stale.** |
-| `docs/tasks/TASK-ATTRIB-where-they-came-from.md` | ⛔ **SUPERSEDED 2026-08-27 by `TASK-ORIGIN`** (§0), which covers it and adds contact-channel and historic-purchase-with-a-date. **Its three verified allowlist traps were folded into `TASK-ORIGIN` §4 before it was retired.** Retained under D32; do not run it |
+| `docs/tasks/TASK-ATTRIB-where-they-came-from.md` | 📎 **MERGED INTO `TASK-ORIGIN` 2026-08-27** (§0) — not superseded, reconciled, on the owner's instruction *"don't discard either."* ATTRIB built **origin only**; ORIGIN carries all three. ATTRIB's measurements, its three allowlist traps, its read-side reach and its 12 acceptance tests are now ORIGIN §2/§5/§6/§9. **Retained as the measurement record; do not run it separately** |
 
 ## 4. ⚠️ ONE COMMIT DELIBERATELY UNMERGED — AND IT WAS MERGED BY MISTAKE, THEN REVERTED, 2026-08-27
 

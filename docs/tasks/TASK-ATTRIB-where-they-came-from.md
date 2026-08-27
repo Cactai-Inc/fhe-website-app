@@ -1,23 +1,27 @@
 # TASK-ATTRIB — where they came from, before they hit the website
 
-> # ⛔ SUPERSEDED — DO NOT RUN THIS. BUILD `TASK-ORIGIN` INSTEAD.
+> # 📎 MERGED INTO `TASK-ORIGIN`. DO NOT RUN THIS SEPARATELY.
 >
-> **Retired 2026-08-27 by ORCH5, the thread that wrote it.**
-> `docs/tasks/TASK-ORIGIN-three-things-he-must-be-able-to-log.md` was authored in parallel, covers
-> everything here and two things more — the **contact channel** and **recording a purchase the
-> system never saw, with the date it actually happened** — and it is already merged and named
-> build-first in `docs/handoff/03-REMAINING-WORK.md` §0.
+> **Reconciled 2026-08-27 by ORCH5, the thread that wrote it, on the owner's instruction:**
+> *"TASK-ATTRIB covers origin only. Channel and 'what they bought' are the other two thirds and
+> they're in TASK-ORIGIN, already on main — reconcile them into one spec before running it, don't
+> discard either."*
 >
-> **The two specs agreed independently on every structural call**, which is the useful part: the
-> column belongs on `contacts` and not `clients`; the vocabulary belongs in `lookup_options`;
-> `clients.source` is row provenance and must not be overloaded.
+> ⚠️ **THE CORRECTION THIS FILE EARNED, RECORDED PLAINLY.** He asked to log **three** things — where
+> they found us, how they contacted us, and what they bought. **This spec built the first and only
+> the first.** Channel appears once here, incidentally, in a sentence about retiring values; the
+> historic purchase gets one passing mention. **Had it shipped alone, he would have sat down to review
+> every account and found two of three surfaces missing — the exact "enter everything twice" failure
+> the work exists to prevent.**
 >
-> ⚠️ **Everything this file had that ORIGIN lacked has been folded into ORIGIN §4** — the
-> `add_lookup_value` five-key allowlist, the `update_contact_record` column allowlist, and the
-> `menu_inventory` `used_by` string. **Nothing is lost by ignoring this file.**
+> **THE ONE SPEC IS NOW `docs/tasks/TASK-ORIGIN-three-things-he-must-be-able-to-log.md`.** Everything
+> below lives there: the production measurements (ORIGIN §2), the three allowlist traps (§5), the
+> read-side reach (§6), and the numbered acceptance tests (§9). **Nothing was dropped in the merge.**
 >
-> **Retained, not deleted, under D32** — and because the measurements in §2 and the traps in §3 are
-> the evidence ORIGIN §4 rests on.
+> **The two specs agreed independently on every structural call** — the columns belong on `contacts`
+> and not `clients`, the vocabulary belongs in `lookup_options`, and `clients.source` is row
+> provenance that must not be overloaded. That agreement is worth something, which is part of why this
+> file is retained rather than deleted (D32): **it is the measurement record the traps rest on.**
 
 **You are a build thread. This file is your whole assignment.** Everything you need is here or in the
 files it names. Nothing was said to you in the prompt.
