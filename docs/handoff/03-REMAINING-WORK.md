@@ -4,17 +4,33 @@
 
 ---
 
-## 0. ⚠️ BUILD THIS FIRST — AHEAD OF T3
+## 0. ✅ DONE — TASK-ORIGIN MERGED `e5a99c26`, 2026-08-27
 
-**`docs/tasks/TASK-ORIGIN-three-things-he-must-be-able-to-log.md`**
+**`docs/tasks/TASK-ORIGIN-three-things-he-must-be-able-to-log.md` is built, audited and pushed.**
+Report: `docs/reports/TASK-ORIGIN-REPORT.md`. Worktree archived `archive/origin-2026-08-27`.
 
-The owner is about to review **every client account by hand** and log where they found us, how they
-contacted us, and what they bought. ⚠️ **If those surfaces do not exist when he starts, he enters
-everything twice.** He confirmed the sequence himself: *"before i review every client's account i
-need the surfaces to be there."*
+⚠️ **THE OWNER'S BACKFILL SESSION IS NOW UNBLOCKED AND IS HIS TO RUN.** All 29 contacts carry NULL
+in both new columns by design — seeding a guess would corrupt the only data he has. He can add
+options to either menu himself at `/app/ops/admin/editor`; that path was broken before this task
+and is proven working now.
 
-**It is small, and it is on the critical path for the metrics work**, which cannot compute an
-attribution number that was never captured.
+⚠️ **CARRY FORWARD — `DROP FUNCTION` + `CREATE FUNCTION` RESETS THE ACL TO THE DATABASE DEFAULT.**
+Postgres refuses `CREATE OR REPLACE` when a defaulted parameter is added, so widening a signature
+forces a drop, and the function returns with whatever the schema default grants — here `PUBLIC` +
+`anon` + `authenticated`. **A locked-down function comes back open and nothing errors.** The thread
+caught it in a rolled-back transaction and restored the grants; the audit confirmed the end state
+from `pg_proc.proacl`. **Any future migration that drops a function restores its grants explicitly
+and proves the result — a REVOKE reporting success is not proof (ORCHESTRATOR §3).**
+
+**Audit note so it is not re-raised:** `PUBLIC EXECUTE` is **not** anomalous in this database —
+**376 of 748** public functions carry it. `staff_contact_directory` and `admin_client_accounts` hold
+it and were recreated without explicit grants, **and both return zero rows when called as `anon`**,
+being SECURITY DEFINER with working guards. **The ACL alone proves nothing; calling as anon does.**
+
+**Open, recorded not fixed:** `HorseRecordsPage.tsx:159-162` renders a deactivated breed or colour as
+its raw stored code, and its `b.active || b.code === r.breed` fallback is **dead code** —
+`listHorseBreeds()` already filters to active, so the retired code is never in the array to rescue.
+Same class as the trap TASK-ORIGIN fixed for origin/channel.
 
 ## 1. THE BUILD SEQUENCE — three threads, two done
 
