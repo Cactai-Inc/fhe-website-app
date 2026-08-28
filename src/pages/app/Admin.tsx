@@ -12,7 +12,8 @@ import {
   adminResendInvitation,
   type ClientAccountRow, type ClientItems,
 } from '../../lib/admin';
-import { contactAddress, formatAddress, type ContactAddress } from '../../lib/api';
+import { contactAddress, formatAddress, listLookupOptionsAll, type ContactAddress } from '../../lib/api';
+import { lookupName, type LookupCode } from '../../lib/ops/types';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { docDisplay, docDisplayLabel } from '../../lib/documentStatus';
 import { documentHref } from '../../lib/documentHref';
@@ -606,6 +607,18 @@ export default function Admin() {
   }, []);
   useEffect(load, [load]);
 
+  // TASK-ORIGIN §6 — origin/channel filters, unfiltered by active (T4: a
+  // deactivated code must stay findable on the records that already carry
+  // it), same pattern as the Leads tab (ContactsPage.tsx).
+  const [originOpts, setOriginOpts] = useState<LookupCode[]>([]);
+  const [channelOpts, setChannelOpts] = useState<LookupCode[]>([]);
+  useEffect(() => {
+    listLookupOptionsAll('client_origin').then(setOriginOpts).catch(() => setOriginOpts([]));
+    listLookupOptionsAll('contact_channel').then(setChannelOpts).catch(() => setChannelOpts([]));
+  }, []);
+  const [originFilter, setOriginFilter] = useState('');
+  const [channelFilter, setChannelFilter] = useState('');
+
   // Everything the card needs beyond admin_client_accounts (TASK-ROSTERCARD:
   // no DB work, so this is read directly under the same admin RLS the RPC
   // itself requires). Reconciled against direct SQL in the report.
@@ -734,16 +747,19 @@ export default function Admin() {
 
   const visible = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const filtered = members.filter((m) =>
-      !needle
-      || memberName(m).toLowerCase().includes(needle)
-      || (m.email ?? '').toLowerCase().includes(needle)
-      || (m.tags ?? []).some((t) => t.toLowerCase().includes(needle)));
+    const filtered = members.filter((m) => {
+      if (originFilter && m.client_origin !== originFilter) return false;
+      if (channelFilter && m.contact_channel !== channelFilter) return false;
+      return !needle
+        || memberName(m).toLowerCase().includes(needle)
+        || (m.email ?? '').toLowerCase().includes(needle)
+        || (m.tags ?? []).some((t) => t.toLowerCase().includes(needle));
+    });
     // ContactsPage's sort, ported verbatim: newest by created_at, else name A–Z.
     return [...filtered].sort((a, b) => sortKey === 'newest'
       ? new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
       : memberName(a).localeCompare(memberName(b)));
-  }, [members, q, sortKey]);
+  }, [members, q, sortKey, originFilter, channelFilter]);
 
 
   async function toggleSuspend() {
@@ -848,6 +864,18 @@ export default function Admin() {
           does not fit a row. */}
       {!selected && (
         <>
+          <div className="flex flex-wrap gap-2 mb-2">
+            <select className="form-input w-auto text-xs" aria-label="Filter by origin"
+              value={originFilter} onChange={(e) => setOriginFilter(e.target.value)}>
+              <option value="">Origin: all</option>
+              {originOpts.map((o) => <option key={o.code} value={o.code}>{o.display_name}</option>)}
+            </select>
+            <select className="form-input w-auto text-xs" aria-label="Filter by channel"
+              value={channelFilter} onChange={(e) => setChannelFilter(e.target.value)}>
+              <option value="">Channel: all</option>
+              {channelOpts.map((o) => <option key={o.code} value={o.code}>{o.display_name}</option>)}
+            </select>
+          </div>
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <div className="relative flex-1 min-w-[220px]">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
@@ -865,7 +893,9 @@ export default function Admin() {
           </div>
           <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
             {visible.map((m) => (
-              <RosterCard key={rowKeyOf(m)} m={m} supplement={supplement} onOpen={setSelectedId} />
+              <RosterCard key={rowKeyOf(m)} m={m} supplement={supplement} onOpen={setSelectedId}
+                originLabel={m.client_origin ? lookupName(originOpts, m.client_origin) : null}
+                channelLabel={m.contact_channel ? lookupName(channelOpts, m.contact_channel) : null} />
             ))}
           </div>
           {visible.length === 0 && <p className="text-sm text-muted py-6 text-center">No one matches.</p>}

@@ -710,6 +710,10 @@ export interface ClientAccountRow {
   credits: { label: string; remaining: number }[];
   /** Consumed service events keyed by service_type code. */
   services: Record<string, number>;
+  /** TASK-ORIGIN §1 — NOT the same question. Codes into `lookup_options`
+   *  (`client_origin` / `contact_channel`); null = not recorded yet. */
+  client_origin: string | null;
+  contact_channel: string | null;
 }
 
 /**

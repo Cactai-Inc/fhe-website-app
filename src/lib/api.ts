@@ -1198,6 +1198,26 @@ export async function listLookupOptions(lookupKey: string): Promise<LookupCode[]
   return pinNone((data ?? []) as LookupCode[]);
 }
 
+/** Same vocabulary, UNFILTERED by active (TASK-ORIGIN §5 T4). A record can
+ *  hold a code that was later switched off — "it leaves every dropdown and
+ *  stays valid on the records that already carry it" (set_menu_value's own
+ *  comment) — and `lookupName` can only resolve that code to its real display
+ *  name if the list it searches actually contains the inactive row. Fetching
+ *  an active-only list here would fall back to the raw code for a retired
+ *  value, same trap HorseRecordsPage's breed/color columns fall into today.
+ *  Callers build the SELECT's offered options from this by filtering
+ *  `o.active || o.code === currentValue`, and resolve DISPLAY from the same
+ *  unfiltered list — one fetch serves both. */
+export async function listLookupOptionsAll(lookupKey: string): Promise<LookupCode[]> {
+  const { data, error } = await supabase
+    .from('lookup_options')
+    .select('code, display_name, active, sort_order')
+    .eq('lookup_key', lookupKey)
+    .order('display_name');
+  if (error) throw error;
+  return pinNone((data ?? []) as LookupCode[]);
+}
+
 /** ALPHABETICAL, WITH ONE EXCEPTION (owner, 2026-08-25: *"everywhere we have
  *  things shown in a list it should be alphabetical"*).
  *
@@ -2366,6 +2386,10 @@ export interface DirectoryContact {
    *  null = unclassified, surfaced for a human to file rather than defaulted. */
   contact_type: ContactType | null;
   is_company: boolean;
+  /** TASK-ORIGIN §1 — NOT the same question. Codes into `lookup_options`
+   *  (`client_origin` / `contact_channel`); null = not recorded yet. */
+  client_origin: string | null;
+  contact_channel: string | null;
 }
 
 /** The person-pages. One contact appears on exactly one of them.

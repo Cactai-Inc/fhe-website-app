@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import {
   contactDossier, updateContactRecord, setContactType,
+  listLookupOptionsAll, addLookupValue,
   CONTACT_TYPE_LABEL, type ContactDossier, type ContactType,
 } from '../../lib/api';
 import { toErrorMessage } from '../../lib/ops/errors';
+import type { LookupCode } from '../../lib/ops/types';
 import {
   AssignDocumentsModal, ClientHorseRecordsCard, AttachOfferingPanel, PaperworkEditor,
 } from './ClientRecordActions';
@@ -66,6 +68,83 @@ const FIELD_GROUPS: { title: string; fields: [string, string][] }[] = [
   ]},
   { title: 'Notes', fields: [['notes', 'Staff notes']] },
 ];
+
+const dossierInput = 'w-full px-2.5 py-1.5 rounded-lg border border-green-800/15 text-sm text-green-900 focus-ring bg-white disabled:bg-cream-100 disabled:text-muted';
+const OTHER = '__other__';
+
+/**
+ * ORIGIN / CHANNEL SELECT (TASK-ORIGIN §4/§6) — a constrained dropdown over a
+ * `lookup_options` vocabulary, plus the same "Other (enter manually)…" escape
+ * HorseIntakeForm's SelectOrOther already established as how a menu grows
+ * (owner, 2026-08-25): typing a value there ADDS it via `addLookupValue`, the
+ * one write path, rather than storing loose text. No N/A here — unlike a
+ * horse record's fields, "not recorded yet" already has an honest state
+ * (NULL / the blank option), so there is nothing separate to mark absent.
+ *
+ * ⚠️ T4: options are fetched UNFILTERED by `active` (`listLookupOptionsAll`),
+ * not the active-only `listLookupOptions` every other vocabulary picker uses.
+ * A record can hold a code that was later switched off, and the dropdown
+ * still must render its real name — filtering active-only at fetch time is
+ * exactly the trap that makes HorseRecordsPage's breed/color columns fall
+ * back to a raw code for a retired value. The SELECT's OFFERED options are
+ * still active-only (plus whatever the record already holds), same idiom.
+ */
+function OriginChannelSelect({
+  label, lookupKey, value, onChange, disabled,
+}: {
+  label: string;
+  lookupKey: string;
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+}) {
+  const [options, setOptions] = useState<LookupCode[] | null>(null);
+  useEffect(() => {
+    listLookupOptionsAll(lookupKey).then(setOptions).catch(() => setOptions([]));
+  }, [lookupKey]);
+
+  const known = options ?? [];
+  const isKnown = !!value && known.some((o) => o.code === value);
+  const isOther = !!value && !isKnown;
+  const [otherOpen, setOtherOpen] = useState(isOther);
+  const selectValue = otherOpen || isOther ? OTHER : (isKnown ? value : '');
+  const selectable = known.filter((o) => o.active || o.code === value);
+
+  return (
+    <div>
+      <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{label}</label>
+      <select className={dossierInput} disabled={disabled || !options}
+        value={selectValue}
+        onChange={(e) => {
+          if (e.target.value === OTHER) { setOtherOpen(true); onChange(''); }
+          else { setOtherOpen(false); onChange(e.target.value); }
+        }}>
+        <option value="">{options ? 'Not recorded' : 'Loading…'}</option>
+        <option value={OTHER}>Other (enter manually)…</option>
+        {selectable.map((o) => <option key={o.code} value={o.code}>{o.display_name}</option>)}
+      </select>
+      {(otherOpen || isOther) && !disabled && (
+        <input className={`${dossierInput} mt-1.5`} value={isKnown ? '' : (value ?? '')}
+          placeholder="Type it — it joins the list"
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={(e) => {
+            const v = e.target.value.trim();
+            if (!v) return;
+            // Same engine as HorseIntakeForm's escape: adds it to the
+            // vocabulary and stores the CODE, so the roster's filter and the
+            // editor's list agree with whatever this saves.
+            void addLookupValue(lookupKey, v)
+              .then((r) => {
+                setOptions((prev) => [...(prev ?? []), { code: r.code, display_name: r.display_name, active: true, sort_order: 900 }]);
+                onChange(r.code);
+                setOtherOpen(false);
+              })
+              .catch(() => {});
+          }} />
+      )}
+    </div>
+  );
+}
 
 export function ContactDossierModal({
   contactId, onClose, onChanged,
@@ -249,6 +328,20 @@ export function ContactDossierModal({
                           {TAG_LABEL[g] ?? g}
                         </span>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* TASK-ORIGIN §1/§6 — ORIGIN and CHANNEL are not the same
+                      question and do not share a field. Beside the standing
+                      fields, on the record he is already reviewing — not a
+                      separate data-entry screen. */}
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted mb-2">Where they came from</p>
+                    <div className="grid sm:grid-cols-2 gap-2.5">
+                      <OriginChannelSelect label="Client origin" lookupKey="client_origin"
+                        disabled={archived} value={val('client_origin')} onChange={set('client_origin')} />
+                      <OriginChannelSelect label="Contact channel" lookupKey="contact_channel"
+                        disabled={archived} value={val('contact_channel')} onChange={set('contact_channel')} />
                     </div>
                   </div>
 
