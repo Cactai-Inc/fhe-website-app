@@ -2560,3 +2560,121 @@ Complete / no-show / pending-payment / confirmed states · the "I have paid" dec
 standing-weekly editor (wrong screen) · changing a horse's owner · resolving a name-only owner ·
 the horse-care paperwork rule (enforced, ignored by the screen) · a today list on the dashboard ·
 the customer-facing evaluation gate.
+
+---
+
+# ⚠️ CAPTURED 2026-08-27 — THE CLIENT RECORD IS THREE SURFACES AND TWO OF THEM ARE UNREACHABLE
+
+## CR-80 · G6 · captured + researched — the good record page is reachable exactly once
+
+**SAID**
+> *"When I setup a new account manually and save it I see a nice full open profile with a bunch of
+> pages linked as buttons on the top of the page. when i go back after the first provisioning pass i
+> cant see any of that and i get this fucked up configuration page that needs to be thrown in the
+> trash. i dont know why there is not direct path to the full user contact record until they have
+> logged in, but whats more troubling, the page i see when setting up a new user as a contact record
+> is not the same page i see when i go look at already activated contact records. there is a beautiful
+> functional perfectly designed contact record page that is only accessible one time and that is when
+> im first setting up a new client and other than that all pathways to seeing a client record take me
+> to either the shit single page with not tabs or buttons to see any other parts of the contact
+> record, or a shitty outdated version of the contact page."*
+
+**FOUND — two independent gates, and they compound into a hole.**
+
+**GATE 1 — the nine-tab account surface requires a LOGIN, not a person.**
+`Admin.tsx:739` — `if (!selectedId || !selected?.user_id) return;` — so `admin_client_overview`
+is never fetched for anyone without an auth account, and the Overview / Bookings / Documents /
+Orders / Payments / Activity / Posts / Messages / Login tabs render against nothing.
+`admin_client_accounts()` returns three kinds: `account` (has `user_id`), `pending` (**NULL**) and
+`contact` (**NULL**). ⚠️ **Measured: 15 of 22 live clients have no login, so the tabs cannot load for
+them.** This is exactly his *"no direct path to the full user contact record until they have logged
+in"* — and it is literal, not a permissions quirk.
+
+**GATE 2 — the rich provisioning form is gated to BEFORE the invitation is sent.**
+`Admin.tsx:379` — `if ((neverInvited || isDraft) && row.contact_id) { … }` where
+`neverInvited = !row.invite_id && !row.invite_status` and `isDraft = row.invite_status === 'draft'`.
+**That block is the "beautiful page": `ProvisionClientForm` (category, paperwork, offerings) plus
+`AgreedLessonSection` (the day-and-time picker).** ⚠️ **The moment the invitation is sent the whole
+block stops rendering** and the surface falls through to resend / expire / regenerate controls —
+his *"fucked up configuration page."*
+
+⚠️ **THE HOLE BETWEEN THEM IS REAL AND OCCUPIED.** Invitation sent + never logged in = **neither**
+surface. Gate 2 has closed and gate 1 has not opened. **Measured: 7 clients have the tabs, 14 have
+the provisioning form, and 1 is stranded with neither.** That one is not an edge case — it is the
+normal state of every client between "invite sent" and "they got round to signing in."
+
+**FOUND — and the third surface is real too.** `ContactDossierModal` and the retired `ContactsPage`
+are the *"shitty outdated version"*; `ClientRecordActions.tsx` says in its own header that the modal's
+parts came from the client page and the page was never switched over. ⚠️ **This is CR-33 restated by
+the owner nine days later, now with money attached — see CR-81.** CR-31 *("no way to add a horse to
+Pamela's record")* is the same gate from a different angle.
+
+**ASK-OWNER** — none. The requirement is unambiguous: **one record surface, reachable at every stage
+of a person's life, with the provisioning capabilities available after the invitation as well as
+before.** ⚠️ It is CR-30/CR-75's People wave; **what is new is that it is now blocking revenue.**
+
+## CR-81 · G2/G5 · captured + researched — ⚠️ A 2× WEEKLY CLIENT CANNOT BE SET UP AFTER PROVISIONING
+
+**SAID**
+> *"the clients that have a 2x monthly subscription, cannot be setup for it. even when i go in and add
+> a new offering for the 2x weekly it doesnt show up the same way as when i add it for a client im
+> setting up for the first time. with that client im able to assigne the 2x weekly package, pick their
+> days and times, and the card says 2x weekly paid monthly $880, and the lessons appear on the
+> calendar"*
+
+**FOUND — this is CR-80's gate 2, with the invoice attached.** Choosing a recurring offering **and**
+picking the standing days and times is possible **only** inside the `ProvisionClientForm` +
+`AgreedLessonSection` pair, and that pair renders only while `neverInvited || isDraft`.
+⚠️ **So the £/$880 2× weekly plan — the barn's most valuable product — can be sold to a brand-new
+contact and to nobody else.** An existing client who wants to start, resume, or change a weekly plan
+has no surface that can do it. Adding the offering elsewhere writes an order line but never places
+the standing slot, which is why it *"doesnt show up the same way."*
+
+⚠️ **This is D23's standing-slot model working correctly and being unreachable** (D17). The engine is
+not the defect; the single gated doorway is.
+
+## CR-82 · G5 · captured + researched — the horizon, and the first month's price
+
+**SAID**
+> *"the only thing left to fix with that flow is the lessons are added for 90 days, it should only add
+> them on a monthly basis and when setting it up it should ask if i want to prorate the purchase and
+> then it reduces the price by the number of lessons remaining for their selected days that month. if
+> i say no it gives credits for the prior days that month that were missed and then the user can use
+> them whenever they want to get in an extra lesson."*
+
+**FOUND — the 90 days is two hardcoded lines, and the monthly machinery already exists.**
+`ensure_standing_slots` line 11: `v_target date := current_date + 90;`
+`_ensure_plan_horizon` line 10: `v_through date := coalesce(p_through, current_date + 90);`
+⚠️ **`_ensure_plan_horizon` already loops month by month (`v_month + interval '1 month'`), already
+records `config->>'horizon_through'`, and already takes a `p_through` argument.** The month-at-a-time
+behaviour he is asking for is the default being wrong, not a mechanism that is missing.
+
+**FOUND — ⚠️ NOTHING PRORATES, AND THE PUBLIC SITE ALREADY PROMISES IT.**
+**Zero** database functions match `prorat`. The only occurrence in the whole repo is
+`src/pages/Lessons.tsx:52`, a footnote on the weekly-subscription cards:
+> *"First month can be prorated or book all your lessons for the month in the days …"*
+
+**So a customer reading the lessons page today is told the first month can be prorated, and no code
+anywhere can do it.** ⚠️ **Same shape as CR-28's false three-month promise and D23's booking copy:
+the copy is right and the code is absent.** His request is therefore not a new feature — **it is the
+implementation of a promise already published.**
+
+**THE TWO BRANCHES, in his words:**
+| Choice | Effect |
+|---|---|
+| **prorate = yes** | **reduce the price** by the lessons *remaining* on their chosen days this month |
+| **prorate = no** | **issue credits** for the days already missed this month, spendable whenever, for an extra lesson |
+
+⚠️ **Note against D23:** branch 2 mints a **spendable** credit from a recurring plan, which D23 calls
+defective in the general case. **It is not defective here, and the distinction matters:** D23's rule
+is that the standing slot is the entitlement and a recurring purchase must not mint a spendable
+balance *for the slots it is placing*. These credits are for slots that **already passed before the
+plan started** — the same "session owed but not delivered at its standing time" holding form D23
+itself describes for cancellations. **Consistent, but it must be written into the spec or the next
+thread will read it as a D23 violation and refuse to build it.**
+
+**ASK-OWNER**
+1. **When prorating, is the price reduced pro-rata per remaining lesson, or to a whole number of
+   weeks?** *(2× weekly at $880/month is $110 a lesson at 4 weeks; a half month is not always 4 of 8.)*
+2. **Do the no-prorate credits expire?** D23's holding-form credits do; these are compensation for a
+   month he was paid in full for.
