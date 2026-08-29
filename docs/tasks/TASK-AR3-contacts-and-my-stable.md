@@ -1,0 +1,90 @@
+# TASK-AR3 — the Records page becomes Contacts, and horses go to My Stable
+
+⚠️ **READ `docs/tasks/ADMIN-REVIEW-ANALYSIS-STANDARD.md` FIRST.** **You are writing a report. You are
+fixing nothing.**
+
+**Owner, 2026-08-29 — two items, one decision:**
+> *"3) move Leads, Clients, Partners, Vendors to a Page called Contacts with a nav link in the
+> sidebar nav on desktop and in the mobile menu."*
+> *"4) move horses to the My Stable Page or if its still shown there, remove it from the records
+> page. Add My Stable to the sidebar nav on desktop and the nav in the mobile menu."*
+
+⚠️ **These are one task because they are one question: what happens to the Records page.** Answering
+them separately produces two plans that fight over the same tab strip.
+
+---
+
+## 1. WHAT EXISTS TODAY — verified 2026-08-28
+
+**`src/pages/app/RecordsPage.tsx` is a 133-line tab shell** at `/app/records` and `/app/records/:tab`,
+with **ten tabs**: `leads · clients · partners · vendors · horses · lessons · documents · files ·
+deals · archived` *(archived is admin-only)*. The tab content is delegated, not inline.
+
+**The registry row is `{ key: 'people.records', path: '/app/records', label: 'Records', group:
+'accounts' }`** — `pageRegistry.ts:152`. ⚠️ **The `accounts` group is already labelled "People"**
+(`AppLayout.tsx:634`), not "Records".
+
+⚠️ **There is a SECOND Records row: `{ key: 'records.hub', path: '/app/ops/records', label:
+'Records', group: 'modules', module: 'mod.horserecords' }`** — `pageRegistry.ts:195`. **Two nav rows
+both labelled "Records", in two different groups, on two different paths.** Establish what each
+actually serves and which the owner has been using.
+
+**On the horses side:** `HorseRecordsPage.tsx` exists and carries `HORSE_RECORDS_STANDALONE_RETIRED`
+— a retirement flag. **Find out what that flag currently does and whether the standalone page is
+reachable.** ⚠️ **CR-74 records that the owner rates the horse-records row-card as the best editing
+surface in the app** — *"its bug free and works great … one is clearly superior ux and ui"*. **That
+component is an asset. Identify it precisely so it survives the move.**
+
+## 2. THE QUESTIONS YOUR REPORT MUST ANSWER
+
+1. **What is on each of the ten tabs today**, and **which of them belong on a page called Contacts?**
+   The owner named four — leads, clients, partners, vendors. ⚠️ **Say explicitly what happens to the
+   other six** (lessons, documents, files, deals, archived, horses). *"Not mentioned"* is not an
+   answer; each one has to land somewhere or be retired.
+2. **Does "My Stable" already exist?** ⚠️ **A member-facing "My Stable" card exists on the account
+   page** (CR-58 and CR-68 both discuss it). **Is the owner asking for that surface to become the
+   staff home for horses, or for a new staff page that borrows the name?** ⚠️ **Answer it from the
+   code and from what he has said — and if it is genuinely ambiguous, flag it rather than choosing.**
+3. **What is the nav shape afterwards** — Contacts and My Stable as two rows, in which group, on
+   desktop **and** in the mobile menu? ⚠️ **Both surfaces are in `AppLayout.tsx`; name the exact
+   lines.**
+4. ⚠️ **What breaks when `/app/records` changes shape?** Deep links, the `:tab` route, anything that
+   navigates to a named tab, and `RecordsPage`'s own cross-links. **D17: routed is not reachable, and
+   the inverse — a route that disappears takes its inbound links with it.**
+5. **Do Partners and Vendors carry anything Leads and Clients do not?** Different columns, different
+   actions, different document requirements. **If they are the same surface with a filter, say so.**
+
+## 3. THE TRAPS
+
+⚠️ **CR-30 IS AN OWNER RULING AND IT REMOVES LEADS FROM THIS PAGE ENTIRELY:**
+> *"We get rid of leads as a record tab from the record page and they exist as a notification on the
+> dashboard that when clicked opens the modal to show us the submission and the buttons for handling
+> it."*
+
+**So item 3 as written — "move Leads … to a Page called Contacts" — sits against a ruling he made on
+2026-08-25 that a lead is an inbox item, not a record.** ⚠️ **Do not silently pick one.** Report the
+collision plainly, with both quotes, and let ORCH6 put it to him. **It may be that he has changed his
+mind, which is his right and would supersede CR-30 — but it must be asked, not assumed.**
+
+⚠️ **CR-75 rules the client record is an EXPANDING ROW on the list**, not a page you travel to.
+**Whatever Contacts becomes has to host that pattern.**
+
+⚠️ **`TASK-AR2` is consolidating the client-record surfaces that these tabs open into.** Its outcome
+lands inside your page. **Report the dependency; do not design AR2's surface.**
+
+⚠️ **`TASK-AR4` owns the nav section taxonomy** — renames, section moves, which group things sit in.
+**You own the two new rows and their labels; AR4 owns the sections they sit in.** Name AR4 in your
+contended-files list, because you will both want `pageRegistry.ts` and `AppLayout.tsx`.
+
+⚠️ **`GROUP_LABEL` in `pageRegistry.ts` is dead** — exported, read by nothing. The real labels are
+string literals at `AppLayout.tsx:633-649`.
+
+## 4. OUT OF SCOPE
+
+Building anything · section renames and moves (AR4) · the record surface itself (AR2) · module pages
+moving to the account page (AR5).
+
+## 5. REPORT
+
+`docs/reports/TASK-AR3-REPORT.md`, standard §4 shape. Worktree `wt-ar3`, branch `task/ar3`.
+**Commit the report only. Do not push.**
