@@ -3343,3 +3343,57 @@ he is asking.**
 
 **ASK-OWNER:** **does a standing cost stop by itself?** ⚠️ **A horse that leaves must stop accruing
 boarding, or the P&L drifts quietly every month.** **Ended-by-date, or ended by the horse's own status?**
+
+### 🔒 CR-86 — SIMPLIFIED BY THE OWNER, 2026-08-31. ⚠️ THIS SUPERSEDES THE THREE-TRIGGER COST MODEL.
+> *"we can gather what the horse costs us on a monthly and annual basis based on the costs attributed
+> to it based on actual consumption… farrier can be fit into that mold too but its not a monthly
+> recurring cost the way boarding is… the difference being supplements are daily and if given every
+> day the monthly cost changes by month where boarding doesnt. but bedding does. so the simplest thing
+> to do is give a space on the horse record for recording the costs at month end. having the right
+> lines to input $ is better than trying to figure out how to automate it from a one time input."*
+
+⚠️ **THE RULING: A MONTHLY COST SHEET ON THE HORSE RECORD, TYPED IN AT MONTH END.**
+**NOT** a consumption engine. **NOT** a standing-charge scheduler. **NOT** three recognition triggers.
+⚠️ **The last several entries above built toward automation; HE HAS RULED IT OUT and the reason is
+sound — read it before proposing otherwise.**
+
+### ⚠️ WHY HE IS RIGHT, STATED SO NOBODY RE-AUTOMATES IT LATER
+**Every figure he listed is already known at month end by the person who was there.** ⚠️ **Automating
+it would require Claire to log every administration all month to RECONSTRUCT a number she can simply
+read off an invoice.** **That is more input, not less — and per the standing rule, an input burden she
+will skip is a permanently missing cost.**
+⚠️ **His own line is the design principle: *"having the right lines to input $ is better than trying
+to figure out how to automate it from a one time input."*** **The value is in HAVING the number, not
+in deriving it.**
+
+### THE SHAPE
+**One row per horse per month.** Lines, from his list: **boarding · bedding · feed · supplements ·
+medications · vet · farrier**, plus **other** with a note.
+- **Boarding** — flat month to month
+- **Bedding, supplements, feed** — vary by month *(usage-driven)*
+- **Vet, farrier, medications** — irregular; ⚠️ **entered in the month they are INVOICED**
+- ⚠️ **A blank line is not zero.** *"Did it consume medication this month?"* — **"no" and "not yet
+  entered" must be distinguishable, or the annual roll-up silently under-reports.**
+
+**Annual = the sum of the months.** ⚠️ **No separate annual model** — which is why *"farrier can be fit
+into that mold"*: an irregular cost lands in whichever month it is entered and the year adds up.
+
+### WHAT THIS MEANS FOR THE EXISTING SPINE — ⚠️ DO NOT DRIVE IT
+`resources` · `resource_lots` · `consumption_events` · `cost_allocation_rules` · `billable_lines` are
+**built and empty (0 rows)**, and the earlier entries said to establish why and drive them.
+⚠️ **THIS RULING REMOVES THAT.** **A per-event consumption ledger is exactly the automation he
+declined.** **Leave the five tables untouched and undriven** (D32 — retire behind a flag, never
+delete). ⚠️ **Say so explicitly in the build so a later thread does not "finish" them.**
+⚠️ **`cost_allocation_rules` may still matter later for CLIENT-owned horses** *(who pays)* — **but not
+for this, which is company-borne cost on our own horses.**
+
+### ⚠️ WHAT THIS DOES NOT CHANGE
+**The comp / discount work and the `revenue_summary` fix are UNAFFECTED and still carry the deadline.**
+They are the REVENUE side; this is the COST side. ⚠️ **Both are needed for a P&L, and only the cost
+side just got smaller.**
+
+**ASK-OWNER**
+1. **Who enters the sheet — Claire, him, or either?** *(Earlier ruling: she logs, either updates the
+   money. A month-end sheet is money, which points at either.)*
+2. ⚠️ **Does a horse that leaves mid-month still get a sheet?** **Prior open question, now simpler:
+   no sheet entered = no cost, so the P&L cannot drift on its own.** **Confirm that is the intent.**
