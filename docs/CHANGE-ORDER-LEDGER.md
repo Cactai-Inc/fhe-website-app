@@ -3477,3 +3477,64 @@ they answer different questions.**
 ### ✅ CONSEQUENCE FOR CR-85 — THE NAV IS UNBLOCKED
 ⚠️ **The Messages page SURVIVES, so Community keeps both rows: Catalog and Messages.**
 **CR-85 was waiting on this and is no longer blocked.**
+
+---
+
+## CR-88 · G5/G9 · captured — marketing planning, the campaign builder, and financial analysis
+
+**SAID (owner, 2026-08-31):**
+> *"marketing planning doesnt exist yet we need build that just like we need to build the campaign
+> builder and we need to build the financial analysis page with inputs into the fuller picture of
+> company expenses."*
+
+⚠️ **THREE SEPARATE BUILDS, ALL GREENFIELD — measured 2026-08-31, nothing pre-exists:**
+**No `campaign*`, `market*`, `promo*`, `audience*` table.** *(`segment_categories` matches on name only
+— it maps a catalog segment to a request category and an onboarding token. **Unrelated. Do not
+repurpose it.**)* **On the money side only `revenue_summary` and the retired `calendar_revenue` exist.**
+
+⚠️ **THESE ARE NOT `TASK-FIX6`'s WORK.** FIX6 builds the **Marketing BOARD** — it *shows* things.
+**These build the things it shows.** ⚠️ **A board with nothing to display is why FIX6's spec says to
+name a KPI as not-yet-computable rather than ship an empty tile.**
+
+### 1 · MARKETING PLANNING
+**His words:** the Marketing lens shows *"campaigns — running them, their results, and what is still in
+planning."* ⚠️ **"In planning" is the part with no store: a campaign that has not started yet.**
+**Establish the smallest honest shape** — a campaign with a state *(planned · running · finished)*, a
+window, a channel and a note. ⚠️ **D13: he adds and edits one without a thread. D21: any spend or
+performance FORMULA ships with its editor, never hardcoded.**
+
+### 2 · THE CAMPAIGN BUILDER
+⚠️ **A campaign must connect to the ATTRIBUTION ALREADY BUILT, or its results are unknowable.**
+**`TASK-ORIGIN` shipped `contacts.client_origin` and `contacts.contact_channel`, with the vocabulary
+in `lookup_options` and editable at `/app/ops/admin/editor`.** ⚠️ **THAT IS THE MEASUREMENT SIDE OF A
+CAMPAIGN AND IT IS ALREADY LIVE — a campaign's result is contacts arriving with its origin.**
+⚠️ **Both columns are UNPOPULATED until the owner's backfill, so campaign results read empty until
+then. Say so; do not present zero as a result.**
+⚠️ **Do NOT build a second attribution vocabulary.** **A new campaign should be able to ADD a
+`client_origin` value through the existing editor rather than inventing its own list** (D18).
+
+### 3 · THE FINANCIAL ANALYSIS PAGE
+**His words:** *"with inputs into the fuller picture of company expenses."* ⚠️ **So it is not a report
+— it is a page with INPUTS.** **It is where CR-86's money side is entered and read:**
+- **revenue** — from orders *(exists)*
+- **per-horse costs** — CR-86's monthly sheet on the horse record *(to build)*
+- ⚠️ **COMPANY expenses that are NOT per-horse** — *"the fuller picture"*. **Nothing per-horse can hold
+  insurance, fuel, signage, software or wages.** ⚠️ **THIS IS A GAP CR-86 DOES NOT COVER — CR-86 is
+  horse-attributed cost only. Name it as its own line rather than stretching the horse sheet.**
+- **discounts and comps given in a period** — CR-86's revenue side
+⚠️ **AND IT INHERITS CR-86's DEADLINE: `revenue_summary` books a $0 comp as full-price revenue.**
+**Fix that before any financial page reads it, or the page renders a confident wrong number.**
+
+### ⚠️ SEQUENCE — this is the whole point of capturing all three together
+**They are ordered by what feeds what, and building out of order produces empty surfaces:**
+1. **CR-86's cost sheet + the comp/discount designation + the `revenue_summary` fix** — the inputs
+2. **the financial analysis page** — reads them
+3. **marketing planning + the campaign builder** — ⚠️ **and their results depend on the owner's
+   attribution backfill, which is his data pass**
+⚠️ **FIX6's Marketing and Sales boards can be built BEFORE any of this** — they surface what exists and
+name what does not. **They are not blocked; these are.**
+
+**ASK-OWNER**
+1. **Does a campaign need a BUDGET / spend figure?** *(It is the difference between "did it work" and
+   "was it worth it", and it decides whether campaigns touch the P&L.)*
+2. **What company-level expense categories does he want?** ⚠️ **Do not invent a chart of accounts.**
