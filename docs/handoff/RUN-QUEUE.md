@@ -35,7 +35,23 @@ neighbourhood. **Rebase on FIX3.**
 **MAX because it carries the persisted-draft decision** — a storage seam, not a component tweak — and
 because it changes the commit trigger on a fix that shipped days ago.
 
-## ▶ 3 · TASK-FIX5 — repo hygiene
+## ▶ 3 · TASK-FIX6 — the dashboard becomes Ops and Sales
+
+```
+TASK-FIX6
+
+cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
+Read docs/tasks/TASK-FIX6-ops-and-sales.md and build it.
+```
+**Opus · thinking ON · effort HIGH**
+
+⚠️ **AFTER FIX4** — the error-report form is a form, and FIX4 owns forms and modals.
+⚠️ **Largely a RENAME:** `OwnerDashboard` already has two views, a toggle and a per-account default.
+`business` → **Ops**, `trainer` → **Sales**. **`OpsDashboard.tsx` is the abandoned 2026-07-01
+predecessor — do not resurrect it.** The genuinely new build is the error boundary and the report
+loop, which extends the empty `support_requests` table rather than adding one.
+
+## ▶ 4 · TASK-FIX5 — repo hygiene
 
 ```
 TASK-FIX5
@@ -45,7 +61,7 @@ Read docs/tasks/TASK-FIX5-repo-hygiene.md and build it.
 ```
 **Sonnet · thinking ON · effort HIGH**
 
-⚠️ **MUST RUN AFTER FIX3 AND FIX4 HAVE MERGED.** Both cite task paths and both create worktrees in
+⚠️ **MUST RUN AFTER FIX3, FIX4 AND FIX6 HAVE MERGED** — it is the cleanup, so it goes last. Both cite task paths and both create worktrees in
 the directory being cleaned. **Moving files under a running thread is how work is lost.**
 
 **Sonnet, not Opus:** this is `git mv` plus reference repair, with the plan already written in
@@ -53,7 +69,7 @@ the directory being cleaned. **Moving files under a running thread is how work i
 mechanical breadth — which is exactly what Sonnet is for.** ⚠️ **The one real risk is the reference
 repair across 417 files, and that is a grep, not a decision.**
 
-## ▶ 4 · FHE-ORCH-6 — the handoff
+## ▶ 5 · FHE-ORCH-6 — the handoff
 
 ```
 FHE-ORCH-6
