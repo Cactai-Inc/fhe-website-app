@@ -2859,3 +2859,53 @@ component work implements this, or the next thread will "fix" one to match the o
    *(Silent-vs-shown is answered; WHERE is not.)*
 2. **Does "resume with the inputs" survive a page reload, or only within one session?** ⚠️ Reload
    survival means persisted per-user draft state — materially larger, and it overlaps #4.
+
+### ⚠️ CR-84 — REVISED 2026-08-31, SAME DAY. THE OWNER IS PARTLY RIGHT AND THE SCOPE MOVED.
+
+**SAID:**
+> *"the modal already has an update pushed that fixed part of the problem which is great, less work
+> for you, means we only need a clear form and close button, click outside of a modal with inputs
+> doesnt close it, an information modal or empty one can close on click out. yes staff-entered inputs
+> normalize too."*
+
+**VERIFIED — one modal was fixed, and it is the one that lost his data.** `TASK-FIX2` rewrote
+`ContactDossierModal`: every exit now runs through `requestClose`, which **commits first**, and if
+the write fails **the record stays open with the edits still in the boxes.** Its own comment names
+the incident. ⚠️ **The shared `ops/kit/Modal` is UNCHANGED** — still `Escape`-to-close and
+backdrop-to-close, with a `disableBackdropClose` flag nothing uses.
+
+**RE-MEASURED after that fix: 18 → 17.** ⚠️ **Seventeen input-bearing modals still close on a
+backdrop click or Escape, and all seventeen are hand-rolled.** **"Less work" is one modal's worth.**
+
+⚠️ **AND THE FIXED ONE IMPLEMENTS THE OPPOSITE RULE TO THE ONE HE JUST GAVE.** `ContactDossierModal`
+**commits on close** — CR-75's card rule. This ruling says a modal with inputs **discards** unless
+Save is clicked. **Both are his, and the dossier is the deliberate exception**, because CR-75 rules
+the client record is an expanding card that happens to be rendered as a modal. ⚠️ **DO NOT
+"harmonise" the dossier to the modal rule. It is not drift; it is CR-75.**
+
+### THE THREE-WAY RULE — this is what a builder implements
+| Surface | Backdrop click | Close |
+|---|---|---|
+| **Modal with any input** | ⚠️ **does NOT close** | **discards** unless Save was clicked |
+| **Information / empty modal** | ✅ **closes** | — |
+| **Expanding card (incl. the dossier)** | — | ⚠️ **SAVES** (CR-75) |
+
+**Controls on every input form and modal: `Save` · `Close` · `Clear form`.** Save means **reopening
+resumes with those inputs.**
+
+### ✅ SETTLED — CR-83 ASK-OWNER #1
+> *"yes staff-entered inputs normalize too."*
+**On-blur normalisation applies everywhere a name, phone or email is typed — staff surfaces
+included**, not only where a person types their own.
+
+### ⚠️ REFRESH AND BROWSER-BACK ARE ONE REQUIREMENT, NOT TWO
+> *"when i said refresh/back button i was using the word refresh to indicate a reload, i fail to see
+> the distinction between them nor a difference."*
+
+**He is right that there is no difference TO HIM, and that is the requirement: both must be
+lossless.** ⚠️ **They are one requirement with one fix — the surviving state has to live somewhere
+that outlives the page**, because a reload and a browser-back both destroy React state identically.
+**They differ only in what a builder must implement to restore the position afterwards, which is an
+implementation note and not a second requirement.** ⚠️ **CR-84 ASK-OWNER #2 is therefore ANSWERED:
+resume must survive a reload.** That means persisted draft state, and it is the largest single piece
+of this change request. **Size it honestly rather than treating it as a modal detail.**
