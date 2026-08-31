@@ -117,8 +117,10 @@ export function ClientInvitationSection({
         </p>
         {!email && (
           <p className="text-[12px] text-gold-800 mb-3">
-            There is no email address on this record yet. Add one above and the invitation
-            can go out from here.
+            There is no email address on this record yet. Type one into the form below —
+            it saves to the contact and the invitation can go out from here. (The old
+            surface hid this form entirely without an email, which is why Steph and
+            Gabriella Olenik could hold a weekly plan and never be invited.)
           </p>
         )}
         <ProvisionClientForm source="contact" contactId={contactId}
