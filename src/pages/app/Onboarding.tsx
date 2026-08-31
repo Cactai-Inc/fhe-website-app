@@ -36,6 +36,9 @@ import {
 import { standingSlotSentence, serviceLabel } from '../../lib/standingSlots';
 import { StandingSlotPicker } from '../../components/app/StandingSlotPicker';
 import { BodyWithSignatures } from '../../components/ops/documents/MergedBodyView';
+import { BackControl } from '../../components/app/BackControl';
+import { AutoSaveIndicator } from '../../components/ops/kit/AutoSaveIndicator';
+import { useFieldNormalizer, useFormDraft } from '../../lib/formState';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { isEvaluationOffering } from '../../lib/serviceCatalog';
 import { useDocumentTitle } from '../../lib/hooks';
@@ -300,6 +303,7 @@ export default function Onboarding() {
 
   // Step 1 — details form
   const [form, setForm] = useState<Required<ProfileFormFields>>(EMPTY_FORM);
+  const normalize = useFieldNormalizer();
   // ── The shop step (owner, 2026-08-24). Rider offerings, evaluation first.
   const [shopOfferings, setShopOfferings] = useState<Offering[]>([]);
   const [shopPicked, setShopPicked] = useState<string[]>([]);
@@ -601,6 +605,39 @@ export default function Onboarding() {
     return () => { active = false; };
   }, [wantsSlots]);
 
+  /* ⚠️ TASK-FIX4 §6 — THE DETAILS STEP SURVIVES A RELOAD AND A BROWSER-BACK.
+     Owner: *"i was using the word refresh to indicate a reload, i fail to see the
+     distinction between them nor a difference."* He is right, and both destroy
+     React state identically — so the answer is one store that outlives the page.
+
+     ⚠️ `ready: !loading` IS LOad-ORDER-CRITICAL. The initial fetch fills `form`
+     from the profile; restoring before it lands would put the draft back and then
+     have the fetch overwrite it. Held until the load settles, so what the person
+     typed wins over what the record held — which is the right way round, because
+     what they typed is the newer answer. */
+  const draft = useFormDraft(
+    'onboarding.details',
+    { ...form, firstName, lastName, hasMinor, minorFirst, minorLast, minorDob },
+    (d) => {
+      setForm((f) => ({ ...f, ...(d as Partial<typeof f>) }));
+      if (typeof d.firstName === 'string') setFirstName(d.firstName);
+      if (typeof d.lastName === 'string') setLastName(d.lastName);
+      if (typeof d.hasMinor === 'boolean') setHasMinor(d.hasMinor);
+      if (typeof d.minorFirst === 'string') setMinorFirst(d.minorFirst);
+      if (typeof d.minorLast === 'string') setMinorLast(d.minorLast);
+      if (typeof d.minorDob === 'string') setMinorDob(d.minorDob);
+    },
+    { ready: !loading },
+  );
+
+  function clearDetailsForm() {
+    setForm(EMPTY_FORM);
+    setFirstName(''); setLastName('');
+    setHasMinor(false); setMinorFirst(''); setMinorLast(''); setMinorDob('');
+    setSaveError(null);
+    draft.clear();
+  }
+
   const documents = state?.documents ?? [];
   const currentDoc = documents.find((d) => d.status !== 'EXECUTED') ?? null;
   const currentIndex = currentDoc ? documents.indexOf(currentDoc) : -1;
@@ -686,6 +723,7 @@ export default function Onboarding() {
       setState(next);
       setProfile(freshProfile); // refreshes expectedName so type-to-sign works
       setHadMinor(Boolean(next.minor));
+      draft.clear();
       setStep(next.horse_needed ? 'horse' : 'sign');
     } catch (err) {
       setSaveError(toErrorMessage(err, 'Could not save your details.'));
@@ -769,24 +807,35 @@ export default function Onboarding() {
     await commitHorses(false);
   }
 
-  /* The printed name on the contracts. record_signature NOW enforces this
-     server-side (FIX1 §C, 20260831T0900) — until 2026-08-31 it did not, and the
-     comment that used to sit here said it did. AR7 F3: three comments asserted a
-     server guarantee that did not exist, which is how four more signing surfaces
-     got written with no check at all.
+  /* ⚠️ THE BROWSER GATE IS EXACT — CASE AND ALL. TASK-FIX4 §5 REVERSES WHAT
+     TASK-FIX1 §4.4 DID HERE, ON THE OWNER'S RULING (CR-83, 2026-08-31):
+     *"Signing must require exact match so they catch any typo or capitalization
+     error before signing the documents."*
 
-     The button is gated by the SAME rule the server now applies —
-     case-insensitive, whitespace-collapsed — and not the stricter one that used
-     to live here. An exact, case-sensitive comparison was the strictest rule in
-     the codebase and it refused four legitimate, already-executed production
-     signatures ("Brian olenik", three "Elisheva fiszer"). On this surface it
-     refused them by DISABLING the button, with nothing on screen to say why —
-     a dead end with no error to read. The server's refusal at least names the
-     string it wanted. Matching the two means the button is live exactly when
-     the signature will seal. */
-  const normalizeName = (v: string) => v.trim().replace(/\s+/g, ' ').toLowerCase();
+     FIX1 relaxed this to the server's case-insensitive rule, reasoning that a
+     dead disabled button with nothing on screen was worse than a refusal that
+     names the string it wanted. ⚠️ That reasoning was about the ERROR STATE, and
+     it is answered below by saying what we expect rather than by widening the
+     rule — the mismatch hint under the box is what FIX1 was actually missing.
+
+     ⚠️ TWO GATES, TWO JOBS, AND THEY MUST NOT BE MADE THE SAME RULE.
+       · **BROWSER (here): EXACT.** It is the last moment a wrong name is visible
+         to the person it belongs to. Catching `elisheva fiszer` here is the
+         entire point of the gate.
+       · **SERVER (`record_signature`): CASE-INSENSITIVE, and it stays that way.**
+         It exists to stop a MISMATCHED signature, and it must keep accepting the
+         four legitimate executed variants already in production
+         (`"Brian olenik"`, three × `"Elisheva fiszer"`).
+
+     ⚠️ AND THE EXACT GATE IS ONLY SAFE WITH THE BACK CONTROL (§7). A normalised
+     name the person cannot revise before signing is worse than no normalisation
+     at all — which is why CR-83 attached the back button to this rule itself. */
+  const collapseSpace = (v: string) => v.trim().replace(/\s+/g, ' ');
   const expectedName = `${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim();
-  const nameMatches = expectedName !== '' && normalizeName(typedName) === normalizeName(expectedName);
+  const nameMatches = expectedName !== '' && collapseSpace(typedName) === collapseSpace(expectedName);
+  /** Typed something, but not the name on the record — say so, rather than
+   *  disabling the button and leaving them to guess (the FIX1 complaint). */
+  const nameMismatch = typedName.trim() !== '' && !nameMatches;
 
   async function signCurrent(e: React.FormEvent) {
     e.preventDefault();
@@ -910,8 +959,44 @@ export default function Onboarding() {
     </section>
   ) : null;
 
+  /* ⚠️ TASK-FIX4 §7 — A BACK CONTROL ON EVERY STEP OF THIS FLOW, CR-53's
+     top-left. Owner (CR-83): *"we need to allow them to go back … so they can
+     revise our normalization prior to signing."*
+
+     MEASURED BEFORE THIS TASK: eight steps, TWO `Back` controls — one on the
+     *done* screen pointing at the dashboard, one inside the horse sub-flow — and
+     ⚠️ **from `sign` there was NO route back to the field holding the name.**
+     That is what made §4's normalisation unsafe and §5's exact gate a dead end.
+
+     The order is the SAME list `Steps` renders, so a step that is skipped for
+     this person is skipped going backwards too — a rider with no horse never
+     lands on the horse step by pressing Back. */
+  const visibleSteps: Step[] = [
+    ...(state?.purchase?.purchase_id ? ['order' as Step] : []),
+    'details',
+    ...((step === 'horse' || (state?.horse_needed ?? false)) ? ['horse' as Step] : []),
+    ...(shopOfferings.length > 0 || step === 'shop' ? ['shop' as Step] : []),
+    'sign',
+    'payment',
+    ...((step === 'slots' || standing.length > 0) ? ['slots' as Step] : []),
+    'done',
+  ];
+  const backTarget = (() => {
+    const i = visibleSteps.indexOf(step);
+    return i > 0 ? visibleSteps[i - 1] : null;
+  })();
+
   return (
     <div className="max-w-3xl">
+      {/* ⚠️ TOP-LEFT, above everything, on every step. On the first step it leaves
+          the flow rather than disappearing — a control that is sometimes absent
+          is a control people stop looking for. Nothing is lost either way: the
+          details form is persisted (§6). */}
+      <div className="mb-3">
+        {backTarget
+          ? <BackControl label="Back" onClick={() => setStep(backTarget)} />
+          : <BackControl to="/app/dashboard" label="Back to your dashboard" />}
+      </div>
       <p className="eyebrow mb-2">Welcome aboard</p>
       <h1 className="heading-section text-green-800 mb-6">Let's get you set up.</h1>
       {contractBanner}
@@ -933,9 +1018,16 @@ export default function Onboarding() {
       {/* ── Step 1: Your details ─────────────────────────────────────────── */}
       {step === 'details' && (
         <form onSubmit={saveDetails} className="bg-white border border-green-800/10 p-8">
-          <h2 className="font-serif text-lg text-green-900 mb-1">Your details</h2>
+          <div className="flex items-start justify-between gap-3 mb-1">
+            <h2 className="font-serif text-lg text-green-900">Your details</h2>
+            {/* ⚠️ TASK-FIX4 §3 — *"we need to show auto-save so the user knows the
+                inputs are saved."* Nothing here is submitted until Continue; this
+                says the typing is SAFE, which is a different promise. */}
+            <AutoSaveIndicator status={draft.status} savedLabel="Saved on this device" />
+          </div>
           <p className="text-sm text-muted mb-6">
             These fill in your lesson paperwork — you'll review and sign it next.
+            {draft.restored && ' We put back what you had already typed.'}
           </p>
 
           {needsName && (
@@ -945,13 +1037,17 @@ export default function Onboarding() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 <div>
                   <label className="form-label" htmlFor="ob-first">First name</label>
+                  {/* ⚠️ TASK-FIX4 §4 — normalised ON BLUR, in front of them, and
+                      revisable: this is the name the signature will attest to. */}
                   <input id="ob-first" required className="form-input" value={firstName}
-                    autoComplete="given-name" onChange={(e) => setFirstName(e.target.value)} />
+                    autoComplete="given-name" onChange={(e) => setFirstName(e.target.value)}
+                    onBlur={normalize('ob-first', 'name', firstName, setFirstName)} />
                 </div>
                 <div>
                   <label className="form-label" htmlFor="ob-last">Last name</label>
                   <input id="ob-last" required className="form-input" value={lastName}
-                    autoComplete="family-name" onChange={(e) => setLastName(e.target.value)} />
+                    autoComplete="family-name" onChange={(e) => setLastName(e.target.value)}
+                    onBlur={normalize('ob-last', 'name', lastName, setLastName)} />
                 </div>
               </div>
             </>
@@ -974,12 +1070,14 @@ export default function Onboarding() {
               <div>
                 <label className="form-label" htmlFor="ob-minor-first">Minor first name</label>
                 <input id="ob-minor-first" required className="form-input" value={minorFirst}
-                  onChange={(e) => setMinorFirst(e.target.value)} autoComplete="off" />
+                  onChange={(e) => setMinorFirst(e.target.value)} autoComplete="off"
+                  onBlur={normalize('ob-minor-first', 'name', minorFirst, setMinorFirst)} />
               </div>
               <div>
                 <label className="form-label" htmlFor="ob-minor-last">Minor last name</label>
                 <input id="ob-minor-last" required className="form-input" value={minorLast}
-                  onChange={(e) => setMinorLast(e.target.value)} autoComplete="off" />
+                  onChange={(e) => setMinorLast(e.target.value)} autoComplete="off"
+                  onBlur={normalize('ob-minor-last', 'name', minorLast, setMinorLast)} />
               </div>
               <div>
                 <label className="form-label" htmlFor="ob-minor-dob">Minor date of birth</label>
@@ -999,6 +1097,7 @@ export default function Onboarding() {
               <label className="form-label" htmlFor="ob-phone">Mobile number</label>
               <input id="ob-phone" type="tel" inputMode="tel" required className="form-input"
                 value={form.phone} onChange={upd('phone')}
+                onBlur={normalize('ob-phone', 'phone', form.phone, (v) => setForm((f) => ({ ...f, phone: v })))}
                 placeholder={form.phone ? undefined : '(555) 555-5555'} />
               {!form.phone && (
                 <p className="text-xs text-muted mt-1">
@@ -1102,12 +1201,21 @@ export default function Onboarding() {
           </div>
 
           {saveError && <p role="alert" className="form-error mb-4">{saveError}</p>}
-          <button type="submit"
-            disabled={saving || (needsName && (!firstName.trim() || !lastName.trim()))}
-            className="btn-primary">
-            {saving ? 'Saving…' : 'Save & continue to documents'}
-            {!saving && <ArrowRight size={16} />}
-          </button>
+          <div className="flex flex-wrap items-center gap-4">
+            {/* ⚠️ CONTINUE IS THE AFFIRMATIVE ACTION — the only thing here that
+                commits. Clear form discards the draft deliberately; the two are
+                not the same act and are deliberately not the same control. */}
+            <button type="submit"
+              disabled={saving || (needsName && (!firstName.trim() || !lastName.trim()))}
+              className="btn-primary">
+              {saving ? 'Saving…' : 'Save & continue to documents'}
+              {!saving && <ArrowRight size={16} />}
+            </button>
+            <button type="button" onClick={clearDetailsForm}
+              className="text-[12.5px] text-green-800/70 hover:text-green-900 underline underline-offset-2 focus-ring rounded">
+              Clear form
+            </button>
+          </div>
         </form>
       )}
 
@@ -1419,7 +1527,10 @@ export default function Onboarding() {
                     : 'Review and sign'}
                 </span>
               </div>
-              {/* Type-to-sign: must match the printed name EXACTLY (server-enforced). */}
+              {/* ⚠️ TASK-FIX4 §5 — EXACT, CASE AND ALL, and it is a feature: this is
+                  the last moment a wrong name is visible to the person it belongs
+                  to. The typed box is deliberately NOT normalised on blur — we do
+                  not get to help them past their own signature. */}
               <form onSubmit={signCurrent} className="flex flex-wrap items-end gap-3">
                 <div>
                   <label htmlFor="ob-typed-name" className="block text-xs text-muted mb-1">
@@ -1430,15 +1541,27 @@ export default function Onboarding() {
                     className="border border-green-800/20 px-3 py-2 text-sm w-64 max-w-full focus-ring"
                     value={typedName}
                     autoComplete="off"
+                    aria-describedby={nameMismatch ? 'ob-typed-name-hint' : undefined}
                     onChange={(e) => setTypedName(e.target.value)}
                   />
                 </div>
-                {/* Armed = filled (see .btn-sign). The gate is unchanged: the typed
-                    name must match and e-sign consent must be given. */}
                 <button type="submit" className="btn-sign" disabled={!nameMatches || !esignConsent || signing}>
                   {signing ? 'Signing…' : 'Sign'}
                 </button>
               </form>
+              {/* ⚠️ WHAT FIX1 WAS ACTUALLY MISSING. Its complaint was a disabled
+                  button with nothing on screen to say why — answered by SAYING it,
+                  not by widening the rule. And the way out is named: the name is
+                  editable one step back. */}
+              {nameMismatch && (
+                <p id="ob-typed-name-hint" className="text-xs text-gold-900 mt-2">
+                  That doesn’t match <span className="font-medium">{expectedName}</span> exactly —
+                  capitals count. If the printed name is wrong,{' '}
+                  <button type="button" className="underline underline-offset-2 focus-ring rounded"
+                    onClick={() => setStep('details')}>go back and correct it</button>{' '}
+                  before you sign.
+                </p>
+              )}
               {signError && (
                 <p role="alert" className="text-xs text-red-700 mt-2">Could not sign: {signError}</p>
               )}
