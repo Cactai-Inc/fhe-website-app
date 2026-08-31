@@ -3480,6 +3480,38 @@ they answer different questions.**
 
 ---
 
+### ✅ CR-86 — ANSWERED AND CORRECTED 2026-08-31 BY ORCH6, FROM PRODUCTION. SPECCED AS `TASK-BOOKS1`.
+
+**ASK-OWNER 1 is CLOSED, and it was the urgent one.** *"Have comps been marked 'paid' to date?"* —
+⚠️ **NO. There are ZERO comps in the database.** Four paid orders exist *(`PUR-000316 $120` ·
+`PUR-000319 $880` · `PUR-000320 $880` · `PUR-000333 $55`)* and **every one has `amount_paid = amount`**.
+**Today's revenue figures are trustworthy.** ⚠️ **Do not re-ask this and do not re-derive it.**
+
+⚠️ **CORRECTION TO THE STATED DEADLINE MECHANISM — read this before quoting the deadline again.**
+`ORCH6-BRIEF.md` §3 says a comp recorded as the owner intends *(paid, `amount_paid = 0`)* already
+books as full-price revenue through `revenue_summary`'s `coalesce(nullif(p.amount_paid, 0), p.amount, 0)`.
+**Verified in the function bodies today: it does NOT — yet.** `grant_lesson_credit` writes a comp as
+**`amount = 0, amount_paid = 0`**, so `nullif` has a zero `amount` to fall through to and the sum is
+**0**. ⚠️ **The trap ARMS ITSELF the moment the line starts carrying the LIST price**, which is
+exactly what the comp designation was asked for. **The deadline is real; the reason is that the fix
+and the designation must ship in ONE branch, not that the books are wrong today.**
+
+**Also measured:** `purchase_items` = **14 rows**, ⚠️ **0 carrying `config->>'grant_mode'` and 0
+carrying `config->>'list_price'`** — so the incumbent comp model *(`grant_lesson_credit` +
+`comped_credit_value`, which value the loss from `config.list_price`)* **has never been used, and
+promoting those facts to real columns migrates no data.**
+
+**🔒 Ruled by ORCH6 in the spec, with reasoning, so the build thread does not re-open them:** the two
+money facts become **columns on `purchase_items`** *(`list_price_amount`, `price_disposition` CHECK
+`full|discount|comp`, `price_reason`)*, not jsonb keys, **because a P&L is the "something else that
+reads them" the original jsonb choice said did not exist** · **one copy only** — `config` stops
+holding money · **the record is always two amounts plus a reason**, so *"percentage or fixed"* is an
+ENTRY question, not a storage one · **the client sees a discount, as CR-39 already rules for a comp.**
+
+⚠️ **AND THE COST HALF IS NOT IN `TASK-BOOKS1`.** Gap 3 is the owner's simplified **monthly cost sheet
+on the horse record** and gets its own task; the five built-and-empty cost tables **stay undriven
+(D32)**.
+
 ## CR-88 · G5/G9 · captured — marketing planning, the campaign builder, and financial analysis
 
 **SAID (owner, 2026-08-31):**
