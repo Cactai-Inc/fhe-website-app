@@ -95,6 +95,50 @@ repeated defect.** **Migrate the two live rows so neither owner loses their boar
 five pages. **A dashboard view also called Admin makes "go to Admin" ambiguous** — the same defect as
 the two nav rows both labelled "Records". **Flag it and let the owner name it.**
 
+### ⚠️ SEVEN VIEWS IN TWO FAMILIES — the owner's full set, 2026-08-31
+
+> *"sales is a strict focus on the numbers that relate to revenue and could encompasse some of the
+> conversion and traffic kpis, marketing would be the only unmentioned role scoped dashboard and the
+> thing that would be nice for me is to be able to cycle through strict views of sales, marketing,
+> ops, admin. this enables me to run campaigns and see a focused view of the results and things in the
+> planning stages. Sales would be similar with focus on revenue, and ops would be similar with focus
+> on overall company activities; horses, supplies, staff, things related to the ongoing daily tasks.
+> Admin is higher level, things like ordering the company signage, updates to the app, investigating
+> issues anyone is having with the app, monitoring website issues, etc..."*
+
+⚠️ **THIS ADDS A SEVENTH VIEW (MARKETING) AND, MORE IMPORTANTLY, SPLITS THE SET INTO TWO FAMILIES
+THAT ORGANISE DIFFERENTLY. Do not model them as one flat list.**
+
+| Family | Views | Scoped by | Held by |
+|---|---|---|---|
+| **BUSINESS LENSES** | **Sales · Marketing · Ops · Admin** | ⚠️ **SUBJECT** | ⚠️ **one person holds ALL FOUR and CYCLES between them** |
+| **JOB ROLES** | **Trainer · Instructor · Care-taker** | **what the job touches** — horses / people | **normally ONE per person** |
+
+**The four business lenses, in his words:**
+| Lens | Focus |
+|---|---|
+| **Sales** | ⚠️ **strictly revenue numbers**, and *"could encompass some of the conversion and traffic KPIs"* |
+| **Marketing** | **campaigns** — running them, their results, **and what is still in planning** |
+| **Ops** | *"overall company activities; horses, supplies, staff, things related to the ongoing daily tasks"* |
+| **Admin** | ⚠️ **higher level** — company signage, app updates, **investigating issues anyone is having with the app**, website monitoring |
+
+⚠️ **THIS SUPERSEDES THE EARLIER "Ops is Claire's view, Admin is mine" NOTE.** **Ops is a business
+lens the owner cycles through, not a person's board.** ⚠️ **And Claire's board is a JOB ROLE
+(Trainer), not Ops.**
+
+⚠️ **CONSEQUENCE FOR §4 AND §5:** *"investigating issues anyone is having with the app"* is **Admin's
+job by his own definition** — so the **error-report inbox belongs on Admin**, and the projects/tasks
+list belongs there too. **They are not "Ops-only" as §4 currently says. Correct §4 accordingly.**
+
+⚠️ **CONSEQUENCE FOR THE TOGGLE:** *"cycle through"* is not a two-way switch. **One account holding
+four lenses needs a cycler, not a binary toggle** — which is exactly why the model is a SET of held
+views (§2b) and not a single stored value.
+
+⚠️ **AND THE OVERLAP IS REAL AND MUST NOT BECOME DUPLICATION:** Sales carries conversion and traffic
+KPIs; **Marketing is also about conversion.** ⚠️ **Define each KPI ONCE and register it into both
+lenses** — the registry already does this. ⚠️ **Sales is REVENUE-first and Marketing is CAMPAIGN-first;
+if a zone cannot be assigned to one of those two intents, ask rather than putting it in both.**
+
 ### ⚠️ THE ROLES, DEFINED BY THE OWNER — and this CORRECTS an earlier note in this file
 > *"trainer is for training horses and instructing people, instructor only gives lessons to people.
 > care taker is someone who handles horses and helps with horse care services and may help a trainer
