@@ -3397,3 +3397,36 @@ side just got smaller.**
    money. A month-end sheet is money, which points at either.)*
 2. ⚠️ **Does a horse that leaves mid-month still get a sheet?** **Prior open question, now simpler:
    no sheet entered = no cost, so the P&L cannot drift on its own.** **Confirm that is the intent.**
+
+### ✅ CR-86 — THREE QUESTIONS CLOSED (owner, 2026-08-31)
+> *"i dont have claires ops zone list until i see the full sales and marketing dashboards, i already
+> answered comps list price is the the loss amount, and since we are not going to setup recurring
+> monthly cost formulas for horse costs we stop the cost accumulation when we stop inputting the data
+> into the record."*
+
+**1 · THE COMP LOSS IS THE LIST PRICE.** ⚠️ **Asked twice; he had already answered and the
+orchestrator asked again. It is the LIST price, not the order-line price.**
+⚠️ **CONSEQUENCE FOR THE BUILD: the list price must be CAPTURED ON THE LINE AT THE TIME OF SALE.**
+`purchase_items` holds `price_amount` — **the price charged** — and **no list price.** A comp at $0
+leaves `price_amount = 0`, so **the loss would be unrecoverable after the fact** *(offering prices
+change; reading today's catalogue to value a comp from six months ago is wrong)*. **Store the list
+price on the line when the comp is applied.**
+
+**2 · A STANDING COST STOPS BY ITSELF — because nothing accrues.** *"since we are not going to setup
+recurring monthly cost formulas … we stop the cost accumulation when we stop inputting the data."*
+⚠️ **This closes the "does a horse that leaves keep accruing boarding?" question, and the answer is
+structural rather than a rule: THERE IS NO ACCRUAL.** **A month with no sheet entered has no cost.**
+⚠️ **The P&L cannot drift on its own — which is a real advantage of the typed-sheet model over the
+automation, and worth stating so nobody reintroduces a scheduler to "help".**
+⚠️ **The corollary is the risk, and it is the OPPOSITE one: a month nobody enters is silently £0, not
+"missing".** **§"a blank line is not zero" applies at the SHEET level too — the surface must show which
+horses have no sheet for a closed month.** **Under-reporting is now the failure mode; design for it.**
+
+**3 · CLAIRE'S OPS ZONE LIST CANNOT ARRIVE EARLY.** *"i dont have claires ops zone list until i see the
+full sales and marketing dashboards."*
+⚠️ **CONFIRMS `TASK-FIX6`'s BUILD ORDER AND ITS PAUSE ARE CORRECT AND NON-NEGOTIABLE.** The pause is
+not a formality and **cannot be skipped by asking him earlier — he does not have the answer yet, and
+will not until Sales and Marketing are in front of him.**
+⚠️ **FIX6 STEPS 1, 2 AND 4 (framework · Sales + Marketing · Admin) ARE A COMPLETE SHIPPABLE
+DELIVERABLE. Ops (step 5) and the role boards are a SEPARATE, LATER TASK.** **Do not hold the merge
+waiting for the list.**
