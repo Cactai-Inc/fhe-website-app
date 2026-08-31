@@ -99,6 +99,28 @@ money, so either of them may enter it — CONFIRM WITH HIM (§5).** **Inputs liv
 — the horse record — NEVER on a books screen.** **The books are his; the KPI is a dashboard zone at
 two depths.**
 
+### CR-88 · marketing planning · the campaign builder · financial analysis ⚠️ **ALL GREENFIELD**
+**Verified 2026-08-31: no `campaign*`, `market*`, `promo*` or `audience*` table exists.**
+*(`segment_categories` matches on name only — catalog segment → onboarding token. **Unrelated.**)*
+⚠️ **NOT `FIX6`'s work: FIX6 builds the Marketing BOARD; these build what it shows.**
+- **Marketing planning** — campaigns with a state *(planned · running · finished)*, window, channel,
+  note. ⚠️ *"What is still in planning"* is the part with no store.
+- **The campaign builder** — ⚠️ **its measurement side ALREADY EXISTS.** `TASK-ORIGIN` shipped
+  `contacts.client_origin` / `contact_channel`, vocabulary in `lookup_options`, editable at
+  `/app/ops/admin/editor`. **A campaign's result is contacts arriving with its origin.** ⚠️ **Do NOT
+  build a second attribution vocabulary** (D18). **Both columns are unpopulated until his backfill, so
+  results read empty until then — say so, never present zero as a result.**
+- **Financial analysis** — ⚠️ **a page with INPUTS, not a report.** Revenue *(exists)* + CR-86's
+  per-horse sheet + ⚠️ **COMPANY-level expenses that are NOT per-horse — insurance, wages, software,
+  signage. CR-86 does NOT cover these; it is horse-attributed cost only. Its own line, not a stretched
+  horse sheet.** ⚠️ **Inherits CR-86's `revenue_summary` deadline.**
+
+⚠️ **SEQUENCE — building out of order produces empty surfaces:**
+**(1)** CR-86's cost sheet + comp/discount designation + the `revenue_summary` fix → **(2)** the
+financial page → **(3)** marketing planning + campaign builder *(whose results wait on his
+attribution backfill)*. ⚠️ **FIX6's Sales and Marketing boards are NOT blocked by any of this** —
+they surface what exists and name what does not.
+
 # 4. ⚠️ `TASK-FIX6` HAS A MANDATORY PAUSE
 
 **The dashboard model was refined across six messages. `docs/tasks/TASK-FIX6-ops-and-sales.md` §2b
@@ -137,7 +159,7 @@ twice on one.**
 
 | # | Question | Blocks |
 |---|---|---|
-| 1 | **Does a Marketing planning store exist?** ⚠️ **If not, that is a build inside a build — flag it, do not invent a campaign tracker.** | FIX6 |
+| 1 | **Does a campaign need a BUDGET / spend figure?** *(the difference between "did it work" and "was it worth it" — decides whether campaigns touch the P&L)* · **and which company-level expense categories does he want?** ⚠️ **Do not invent a chart of accounts.** | CR-88 |
 | 2 | **Madeline Do's two standing slots**, and her four existing bookings *(Wed 17:30 · Fri 08:00 · Mon 17:30, plus a 13-hour midnight row)* | ⚠️ **He said "handled later today" on 2026-08-31 — CHECK PRODUCTION BEFORE ASKING AGAIN** |
 
 ### ✅ CLOSED — carry these as ANSWERS, not questions
