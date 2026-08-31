@@ -59,7 +59,7 @@ larger, anything contended, anything with a decision in it — spec it.
   `~/Downloads/claude-code-repo/wt-<id>`.
 - **A push to `main` auto-deploys and IS a release.**
 - **THE SIGNING FREEZE IS IN FORCE** until the owner lifts it.
-- **61 EXECUTED documents are evidence and are never rewritten.** A document with a signature is
+- **71 EXECUTED signed documents are evidence and are never rewritten.** *(Measured 2026-08-31. This line read "61" from an earlier session until it was re-counted — a state claim in a rules file is a hypothesis too, D20. 72 rows total: 71 EXECUTED plus one AWAITING_SIGNATURE, across 17 real people and one company lease party.)* A document with a signature is
   never deletable from the UI — no override, no confirm-twice, no staff bypass.
 - **Delete nothing.** Retire behind a boolean; `CONTACTS_PAGE_RETIRED` is the pattern. The one
   exception is a test for a feature that was deliberately retired — and each deletion must name
