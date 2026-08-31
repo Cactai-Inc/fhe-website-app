@@ -18,42 +18,46 @@ import { AuthProvider } from '../../src/contexts/AuthContext';
 import { BrandProvider } from '../../src/contexts/BrandProvider';
 import { DocumentsContent } from '../../src/components/app/DocumentsContent';
 
-const CONTACT = '00000000-0000-4000-8000-0000000000c1';
-const UNSIGNED = '00000000-0000-4000-8000-0000000000d1';
-const EXECUTED = '00000000-0000-4000-8000-0000000000d2';
-const CONTRACT = '00000000-0000-4000-8000-0000000000d3';
-const BODY = 'Participant Liability Release\n\nPrinted Name: Test Member\n\nSignature: ______';
+/* camelCase deliberately, matching contract-page.tsx: react-refresh's
+   only-export-components rule reads an UPPERCASE module-scope const in a .tsx
+   file as a possible component and warns on every one of them. Five warnings
+   for five fixture ids is noise on top of a documented lint baseline. */
+const contactId = '00000000-0000-4000-8000-0000000000c1';
+const unsignedId = '00000000-0000-4000-8000-0000000000d1';
+const executedId = '00000000-0000-4000-8000-0000000000d2';
+const contractId = '00000000-0000-4000-8000-0000000000d3';
+const body = 'Participant Liability Release\n\nPrinted Name: Test Member\n\nSignature: ______';
 
 window.__tables = {
   profiles: [{
     user_id: '00000000-0000-4000-8000-000000000001', role: 'CLIENT',
     org_id: '00000000-0000-4000-8000-0000000000aa',
-    first_name: 'Test', last_name: 'Member', contact_id: CONTACT, is_suspended: false,
+    first_name: 'Test', last_name: 'Member', contact_id: contactId, is_suspended: false,
   }],
   document_parties: [
-    { document_id: UNSIGNED, party_role: 'CLIENT' },
-    { document_id: EXECUTED, party_role: 'CLIENT' },
-    { document_id: CONTRACT, party_role: 'LESSEE' },
+    { document_id: unsignedId, party_role: 'CLIENT' },
+    { document_id: executedId, party_role: 'CLIENT' },
+    { document_id: contractId, party_role: 'LESSEE' },
   ],
   documents: [
-    { id: UNSIGNED, title: 'Participant Liability Release', status: 'AWAITING_SIGNATURE',
-      merged_body: BODY, contract_id: null, executed_email_sent_at: null },
-    { id: EXECUTED, title: 'Company Policies', status: 'EXECUTED',
-      merged_body: BODY, contract_id: null, executed_email_sent_at: null },
-    { id: CONTRACT, title: 'Horse Lease', status: 'AWAITING_SIGNATURE',
-      merged_body: BODY, contract_id: '00000000-0000-4000-8000-0000000000e1',
+    { id: unsignedId, title: 'Participant Liability Release', status: 'AWAITING_SIGNATURE',
+      merged_body: body, contract_id: null, executed_email_sent_at: null },
+    { id: executedId, title: 'Company Policies', status: 'EXECUTED',
+      merged_body: body, contract_id: null, executed_email_sent_at: null },
+    { id: contractId, title: 'Horse Lease', status: 'AWAITING_SIGNATURE',
+      merged_body: body, contract_id: '00000000-0000-4000-8000-0000000000e1',
       executed_email_sent_at: null },
   ],
   /* The executed document carries the member's own sealed signature — that is
      what makes it executed, and what puts the PDF and email-a-copy controls on
      its row. The other two carry none: they are the ones still awaiting her. */
   signatures: [
-    { document_id: EXECUTED, party_role: 'CLIENT', signed_at: '2026-08-01T00:00:00Z' },
+    { document_id: executedId, party_role: 'CLIENT', signed_at: '2026-08-01T00:00:00Z' },
   ],
 };
 window.__rpcFixtures = {
   my_documents: [
-    { document_id: EXECUTED, template_key: 'COMPANY_POLICIES', title: 'Company Policies',
+    { document_id: executedId, template_key: 'COMPANY_POLICIES', title: 'Company Policies',
       kind: 'executed', signed_at: '2026-08-01T00:00:00Z', superseded: false,
       current_status: 'signed', executed_email_sent_at: null },
   ],
