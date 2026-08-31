@@ -166,6 +166,28 @@ failure this codebase repeats. **Ops renders the zones the other views define, f
 something to show** *(D13's recorded exception: a self-arranging surface needs no arrangement
 editor — "surfaces should be fluid and dynamic and only shown when there is something to show")*.
 
+### ⚠️ AND OPS IS THE SHALLOW LAYER — depth is what separates it from the focused views
+> *"the sales and marketing view is deeper than the ops view of those categories."*
+
+⚠️ **THIS IS WHAT MAKES "COMPOSED" WORK RATHER THAN COLLAPSE.** Ops is **not** a copy of Sales — it
+is the **top layer** of Sales, Marketing and each job role, gathered in one place. **The focused view
+is the same subject at greater depth.**
+
+| | Ops shows | The focused view adds |
+|---|---|---|
+| **Sales** | the headline revenue number, what needs attention | the breakdown, the trend, the per-client and per-offering detail |
+| **Marketing** | is a campaign running, is anything waiting | campaign results, conversion by source, what is in planning |
+| **Trainer / Instructor / Care-taker** | today's horses and people, what is outstanding | the full working detail of that role |
+
+⚠️ **SO A ZONE HAS A DEPTH, AND THE SAME ZONE APPEARS AT TWO DEPTHS — it is NOT two zones.** **Give a
+zone a summary form and a full form, and let the board choose which it renders.** ⚠️ **Two separate
+zone definitions for one subject is exactly the drift this composition model exists to prevent, and
+it would be the easy wrong turn here.**
+
+⚠️ **THE TEST THAT KEEPS IT HONEST: every number on Ops must be the SAME number its focused view
+shows, from ONE read.** **A summary that recomputes its own figure is how `calendar_revenue` and
+`revenue_summary` came to disagree by 9.7×.** **One source, two presentations.**
+
 ⚠️ **AND IT ANSWERS A QUESTION §2b LEFT OPEN:** the owner holds **Ops + Sales + Marketing + Admin**;
 Claire holds **Ops + Trainer**. **Neither is "one view", so both get the cycler** — which is only
 expressible if held views are a SET.
