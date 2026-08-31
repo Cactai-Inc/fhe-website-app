@@ -35,20 +35,40 @@ neighbourhood. **Rebase on FIX3.**
 **MAX because it carries the persisted-draft decision** — a storage seam, not a component tweak — and
 because it changes the commit trigger on a fix that shipped days ago.
 
-## ▶ 3 · FHE-ORCH-6 — the handoff
+## ▶ 3 · TASK-FIX5 — repo hygiene
+
+```
+TASK-FIX5
+
+cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
+Read docs/tasks/TASK-FIX5-repo-hygiene.md and build it.
+```
+**Sonnet · thinking ON · effort HIGH**
+
+⚠️ **MUST RUN AFTER FIX3 AND FIX4 HAVE MERGED.** Both cite task paths and both create worktrees in
+the directory being cleaned. **Moving files under a running thread is how work is lost.**
+
+**Sonnet, not Opus:** this is `git mv` plus reference repair, with the plan already written in
+`docs/reference/DOCS-LAYOUT.md`. **The judgement was spent writing the plan; the execution is
+mechanical breadth — which is exactly what Sonnet is for.** ⚠️ **The one real risk is the reference
+repair across 417 files, and that is a grep, not a decision.**
+
+## ▶ 4 · FHE-ORCH-6 — the handoff
 
 ```
 FHE-ORCH-6
 
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
-Read docs/handoff/ORCH6-BRIEF.md, then docs/handoff/00-START-HERE.md, and take over.
+Read docs/orch/ORCH6-BRIEF.md, then docs/method/00-START-HERE.md, and take over.
 ```
 **Opus · thinking ON · effort HIGH**
 
-⚠️ **Its brief was written before the seven AR reports and three fix threads existed. Section 1 is
-stale — the six research threads it describes as "waiting for you" are DONE, audited and merged.**
-**ORCH6 starts with: the twelve zone sweeps, then the enumerated status document, then the ORCH7
-handoff.** ⚠️ **Tell it so, or it will re-audit finished work.**
+⚠️ **THE PATHS ABOVE ASSUME FIX5 HAS RUN.** If ORCH6 is started before FIX5, the files are still at
+`docs/handoff/ORCH6-BRIEF.md` and `docs/handoff/00-START-HERE.md`. **Use whichever exists.**
+
+⚠️ **Its brief §0 says its own §1 is stale** — the six research threads it describes as waiting are
+done, audited and merged. **ORCH6 starts with the twelve zone sweeps, then the enumerated status
+document, then the ORCH7 handoff.**
 
 **Then, per the owner:** ORCH7 the refactor · ORCH8 his hands-on UVT findings · ORCH9 the client side.
 
