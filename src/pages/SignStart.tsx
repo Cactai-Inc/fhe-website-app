@@ -75,6 +75,8 @@
  * address was already known to us.
  */
 import { useEffect, useState, type FormEvent } from 'react';
+import { useFieldNormalizer, useFormDraft } from '../lib/formState';
+import { AutoSaveIndicator } from '../components/ops/kit/AutoSaveIndicator';
 import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, Clock, LifeBuoy } from 'lucide-react';
 import { fetchPublicCatalog } from '../lib/publicCatalog';
@@ -474,6 +476,46 @@ export default function SignStart() {
   const [submitting, setSubmitting] = useState(false);
   const [outcome, setOutcome] = useState<SendOutcome | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const normalize = useFieldNormalizer();
+
+  /* ⚠️ TASK-FIX4 §6 — AND THIS IS THE CASE THAT DECIDED THE STORAGE SEAM. There
+     is no `auth.uid()` here: a stranger filling in the front door has no session,
+     so a server-side draft table has nobody to key on. Browser storage under the
+     `anon` namespace is the only thing that can hold their work — and this is the
+     longest form in the app, on the path where abandoning it costs a lead.
+
+     ⚠️ `confirmEmail` is deliberately NOT persisted. It exists to catch a typo in
+     `email`; restoring both from one store would restore the typo AND its
+     confirmation, and the check would pass on a wrong address. */
+  const draft = useFormDraft(
+    `sign-start.${path}`,
+    { signingFor, minorFirst, minorLast, minorDob, firstName, lastName, phone, email,
+      line1, line2, city, stateV, zip },
+    (d) => {
+      if (d.signingFor === 'self' || d.signingFor === 'child') setSigningFor(d.signingFor);
+      if (typeof d.minorFirst === 'string') setMinorFirst(d.minorFirst);
+      if (typeof d.minorLast === 'string') setMinorLast(d.minorLast);
+      if (typeof d.minorDob === 'string') setMinorDob(d.minorDob);
+      if (typeof d.firstName === 'string') setFirstName(d.firstName);
+      if (typeof d.lastName === 'string') setLastName(d.lastName);
+      if (typeof d.phone === 'string') setPhone(d.phone);
+      if (typeof d.email === 'string') setEmail(d.email);
+      if (typeof d.line1 === 'string') setLine1(d.line1);
+      if (typeof d.line2 === 'string') setLine2(d.line2);
+      if (typeof d.city === 'string') setCity(d.city);
+      if (typeof d.stateV === 'string') setStateV(d.stateV);
+      if (typeof d.zip === 'string') setZip(d.zip);
+    },
+  );
+
+  function clearForm() {
+    setSigningFor(null);
+    setMinorFirst(''); setMinorLast(''); setMinorDob('');
+    setFirstName(''); setLastName(''); setPhone(''); setEmail(''); setConfirmEmail('');
+    setLine1(''); setLine2(''); setCity(''); setStateV(''); setZip('');
+    setError(null);
+    draft.clear();
+  }
 
   const emailValid = EMAIL_RE.test(email.trim());
   const emailsMatch = emailValid && email.trim().toLowerCase() === confirmEmail.trim().toLowerCase();
@@ -581,6 +623,9 @@ export default function SignStart() {
         }),
       });
       if (!res.ok) throw new Error('request failed');
+      // The door is through — the draft has done its job. ⚠️ Only on success:
+      // a failed POST must leave everything they typed exactly where it is.
+      draft.clear();
       const body = (await res.json()) as {
         status?: SendStatus; attemptId?: string | null; nameApplied?: boolean;
       };
@@ -720,12 +765,16 @@ export default function SignStart() {
                   <label className="form-label" htmlFor="sign-first">
                     {isForChild ? 'Your first name *' : 'First name *'}
                   </label>
+                  {/* ⚠️ TASK-FIX4 §4 — normalised ON BLUR. This is the front door:
+                      a stranger typing their own name, and the value that becomes
+                      the contact record and then the contract's party tokens. */}
                   <input
                     id="sign-first"
                     className="form-input"
                     required
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
+                    onBlur={normalize('sign-first', 'name', firstName, setFirstName)}
                     autoComplete="given-name"
                   />
                 </div>
@@ -739,6 +788,7 @@ export default function SignStart() {
                     required
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
+                    onBlur={normalize('sign-last', 'name', lastName, setLastName)}
                     autoComplete="family-name"
                   />
                 </div>
@@ -754,6 +804,7 @@ export default function SignStart() {
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  onBlur={normalize('sign-phone', 'phone', phone, setPhone)}
                   autoComplete="tel"
                 />
               </div>
@@ -766,6 +817,7 @@ export default function SignStart() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onBlur={normalize('sign-email', 'email', email, setEmail)}
                   autoComplete="email"
                 />
               </div>
@@ -970,6 +1022,16 @@ export default function SignStart() {
               >
                 {submitting ? 'Sending…' : 'Continue'}
               </button>
+              {/* ⚠️ TASK-FIX4 §3 — the indicator and Clear form. `Continue` is the
+                  affirmative action and the only thing that submits; the draft
+                  beside it is a promise that leaving does not cost them the form. */}
+              <div className="flex items-center justify-between gap-3 mt-3">
+                <button type="button" onClick={clearForm}
+                  className="text-[12.5px] text-green-800/70 hover:text-green-900 underline underline-offset-2 focus-ring rounded">
+                  Clear form
+                </button>
+                <AutoSaveIndicator status={draft.status} savedLabel="Saved on this device" />
+              </div>
             </form>
           )}
         </div>

@@ -6,6 +6,7 @@
  * the original file.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { Modal } from './ops/kit/Modal';
 import Cropper from 'react-easy-crop';
 import type { Area } from 'react-easy-crop';
 
@@ -86,15 +87,20 @@ export default function AvatarCropModal({ file, onConfirm, onCancel }: AvatarCro
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-green-950/60 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Crop your profile photo"
-    >
-      <div className="bg-white w-full max-w-md p-6">
-        <h2 className="font-serif text-green-800 text-lg mb-3">Crop your photo</h2>
-
+    /* ⚠️ TASK-FIX4 §3 — converged. It already refused a backdrop close; what it
+       lacked was a Close control in the header, which every modal now has. */
+    <Modal open onClose={onCancel} title="Crop your photo" size="sm" error={error}
+      footer={
+        <>
+          <button type="button" onClick={onCancel} disabled={working} className="btn-outline-gold justify-center">
+            Cancel
+          </button>
+          <button type="button" onClick={confirm} disabled={working || !croppedAreaPixels}
+            className="btn-primary justify-center">
+            {working ? 'Preparing…' : 'Use photo'}
+          </button>
+        </>
+      }>
         <div className="relative w-full h-72 bg-green-950/5" data-testid="avatar-crop-area">
           {imageSrc && (
             <Cropper
@@ -123,22 +129,6 @@ export default function AvatarCropModal({ file, onConfirm, onCancel }: AvatarCro
           className="w-full"
         />
 
-        {error && <p role="alert" className="form-error mt-2">{error}</p>}
-
-        <div className="flex gap-3 mt-5">
-          <button
-            type="button"
-            onClick={confirm}
-            disabled={working || !croppedAreaPixels}
-            className="btn-primary flex-1 justify-center"
-          >
-            {working ? 'Preparing…' : 'Use photo'}
-          </button>
-          <button type="button" onClick={onCancel} disabled={working} className="btn-outline-gold flex-1 justify-center">
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

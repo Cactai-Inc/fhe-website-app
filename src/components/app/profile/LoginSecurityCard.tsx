@@ -9,11 +9,18 @@ import {
 import { startGoogleChange, startPasswordChange } from '../../../lib/emailChange';
 import { EmailChangeModal } from '../EmailChangeModal';
 import { SectionCard } from './SectionCard';
+import { Modal } from '../../ops/kit/Modal';
 import { TwoFactorSettings } from '../../auth/TwoFactorSettings';
 
 /** Standalone change-password (auth-level update on the live session — distinct
  *  from the email-change flow's own password seam). Modal, explicit close (X),
- *  matching the interaction law: no inner pages. */
+ *  matching the interaction law: no inner pages.
+ *
+ *  ⚠️ TASK-FIX4 — converged, and this is the ONE dialog with no draft and no
+ *  Clear form. A password must never be written to browser storage, so there is
+ *  nothing to persist and nothing to clear; the backdrop guard still applies,
+ *  because losing a half-typed password to a stray click is the same annoyance
+ *  as losing anything else. */
 function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
@@ -34,9 +41,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[80] bg-green-950/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="font-serif text-xl text-green-900 mb-1">Change password</h2>
+    <Modal open onClose={onClose} title="Change password" size="sm">
         {done ? (
           <div>
             <p className="body-text text-sm text-green-800 mt-2">Your password is updated.</p>
@@ -55,13 +60,11 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
             <p className="text-[11px] text-muted -mt-1">Password reset always sends a magic link to your login email.</p>
             {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
             <div className="mt-1 flex justify-end gap-2">
-              <button type="button" className="btn-outline-gold" onClick={onClose}>Cancel</button>
               <button type="submit" className="btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save password'}</button>
             </div>
           </form>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }
 

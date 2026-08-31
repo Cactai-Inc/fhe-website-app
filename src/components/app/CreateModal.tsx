@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Modal } from '../ops/kit/Modal';
+import { BackControl } from './BackControl';
 import { useNavigate } from 'react-router-dom';
 import {
-  X, PenSquare, Tag, CalendarDays, MessageSquare, GraduationCap,
-  ShoppingBag, Send, ChevronLeft, ImagePlus, Loader2,
-  FileText, UserPlus, Megaphone, Handshake,
+  PenSquare, Tag, CalendarDays, MessageSquare, GraduationCap, ShoppingBag, Send, ImagePlus, Loader2, FileText, UserPlus, Megaphone, Handshake,
 } from 'lucide-react';
 import { feedPostCreate, uploadFeedMedia, type FeedPostType, type FeedVisibility } from '../../lib/feed';
 import { needsTranscode, transcodeToMp4 } from '../../lib/transcode';
@@ -390,32 +390,18 @@ export function CreateModal({ onClose, initialStep = 'destination' }: { onClose:
   function go(path: string) { onClose(); navigate(path); }
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <div
-        className={`bg-cream w-full sm:rounded-2xl flex flex-col max-h-[92dvh] overflow-hidden ${
-          step === 'form' ? 'sm:max-w-2xl' : 'sm:max-w-md'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Owner, 2026-08-09: the title is CENTRED. Three tracks of fixed, equal
-            width — back / title / close — rather than a `justify-between` row,
-            so the heading sits on the dialog's true centre line whether or not
-            the back button is present (on `destination` it is not) and does not
-            shift between steps. Equal side tracks are what make it centre; a
-            flex-1 middle with unequal neighbours would not. */}
-        <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center p-4 border-b border-green-800/10 bg-cream shrink-0">
-          <div className="justify-self-start">
-            {step !== 'destination' && (
-              <button type="button" onClick={() => setStep(step === 'form' ? 'post_type' : 'destination')} aria-label="Back" className="text-secondary hover:text-green-800">
-                <ChevronLeft size={20} />
-              </button>
-            )}
+    /* ⚠️ TASK-FIX4 §3/§7 — converged, and the step back is now `BackControl`,
+       top-left, rather than a bare chevron. Once `step === 'form'` this dialog
+       holds a post being written, and the backdrop no longer discards it. */
+    <Modal open onClose={onClose} variant="sheet" size={step === 'form' ? 'lg' : 'sm'}
+      panelClassName="bg-cream" title={title}>
+        {step !== 'destination' && (
+          <div className="mb-3">
+            <BackControl label="Back"
+              onClick={() => setStep(step === 'form' ? 'post_type' : 'destination')} />
           </div>
-          <h2 className="font-serif text-green-800 text-lg text-center">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="justify-self-end text-secondary hover:text-green-800"><X size={20} /></button>
-        </div>
-
-        <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain pb-8">
+        )}
+        <div className="pb-2">
           {step === 'destination' && (
             <div className="flex flex-col gap-2.5">
               <p className="text-[10px] tracking-widest uppercase text-muted font-semibold">Post to community</p>
@@ -453,7 +439,6 @@ export function CreateModal({ onClose, initialStep = 'destination' }: { onClose:
           {step === 'form' && <PostForm type={postType} onClose={onClose} />}
           {step === 'announce' && <AnnounceForm onClose={onClose} />}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Send, X } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { pendingNotifySummary, type PendingNotifySummary } from '../../lib/contracts';
 import { toErrorMessage } from '../../lib/ops/errors';
+import { Modal } from '../ops/kit/Modal';
 
 /**
  * NOTIFY — the confirmation modal (owner-final copy).
@@ -92,22 +93,21 @@ export function NotifyConfirmModal({
   const copy = summary ? notifyCopy(summary) : null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onCancel}>
-      <div className="bg-white rounded-xl border border-green-800/15 shadow-lg max-w-lg w-full p-6"
-        role="dialog" aria-modal="true" aria-label="Notify the other party"
-        onClick={(e) => e.stopPropagation()}>
-
-        <button type="button" aria-label="Close" onClick={onCancel}
-          className="float-right -mt-2 -mr-2 p-2 text-muted hover:text-green-900 focus-ring rounded">
-          <X size={18} />
-        </button>
-
-        <h3 className="font-serif text-green-900 text-lg mb-3 flex items-center gap-2">
-          <Send size={17} className="text-gold-ink" aria-hidden="true" /> Notify
-        </h3>
-
-        {err && <p role="alert" className="form-error mb-3 text-xs">{err}</p>}
-
+    /* ⚠️ TASK-FIX4 §3 — converged. A confirmation with nothing typed into it, so
+       the backdrop still closes it and `Notify` stays the only affirmative act. */
+    <Modal open onClose={onCancel} size="md" error={err}
+      title={<span className="inline-flex items-center gap-2"><Send size={17} className="text-gold-ink" aria-hidden="true" /> Notify</span>}
+      footer={
+        <>
+          <button type="button" className="btn-secondary text-sm" onClick={onCancel} disabled={busy}>
+            Not yet
+          </button>
+          <button type="button" className="btn-primary text-sm" disabled={busy || !summary?.anything}
+            onClick={() => void onConfirm()}>
+            <Send size={14} /> {busy ? 'Notifying…' : 'Notify'}
+          </button>
+        </>
+      }>
         {!summary && !err && <p className="text-sm text-muted">Checking what has changed…</p>}
 
         {summary && !summary.anything && (
@@ -124,18 +124,7 @@ export function NotifyConfirmModal({
             )}
           </>
         )}
-
-        <div className="flex flex-col sm:flex-row gap-2 sm:justify-end mt-2">
-          <button type="button" className="btn-secondary text-sm" onClick={onCancel} disabled={busy}>
-            Not yet
-          </button>
-          <button type="button" className="btn-primary text-sm" disabled={busy || !summary?.anything}
-            onClick={() => void onConfirm()}>
-            <Send size={14} /> {busy ? 'Notifying…' : 'Notify'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

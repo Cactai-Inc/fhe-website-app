@@ -34,6 +34,7 @@ import { contractPartyOptions, type PartyOption } from '../../lib/horses';
 import { ContractSubheader, SUBHEADER_BTN, type DrawerSpec } from '../../components/app/ContractSubheader';
 import { ContractNotes } from '../../components/app/ContractNotes';
 import { subscribeToContract, useContractPresence } from '../../lib/contractRealtime';
+import { Modal } from '../../components/ops/kit/Modal';
 import { ConfirmNameModal } from '../../components/app/ConfirmNameModal';
 import { CaptureInfoModal } from '../../components/app/CaptureInfoModal';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
@@ -2432,13 +2433,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           The old free-text "notify someone else" field is gone (owner): a review
           request implies a standing in the agreement that a non-party does not
           have. Someone who merely needs to READ it gets the PDF option. */}
+      {/* ⚠️ TASK-FIX4 §3 — converged. A chooser with nothing typed into it, so it
+          keeps closing on click-out. */}
       {sendOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-green-950/40 px-4"
-          role="dialog" aria-modal="true" aria-labelledby="send-heading"
-          onClick={() => setSendOpen(false)}>
-          <div className="bg-white rounded-2xl border border-green-800/10 p-5 max-w-sm w-full"
-            onClick={(e) => e.stopPropagation()}>
-            <h2 id="send-heading" className="font-serif text-lg text-green-800 mb-1">Send this contract</h2>
+        <Modal open onClose={() => setSendOpen(false)} size="sm" title="Send this contract">
             <p className="text-[13px] text-muted mb-4">
               {state === 'locked'
                 ? 'This contract is locked for signing, so notifying a party asks them to sign it. You stay on the contract.'
@@ -2471,12 +2469,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 </p>
               </div>
             </div>
-            <div className="flex justify-end mt-4">
-              <button type="button" className="btn-secondary text-sm"
-                onClick={() => setSendOpen(false)}>Cancel</button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {nameOpen && nameState && (

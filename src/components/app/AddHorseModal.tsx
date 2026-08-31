@@ -1,4 +1,5 @@
 import { HorseIntakeForm } from './HorseIntakeForm';
+import { Modal } from '../ops/kit/Modal';
 
 /**
  * ADD A NEW HORSE — the one modal, wrapping the one intake form.
@@ -22,6 +23,11 @@ import { HorseIntakeForm } from './HorseIntakeForm';
  *     answer back so the caller can set the party FROM the horse.
  *  2. `createEarly` — a name is enough to create the record here; everything else
  *     completes afterwards through the form's existing autosave-on-blur.
+ *
+ * ⚠️ TASK-FIX4 §3 — converged on the shared dialog. The backdrop used to close it,
+ * and `HorseIntakeForm` is fourteen fields deep: this is CR-68a's own incident,
+ * *"losing horse-intake data"*, reported 2026-08-25 and still live six days later.
+ * It no longer closes on a backdrop click.
  */
 export function AddHorseModal({
   open, onClose, onSaved, ownerContactId, title = 'Add a new horse',
@@ -34,26 +40,14 @@ export function AddHorseModal({
   ownerContactId?: string;
   title?: string;
 }) {
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto overscroll-contain p-4"
-      role="dialog" aria-modal="true" aria-label={title}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-8 p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-serif text-green-900 text-lg">{title}</h3>
-          <button type="button" className="text-sm text-muted hover:text-green-800 focus-ring"
-            onClick={onClose}>
-            Close
-          </button>
-        </div>
-        <HorseIntakeForm
-          submitLabel="Save horse"
-          createEarly
-          ownerContactId={ownerContactId}
-          onDone={(horseId, owner) => onSaved(horseId, owner ?? ownerContactId)} />
-      </div>
-    </div>
+    <Modal open={open} onClose={onClose} title={title} size="lg">
+      <HorseIntakeForm
+        submitLabel="Save horse"
+        createEarly
+        ownerContactId={ownerContactId}
+        onDone={(horseId, owner) => onSaved(horseId, owner ?? ownerContactId)} />
+    </Modal>
   );
 }
 

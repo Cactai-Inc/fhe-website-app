@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { DataTable, useAsync, useToast, type Column, type RowAction } from '../../../lib/ops';
+import { Modal } from '../../../components/ops/kit/Modal';
 import {
   listOrgFiles, fileDownloadUrl, softDeleteFile, hardDeleteFile, restoreFile,
   type OrgFileRow,
@@ -198,20 +199,11 @@ export function FilesRecordsPage() {
         emptyMessage="Files uploaded anywhere in the app — by staff or members — appear here."
       />
 
+      {/* ⚠️ TASK-FIX4 §3 — converged. A preview holds nothing typed, so click-out
+          still closes it. */}
       {preview && (
-        <div role="dialog" aria-modal="true" aria-label={preview.file.title || preview.file.filename}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-green-950/60 p-4"
-          onClick={() => setPreview(null)}>
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[85vh] overflow-auto p-4"
-            onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <p className="text-sm font-sans font-medium text-green-900 truncate">
-                {preview.file.title || preview.file.filename}
-              </p>
-              <button type="button" className="btn-ghost text-sm" onClick={() => setPreview(null)}>
-                Close
-              </button>
-            </div>
+        <Modal open onClose={() => setPreview(null)} size="full"
+          title={preview.file.title || preview.file.filename}>
             {(preview.file.mime_type ?? '').startsWith('image/') ? (
               <img src={preview.url} alt={preview.file.title || preview.file.filename}
                 className="max-w-full h-auto mx-auto" />
@@ -223,8 +215,7 @@ export function FilesRecordsPage() {
               <iframe src={preview.url} title={preview.file.filename}
                 className="w-full h-[70vh] border-0" />
             )}
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

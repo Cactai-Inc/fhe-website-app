@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import {  } from 'lucide-react';
+import { Modal } from '../../components/ops/kit/Modal';
+import { useFormDraft } from '../../lib/formState';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { fetchOfferings } from '../../lib/api';
 import type { Offering } from '../../lib/types';
@@ -384,6 +386,7 @@ export function CalendarItemPanel({
     setError(null);
     try {
       const saved = await saveCalendarItem(buildPayload(asDraft));
+      draft.clear();
       // C5 — a committed appointment linked to a client/horse notifies them.
       if (!asDraft && type === 'appointment' && (clientId || horseId) && saved?.id) {
         try { await notifyAppointmentClient(saved.id); } catch { /* the appointment saved; notice is best-effort */ }
@@ -397,19 +400,22 @@ export function CalendarItemPanel({
     }
   }
 
-  // Whether a NEW item has enough entered to be worth keeping as a draft.
-  const hasContent =
-    type === 'unavailable'
-      ? notes.trim() !== ''
-      : type === 'appointment'
-        ? notes.trim() !== '' || !!clientId || !!horseId
-        : !!offeringId || !!clientId || !!horseId || notes.trim() !== '';
+  /* `hasContent` used to decide whether closing should INSERT a draft row. It has
+     no reader now that closing writes nothing — `useFormDraft` keeps the contents
+     whether they amount to "enough" or not, which is the better answer anyway. */
 
-  // Back / close: a NEW item with content is autosaved as a draft (never added
-  // to the calendar as committed); an empty one, or an edit, just closes.
-  async function handleClose() {
-    if (done.current || editing || busy || !hasContent) { onClose(); return; }
-    try { await saveCalendarItem(buildPayload(true)); } catch { /* keep the panel forgiving */ }
+  /* ⚠️ TASK-FIX4 §1 — CLOSING NO LONGER WRITES ANYTHING, AND THIS IS A DELIBERATE
+     BEHAVIOUR CHANGE. This function used to call `saveCalendarItem(…, draft)` on
+     every exit, so leaving the panel INSERTED a row. It is the same shape as
+     `ContactDossierModal`'s commit-on-close and it is what the owner ruled out:
+     *"no user would input data and click close and expect the form submitted."*
+
+     What replaces it is strictly better for the case it was protecting against:
+     the panel's contents are persisted to browser storage after every input
+     (`draft` below), so an accidental close, a reload or a browser-back loses
+     nothing — WITHOUT a row appearing on anybody's calendar. `Save draft` is
+     still there, and pressing it is still the affirmative act that commits one. */
+  function handleClose() {
     onClose();
   }
 
@@ -470,6 +476,43 @@ export function CalendarItemPanel({
     }
   }
 
+  /* TASK-FIX4 §6 — everything typed into this panel, in browser storage, keyed on
+     the item being edited (or `new` for a fresh one). ⚠️ A DRAFT, NOT A ROW. */
+  const draftShape = {
+    type, start, end, offeringId, clientId, purchaseId, horseId, instructorId,
+    isFlexible, locationId, address, travelBefore, travelAfter, price, notes, weeks,
+  };
+  const draft = useFormDraft(
+    `calendar.item.${item?.id ?? 'new'}`,
+    draftShape,
+    (d) => {
+      if (d.type) setType(d.type as ItemType);
+      if (typeof d.start === 'string') setStart(d.start);
+      if (typeof d.end === 'string') setEnd(d.end);
+      if (typeof d.offeringId === 'string') setOfferingId(d.offeringId);
+      if (typeof d.clientId === 'string') setClientId(d.clientId);
+      if (typeof d.purchaseId === 'string') setPurchaseId(d.purchaseId);
+      if (typeof d.horseId === 'string') setHorseId(d.horseId);
+      if (typeof d.instructorId === 'string') setInstructorId(d.instructorId);
+      if (typeof d.isFlexible === 'boolean') setIsFlexible(d.isFlexible);
+      if (typeof d.locationId === 'string') setLocationId(d.locationId);
+      if (typeof d.address === 'string') setAddress(d.address);
+      if (typeof d.travelBefore === 'string') setTravelBefore(d.travelBefore);
+      if (typeof d.travelAfter === 'string') setTravelAfter(d.travelAfter);
+      if (typeof d.price === 'string') setPrice(d.price);
+      if (typeof d.notes === 'string') setNotes(d.notes);
+      if (typeof d.weeks === 'string') setWeeks(d.weeks);
+    },
+  );
+
+  function clearForm() {
+    setOfferingId(''); setClientId(''); setPurchaseId(''); setHorseId('');
+    setInstructorId(''); setLocationId(''); setAddress('');
+    setTravelBefore('0'); setTravelAfter('0'); setPrice(''); setNotes('');
+    setWeeks('1'); setIsFlexible(false); setError(null);
+    draft.clear();
+  }
+
   const mapsHref = useMemo(
     () =>
       address.trim()
@@ -479,17 +522,11 @@ export function CalendarItemPanel({
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={() => void handleClose()}>
-      <div
-        className="bg-cream w-full sm:max-w-md h-full overflow-y-auto overscroll-contain shadow-xl flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between p-4 border-b border-green-800/10 sticky top-0 bg-cream z-10">
-          <h2 className="font-serif text-lg text-green-900">{editing ? 'Edit' : 'New'} calendar item</h2>
-          <button type="button" onClick={() => void handleClose()} aria-label="Close"><X size={20} /></button>
-        </div>
-
-        <div className="p-4 flex flex-col gap-4 flex-1">
+    /* ⚠️ TASK-FIX4 §3 — converged on the shared dialog's `drawer` variant. */
+    <Modal open onClose={handleClose} variant="drawer" size="sm" panelClassName="bg-cream"
+      title={`${editing ? 'Edit' : 'New'} calendar item`}
+      onClear={clearForm} saveStatus={draft.status} error={error}>
+        <div className="flex flex-col gap-4 flex-1">
           {/* type */}
           <div className="inline-flex rounded-full bg-green-800/10 p-0.5 self-start">
             {(['offering', 'appointment', 'unavailable'] as ItemType[]).map((t) => (
@@ -922,8 +959,7 @@ export function CalendarItemPanel({
             </button>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

@@ -8,6 +8,8 @@ import {
 } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 import { toErrorMessage } from '../../lib/ops/errors';
+import { useAutoSave, useFieldNormalizer } from '../../lib/formState';
+import { normalizeKindForField } from '../../lib/normalize';
 import type { LookupCode } from '../../lib/ops/types';
 import {
   AssignDocumentsModal, ClientHorseRecordsCard, AttachOfferingPanel, PaperworkEditor,
@@ -16,6 +18,7 @@ import {
   TAG_LABEL, TAG_REASON,
   adminSetSuspended, adminAccountAction, adminHardDeleteClient,
 } from '../../lib/admin';
+import { AutoSaveIndicator } from '../ops/kit/AutoSaveIndicator';
 import { StaffStandingSlotSection } from './StandingSlotPicker';
 import { ClientInvitationSection } from './ClientInvitationSection';
 import { fetchClientStandingSlots } from '../../lib/ops/api-calendar';
@@ -39,10 +42,37 @@ import { fetchClientStandingSlots } from '../../lib/ops/api-calendar';
  * Payments, Messages, the sign-in detail, and suspend / reinstate / remove /
  * archive / hard delete.
  *
- * ⚠️ CR-75 GOVERNS THE CLOSE: *"closing everything … saves their work"*, and an
- * expanded record needs no separate save button. AR2 F7 found this file doing
- * both wrong halves — a backdrop click or Escape DESTROYED unsaved edits, and
- * there was a Save button. Both are fixed below; see `requestClose`.
+ * ⚠️⚠️ THE CLOSE BEHAVIOUR CHANGED IN TASK-FIX4, DELIBERATELY, ON A FIX THAT HAD
+ * ALREADY SHIPPED. READ THIS BEFORE TOUCHING IT AGAIN.
+ *
+ * THREE BEHAVIOURS, IN ORDER, AND EACH FIXED THE ONE BEFORE IT:
+ *   1. **Originally**: a backdrop click or Escape DESTROYED unsaved edits, and
+ *      there was a Save button. The owner reported losing data to it.
+ *   2. **TASK-FIX2** (2026-08-29, shipped): every exit ran through
+ *      `requestClose`, which called `commit()` and only then closed. It solved
+ *      accidental-close by trading a data-loss bug for an unintended-write bug —
+ *      ⚠️ **clicking the X SUBMITTED the form.**
+ *   3. **TASK-FIX4** (this): ⚠️ **closing does NOTHING.** Owner, 2026-08-31:
+ *      *"commits on continue/send/commit/done...etc... not a close button click,
+ *      no user would input data and click close and expect the form submitted."*
+ *
+ * **What makes 3 safe is that it is not a return to 1.** ⚠️ Persisting a draft and
+ * committing a record are different acts. Edits now AUTO-SAVE to the record after
+ * input (`useAutoSave` below), so by the time anyone closes, the work is already
+ * in. Closing is not the mechanism that saves it, and it is not a submission.
+ *
+ * ⚠️ **WHAT WAS KEPT FROM THE FIX2 VERSION, because the instinct was right:**
+ * *"if the save fails the record stays open with the edits still in the boxes and
+ * the reason on screen."* That now lives in `ops/kit/Modal`'s `error` prop and in
+ * `useAutoSave`, so every dialog inherits it rather than this one owning it.
+ *
+ * ⚠️ **A RECORD EDITED BETWEEN BEHAVIOURS 2 AND 3 IS UNAFFECTED.** Under 2 the
+ * write happened on close; under 3 it happens ~700ms after the last keystroke.
+ * Both reach `update_contact_record` with the same patch, so nothing written
+ * under the old behaviour is now unwritten, and nothing is pending. The one real
+ * difference is a record where someone typed and then closed FAST — under 2 the
+ * close awaited the write; under 3 the auto-save may still be in flight, which is
+ * why `commit()` is flushed on unmount below.
  *
  * THE CONTACT DOSSIER — every person, one modal.
  *
@@ -196,25 +226,7 @@ export function ContactDossierModal({
   }, [contactId]);
   useEffect(load, [load]);
 
-  /* ⚠️ CR-75 / AR2 F7 — CLOSING SAVES, AND THERE IS NO SAVE BUTTON.
-     `dirty` used to be component state that nothing committed on close, while the
-     backdrop carried `onClick={onClose}` and Escape called `onClose` — so the two
-     easiest ways to leave the record were the two ways to lose the work. The
-     owner has reported this exact behaviour once already (*"the click out of the
-     modal closes it and the data is lost"*).
-
-     Every exit now runs through `requestClose`, which commits first. ⚠️ IF THE
-     SAVE FAILS THE RECORD STAYS OPEN with the edits still in the boxes and the
-     reason on screen — closing over a failed write would lose the work just as
-     surely as the old behaviour did, only more quietly. Held in a ref so the
-     document-level Escape listener never closes over a stale `dirty`. */
-  const commitRef = useRef<() => Promise<void>>(async () => {});
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') void commitRef.current(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, []);
+  const normalize = useFieldNormalizer();
 
   const c = (d?.contact ?? {}) as Record<string, unknown>;
   /** TASK-ARCHIVE §3: contact_dossier now admits an archived contact so the
@@ -245,8 +257,36 @@ export function ContactDossierModal({
     } finally { setSaving(false); }
   }, [archived, dirty, contactId, onChanged]);
 
-  commitRef.current = async () => { if (await commit()) onClose(); };
-  const requestClose = () => { void commitRef.current(); };
+  /* ⚠️ AUTO-SAVE AFTER INPUT — and after normalisation, so what is stored is what
+     the person can see (CR-83). This is what replaces commit-on-close: the record
+     is written ~700ms after the last keystroke, so closing has nothing left to do
+     and does not need to be a submission. On a failed write `save.error` holds the
+     reason, the dialog stays open, and `dirty` is untouched — the edits are still
+     in the boxes. */
+  const save = useAutoSave(dirty, async () => { await commit(); }, {
+    enabled: !archived,
+    skip: (d) => Object.keys(d).length === 0,
+  });
+
+  /* ⚠️ THE ONE THING CLOSING STILL DOES: flush a write that is mid-debounce.
+     That is not a commit-on-close — it is finishing the auto-save that the last
+     keystroke already started, and it is what stops "typed, then closed fast"
+     from being the one case that loses anything. Held in a ref so the unmount
+     cleanup never closes over a stale `dirty`. */
+  const flushRef = useRef<() => Promise<void>>(async () => {});
+  flushRef.current = save.flush;
+  useEffect(() => () => { void flushRef.current(); }, []);
+
+  const requestClose = () => { onClose(); };
+
+  /* Escape closes — a deliberate keystroke, and with auto-save behind it there is
+     nothing left to lose. ⚠️ It no longer commits: under TASK-FIX2 this listener
+     called `commit()` first, which made a keypress a submission. */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   /* PROMOTION TO AN ACCOUNT, from the record itself. Someone without a login
      still has a full contact record — it simply holds less — and inviting them
@@ -315,8 +355,14 @@ export function ContactDossierModal({
   ];
 
   return (
+    /* ⚠️ TASK-FIX4 §3 — the backdrop no longer closes this record. It is the most
+       field-dense surface in the app; a stray click beside it was CR-68a. This
+       one keeps its hand-rolled shell deliberately (see the note at the top of
+       the file): it is a fixed-height, tab-railed record surface, not a box
+       around a form, and `ops/kit/Modal`'s variants do not describe it. What it
+       shares with every converged dialog is the RULES, not the markup. */
     <div className="fixed inset-0 z-50 grid place-items-center bg-green-950/40 px-4 py-8"
-      role="dialog" aria-modal="true" aria-label={`${name} record`} onClick={requestClose}>
+      role="dialog" aria-modal="true" aria-label={`${name} record`}>
       {/* ⚠️ ONE SIZE, ALWAYS (owner, 2026-08-25): "keep it one size dont change it
           based on the contents when i switch tabs it is constantly resizing and it
           stays center aligned which makes it really uncomfortable." `max-h-full` let
@@ -338,13 +384,18 @@ export function ContactDossierModal({
               {d?.account ? ' · has an account' : ' · no account'}
             </p>
           </div>
+          {/* ⚠️ THE INDICATOR IS NOT OPTIONAL. With no Save button and no
+              commit-on-close, it is the only thing telling the person their
+              typing was kept — *"we need to show auto-save so the user knows the
+              inputs are saved."* */}
+          <AutoSaveIndicator status={save.status} savedLabel="Saved to the record" />
           <button type="button" onClick={requestClose} aria-label="Close"
             className="p-1.5 rounded-lg text-muted hover:bg-green-800/5 focus-ring shrink-0">
             <X size={18} />
           </button>
         </div>
 
-        {err && <p role="alert" className="form-error mx-5 mt-3">{err}</p>}
+        {(err ?? save.error) && <p role="alert" className="form-error mx-5 mt-3">{err ?? save.error}</p>}
 
         {archived && (
           <div className="mx-5 mt-3 rounded-lg border border-gold-600/40 bg-gold-50/60 px-3 py-2.5">
@@ -441,10 +492,19 @@ export function ContactDossierModal({
                                 disabled={archived}
                                 value={val(k)} onChange={(e) => set(k)(e.target.value)} />
                             ) : (
+                              /* ⚠️ TASK-FIX4 §4 — *"yes staff-entered inputs
+                                 normalize too"* (owner, 2026-08-31). The KIND is
+                                 derived from the field name, so a new name/phone/
+                                 email row added to FIELD_GROUPS is normalised
+                                 without anyone remembering to wire it. */
                               <input id={`f-${k}`} className={input}
                                 disabled={archived}
                                 type={k === 'date_of_birth' ? 'date' : 'text'}
-                                value={val(k)} onChange={(e) => set(k)(e.target.value)} />
+                                value={val(k)} onChange={(e) => set(k)(e.target.value)}
+                                onBlur={(() => {
+                                  const kind = normalizeKindForField(k);
+                                  return kind ? normalize(k, kind, val(k), set(k)) : undefined;
+                                })()} />
                             )}
                           </div>
                         ))}
@@ -708,20 +768,27 @@ export function ContactDossierModal({
           )}
         </div>
 
-        {/* ⚠️ CR-75: NO SEPARATE SAVE BUTTON. Closing is the save. The counter is
-            kept because it is the one honest signal that something is pending —
-            it is a statement, not a control. */}
+        {/* ⚠️ STILL NO SAVE BUTTON, AND TASK-FIX4 REMOVED THE LAST TRACE OF ONE.
+            This bar used to read *"N changes — saved when you close"* over a
+            button labelled *"Save and close"* — accurate under the FIX2
+            behaviour and a promise the app must no longer make. Edits are
+            written after input; the indicator in the header says so; and the
+            control here does exactly one thing, which is close. */}
         <div className="flex items-center gap-2 px-5 py-3 border-t border-green-800/10">
           <span className="text-[12px] text-gold-800">
             {saving ? 'Saving…'
               : Object.keys(dirty).length > 0
-                ? `${Object.keys(dirty).length} change${Object.keys(dirty).length === 1 ? '' : 's'} — saved when you close`
+                ? `${Object.keys(dirty).length} change${Object.keys(dirty).length === 1 ? '' : 's'} saving…`
                 : ''}
           </span>
           <div className="ml-auto flex gap-2">
-            <button type="button" className="btn-primary text-sm" disabled={saving}
-              onClick={requestClose}>
-              {saving ? 'Saving…' : Object.keys(dirty).length > 0 ? 'Save and close' : 'Close'}
+            <button type="button" className="btn-secondary text-sm"
+              onClick={() => { setDirty({}); setErr(null); }}
+              disabled={archived || Object.keys(dirty).length === 0}>
+              Clear unsaved edits
+            </button>
+            <button type="button" className="btn-primary text-sm" onClick={requestClose}>
+              Close
             </button>
           </div>
         </div>

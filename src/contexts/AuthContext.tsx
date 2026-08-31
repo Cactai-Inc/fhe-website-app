@@ -7,6 +7,7 @@ import type { Profile } from '../lib/types';
 import type { Member } from '../lib/community-types';
 import { DEFAULT_PROPERTY_TERM, resolvePropertyTerm, type PropertyTerm } from '../lib/propertyTerm';
 import { clearLandingFlags } from '../lib/dashboard/landing';
+import { clearOwnerDrafts, getDraftOwner, setDraftOwner } from '../lib/formDraft';
 
 export type AppRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE' | 'USER';
 
@@ -132,6 +133,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
       setSession(data.session);
+      /* TASK-FIX4 §6 — publish the namespace persisted form drafts are written
+         under. ⚠️ It is set from the SESSION, not from the profile load, because
+         `useFormDraft` holds every restore until this resolves; waiting on the
+         profile round-trip would keep every form's draft on the shelf for the
+         length of it. */
+      setDraftOwner(data.session?.user?.id ?? null);
       loadProfile(data.session?.user?.id).finally(() => {
         if (active) setLoading(false);
       });
@@ -145,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // actually passes through, so it is the one place to reset it.
       if (event === 'SIGNED_IN') clearLandingFlags();
       setSession(newSession);
+      setDraftOwner(newSession?.user?.id ?? null);
       loadProfile(newSession?.user?.id);
     });
 
@@ -171,6 +179,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    /* TASK-FIX4 §6 — a draft belongs to the person who typed it. Dropping theirs
+       on the way out is the mitigation that makes a shared machine tolerable;
+       read the trade-off in `formDraft.ts`. Done BEFORE the sign-out so the
+       namespace is still the one their drafts were written under. */
+    clearOwnerDrafts(getDraftOwner().owner);
     await auth.signOut();
     setProfile(null);
     setMember(null);

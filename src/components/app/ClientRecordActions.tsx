@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import {
   categoryDocumentDefaults, setContactRequiredDocuments,
   requestDocumentsFromContact, DISPOSITION_LABEL, type DocumentDisposition,
@@ -16,6 +16,7 @@ import {
   type HorseIntakeRecord, type ContactOption,
 } from '../../lib/horses';
 import { fetchOfferings } from '../../lib/api';
+import { Modal } from '../ops/kit/Modal';
 import { HorseIntakeForm } from './HorseIntakeForm';
 import { toErrorMessage } from '../../lib/ops/errors';
 import type { Offering } from '../../lib/types';
@@ -97,36 +98,28 @@ export function AssignDocumentsModal({
   // dossier): ask who it's for before anything else can load.
   if (!contactId) {
     return (
-      <div className="fixed inset-0 z-[80] bg-green-950/40 flex items-center justify-center p-4" onClick={onClose}>
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-          <h2 className="font-serif text-xl text-green-900 mb-1">Who is this for?</h2>
-          {initialTemplateTitle && (
-            <p className="text-sm text-muted mb-3">Assigning: {initialTemplateTitle}</p>
-          )}
-          <select className="form-input mb-4" value="" aria-label="Choose a person"
-            onChange={(e) => setContactId(e.target.value)}>
-            <option value="">
-              {contactOptions.length === 0 && !err ? 'Loading…' : 'Choose…'}
-            </option>
-            {contactOptions.map((c) => (
-              <option key={c.id} value={c.id}>{c.name || c.email || c.id}</option>
-            ))}
-          </select>
-          {err && <p role="alert" className="text-sm text-red-700 mb-3">{err}</p>}
-          <div className="flex justify-end">
-            <button type="button" className="btn-outline-gold" onClick={onClose}>Cancel</button>
-          </div>
-        </div>
-      </div>
+      /* ⚠️ TASK-FIX4 §3 — converged, all four overlays in this file. */
+      <Modal open onClose={onClose} size="sm" title="Who is this for?"
+        subtitle={initialTemplateTitle ? `Assigning: ${initialTemplateTitle}` : undefined}
+        error={err}>
+        <select className="form-input" value="" aria-label="Choose a person"
+          onChange={(e) => setContactId(e.target.value)}>
+          <option value="">
+            {contactOptions.length === 0 && !err ? 'Loading…' : 'Choose…'}
+          </option>
+          {contactOptions.map((c) => (
+            <option key={c.id} value={c.id}>{c.name || c.email || c.id}</option>
+          ))}
+        </select>
+      </Modal>
     );
   }
 
   if (result) {
     const titleFor = (k: string) => templates.find((t) => t.template_key === k)?.title ?? k;
     return (
-      <div className="fixed inset-0 z-[80] bg-green-950/40 flex items-center justify-center p-4" onClick={onAssigned}>
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
-          <h2 className="font-serif text-xl text-green-900 mb-2">Documents assigned</h2>
+      <Modal open onClose={onAssigned} size="md" title="Documents assigned"
+        footer={<button type="button" className="btn-primary" onClick={onAssigned}>Done</button>}>
           <p className="text-sm text-green-900 mb-3">
             {result.assigned.length} document{result.assigned.length === 1 ? '' : 's'} now
             awaiting their signature — they'll be walled to sign at their next sign-in,
@@ -143,16 +136,12 @@ export function AssignDocumentsModal({
             ))}
           </ul>
           {result.resign.length > 0 && (
-            <p className="text-xs text-muted mb-4">
+            <p className="text-xs text-muted">
               Their previously signed {result.resign.length === 1 ? 'copy is' : 'copies are'} kept
               on file as superseded evidence.
             </p>
           )}
-          <div className="flex justify-end">
-            <button type="button" className="btn-primary" onClick={onAssigned}>Done</button>
-          </div>
-        </div>
-      </div>
+      </Modal>
     );
   }
 
@@ -162,10 +151,12 @@ export function AssignDocumentsModal({
     : `Executed v${t.on_file_version ?? t.version}${t.on_file_date ? ` on ${new Date(t.on_file_date).toLocaleDateString()}` : ''}`;
 
   return (
-    <div className="fixed inset-0 z-[80] bg-green-950/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto overscroll-contain" onClick={(e) => e.stopPropagation()}>
-        <h2 className="font-serif text-xl text-green-900 mb-3">Assign documents</h2>
-
+    <Modal open onClose={onClose} size="md" title="Assign documents" error={err}
+      footer={
+        <button type="button" className="btn-primary" disabled={picked.length === 0 || busy} onClick={assign}>
+          {busy ? 'Assigning…' : `Assign ${picked.length || ''}`.trim()}
+        </button>
+      }>
         {/* Opened pre-scoped to one flat template (the documents picker's
             assign-and-generate card): the contract shortcut doesn't apply —
             clause-composed types route to authoring, not here. */}
@@ -197,15 +188,7 @@ export function AssignDocumentsModal({
           {templates.length === 0 && !err && <p className="text-sm text-muted">Loading…</p>}
         </div>
 
-        {err && <p role="alert" className="text-sm text-red-700 mb-3">{err}</p>}
-        <div className="flex justify-end gap-2">
-          <button type="button" className="btn-outline-gold" onClick={onClose}>Cancel</button>
-          <button type="button" className="btn-primary" disabled={picked.length === 0 || busy} onClick={assign}>
-            {busy ? 'Assigning…' : `Assign ${picked.length || ''}`.trim()}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -314,20 +297,11 @@ export function ClientHorseRecordsCard({ contactId }: { contactId: string }) {
       </div>
 
       {adding && (
-        <div className="fixed inset-0 bg-black/40 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={() => setAdding(false)}>
-          <div className="bg-cream w-full sm:max-w-2xl sm:rounded-2xl flex flex-col max-h-[92dvh] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-green-800/10 shrink-0">
-              <h2 className="font-serif text-green-800 text-lg">Add a horse for this client</h2>
-              <button type="button" onClick={() => setAdding(false)} aria-label="Close"><X size={20} /></button>
-            </div>
-            <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain pb-8">
-              <HorseIntakeForm submitLabel="Add horse" ownerContactId={contactId}
-                onDone={() => { setAdding(false); load(); }} />
-            </div>
-          </div>
-        </div>
+        <Modal open onClose={() => setAdding(false)} title="Add a horse for this client"
+          variant="sheet" size="lg" panelClassName="bg-cream">
+          <HorseIntakeForm submitLabel="Add horse" ownerContactId={contactId}
+            onDone={() => { setAdding(false); load(); }} />
+        </Modal>
       )}
     </div>
   );

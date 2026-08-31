@@ -187,11 +187,25 @@ describe('S6 — closing cannot destroy authored work', () => {
     expect(screen.queryByText('Add to this contract')).toBeTruthy();
   });
 
-  it('a click that starts AND ends on the backdrop closes it', () => {
+  /* ⚠️ REWRITTEN BY TASK-FIX4, AND THE INVERSION IS THE POINT. S6's rule was
+     "a click that starts AND ends on the backdrop closes it" — correct under the
+     rule S6 was written against, and superseded by CR-84 §5: *"any modal that
+     opens doesnt close from clicking out once an input is entered into it."*
+     This dialog holds a textarea, so the backdrop no longer closes it at all.
+     S6's own protection (the gesture must start on the backdrop) survives in
+     `ops/kit/Modal` for the dialogs that DO close on click-out. */
+  it('⚠️ a click that starts AND ends on the backdrop no longer closes it — it holds a field', () => {
     open();
     const b = backdrop();
     fireEvent.mouseDown(b, { target: b });
     fireEvent.click(b, { target: b });
+    expect(screen.queryByText('Add to this contract')).toBeTruthy();
+  });
+
+  it('the Close control still closes it — closing is the deliberate act now', async () => {
+    const user = userEvent.setup();
+    open();
+    await user.click(closeBtn());
     expect(screen.queryByText('Add to this contract')).toBeNull();
   });
 });

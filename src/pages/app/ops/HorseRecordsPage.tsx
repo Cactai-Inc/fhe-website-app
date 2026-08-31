@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { fromHere } from '../../../lib/linkOrigin';
-import { X, PencilLine, FileText, UserRound, Trash2, HeartPulse, Handshake } from 'lucide-react';
+import { PencilLine, FileText, UserRound, Trash2, HeartPulse, Handshake } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { toErrorMessage } from '../../../lib/ops/errors';
@@ -9,6 +9,7 @@ import {
   staffHorseRecords, staffUpdateHorse, staffArchiveHorse, staffAssignHorseParty, staffContactOptions,
   type StaffHorseRecord, type ContactOption,
 } from '../../../lib/horses';
+import { Modal } from '../../../components/ops/kit/Modal';
 import { HorseIntakeForm } from '../../../components/app/HorseIntakeForm';
 import { companyContactId } from '../../../lib/horses';
 import { generateLeaseAvailability } from '../../../lib/ops/api-lease';
@@ -377,19 +378,13 @@ export default function HorseRecordsPage({ onOpenContact }: { onOpenContact?: (c
         ))}
       </div>
 
+      {/* ⚠️ TASK-FIX4 §3 — converged; see StableSection for the same intake form. */}
       {adding && (
-        <div className="fixed inset-0 bg-black/40 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setAdding(false)}>
-          <div className="bg-cream w-full sm:max-w-2xl sm:rounded-2xl flex flex-col max-h-[92dvh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-green-800/10 shrink-0">
-              <h2 className="font-serif text-green-800 text-lg">Add a horse</h2>
-              <button type="button" onClick={() => setAdding(false)} aria-label="Close"><X size={20} /></button>
-            </div>
-            <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain pb-8">
-              <HorseIntakeForm submitLabel="Create record" ownerContactId={companyId ?? undefined}
-                onDone={() => { setAdding(false); load(); }} />
-            </div>
-          </div>
-        </div>
+        <Modal open onClose={() => setAdding(false)} title="Add a horse"
+          variant="sheet" size="lg" panelClassName="bg-cream">
+          <HorseIntakeForm submitLabel="Create record" ownerContactId={companyId ?? undefined}
+            onDone={() => { setAdding(false); load(); }} />
+        </Modal>
       )}
     </PageLayout>
   );

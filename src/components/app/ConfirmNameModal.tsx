@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { confirmMyLegalName, type NameConfirmationState } from '../../lib/api';
+import { Modal } from '../ops/kit/Modal';
+import { useFieldNormalizer } from '../../lib/formState';
 import { toErrorMessage } from '../../lib/ops/errors';
 
 /**
@@ -25,6 +27,13 @@ import { toErrorMessage } from '../../lib/ops/errors';
  * The copy deliberately does not accuse anyone of an error or explain our data
  * model. From the member's side this is simply: confirm how your name should
  * appear on your paperwork.
+ *
+ * ⚠️ TASK-FIX4 §4 — AND THIS IS WHERE NORMALISATION EARNS ITS KEEP. `fiszer`
+ * typed here becomes `Fiszer` ON BLUR, in front of them, before it is saved and
+ * long before it is what a signature attests to. `LaBuzetta` is left alone, and a
+ * correction they make to our answer is never re-applied. This dialog also
+ * deliberately does NOT close on a backdrop click and has no draft: the name is
+ * committed by `Confirm my name` and by nothing else.
  */
 export function ConfirmNameModal({
   state, onConfirmed, onDismiss,
@@ -39,6 +48,7 @@ export function ConfirmNameModal({
   const [last, setLast] = useState(state.last_name ?? '');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const normalize = useFieldNormalizer();
 
   const canSave = first.trim() !== '' && last.trim() !== '' && !busy;
 
@@ -56,38 +66,11 @@ export function ConfirmNameModal({
   const input = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white';
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-green-950/40 px-4"
-      role="dialog" aria-modal="true" aria-labelledby="confirm-name-heading">
-      <div className="bg-white rounded-2xl border border-green-800/10 p-6 max-w-md w-full">
-        <h2 id="confirm-name-heading" className="font-serif text-xl text-green-800 mb-2">
-          How should your name appear?
-        </h2>
-        <p className="body-text text-sm text-secondary mb-4">
-          We want to be sure your agreements and records carry your name exactly as
-          it should read. Please confirm your full legal name — this is what will
-          appear on anything you sign.
-        </p>
-
-        {err && <p role="alert" className="form-error mb-3">{err}</p>}
-
-        <div className="flex flex-col gap-2.5 mb-5">
-          <div>
-            <label htmlFor="cn-first" className="block text-[10px] uppercase tracking-wide text-muted mb-1">
-              First name
-            </label>
-            <input id="cn-first" className={input} value={first} autoFocus
-              onChange={(e) => setFirst(e.target.value)} />
-          </div>
-          <div>
-            <label htmlFor="cn-last" className="block text-[10px] uppercase tracking-wide text-muted mb-1">
-              Last name
-            </label>
-            <input id="cn-last" className={input} value={last} placeholder="Your legal surname"
-              onChange={(e) => setLast(e.target.value)} />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap justify-end gap-2">
+    <Modal open onClose={onDismiss ?? (() => {})} size="sm"
+      title="How should your name appear?" error={err}
+      disableBackdropClose
+      footer={
+        <>
           {onDismiss && (
             <button type="button" className="btn-secondary text-sm" onClick={onDismiss} disabled={busy}>
               Not now
@@ -96,8 +79,32 @@ export function ConfirmNameModal({
           <button type="button" className="btn-primary text-sm" disabled={!canSave} onClick={() => void save()}>
             {busy ? 'Saving…' : 'Confirm my name'}
           </button>
+        </>
+      }>
+        <p className="body-text text-sm text-secondary mb-4">
+          We want to be sure your agreements and records carry your name exactly as
+          it should read. Please confirm your full legal name — this is what will
+          appear on anything you sign.
+        </p>
+
+        <div className="flex flex-col gap-2.5">
+          <div>
+            <label htmlFor="cn-first" className="block text-[10px] uppercase tracking-wide text-muted mb-1">
+              First name
+            </label>
+            <input id="cn-first" className={input} value={first} autoFocus
+              onChange={(e) => setFirst(e.target.value)}
+              onBlur={normalize('cn-first', 'name', first, setFirst)} />
+          </div>
+          <div>
+            <label htmlFor="cn-last" className="block text-[10px] uppercase tracking-wide text-muted mb-1">
+              Last name
+            </label>
+            <input id="cn-last" className={input} value={last} placeholder="Your legal surname"
+              onChange={(e) => setLast(e.target.value)}
+              onBlur={normalize('cn-last', 'name', last, setLast)} />
+          </div>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

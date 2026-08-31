@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Handshake, Loader2, X } from 'lucide-react';
+import { Plus, Handshake, Loader2 } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { toErrorMessage } from '../../../lib/ops/errors';
+import { Modal } from '../../../components/ops/kit/Modal';
+import { useFormDraft } from '../../../lib/formState';
 import {
   listDeals, createDeal, addDealDocument, dealLabel,
   DEAL_TYPE_LABEL, DEAL_ROLES, ROLE_LABEL,
@@ -83,6 +85,27 @@ function CreateDealModal({ onClose, onCreated }: {
   const roles = dealType ? DEAL_ROLES[dealType] : null;
   const ready = !!dealType && !!partyA && !!partyB;
 
+  /* TASK-FIX4 §6 — a half-built deal survives a reload. ⚠️ It is a DRAFT, not a
+     deal: nothing reaches `createDeal` until `Create deal` is pressed. */
+  const draft = useFormDraft(
+    'ops.new-deal',
+    { title, dealType, partyA, partyB, horseId, withAgreement },
+    (d) => {
+      if (typeof d.title === 'string') setTitle(d.title);
+      if (d.dealType) setDealType(d.dealType as DealType);
+      if (typeof d.partyA === 'string') setPartyA(d.partyA);
+      if (typeof d.partyB === 'string') setPartyB(d.partyB);
+      if (typeof d.horseId === 'string') setHorseId(d.horseId);
+      if (typeof d.withAgreement === 'boolean') setWithAgreement(d.withAgreement);
+    },
+  );
+
+  function clearForm() {
+    setTitle(''); setPartyA(''); setPartyB(''); setHorseId('');
+    setWithAgreement(false); setErr(null);
+    draft.clear();
+  }
+
   async function create() {
     if (!ready || !dealType) return;
     setBusy(true); setErr(null);
@@ -100,6 +123,7 @@ function CreateDealModal({ onClose, onCreated }: {
       } else {
         await addDealDocument(deal.deal_id, 'HORSE_LEASE_V2');
       }
+      draft.clear();
       onCreated(deal.deal_id);
     } catch (e) {
       setErr(toErrorMessage(e, 'Could not create the deal.'));
@@ -117,19 +141,18 @@ function CreateDealModal({ onClose, onCreated }: {
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto overscroll-contain p-4"
-      role="dialog" aria-modal="true" aria-label="New deal"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full my-8">
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-green-800/10">
-          <h2 className="font-serif text-green-900 text-lg">New deal</h2>
-          <button type="button" aria-label="Close" className="text-muted hover:text-green-800 focus-ring"
-            onClick={onClose}>
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="p-5 flex flex-col gap-4">
+    /* ⚠️ TASK-FIX4 §3 — converged. `Create deal` is the affirmative action and the
+       only thing that writes; the backdrop no longer closes over a filled form. */
+    <Modal open onClose={onClose} title="New deal" size="md"
+      onClear={clearForm} saveStatus={draft.status} error={err}
+      footer={
+        <button type="button" onClick={() => void create()} disabled={!ready || busy}
+          className="px-4 py-2 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center gap-2 disabled:opacity-60">
+          {busy && <Loader2 size={15} className="animate-spin" />}
+          Create deal
+        </button>
+      }>
+        <div className="flex flex-col gap-4">
           <div>
             <span className="form-label">What is this deal called?</span>
             <input className={field} value={title} aria-label="Deal name"
@@ -201,22 +224,8 @@ function CreateDealModal({ onClose, onCreated }: {
             </>
           )}
 
-          {err && <p role="alert" className="form-error">{err}</p>}
         </div>
-
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-green-800/10">
-          <button type="button" className="text-sm text-muted hover:text-green-800 focus-ring px-3 py-2"
-            onClick={onClose}>
-            Cancel
-          </button>
-          <button type="button" onClick={() => void create()} disabled={!ready || busy}
-            className="px-4 py-2 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center gap-2 disabled:opacity-60">
-            {busy && <Loader2 size={15} className="animate-spin" />}
-            Create deal
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

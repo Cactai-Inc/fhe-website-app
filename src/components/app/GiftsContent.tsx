@@ -3,6 +3,7 @@ import { Gift as GiftIcon, ChevronRight } from 'lucide-react';
 import { listMyGifts, type MyGift } from '../../lib/api';
 import { redeemGift, giftClaimLink, giftReschedule, giftTransfer, giftMarkSent } from '../../lib/gifts';
 import { toErrorMessage } from '../../lib/ops/errors';
+import { Modal } from '../ops/kit/Modal';
 
 /**
  * MY GIFTS — the shared subject content (TASK-ACCOUNTSURFACE §1/§3), rendered
@@ -136,15 +137,12 @@ function GiftDetail({ gift, onClose, onChanged }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-green-950/40 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-3 mb-4">
-          <span className="w-12 h-12 rounded-lg bg-gold-50 text-gold-700 grid place-items-center"><GiftIcon size={22} /></span>
-          <div>
-            <h2 className="font-serif text-green-900 text-lg">{gift.item_label || 'Gift'}</h2>
-            <p className="text-[12px] text-muted">{STATUS[gift.status ?? ''] ?? gift.status}</p>
-          </div>
-        </div>
+    /* ⚠️ TASK-FIX4 §3 — converged, and this one is the OTHER half of the rule:
+       *"an information modal or empty one can close on click out."* It holds no
+       field, so the shared dialog lets the backdrop close it, exactly as before. */
+    <Modal open onClose={onClose} size="sm"
+      title={gift.item_label || 'Gift'} subtitle={STATUS[gift.status ?? ''] ?? gift.status}
+      error={err}>
         <dl className="flex flex-col gap-2 text-sm">
           {gift.amount != null && <Detail label="Value" value={usd(gift.amount)} />}
           <Detail label={gift.direction === 'received' ? 'From' : 'To'} value={gift.direction === 'received' ? gift.buyer_name : gift.recipient_name} />
@@ -174,10 +172,7 @@ function GiftDetail({ gift, onClose, onChanged }: {
           </div>
         )}
         {msg && <p className="text-xs text-green-700 mt-3 break-all">{msg}</p>}
-        {err && <p role="alert" className="text-xs text-red-700 mt-3">{err}</p>}
-        <button type="button" onClick={onClose} className="w-full mt-2 py-2 text-sm text-muted hover:text-green-800">Close</button>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

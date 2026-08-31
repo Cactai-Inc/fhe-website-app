@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Download, Mail, Share2, FileText } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { toErrorMessage } from '../../lib/ops/errors';
+import { Modal } from '../../components/ops/kit/Modal';
 import {
   fetchMyEvaluationReports, downloadEvaluationReport, emailMyEvaluationReport,
   shareEvaluationReport, logReportViewed, type MyEvaluationReport,
@@ -113,24 +114,22 @@ export default function EvaluationsPage() {
         </ul>
       )}
 
+      {/* ⚠️ TASK-FIX4 §3 — converged. A read-only report: no field, so click-out
+          still closes it, which is the information-modal half of the rule. */}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-green-950/50 p-0 sm:p-4" onClick={() => setOpen(null)}>
-          <div className="bg-cream w-full sm:max-w-2xl sm:rounded-2xl flex flex-col max-h-[100dvh] sm:max-h-[92dvh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-3 border-b border-green-800/10">
-              <h2 className="font-serif text-green-900">{open.horse_label ? `${open.title} — ${open.horse_label}` : open.title}</h2>
-              <button type="button" onClick={() => setOpen(null)} className="text-green-800/50 hover:text-green-800 text-sm">Close</button>
-            </div>
-            <div className="overflow-y-auto overscroll-contain p-5 whitespace-pre-wrap text-sm text-green-900 leading-relaxed">
-              {open.body || 'No content.'}
-            </div>
-            <div className="flex gap-2 px-5 py-3 border-t border-green-800/10">
-              <button type="button" className="btn-secondary text-xs inline-flex items-center gap-1.5"
-                disabled={busy} onClick={() => void act(() => downloadEvaluationReport(open), 'Downloaded.')}>
-                <Download size={13} /> Download PDF
-              </button>
-            </div>
+        <Modal open onClose={() => setOpen(null)} variant="sheet" size="lg"
+          panelClassName="bg-cream"
+          title={open.horse_label ? `${open.title} — ${open.horse_label}` : open.title}
+          footer={
+            <button type="button" className="btn-secondary text-xs inline-flex items-center gap-1.5"
+              disabled={busy} onClick={() => void act(() => downloadEvaluationReport(open), 'Downloaded.')}>
+              <Download size={13} /> Download PDF
+            </button>
+          }>
+          <div className="whitespace-pre-wrap text-sm text-green-900 leading-relaxed">
+            {open.body || 'No content.'}
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
