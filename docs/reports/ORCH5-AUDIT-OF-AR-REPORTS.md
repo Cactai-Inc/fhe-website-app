@@ -101,3 +101,62 @@ fed by one source, deliberately.**
 3. **Is Oversight admin-only or all-staff?** (AR6 — an instructor currently gets a heading and a red
    error, with a working panel hidden behind a failed sibling call.)
 4. **Supersede or void** for the LaBuzetta signatures — still open from the AR7 work.
+
+---
+
+# ADDENDUM — AUDIT OF TASK-FIX1 AND TASK-FIX2, 2026-08-31
+
+**Both merged after verifying every headline claim against production myself.**
+typecheck 0 · typecheck:api 0 · **lint 46 (below the 48 baseline)** · build succeeds.
+
+## ✅ FIX1 — verified
+
+- **`record_signature` carries the name check**, and it discriminates correctly: run against all 71
+  live signatures it **refuses exactly the four wrong ones and passes `"Brian olenik"` and all three
+  `"Elisheva fiszer"`.** The case-variant trap is genuinely avoided, not merely claimed.
+- **Evan's four are `EXECUTED` + `current_status = 'superseded'`, with their original
+  `"Aubrey LaBuzetta"` signatures INTACT** — the seal trigger was not touched, exactly as instructed.
+- **`contact_document_satisfied()` returns false on all four**, and his wall state reads
+  `gating: 4`. **The supersession works: the old copies cannot satisfy a requirement, and he is
+  correctly walled for a re-sign.**
+
+## ⚠️ FIX2 — verified, and ITS CORRECTION TO MY BRIEF IS HALF WRONG
+
+**The fix itself is right and is live:** `save_calendar_item` now reads
+`coalesce(v_instr, instructor_user_id, v_fallback)`, `all_day` the same, and `calendar_free_busy`
+returns the stamp. **Proved in a rolled-back transaction that an edit sending no instructor leaves
+`hello@` in place.** No picker built, per the owner's ruling.
+
+**FIX2 corrected my brief, saying the two `admin@` stamps were unstamped cron furniture claimed later,
+and that "production holds no proven instance" of the overwrite. The first half is right. The second
+is wrong.**
+
+⚠️ **`audit_logs` holds a real instance.** Booking `f7881be9-0a32-4d78-880e-3c2f508ab0bf`, session
+2026-08-24 14:00:
+
+```
+08-24 23:34:46   instructor  hello@fhequestrian.com -> admin@fhequestrian.com   actor: admin@
+```
+
+**A stamp that said Claire was moved to the acting admin, and that booking still reads `admin@`
+today.** Five further rows show `admin@ -> NULL` on 08-23. **So the mechanism did fire in production,
+once, on a real scheduled lesson.**
+
+⚠️ **This does not change the code — FIX2's fix prevents exactly this.** It changes **one data
+repair**: that booking's instructor should be restored to `hello@`. **Not performed — it is a write to
+a real scheduled session and belongs with the owner's data pass.**
+
+**FIX2's other correction IS accepted:** "People waiting" is **two** people, not three. Rachel
+Engelhorn does appear in `admin_client_accounts()`; my earlier count was wrong because I queried the
+contact list rather than the zone's own rows.
+
+## OPEN, AND DELIBERATELY NOT DONE
+
+1. ⚠️ **The `anon` grant on `record_signature` / `remove_my_signature`** — FIX1 declined to revoke it
+   because §C did not list it, and asked for a deliberate decision. **Correct call. Now flagged a
+   third time; it needs an owner ruling or its own task.**
+2. **Restoring booking `f7881be9`'s instructor to `hello@`** — above.
+3. **Evan is walled and nothing tells him why.** ⚠️ **He cannot proceed until the owner runs step 1 of
+   FIX1's checklist. This is live and blocking a real client.**
+4. **Madeline's provisioning** — the mechanism is built and proven (26 sessions in a rolled-back run
+   against her real paid item). **The owner's pass, with his timestamps.**
