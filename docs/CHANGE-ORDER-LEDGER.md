@@ -3068,3 +3068,90 @@ messages page retired (B)? ⚠️ **If B, Community loses a row and the section 
 **Where this is built:** ⚠️ **NOT in `TASK-FIX6`** — that owns the dashboard. **This is a nav change,
 so it belongs with whatever next touches `AppLayout.tsx` and `pageRegistry.ts`.** ⚠️ **`TASK-FIX3`
 has merged, so nothing owns those two files right now.**
+
+---
+
+## CR-86 · G5 · captured — the books: unbilled services, discounts, comps, costs, and a real P&L
+
+**SAID (owner, 2026-08-31):**
+> *"we have a lot of clients with lease agreements that we also are required to provide care services
+> (the contract mentions it specifically, but the aggreements havent been executed yet and the
+> services are still being provided and we have paying clients who we provide the training and care
+> services for without a lease agreement being part of the relationship and they are not in the system
+> and not being tracked nor their revenue being recorded. we also had discussed the implementation of a
+> discount and promotional (full comp no cost to the customer) designation we can assign to purchasable
+> offerings. its important for our records to show when we give away a service or provide a discount, a
+> lot of people are getting discounts on the services we are providing them and these are technically a
+> business loss, also cost tracking needs to be added so things like medication, feed, boarding,
+> bedding, equipment, and other supplies can be logged and the money tracked against revenue so we can
+> see the P&L for the business. This is the type of thing an ops dashboard should show, money in/money
+> out, profit or loss, discounts given during a period, money paid for a sale and discount given,
+> etc..."*
+
+⚠️ **THIS IS A BUSINESS-RECORDS REQUIREMENT, NOT A DASHBOARD ONE.** The dashboard is the *last* step —
+**none of these numbers can be shown because none of them is recorded.** `TASK-FIX6` must NOT try to
+build this; it shows what exists.
+
+### ⚠️ FOUR SEPARATE GAPS — do not treat as one
+**1. SERVICES DELIVERED AND NOT RECORDED AT ALL.** Two populations:
+- lease clients owed care services **by a contract that is not yet executed**, receiving them anyway;
+- clients receiving training and care **with no lease in the relationship at all** — ⚠️ *"they are not
+  in the system and not being tracked nor their revenue being recorded."*
+⚠️ **This is unrecorded REVENUE, not just an unrecorded service.** It is the largest gap and it is
+data, not code — **see the owner's own account pass** (`RUN-QUEUE.md`).
+
+**2. DISCOUNT AND COMP AS A DESIGNATION ON AN OFFERING.** *"a discount and promotional (full comp no
+cost to the customer) designation we can assign to purchasable offerings."* ⚠️ **And the reason is
+accounting, not UX:** *"its important for our records to show when we give away a service or provide a
+discount … these are technically a business loss."*
+
+**3. COST TRACKING** — medication, feed, boarding, bedding, equipment, supplies.
+
+**4. THE P&L** — money in, money out, profit or loss, discounts given in a period, and **what was paid
+versus what was discounted on a single sale.**
+
+### ⚠️ MEASURED 2026-08-31 — THE COST SPINE ALREADY EXISTS AND IS COMPLETELY EMPTY
+| Table | Rows |
+|---|---|
+| `resources` · `resource_lots` · `consumption_events` · `cost_allocation_rules` · `billable_lines` | ⚠️ **0, every one** |
+
+⚠️ **`resource_lots` ALREADY CARRIES `unit_cost`, `vendor_contact_id`, `qty_purchased` AND `on_hand`.**
+**The purchasing-and-consumption model for gap 3 is BUILT AND UNDRIVEN.** ⚠️ **Do not design a second
+one — establish why it was never driven, then drive it** (D18). **`A12 Barn operations` in the zone
+sweeps owns exactly these tables; sequence against it.**
+
+### ⚠️ AND THE MONEY SIDE HAS NOWHERE TO PUT A DISCOUNT
+**`purchase_items` holds `price_amount · price_unit · quantity` — and NO discount, comp, list-price or
+reason column.** ⚠️ **So a discounted sale is indistinguishable from a cheap one, and a comp is
+indistinguishable from a sale that never happened.** **The loss the owner wants recorded has no field
+to live in.**
+⚠️ **`grant_lesson_credit` already has a `comp` mode** *(used 0 times)* — **a comp concept exists on
+the CREDIT side and not on the ORDER side.** **Reconcile them; do not build a third.**
+
+### ⚠️ THIS IS CR-39 AND CR-40, RE-STATED WITH THE REASON ATTACHED
+**CR-39** *(comping records a LOSS, and the client must see they were given something free)* and
+**CR-40** *(discounts)* are already in this ledger, **unbuilt**. ⚠️ **CR-39 carries an unanswered
+question that is now urgent: have comps been recorded as "paid" to date? If so the revenue figures are
+already wrong**, and every P&L built on them inherits it. ⚠️ **ANSWER THAT BEFORE BUILDING THE P&L.**
+
+### DEPENDENCIES
+- ⚠️ **CR-16/CR-38…CR-42 are the line-item editing model** — quantity, comp, discount, void, mark
+  paid, cadence. **The owner already ruled these are ONE model, not six buttons.** **Discount and comp
+  belong there, not bolted onto an offering.**
+- ⚠️ **The offering-level "designation" he describes and the line-level discount are DIFFERENT FACTS.**
+  *This offering is promotional* ≠ *this sale was discounted*. **Both are needed; conflating them
+  loses the per-sale record he asked for.**
+- **D21: an algorithm is configuration and ships with an editor.** ⚠️ **A discount RULE is a business
+  formula — hardcoding one is a defect by default.**
+- **D19: a value-moving action states itself, records itself, and can be undone.** A comp moves value.
+
+### ASK-OWNER
+1. ⚠️ **Have comps been marked "paid" to date?** *(CR-39's open question — decides whether existing
+   revenue figures are trustworthy.)*
+2. **Is a discount a percentage, a fixed amount, or both** — and is it set on the line or the order?
+3. **Does the client SEE the discount** *("$880, less 10%")* or only the net? ⚠️ **CR-40 asks this and
+   CR-39 answers it for comps — the owner said the client must see a comp. Confirm it is the same for
+   discounts.**
+4. **Cost tracking scope: purchase-and-consume** *(the existing `resource_lots` model)* **or simple
+   expense logging?** ⚠️ **The built spine assumes the former; the owner's list — "medication, feed,
+   bedding" — reads like the former too. Confirm before driving it.**
