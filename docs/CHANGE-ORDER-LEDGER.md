@@ -3244,3 +3244,44 @@ the existing spine.** **Recommend, with the trade-off stated.**
 both?** *(`cost_allocation_rules.scope` already contains `board`, and `A12 Barn operations` owns
 boarding agreements and charges.)* **The answer decides which side of the P&L it lands on, and the
 word alone does not.**
+
+### 🔒 CR-86 — HOW A COMP IS RECORDED (owner, 2026-08-31) ⚠️ AND THE TRAP IT WALKS INTO
+> *"the comps are reported as paid, but the payment amount is $0 and the revenue records as -$ for the
+> loss, im not sure the value yet so we can just record the loss as the price of the item comped."*
+
+**THE RULE:** a comped order is **`payment_status = 'paid'`**, **`amount_paid = 0`**, and the business
+records **a LOSS equal to the item's price**. ⚠️ **The client is not chased for money; the company
+carries the cost — which is CR-39's *"a comp is not a payment"* made concrete.**
+**Loss value = the price of the item comped** *(his interim rule; he may refine it once real cost data
+exists — see the standing/consumed split above)*.
+
+### ⚠️ AS WRITTEN, THIS WOULD BOOK A COMP AS FULL-PRICE REVENUE. VERIFIED IN THE LIVE FUNCTION.
+`revenue_summary` line 22:
+```
+SELECT coalesce(sum(coalesce(nullif(p.amount_paid, 0), p.amount, 0)), 0), count(*)
+ WHERE p.payment_status = 'paid'
+```
+⚠️ **`nullif(amount_paid, 0)` turns a ZERO into NULL, and the `coalesce` then falls through to
+`p.amount` — THE FULL LIST PRICE.** **So an order marked paid at $0 is counted as revenue at its full
+price: the exact inverse of the intent.** ⚠️ **Left alone, the first comp inflates revenue by its own
+value AND records no loss — a double error in the same direction.**
+
+**Why the fallback exists (do not simply delete it):** it is there for a paid order whose `amount_paid`
+was never populated, so the list price is a better guess than zero. ⚠️ **The fix is to make a COMP
+DISTINGUISHABLE from an unpopulated amount — which is precisely the missing designation in CR-86 §2.**
+**A zero cannot carry that meaning on its own, and that is the whole lesson here.**
+
+### ✅ MEASURED — NOTHING IS WRONG YET, AND THAT IS THE WINDOW
+**All three paid orders in production are genuine, with `amount_paid` matching `amount`:**
+`PUR-000316 $120` · `PUR-000319 $880` · `PUR-000320 $880`. ⚠️ **ZERO comps have been recorded, so no
+revenue figure is currently corrupted.** ⚠️ **This answers CR-39's long-open question — *"have comps
+been recorded as paid to date?"* — with **NO**. The books are clean TODAY.**
+
+⚠️ **THEREFORE THE ORDER OF WORK IS FIXED: the comp DESIGNATION and the `revenue_summary` fix must
+land BEFORE the first comp is entered.** **The owner is about to do a data pass. If a comp is recorded
+first, the error is retroactive and every P&L built on it inherits it silently.** **This is the
+cheapest it will ever be to fix.**
+
+**ASK-OWNER:** ⚠️ **is the loss the LIST price or the price on the ORDER LINE?** *(They differ the
+moment a discount and a comp appear on one order — "money paid for a sale and discount given", his
+own words.)* **His interim answer is "the price of the item comped"; confirm which price that means.**
