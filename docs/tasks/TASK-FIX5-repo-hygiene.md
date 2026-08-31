@@ -89,8 +89,9 @@ owner already put them by hand.**
    deleted.**
 5. **The shared workspace** — Part 2 of the plan. **See §5, it has its own traps.**
 6. **The migrations** — §6.
-7. ⚠️ **THE REFERENCE REPAIR. Grep every moved path and fix all 417 files.** **This is the step that
-   makes the rest safe, and it is the one most likely to be skimped.**
+7. ⚠️ **THE REFERENCE REPAIR — per §2, batch by batch.** After each move, grep for **that batch's
+   OLD paths only** and fix what breaks. ⚠️ **The `docs/reports/` archiving in step 4 is the one step
+   that earns a full sweep. Do NOT grep 417 files after a folder rename.**
 
 ## 5. ⚠️ THE SHARED WORKSPACE — three traps, all verified
 
