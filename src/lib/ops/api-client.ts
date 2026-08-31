@@ -123,7 +123,16 @@ export async function listMySignableDocuments(): Promise<SignableDocument[]> {
  * `esignConsent` (20260703110000): the UI's "sign electronically" checkbox —
  * when true the server logs a separate esign_consents row alongside the
  * signature. Defaults false so pre-checkbox callers keep their behavior.
- * ip/user-agent are captured server-side from the request headers.
+ *
+ * ip/user-agent ARE captured server-side from the request headers, via
+ * http_request_attribution() inside record_signature (FIX1 §C, 20260831T0900).
+ * This line was written before that was true: the function accepted p_ip and
+ * p_user_agent, every caller passed NULL, and 21 of 71 production signatures
+ * carry neither (AR7 F4). Passing them explicitly still wins over the headers.
+ *
+ * The typed name is also checked server-side now — case-insensitively, against
+ * the signer's own contact record — so a rejection here can be a NAME mismatch
+ * and the thrown message names the string the server expected.
  */
 export async function signMyDocument(
   documentId: string,

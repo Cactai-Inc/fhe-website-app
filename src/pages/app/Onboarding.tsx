@@ -769,10 +769,24 @@ export default function Onboarding() {
     await commitHorses(false);
   }
 
-  // The printed name on the contracts — the typed signature must match EXACTLY
-  // (record_signature enforces it server-side; we gate the button the same way).
+  /* The printed name on the contracts. record_signature NOW enforces this
+     server-side (FIX1 §C, 20260831T0900) — until 2026-08-31 it did not, and the
+     comment that used to sit here said it did. AR7 F3: three comments asserted a
+     server guarantee that did not exist, which is how four more signing surfaces
+     got written with no check at all.
+
+     The button is gated by the SAME rule the server now applies —
+     case-insensitive, whitespace-collapsed — and not the stricter one that used
+     to live here. An exact, case-sensitive comparison was the strictest rule in
+     the codebase and it refused four legitimate, already-executed production
+     signatures ("Brian olenik", three "Elisheva fiszer"). On this surface it
+     refused them by DISABLING the button, with nothing on screen to say why —
+     a dead end with no error to read. The server's refusal at least names the
+     string it wanted. Matching the two means the button is live exactly when
+     the signature will seal. */
+  const normalizeName = (v: string) => v.trim().replace(/\s+/g, ' ').toLowerCase();
   const expectedName = `${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim();
-  const nameMatches = expectedName !== '' && typedName.trim() === expectedName;
+  const nameMatches = expectedName !== '' && normalizeName(typedName) === normalizeName(expectedName);
 
   async function signCurrent(e: React.FormEvent) {
     e.preventDefault();

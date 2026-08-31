@@ -2236,9 +2236,17 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         && hasSignatureCardContent && (
         <section id="contract-signatures" className="bg-white border border-green-800/10 rounded-xl p-6 scroll-mt-16 mt-6">
           {/* DOCUMENT-BEFORE-CONTRACT (2026-07-29): a party with unsatisfied
-              onboarding documents cannot sign. This is the FRIENDLY half — the
-              authoritative gate is server-side in record_signature(), so a deep
-              link here changes nothing. We deliberately keep the contract
+              onboarding documents is asked to finish them before signing.
+              ⚠️ THIS ONE IS STILL ONLY THE FRIENDLY HALF, and the comment that
+              stood here until 2026-08-31 was wrong to say otherwise: it claimed
+              "the authoritative gate is server-side in record_signature()", and
+              for the DOCUMENT GATE there is no such gate — the onboarding wall
+              is a client-side <Navigate> in AppLayout with no server counterpart
+              (AR7 F7; a server wall is R13, deferred to an owner ruling). A deep
+              link here does change something, and that is a known, accepted gap.
+              What record_signature DOES enforce is that the caller is the party
+              (always has) and that the typed name matches their contact record
+              (FIX1 §C, 20260831T0900). We deliberately keep the contract
               READABLE and show an explanatory next step instead of a bare denial:
               a party who cannot read what they are being asked to sign has no way
               to understand why they are blocked, and the onboarding documents are
