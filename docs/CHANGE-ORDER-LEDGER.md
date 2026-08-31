@@ -3285,3 +3285,61 @@ cheapest it will ever be to fix.**
 **ASK-OWNER:** ⚠️ **is the loss the LIST price or the price on the ORDER LINE?** *(They differ the
 moment a discount and a comp appear on one order — "money paid for a sale and discount given", his
 own words.)* **His interim answer is "the price of the item comped"; confirm which price that means.**
+
+### 🔒 CR-86 — THE COST CADENCES, AND THE RULE BENEATH THEM (owner, 2026-08-31)
+> *"boarding is a cost we pay and we attribute it to the company overall through a horse specifically
+> since each horse has their own boarding/bedding/feed/supplements/medications/farrier costs that occur
+> repeatedly throughout the year at their own intervals, boarding, bedding, feed can be seen as monthly
+> costs, supplements and medications can too, farrier can be seen as annual since we never know how
+> long we will go between farrier appointments and we dont know the costs for them, wherease we know
+> the monthly payment for boarding and bedding and feed is pretty standard and the supplements and
+> medications can fluctuate from month to month but they arent an annual thing even if we ordered a
+> year supply we only record the cost when the thing is given which we can enumerate on a monthly
+> basis."*
+
+✅ **BOARDING IS A COST WE PAY** *(answers the open ASK-OWNER)*, **attributed to the COMPANY, THROUGH a
+specific horse.** ⚠️ **Every cost in this list is per-horse and company-borne** — `cost_allocation_rules`
+already expresses exactly that: `scope='horse'`, `scope_id=<horse>`, `payer_contact_id=<company>`.
+
+### ⚠️ THE RULE IS NOT CADENCE. IT IS *WHEN THE COST BECOMES KNOWN.*
+**Three ways that moment arrives — one recognition rule, not three cost models:**
+
+| | Amount | Timing | Recognise when | Examples |
+|---|---|---|---|---|
+| **STANDING** | ⚠️ **known in advance** — *"pretty standard"* | known, monthly | **the period arrives** | boarding · bedding · feed |
+| **ON USE** | ⚠️ **known only when given** | irregular | ⚠️ **the thing is ADMINISTERED** — *"we only record the cost when the thing is given"* | supplements · medications |
+| **ON EVENT** | ⚠️ **unknown until invoiced** — *"we dont know the costs for them"* | ⚠️ **unknown** — *"we never know how long we will go between"* | **the invoice arrives** | farrier |
+
+⚠️ **THIS SUPERSEDES THE EARLIER "two cost shapes" NOTE** *(consumed vs standing)*. **It is one rule
+with three triggers, and the difference between ON USE and ON EVENT is NOT the interval — it is
+whether the amount is knowable before it happens.**
+
+⚠️ **"ANNUAL" IS A REPORTING BUCKET, NOT A CADENCE.** He calls farrier annual **because the interval is
+unpredictable**, and *"even if we ordered a year supply we only record the cost when the thing is
+given."* ⚠️ **DO NOT MODEL AN ANNUAL SCHEDULE. There is no annual event to schedule** — there is an
+unpredictable event, reported yearly. **Modelling it as a recurring annual charge would invent a
+cost that did not happen.**
+
+### ⚠️ AND A PURCHASE IS NOT A COST — THIS IS THE SHARPEST POINT IN HIS MESSAGE
+*"even if we ordered a year supply we only record the cost when the thing is given."*
+⚠️ **Buying a year of supplements is NOT twelve months of cost on the day it is bought.** **The lot is
+bought; the COST lands as it is administered.** ✅ **The existing spine already does this exactly:
+`resource_lots` holds the purchase and `unit_cost`; `consumption_events` records each administration
+against a `horse_id`.** ⚠️ **The cost is `qty × unit_cost` at the moment of the event — which is why
+these two tables are separate, and why nothing should collapse them.**
+
+### WHAT IS STILL MISSING — narrowed to ONE thing
+✅ **ON USE is fully built** *(lots + consumption events)*. ✅ **ON EVENT fits it** — a farrier visit is
+a lot with a known cost and a single consumption against one horse, **or a simple per-horse expense;
+recommend which, with the trade-off.**
+❌ ⚠️ **STANDING has no model.** `resources` carries no recurrence and no standing amount, and
+`resource_lots` models a purchase — **wrong for a boarding charge that arrives whether or not anything
+was delivered.** ⚠️ **Do NOT fake a lot for it: a phantom quantity corrupts `on_hand` and every
+consumption figure computed from it.**
+
+⚠️ **AND STANDING COSTS MUST BE PER-HORSE, NOT ONE COMPANY LINE** — *"each horse has their own"*.
+**A single monthly boarding total cannot answer "what does this horse cost us", which is the question
+he is asking.**
+
+**ASK-OWNER:** **does a standing cost stop by itself?** ⚠️ **A horse that leaves must stop accruing
+boarding, or the P&L drifts quietly every month.** **Ended-by-date, or ended by the horse's own status?**
