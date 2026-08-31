@@ -57,7 +57,7 @@ INTO `FIX4`. `CR-85` and `CR-86` ARE NOT SPECCED — they are yours to spec.**
 Contacts and Stable)*. ⚠️ **The order is already correct; the only change is People dissolving.**
 ⚠️ **The orchestrator argued against this and was WRONG** — Catalog and Messages **are** community
 content *(the view lives in Community, the editor in Admin — `Products` at `pageRegistry.ts:267`)*.
-⚠️ **Blocked on the messaging A/B (§5). If B, Community is Catalog alone.**
+⚠️ **Blocked on §5 #1 — where messaging lives. If the Messages page is retired, Community is Catalog alone.**
 **Home:** whatever next touches `AppLayout.tsx` + `pageRegistry.ts`. **Nothing owns them now.**
 
 ### CR-86 · the books ⚠️ **THE LARGEST UNSPECCED ITEM, AND IT HAS A DEADLINE**
@@ -66,11 +66,22 @@ content *(the view lives in Community, the editor in Admin — `Products` at `pa
    plus clients with no lease at all. ⚠️ **Unrecorded REVENUE. This is his data pass, not code.**
 2. **Discount + comp designation** — ⚠️ **`purchase_items` has NO discount, comp, list-price or reason
    column.** A discounted sale is indistinguishable from a cheap one.
-3. **Cost tracking** — ⚠️ **THE SPINE ALREADY EXISTS AND IS EMPTY:** `resources` · `resource_lots`
-   *(with `unit_cost`, `vendor_contact_id`)* · `consumption_events` *(with `horse_id`,
-   `administered_by`)* · `cost_allocation_rules` *(`scope` ∈ horse/lease/board/default,
-   `payer_contact_id`, `share_pct`)* · `billable_lines`. **0 rows in all five.** ⚠️ **Establish why it
-   was never driven before driving it** (D18).
+3. ⚠️ **Cost tracking — SIMPLIFIED BY THE OWNER, 2026-08-31. A MONTHLY COST SHEET ON THE HORSE
+   RECORD, TYPED IN AT MONTH END.** *"the simplest thing to do is give a space on the horse record for
+   recording the costs at month end. having the right lines to input $ is better than trying to figure
+   out how to automate it from a one time input."*
+   **One row per horse per month. Lines: boarding · bedding · feed · supplements · medications · vet ·
+   farrier · other+note. Annual = the sum of the months; no separate annual model.**
+   ⚠️ **A blank line is NOT zero** — "no medication this month" and "not entered yet" must be
+   distinguishable or the annual roll-up silently under-reports.
+   ⚠️ **HE RULED OUT THE AUTOMATION, and the reason is sound: every figure is already known at month
+   end by the person who was there. Deriving it would mean logging every administration all month to
+   reconstruct a number readable off an invoice — more input, not less.**
+   ⚠️ **THEREFORE: `resources` · `resource_lots` · `consumption_events` · `cost_allocation_rules` ·
+   `billable_lines` — all built, all 0 rows — STAY UNDRIVEN.** A per-event consumption ledger is
+   exactly what he declined. **Leave them (D32); say so explicitly so a later thread does not "finish"
+   them.** *(`cost_allocation_rules` may matter later for CLIENT-owned horses — who pays — but not for
+   this, which is company-borne cost on our own horses.)*
 4. **The P&L** — money in/out, discounts in a period, paid-vs-discounted on one sale.
 
 **⚠️ THE DEADLINE, AND IT IS THE MOST IMPORTANT LINE IN THIS FILE:**
@@ -80,22 +91,13 @@ and falls through to the FULL LIST PRICE.** ⚠️ **So a comp recorded as the o
 ✅ **Verified: all three paid orders are genuine and ZERO comps exist, so the books are clean TODAY.**
 ⚠️ **THE COMP DESIGNATION AND THE `revenue_summary` FIX MUST LAND BEFORE HIS DATA PASS ENTERS THE FIRST
 COMP.** After that the error is retroactive and every P&L inherits it silently.
+⚠️ **The cost simplification does NOT touch this — that is the COST side, this is the REVENUE side.
+Both are needed for a P&L; only the cost side got smaller.**
 
-**The cost model, ruled by him:** the trigger is **when the cost becomes KNOWN**, not the cadence —
-**STANDING** *(known amount, monthly: boarding, bedding, feed)* · **ON USE** *(known when
-administered: supplements, medications)* · **ON EVENT** *(unknown until invoiced: farrier)*.
-⚠️ **"Annual" is a reporting bucket, NOT a cadence — do not model an annual schedule for farrier.**
-⚠️ **A purchase is NOT a cost:** a year of supplements is not twelve months of expense on the purchase
-date — which is exactly why `resource_lots` and `consumption_events` are separate. **On use and on
-event are BUILT. Only STANDING is missing, and it must be per-horse, never one company line.**
-⚠️ **Do not fake a lot for a standing charge — a phantom quantity corrupts `on_hand`.**
-**Boarding is confirmed a cost WE PAY, company-borne, attributed through a horse.**
-
-**Who does what:** ⚠️ **Claire LOGS the event; either of them attaches the money afterwards.**
-**A cost record must be valid BEFORE its price is known** — the invoice arrives later. ⚠️ **A model
-demanding a price at logging time makes her guess or skip, and a skipped log is a permanently missing
-cost.** **Inputs live on her working surfaces — the horse, the care item, the day — NEVER on a books
-screen.** **The books are his; the KPI is a dashboard zone at two depths.**
+**Who enters what:** ⚠️ **Claire is the one positioned to know what happened; the month-end sheet is
+money, so either of them may enter it — CONFIRM WITH HIM (§5).** **Inputs live on her working surfaces
+— the horse record — NEVER on a books screen.** **The books are his; the KPI is a dashboard zone at
+two depths.**
 
 # 4. ⚠️ `TASK-FIX6` HAS A MANDATORY PAUSE
 
@@ -132,7 +134,7 @@ badge — never "Claire" by default.**
 
 | # | Question | Blocks |
 |---|---|---|
-| 1 | ⚠️ **The messaging A/B** *(`04-OPEN-QUESTIONS.md` §1)* — do notes panels become the inbox **(A)**, or is the collective page retired **(B)**? ⚠️ **ORCH5 recommends A**, his own reason: *"not needing to look at a specific place for a specific thing."* | **CR-85** — if B, Community is Catalog alone |
+| 1 | ⚠️ **WHERE MESSAGING LIVES** *(`04-OPEN-QUESTIONS.md` §1)* — ⚠️ **the owner did not recognise this as "the messaging A/B"; describe it, do not name it.** There are chat-style notes panels on **lessons, horse-care activity records and contracts**, AND a standalone **Messages** page — two systems for one job. **Either (A) the notes panels BECOME the messages and the Messages page lists every conversation from all three, or (B) messaging lives only on those surfaces and the Messages page is retired.** ⚠️ **ORCH5 recommends A**, for his own stated reason: *"not needing to look at a specific place for a specific thing"* — under A a message reaches him without him first remembering which lesson, horse or contract it hung off. | **CR-85** — if B, Community is Catalog alone |
 | 2 | **Claire's Ops zone list** | FIX6 step 5 |
 | 3 | **Is a comp's loss the LIST price or the ORDER-LINE price?** *(they diverge when a discount and a comp meet on one order)* | CR-86 |
 | 4 | **Does a standing cost stop by itself?** A horse that leaves must stop accruing boarding **or the P&L drifts quietly every month.** | CR-86 |

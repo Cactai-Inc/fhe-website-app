@@ -96,7 +96,7 @@ document, then the ORCH7 handoff.**
 
 | | What | Size |
 |---|---|---|
-| **CR-85** | the nav becomes three sections; People dissolves into Community | small — ⚠️ **blocked on the messaging A/B** |
+| **CR-85** | the nav becomes three sections; People dissolves into Community | small — ⚠️ **blocked on where messaging lives (see the brief)** |
 | **CR-86** | ⚠️ **the books** — unrecorded services · discount/comp designation · cost tracking · the P&L | **large** |
 
 ⚠️ **CR-86 HAS A DEADLINE.** `revenue_summary` computes `coalesce(nullif(amount_paid,0), amount, 0)`,
