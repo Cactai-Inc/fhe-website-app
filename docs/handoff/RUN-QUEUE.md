@@ -90,6 +90,20 @@ document, then the ORCH7 handoff.**
 
 ---
 
+# ⚠️ AFTER THE QUEUE — CAPTURED 2026-08-31, NOT YET SPECCED
+
+**These are ORCH6's to spec. They are the bulk of what remains.**
+
+| | What | Size |
+|---|---|---|
+| **CR-85** | the nav becomes three sections; People dissolves into Community | small — ⚠️ **blocked on the messaging A/B** |
+| **CR-86** | ⚠️ **the books** — unrecorded services · discount/comp designation · cost tracking · the P&L | **large** |
+
+⚠️ **CR-86 HAS A DEADLINE.** `revenue_summary` computes `coalesce(nullif(amount_paid,0), amount, 0)`,
+so a comp recorded as intended *(paid, $0)* books as **full-price revenue** and records no loss.
+**Zero comps exist today, so the books are clean — the fix must land BEFORE the owner's data pass
+enters the first one.** Full detail: `docs/handoff/ORCH6-BRIEF.md` §3.
+
 # ⚠️ OPEN — none of this is in any queued thread
 
 ## Needs an owner ruling
