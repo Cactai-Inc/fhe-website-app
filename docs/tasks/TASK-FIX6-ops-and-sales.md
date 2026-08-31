@@ -46,6 +46,40 @@ give it the right names.** *(D18: never build a second implementation beside a w
 schedule, and payments"* — client-centric. **If the trainer zones are Claire's day rather than the
 client pipeline, say so and propose the honest split rather than forcing the label.**
 
+## 2b. ⚠️ ROLE-SCOPING — CLARIFIED BY THE OWNER, AND IT ALREADY EXISTS
+
+**Owner, 2026-08-31:**
+> *"OwnerDashboard is acceptable as replacement for Ops, what we really need is Ops and Sales. two
+> dashboard configs so they can be toggled or only one is selected (by admin for a staff, ie: role
+> scoped)"*
+
+**So the requirement is two configurations where a person may hold BOTH (and toggles) or exactly ONE
+(assigned by an admin).** ⚠️ **Measured 2026-08-31 — the whole mechanism is already built:**
+
+| | |
+|---|---|
+| **`profiles.dashboard_focus`** | the stored per-account default. **Live values: `business` → `admin@fhequestrian.com`, `trainer` → `hello@fhequestrian.com`** |
+| **`set_dashboard_focus(p_user_id, p_focus)`** | ⚠️ **ALREADY ADMIN-SETTABLE FOR ANOTHER ACCOUNT** — `p.user_id = auth.uid() OR coalesce(is_admin(), false)`. **The "by admin for a staff" half needs no new function.** |
+| the fallback | `role = 'ADMIN' → business`, otherwise `trainer` — **and its own comment says this is a fallback, "never an identity check"** |
+
+⚠️ **WHAT IS GENUINELY MISSING IS THE "ONLY ONE" CASE.** Today `dashboard_focus` sets which view you
+**land on**, and **both views stay reachable by everyone** — `OwnerDashboard`'s header says so
+outright: *"Both views are reachable by both accounts, always."*
+
+**So build exactly one thing here: a way to say a given staff account gets ONE config and no toggle.**
+⚠️ **Do NOT rebuild the default, the toggle or the setter.** **Extend, do not replace** (D18).
+
+⚠️ **AND ASK RATHER THAN ASSUME:** is "only one" a **third value** on `dashboard_focus`
+*(`business` · `trainer` · and a locked variant)*, or a **separate boolean** meaning *this account does
+not get the toggle*? **The second is cleaner — it keeps "which view" and "may they switch" as two
+facts rather than overloading one column**, which is this codebase's most repeated defect. **Recommend
+one, state the trade-off, and let the owner confirm.**
+
+⚠️ **THE ADMIN SURFACE THAT SETS IT:** `set_dashboard_focus` exists but **find out whether any UI
+calls it for another account.** If nothing does, **that is the D13 gap** — the owner cannot assign a
+staff member's dashboard without a thread. **It belongs on the Team page, beside the other per-person
+settings.**
+
 ## 3. WHAT BOTH VIEWS SHARE — his list, and it is a real constraint
 
 **Both Ops and Sales show:** financial KPIs · user-growth KPIs · **website traffic and lead-conversion
@@ -126,8 +160,11 @@ the metric list itself *(a spec is coming from his separate chat thread; `04-OPE
 
 ## 9. THE TEST THIS MUST PASS
 
-1. **The toggle reads Ops / Sales**, and the stored key migrates — ⚠️ **an existing
-   `sessionStorage` value must not strand someone on a view that no longer exists.**
+1. **The toggle reads Ops / Sales**, and BOTH stored keys migrate — ⚠️ **the `sessionStorage` value
+   AND `profiles.dashboard_focus`, which holds `business`/`trainer` on two live accounts today.
+   Neither may strand someone on a view that no longer exists.**
+1b. ⚠️ **An account assigned ONE config sees no toggle**, and an account with both still toggles.
+   **Prove both, and paste the `dashboard_focus` rows.**
 2. **Ops shows company process, app and support. Sales shows leads, orders, schedule, payments.**
 3. **Both show the shared KPI set and the needing-attention list, from ONE zone definition registered
    twice.** Paste the registry proving it is not duplicated.
