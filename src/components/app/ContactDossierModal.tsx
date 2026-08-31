@@ -1,21 +1,49 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   contactDossier, updateContactRecord, setContactType,
   listLookupOptionsAll, addLookupValue,
   CONTACT_TYPE_LABEL, type ContactDossier, type ContactType,
 } from '../../lib/api';
+import { supabase } from '../../lib/supabase';
 import { toErrorMessage } from '../../lib/ops/errors';
 import type { LookupCode } from '../../lib/ops/types';
 import {
   AssignDocumentsModal, ClientHorseRecordsCard, AttachOfferingPanel, PaperworkEditor,
 } from './ClientRecordActions';
-import { ProvisionClientForm } from './ProvisionClientForm';
-import { TAG_LABEL, TAG_REASON } from '../../lib/admin';
-import { AgreedLessonSection, type AgreedLesson } from './AgreedLessonPanel';
+import {
+  TAG_LABEL, TAG_REASON,
+  adminSetSuspended, adminAccountAction, adminHardDeleteClient,
+} from '../../lib/admin';
 import { StaffStandingSlotSection } from './StandingSlotPicker';
+import { ClientInvitationSection } from './ClientInvitationSection';
+import { fetchClientStandingSlots } from '../../lib/ops/api-calendar';
 
 /**
+ * THE CONTACT RECORD — every person, one surface, at every stage of their life.
+ *
+ * ⚠️ TASK-FIX2 §3. This is now THE record surface, and `Records › Clients`
+ * (`Admin.tsx`) opens it for all 24 people on that list — where before it opened
+ * a second, account-keyed view that 17 of the 24 could not render at all
+ * (`Admin.tsx:1018`/`:1033` gated the tab rail and body on
+ * `selected.kind === 'account'`). AR2 F3: five surfaces rendered a person and the
+ * most complete one was unreachable from the list everybody uses. The rule that
+ * decided which one you got was never anything about the person — it was which
+ * tab you happened to click through.
+ *
+ * WHAT CAME ACROSS FROM THE RETIRED LAYOUT, so nothing was lost with it:
+ * the invitation lifecycle in full (`ClientInvitationSection` — AR2 F5 items
+ * 9–14, which exist nowhere else), the provisioning form and its agreed-lesson
+ * picker at every stage rather than only before an invitation goes out, Bookings,
+ * Payments, Messages, the sign-in detail, and suspend / reinstate / remove /
+ * archive / hard delete.
+ *
+ * ⚠️ CR-75 GOVERNS THE CLOSE: *"closing everything … saves their work"*, and an
+ * expanded record needs no separate save button. AR2 F7 found this file doing
+ * both wrong halves — a backdrop click or Escape DESTROYED unsaved edits, and
+ * there was a Save button. Both are fixed below; see `requestClose`.
+ *
  * THE CONTACT DOSSIER — every person, one modal.
  *
  * Replaces the account-keyed client page for this purpose. That page took a
@@ -32,7 +60,8 @@ import { StaffStandingSlotSection } from './StandingSlotPicker';
  * everything editable is editable.
  */
 
-type Tab = 'record' | 'relationships' | 'documents' | 'orders' | 'paperwork' | 'account' | 'activity';
+type Tab = 'record' | 'relationships' | 'bookings' | 'documents' | 'orders'
+  | 'paperwork' | 'account' | 'activity';
 
 const FIELD_GROUPS: { title: string; fields: [string, string][] }[] = [
   { title: 'Name and contact', fields: [
@@ -167,11 +196,25 @@ export function ContactDossierModal({
   }, [contactId]);
   useEffect(load, [load]);
 
+  /* ⚠️ CR-75 / AR2 F7 — CLOSING SAVES, AND THERE IS NO SAVE BUTTON.
+     `dirty` used to be component state that nothing committed on close, while the
+     backdrop carried `onClick={onClose}` and Escape called `onClose` — so the two
+     easiest ways to leave the record were the two ways to lose the work. The
+     owner has reported this exact behaviour once already (*"the click out of the
+     modal closes it and the data is lost"*).
+
+     Every exit now runs through `requestClose`, which commits first. ⚠️ IF THE
+     SAVE FAILS THE RECORD STAYS OPEN with the edits still in the boxes and the
+     reason on screen — closing over a failed write would lose the work just as
+     surely as the old behaviour did, only more quietly. Held in a ref so the
+     document-level Escape listener never closes over a stale `dirty`. */
+  const commitRef = useRef<() => Promise<void>>(async () => {});
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') void commitRef.current(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, []);
 
   const c = (d?.contact ?? {}) as Record<string, unknown>;
   /** TASK-ARCHIVE §3: contact_dossier now admits an archived contact so the
@@ -184,28 +227,59 @@ export function ContactDossierModal({
    *  account (Records › Archived) to edit it again. */
   const archived = Boolean(c.deleted_at);
 
-  async function save() {
-    if (Object.keys(dirty).length === 0) return;
+  /** Commit whatever is in `dirty`. Returns false when the write was refused, so
+   *  the caller can decide not to close. Archived records are read-only — the DB
+   *  refuses `update_contact_record` on one, and a control that can only fail is
+   *  worse than no control. */
+  const commit = useCallback(async (): Promise<boolean> => {
+    if (archived || Object.keys(dirty).length === 0) return true;
     setSaving(true); setErr(null);
     try {
       setD(await updateContactRecord(contactId, dirty));
       setDirty({});
       onChanged?.();
+      return true;
     } catch (e) {
-      setErr(toErrorMessage(e, 'Could not save.'));
+      setErr(toErrorMessage(e, 'Could not save — your changes are still here.'));
+      return false;
     } finally { setSaving(false); }
-  }
+  }, [archived, dirty, contactId, onChanged]);
+
+  commitRef.current = async () => { if (await commit()) onClose(); };
+  const requestClose = () => { void commitRef.current(); };
 
   /* PROMOTION TO AN ACCOUNT, from the record itself. Someone without a login
      still has a full contact record — it simply holds less — and inviting them
      is the natural next step from the screen where you just reviewed them,
-     rather than a separate hunt through another page. */
+     rather than a separate hunt through another page.
+
+     ⚠️ AR2 F8: this used to be `const [invited, setInvited] = useState(false)`,
+     never seeded from the record, so the Account tab offered a bare "Send
+     invitation" to anyone with an email and no login — INCLUDING Pamela, whose
+     link went out on 2026-08-25 — and `adminSendInvitation` defaults to
+     `mode: 'new'`, which leaves the prior link working. The act minted a second
+     live claim link with no warning. `ClientInvitationSection` derives the state
+     from `adminInvitationHistory` instead, and carries Admin.tsx's two-press
+     resend-vs-regenerate distinction (D19). */
   const [assigning, setAssigning] = useState(false);
-  /* PAMELA §A: only a SEND ends this surface's job. A SAVE leaves the form open,
-     because the whole point of saving is that staff mean to come back to it. */
-  const [invited, setInvited] = useState(false);
-  // CLOSEOUT §3.5: the agreed-time panel's derived slot, fed into provisioning.
-  const [agreedLesson, setAgreedLesson] = useState<AgreedLesson | null>(null);
+  /** Bumped after an attach so the standing-slot section re-reads and the newly
+   *  sold weekly plan appears with its question already open (TASK-FIX2 §2). */
+  const [ordersKey, setOrdersKey] = useState(0);
+
+  /* Which of this person's recurring purchase items already have a day and time.
+     Read from `client_standing_slots` — the same staff-gated read the picker below
+     uses, so the badge on an order line and the picker under it can never
+     disagree about whether a plan has been placed. */
+  const [slotChosen, setSlotChosen] = useState<Map<string, boolean>>(new Map());
+  useEffect(() => {
+    let alive = true;
+    fetchClientStandingSlots(contactId)
+      .then((rows) => {
+        if (alive) setSlotChosen(new Map(rows.map((r) => [r.purchase_item_id, r.chosen])));
+      })
+      .catch(() => { if (alive) setSlotChosen(new Map()); });
+    return () => { alive = false; };
+  }, [contactId, ordersKey]);
 
   async function file(t: ContactType) {
     setErr(null);
@@ -224,9 +298,15 @@ export function ContactDossierModal({
     || (c.email as string | null) || 'Contact';
 
   const input = 'w-full px-2.5 py-1.5 rounded-lg border border-green-800/15 text-sm text-green-900 focus-ring bg-white';
+  /* ⚠️ ONE TAB SET, EVERY STAGE (TASK-FIX2 §3). Every tab renders for every
+     person; a section inside one is absent only when its OWN data is absent, the
+     way `StaffStandingSlotSection` already behaves. Nothing here asks "do they
+     have a login?" to decide WHICH SURFACE you see — that question was
+     `Admin.tsx`'s and it is what left 17 of 24 people looking at nothing. */
   const TABS: [Tab, string, number | null][] = [
     ['record', 'Record', null],
     ['relationships', 'Relationships', (d?.family.dependants.length ?? 0) + (d?.horses.length ?? 0)],
+    ['bookings', 'Bookings', null],
     ['documents', 'Documents', d?.documents.length ?? 0],
     ['orders', 'Orders', d?.orders.length ?? 0],
     ['paperwork', 'Paperwork', null],
@@ -236,13 +316,17 @@ export function ContactDossierModal({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-green-950/40 px-4 py-8"
-      role="dialog" aria-modal="true" aria-label={`${name} record`} onClick={onClose}>
+      role="dialog" aria-modal="true" aria-label={`${name} record`} onClick={requestClose}>
       {/* ⚠️ ONE SIZE, ALWAYS (owner, 2026-08-25): "keep it one size dont change it
           based on the contents when i switch tabs it is constantly resizing and it
           stays center aligned which makes it really uncomfortable." `max-h-full` let
           the height follow the tab's content, so every tab change re-centred the box
           under the cursor. A fixed height holds still; the body scrolls instead. */}
-      <div className="bg-white rounded-2xl border border-green-800/10 w-full max-w-3xl h-[85vh] flex flex-col overflow-hidden"
+      {/* AR2 F14: `dvh`, not `vh`. On iOS `vh` measures the chrome-less viewport, so
+          the footer went under the browser bar on the owner's working device —
+          the repo's newer overlays (Modal, CreateModal, HorseRecordsPage, the
+          add-horse sheet two files away) all use `dvh` already. */}
+      <div className="bg-white rounded-2xl border border-green-800/10 w-full max-w-3xl h-[85dvh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}>
 
         <div className="flex items-start gap-3 px-5 py-4 border-b border-green-800/10">
@@ -254,7 +338,7 @@ export function ContactDossierModal({
               {d?.account ? ' · has an account' : ' · no account'}
             </p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close"
+          <button type="button" onClick={requestClose} aria-label="Close"
             className="p-1.5 rounded-lg text-muted hover:bg-green-800/5 focus-ring shrink-0">
             <X size={18} />
           </button>
@@ -395,14 +479,32 @@ export function ContactDossierModal({
                 </div>
               )}
 
+              {/* ⚠️ TASK-FIX2 §3 — BOOKINGS AND PAYMENTS CAME ACROSS FROM THE
+                  RETIRED LAYOUT. They were `Admin.tsx` tabs keyed on
+                  `admin_client_bookings(p_user_id)` / a `buyer_user_id` filter, so
+                  they existed only for the 7 people with a login. `bookings` carries
+                  `account_contact_id` (staff RLS is `has_staff_access()`), and
+                  `purchases` carries `buyer_contact_id` on every live row, so both
+                  read off the CONTACT and work at every stage. */}
+              {tab === 'bookings' && (
+                <ContactSessionsTab contactId={contactId} />
+              )}
+
               {tab === 'documents' && (
                 <div className="flex flex-col gap-5">
                   {!archived && (
-                    <div>
+                    <div className="flex flex-wrap items-center gap-3">
                       <button type="button" className="btn-secondary text-sm"
                         onClick={() => setAssigning(true)}>
                         Assign a document or contract
                       </button>
+                      {/* Carried across from the retired `PendingClientView`'s
+                          "Associated items" header, which was the only place on a
+                          person's record that could start a contract for them. */}
+                      <Link to="/app/ops/contracts/new"
+                        className="text-sm text-green-800 underline hover:text-green-900 focus-ring">
+                        New contract
+                      </Link>
                     </div>
                   )}
                   <Section title="Documents">
@@ -442,6 +544,17 @@ export function ContactDossierModal({
                                 {it.label ?? 'Offering'}
                                 {(it.quantity ?? 1) > 1 ? ` × ${it.quantity}` : ''}
                               </span>
+                              {/* ⚠️ TASK-FIX2 §2 — THE TELL. D23: a recurring purchase
+                                  gives a standing weekly slot, not a credit balance,
+                                  so a recurring line with no chosen day is an order
+                                  that delivered nothing. It used to look identical to
+                                  one that had been placed. It does not any more. */}
+                              {!it.voided_at && it.config_kind === 'recurring'
+                                && !slotChosen.get(it.item_id) && (
+                                <span className="shrink-0 rounded-full border border-gold-500 bg-gold-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gold-900">
+                                  no day chosen yet
+                                </span>
+                              )}
                               <span className="text-[11px] text-muted shrink-0">
                                 ${Number(it.price_amount ?? 0).toFixed(2)}
                                 {it.price_unit ? ` / ${it.price_unit}` : ''}
@@ -450,15 +563,28 @@ export function ContactDossierModal({
                           ))}
                         </div>
                       ))}
-                    {!archived && <AttachOfferingPanel contactId={contactId} onAttached={load} />}
+                    {!archived && (
+                      <AttachOfferingPanel contactId={contactId}
+                        onAttached={() => { load(); setOrdersKey((k) => k + 1); }} />
+                    )}
                   </Section>
 
                   {/* SLOTREACH §2 — a weekly plan's standing time lives on the
                       purchase item, so this is where it belongs: beside the orders
                       that carry it. Renders nothing for a contact with no weekly
-                      purchase. */}
+                      purchase.
+
+                      ⚠️ TASK-FIX2 §2: `refreshKey` is why selling a weekly plan and
+                      placing it are now ONE act. Five of six live recurring plans
+                      have an empty `config` — including a PAID $880 that placed
+                      nothing — because `attach_offerings_to_client` writes an order
+                      line and takes no schedule. It still does; what changed is that
+                      the moment it lands, this section re-reads and the plan's
+                      unanswered day-and-time question is on screen. Same single
+                      writer (`set_my_standing_schedule`), no second scheduler. */}
                   {!archived && (
                     <StaffStandingSlotSection
+                      key={ordersKey}
                       contactId={contactId}
                       personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
                     />
@@ -468,91 +594,96 @@ export function ContactDossierModal({
 
               {tab === 'paperwork' && <PaperworkEditor contactId={contactId} />}
 
+              {/* ⚠️ TASK-FIX2 §3 — THE ACCOUNT TAB IS NOW STAGE-DEPENDENT CONTENT,
+                  NOT A STAGE-DEPENDENT SURFACE. It used to fork on `d.account` into
+                  two entirely different screens, one of which held a bare "Send
+                  invitation" that could mint a second live link. Every block below
+                  renders when its OWN fact exists: the standing time when a weekly
+                  plan exists, the sign-in detail when there is a login, the
+                  invitation lifecycle when a link has been issued, the provisioning
+                  form when it has not. */}
               {tab === 'account' && (
-                d.account ? (
-                  <div className="flex flex-col gap-5">
-                    {/* SLOTREACH §2 — the standing weekly time sits on the same
-                        surface as the agreed lesson below, deliberately adjacent and
-                        deliberately distinct: that one books THE lesson agreed on the
-                        call, this one sets THE WEEKLY TIME that is theirs. */}
-                    {!archived && (
-                      <StaffStandingSlotSection
-                        contactId={contactId}
-                        personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
-                      />
-                    )}
-                    <Section title="Account">
-                      <Row main={d.account.display_name ?? '(no display name)'} sub={d.account.role ?? undefined}
-                        badge={d.account.is_suspended ? 'suspended' : (d.account.member_status ?? undefined)} />
-                    </Section>
-                    <Section title="Sign-in">
-                      <Row main={d.account.login?.providers.join(', ') || 'no provider on file'}
-                        sub={d.account.login?.last_sign_in_at
-                          ? `last seen ${new Date(d.account.login.last_sign_in_at).toLocaleString()}`
-                          : 'never signed in'} />
-                    </Section>
-                    {d.posts && (
-                      <Section title="Posts">
-                        {d.posts.length === 0 ? <Empty>None.</Empty>
-                          : d.posts.map((p) => (
-                            <Row key={p.id} main={p.body || `(${p.post_type})`}
-                              sub={new Date(p.created_at).toLocaleDateString()}
-                              badge={p.pulled_down ? 'pulled' : p.published ? 'live' : 'draft'} />
-                          ))}
+                <div className="flex flex-col gap-5">
+                  {/* SLOTREACH §2 — the standing weekly time sits beside the agreed
+                      lesson below, deliberately adjacent and deliberately distinct:
+                      that one books THE lesson agreed on the call, this one sets THE
+                      WEEKLY TIME that is theirs. A contact can hold a weekly purchase
+                      before they ever have a login. */}
+                  {!archived && (
+                    <StaffStandingSlotSection
+                      key={ordersKey}
+                      contactId={contactId}
+                      personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
+                    />
+                  )}
+
+                  {d.account ? (
+                    <>
+                      <Section title="Account">
+                        <Row main={d.account.display_name ?? '(no display name)'} sub={d.account.role ?? undefined}
+                          badge={d.account.is_suspended ? 'suspended' : (d.account.member_status ?? undefined)} />
                       </Section>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {/* SLOTREACH §2 — a contact can hold a weekly purchase before they
-                        ever have a login (staff attach the offering, the invitation
-                        follows). Their standing time is settable either way. */}
-                    {!archived && (
-                      <StaffStandingSlotSection
-                        contactId={contactId}
-                        personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
-                      />
-                    )}
+                      <Section title="Sign-in">
+                        <Row main={d.account.login?.providers.length
+                            ? d.account.login.providers.join(', ')
+                            : 'password'}
+                          sub={d.account.login?.last_sign_in_at
+                            ? `last seen ${new Date(d.account.login.last_sign_in_at).toLocaleString()}`
+                            : 'never signed in'} />
+                        <Row main="Email verified"
+                          sub={d.account.login?.email_confirmed_at
+                            ? new Date(d.account.login.email_confirmed_at).toLocaleDateString()
+                            : 'not yet'} />
+                        <Row main="Account created"
+                          sub={new Date(d.account.created_at).toLocaleDateString()} />
+                      </Section>
+                      {/* Messages had no home but `Admin.tsx`'s retired tab. The
+                          thread itself lives on /app/messages; this is the door to
+                          it, on the record. */}
+                      <Section title="Messages">
+                        <Link to={`/app/messages/${d.account.user_id}`}
+                          className="text-sm text-green-800 underline hover:text-green-900 focus-ring">
+                          Open the message thread with {name}
+                        </Link>
+                      </Section>
+                      {d.posts && (
+                        <Section title="Posts">
+                          {d.posts.length === 0 ? <Empty>None.</Empty>
+                            : d.posts.map((pp) => (
+                              <Row key={pp.id} main={pp.body || `(${pp.post_type})`}
+                                sub={new Date(pp.created_at).toLocaleDateString()}
+                                badge={pp.pulled_down ? 'pulled' : pp.published ? 'live' : 'draft'} />
+                            ))}
+                        </Section>
+                      )}
+                    </>
+                  ) : (
                     <Empty>
                       This person has no account — they have never signed in. That is
                       normal for a counterparty, a lead, or a minor on a parent&apos;s account.
                       Their contact record is complete in its own right; an account
                       simply adds a login.
                     </Empty>
-                    {archived ? (
-                      <p className="text-[11.5px] text-muted">
-                        Restore this account from Records › Archived before provisioning it.
-                      </p>
-                    ) : invited ? (
-                      <p className="text-sm text-green-800">
-                        Invitation sent to {String(c.email)}.
-                      </p>
-                    ) : !c.email ? (
-                      <p className="text-[11.5px] text-muted">
-                        Add an email address on the Record tab first — then they can be
-                        provisioned and invited from here.
-                      </p>
-                    ) : (
-                      /* THE ONE shared provisioning path (deal plan L11). This modal
-                         previously called adminSendInvitation directly with just an
-                         email and name, which takes the plain-invite branch: no
-                         category, no paperwork, no offerings — so the same person got
-                         a materially different account depending on which button
-                         staff happened to use. */
-                      <ProvisionClientForm source="contact" contactId={contactId}
-                        email={(c.email as string | null) ?? undefined}
-                        firstName={(c.first_name as string | null) ?? undefined}
-                        lastName={(c.last_name as string | null) ?? undefined}
-                        agreedLesson={agreedLesson}
-                        onProvisioned={(r) => { if (r.inviteStatus !== 'draft') setInvited(true); onChanged?.(); }}
-                        /* CLOSEOUT §3.5: a lesson agreed on the phone folds into
-                           the same act on every provisioning surface, not just the
-                           lead drawer. PAMELA §A: shown only for a rider or a
-                           scheduling-shaped order. */
-                        scheduling={<AgreedLessonSection onAgreedChange={setAgreedLesson} />} />
-                    )}
-                  </div>
-                )
+                  )}
+
+                  {/* THE ONE shared provisioning path, and the whole invitation
+                      lifecycle, at every stage (AR2 F5 items 1–14). */}
+                  <ClientInvitationSection
+                    contactId={contactId}
+                    email={(c.email as string | null) ?? null}
+                    firstName={(c.first_name as string | null) ?? null}
+                    lastName={(c.last_name as string | null) ?? null}
+                    archived={archived}
+                    onChanged={() => { load(); onChanged?.(); }} />
+
+                  <AccountDangerZone
+                    contactId={contactId}
+                    userId={d.account?.user_id ?? null}
+                    isSuspended={d.account?.is_suspended ?? false}
+                    archived={archived}
+                    onChanged={() => { load(); onChanged?.(); }}
+                    onGone={() => { onChanged?.(); onClose(); }} />
+                </div>
               )}
 
               {tab === 'activity' && (
@@ -577,17 +708,20 @@ export function ContactDossierModal({
           )}
         </div>
 
+        {/* ⚠️ CR-75: NO SEPARATE SAVE BUTTON. Closing is the save. The counter is
+            kept because it is the one honest signal that something is pending —
+            it is a statement, not a control. */}
         <div className="flex items-center gap-2 px-5 py-3 border-t border-green-800/10">
-          {Object.keys(dirty).length > 0 && (
-            <span className="text-[12px] text-gold-800">
-              {Object.keys(dirty).length} unsaved change{Object.keys(dirty).length === 1 ? '' : 's'}
-            </span>
-          )}
+          <span className="text-[12px] text-gold-800">
+            {saving ? 'Saving…'
+              : Object.keys(dirty).length > 0
+                ? `${Object.keys(dirty).length} change${Object.keys(dirty).length === 1 ? '' : 's'} — saved when you close`
+                : ''}
+          </span>
           <div className="ml-auto flex gap-2">
-            <button type="button" className="btn-secondary text-sm" onClick={onClose}>Close</button>
-            <button type="button" className="btn-primary text-sm"
-              disabled={archived || saving || Object.keys(dirty).length === 0} onClick={() => void save()}>
-              {saving ? 'Saving…' : 'Save changes'}
+            <button type="button" className="btn-primary text-sm" disabled={saving}
+              onClick={requestClose}>
+              {saving ? 'Saving…' : Object.keys(dirty).length > 0 ? 'Save and close' : 'Close'}
             </button>
           </div>
         </div>
@@ -599,6 +733,186 @@ export function ContactDossierModal({
           onClose={() => setAssigning(false)}
           onAssigned={() => { setAssigning(false); load(); onChanged?.(); }}
         />
+      )}
+    </div>
+  );
+}
+
+/**
+ * ⚠️ TASK-FIX2 §3 — SESSIONS AND PAYMENTS, KEYED ON THE PERSON.
+ *
+ * `Admin.tsx`'s Bookings tab called `admin_client_bookings(p_user_id)` and its
+ * Payments tab filtered `purchases` on `buyer_user_id` OR `buyer_contact_id`; both
+ * tabs only rendered under `selected.kind === 'account'`, so neither existed for
+ * the 17 of 24 people without a login — including every one of the four recurring
+ * buyers whose sessions Claire most needs to look at. `bookings.account_contact_id`
+ * and `purchases.buyer_contact_id` are set on every live row by the provisioning
+ * spine, and both tables' staff RLS is `has_staff_access()`, so this reads the same
+ * facts off the contact and works at every stage.
+ */
+function ContactSessionsTab({ contactId }: { contactId: string }) {
+  const [sessions, setSessions] = useState<{
+    id: string; starts_at: string; kind: string; status: string; notes: string | null;
+  }[] | null>(null);
+  const [payments, setPayments] = useState<{
+    id: string; amount: number | null; payment_method: string | null;
+    payment_reference: string | null; payment_status: string | null; created_at: string;
+  }[] | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    void supabase.from('bookings')
+      .select('id, starts_at, kind, status, notes')
+      .eq('account_contact_id', contactId)
+      .order('starts_at', { ascending: false })
+      .limit(100)
+      .then(({ data }) => { if (alive) setSessions(data ?? []); });
+    void supabase.from('purchases')
+      .select('id, amount, payment_method, payment_reference, payment_status, created_at')
+      .eq('buyer_contact_id', contactId)
+      .eq('payment_status', 'paid')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => { if (alive) setPayments(data ?? []); });
+    return () => { alive = false; };
+  }, [contactId]);
+
+  const upcoming = (sessions ?? []).filter((b) => new Date(b.starts_at) >= new Date());
+  const past = (sessions ?? []).filter((b) => new Date(b.starts_at) < new Date());
+
+  return (
+    <div className="flex flex-col gap-5">
+      <Section title="Upcoming">
+        {sessions === null ? <Empty>Loading…</Empty>
+          : upcoming.length === 0 ? <Empty>Nothing on the calendar.</Empty>
+          : upcoming.map((b) => (
+            <Row key={b.id} main={new Date(b.starts_at).toLocaleString()}
+              sub={b.notes ?? undefined} badge={b.status} />
+          ))}
+      </Section>
+      <Section title="Past">
+        {sessions === null ? <Empty>Loading…</Empty>
+          : past.length === 0 ? <Empty>None yet.</Empty>
+          : past.slice(0, 30).map((b) => (
+            <Row key={b.id} main={new Date(b.starts_at).toLocaleString()}
+              sub={b.notes ?? undefined} badge={b.status} />
+          ))}
+      </Section>
+      <Section title="Payments received">
+        {payments === null ? <Empty>Loading…</Empty>
+          : payments.length === 0 ? <Empty>No payments recorded.</Empty>
+          : payments.map((pm) => (
+            <Row key={pm.id}
+              main={`$${Number(pm.amount ?? 0).toFixed(2)} · ${pm.payment_method ?? 'method not recorded'}${pm.payment_reference ? ` · ${pm.payment_reference}` : ''}`}
+              sub={new Date(pm.created_at).toLocaleDateString()}
+              badge={pm.payment_status ?? undefined} />
+          ))}
+      </Section>
+    </div>
+  );
+}
+
+/**
+ * ⚠️ TASK-FIX2 §3 — SUSPEND / REINSTATE / REMOVE / ARCHIVE / HARD DELETE.
+ *
+ * Carried across verbatim from the retired `Admin.tsx` layout, wording included,
+ * because these five acts had no other home. Two notes that must survive the move:
+ *
+ *  • ARCHIVE (D32) is the retention-safe act — `archive_contact` plus a suspended
+ *    login, reversible from Records › Archived. TASK-ARCHIVE fixed this from a
+ *    version that severed `profiles.contact_id` with no way back; do not reopen it.
+ *  • HARD DELETE is D32's acknowledged exception, kept only as the owner's own
+ *    manually-confirmed act. It is offered on every kind, including a bare
+ *    contact, behind a typed DELETE. ⚠️ AR2 F15 flags it precisely so nobody
+ *    SPREADS it — this is the one surface it belongs on.
+ */
+function AccountDangerZone({
+  contactId, userId, isSuspended, archived, onChanged, onGone,
+}: {
+  contactId: string;
+  userId: string | null;
+  isSuspended: boolean;
+  archived: boolean;
+  onChanged: () => void;
+  /** The person is no longer on this list — close the record behind us. */
+  onGone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [hardConfirm, setHardConfirm] = useState('');
+  const [err, setErr] = useState<string | null>(null);
+
+  async function act(fn: () => Promise<unknown>, gone = false) {
+    setErr(null);
+    try { await fn(); if (gone) onGone(); else onChanged(); }
+    catch (e) { setErr(toErrorMessage(e, 'Could not update the account.')); }
+  }
+
+  return (
+    <div>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open}
+        className="px-3.5 py-2 rounded-lg text-xs font-medium border border-red-300 text-red-700 hover:bg-red-50 focus-ring">
+        Suspend / Remove / Delete
+      </button>
+      {err && <p role="alert" className="form-error mt-2">{err}</p>}
+      {open && (
+        <div className="mt-3 border border-red-200 rounded-lg p-4 bg-red-50/40 flex flex-col gap-3">
+          {userId && (
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-green-900">Suspend — blocks their login</p>
+                <p className="text-[12px] text-muted">They stay on every list and keep every record; they simply cannot sign in.</p>
+              </div>
+              <button type="button" disabled={archived}
+                onClick={() => void act(() => adminSetSuspended(userId, !isSuspended))}
+                className="px-3.5 py-2 rounded-lg text-xs font-medium border border-green-800/20 text-green-800 hover:bg-white focus-ring shrink-0 disabled:opacity-40">
+                {isSuspended ? 'Reinstate' : 'Suspend'}
+              </button>
+            </div>
+          )}
+          <div className="flex flex-wrap items-start justify-between gap-3 border-t border-red-200 pt-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-green-900">Remove — reversible</p>
+              <p className="text-[12px] text-muted">Deactivates the account. Login is blocked; you can reactivate any time. Nothing is deleted.</p>
+            </div>
+            <span className="flex gap-2 shrink-0">
+              <button type="button" onClick={() => void act(() => adminAccountAction(contactId, 'remove'))}
+                className="px-3.5 py-2 rounded-lg text-xs font-medium border border-green-800/20 text-green-800 hover:bg-white focus-ring">
+                Remove
+              </button>
+              <button type="button" onClick={() => void act(() => adminAccountAction(contactId, 'unremove'))}
+                className="px-3.5 py-2 rounded-lg text-xs font-medium border border-green-800/20 text-green-800 hover:bg-white focus-ring">
+                Reactivate
+              </button>
+            </span>
+          </div>
+          <div className="flex flex-wrap items-start justify-between gap-3 border-t border-red-200 pt-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-green-900">Archive — keep the data</p>
+              <p className="text-[12px] text-muted">Hides them from Records, the pickers and every roster. All history, signed documents and orders are preserved and stay visible to anyone who shares them. Find them again — and restore them — in Records › Archived.</p>
+            </div>
+            <button type="button" disabled={archived}
+              onClick={() => void act(() => adminAccountAction(contactId, 'soft'), true)}
+              className="px-3.5 py-2 rounded-lg text-xs font-medium border border-red-300 text-red-700 hover:bg-white focus-ring shrink-0 disabled:opacity-40">
+              Archive
+            </button>
+          </div>
+          <div className="border-t border-red-200 pt-3">
+            <p className="text-sm font-medium text-red-700">Hard delete — nuclear, irreversible</p>
+            <p className="text-[12px] text-muted mb-2">
+              Erases all traces: the login and their records. Refused if a signed agreement references them.
+              Type <span className="font-mono font-semibold">DELETE</span> to enable.
+            </p>
+            <div className="flex items-center gap-2">
+              <input value={hardConfirm} onChange={(e) => setHardConfirm(e.target.value)}
+                placeholder="DELETE"
+                className="px-3 py-2 rounded-lg border border-red-300 text-sm focus-ring w-32" />
+              <button type="button" disabled={hardConfirm !== 'DELETE'}
+                onClick={() => void act(() => adminHardDeleteClient(contactId), true)}
+                className="px-3.5 py-2 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 focus-ring disabled:opacity-40 disabled:cursor-not-allowed">
+                Hard delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
