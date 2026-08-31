@@ -1,41 +1,55 @@
 # RUN QUEUE — what to run, in what order, with what settings
 
-**Written 2026-08-31 by ORCH5.** ⚠️ **Start at the top. Everything above the line you are on is
-merged and pushed; nothing below it has started.**
+**Rewritten 2026-08-31 by ORCH6, after merging `TASK-FIX4`.** ⚠️ **Start at the top. Everything above
+the line you are on is merged and pushed; nothing below it has started.**
 
 ---
 
-## ▶ 1 · TASK-FIX3 — the nav, the account page, the activity surfaces
+## ✅ MERGED — do not re-run, do not re-audit
+`AR1`–`AR7` *(research)* · `FIX1` *(front door + signature engine)* · `FIX2` *(instructor stamp,
+standing slot, record reach)* · `FIX3` *(nav sections, activity surfaces removed)* ·
+⚠️ **`FIX4` — merged by ORCH6 as `a9ffcdcd`, pushed.** *(It was BUILT and waiting, not waiting to be
+run: the brief's "READY" was one step stale. Audit in the merge commit message; report at
+`docs/reports/TASK-FIX4-REPORT.md`.)*
+
+**Baselines re-measured on `main` AFTER that merge:** typecheck **0** · typecheck:api **0** ·
+lint **46** · `npm run build` **exit 0** · `test:db` **red, documented baseline, proof of nothing**.
+**Worktrees: NONE LIVE.** All ten were merged, tagged `archive/<name>-2026-08-31`, and removed.
+
+---
+
+## ▶ 1 · TASK-CR85 — three nav sections, People dissolves into Community
 
 ```
-TASK-FIX3
+TASK-CR85
 
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
-Read docs/tasks/TASK-FIX3-the-nav-and-the-admin-section.md and build it.
+Read docs/tasks/TASK-CR85-three-nav-sections.md and build it.
 ```
 **Opus · thinking ON · effort HIGH**
 
-**Unblocked.** `TASK-FIX2` landed the reach fix, so all 24 Clients-list people can open the record —
-removing the Leads tab no longer closes the last door.
-⚠️ **It owns `AppLayout.tsx` and `pageRegistry.ts` alone.** Nothing else may run beside it.
-⚠️ **`Admin.tsx` went 1093 → 297 lines in FIX2** — a much smaller surface than its brief assumed.
+⚠️ **FIRST, AND ALONE IN `AppLayout.tsx` + `pageRegistry.ts`.** Small in intent; the file is the most
+contended in the repo and the last nav change shipped desktop-only.
+⚠️ **`TASK-FIX6` needs a nav row in those same files, so this goes first** — otherwise FIX6's row is
+slotted into a section structure that is about to change under it.
+**Opus, not Sonnet:** three render surfaces that have silently disagreed before, plus a group key that
+is also registry data.
 
-## ▶ 2 · TASK-FIX4 — input is never lost, and closing never submits
+## ▶ 2 · TASK-BOOKS1 — what a sale was worth, and what we gave away
 
 ```
-TASK-FIX4
+TASK-BOOKS1
 
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
-Read docs/tasks/TASK-FIX4-input-is-never-lost.md and build it.
+Read docs/tasks/TASK-BOOKS1-what-a-sale-was-worth.md and build it.
 ```
-**Opus · thinking ON · effort MAX**
+**Opus · thinking ON · effort HIGH**
 
-⚠️ **MUST RUN AFTER FIX3 MERGES, NOT BESIDE IT.** Both reach into `ContactDossierModal`'s
-neighbourhood. **Rebase on FIX3.**
-**MAX because it carries the persisted-draft decision** — a storage seam, not a component tweak — and
-because it changes the commit trigger on a fix that shipped days ago.
+⚠️ **CARRIES CR-86's DEADLINE. Safe to run BESIDE CR-85** — no shared file: it owns the money
+functions and the point-of-sale surfaces, not the nav.
+⚠️ **It OWNS `revenue_summary`. `TASK-FIX6` may call it and may not redefine it.**
 
-## ▶ 3 · TASK-FIX6 — the dashboard becomes Ops and Sales
+## ▶ 3 · TASK-FIX6 — Ops, Sales, Marketing and the error report
 
 ```
 TASK-FIX6
@@ -45,11 +59,15 @@ Read docs/tasks/TASK-FIX6-ops-and-sales.md and build it.
 ```
 **Opus · thinking ON · effort HIGH**
 
-⚠️ **AFTER FIX4** — the error-report form is a form, and FIX4 owns forms and modals.
-⚠️ **Largely a RENAME:** `OwnerDashboard` already has two views, a toggle and a per-account default.
-`business` → **Ops**, `trainer` → **Sales**. **`OpsDashboard.tsx` is the abandoned 2026-07-01
-predecessor — do not resurrect it.** The genuinely new build is the error boundary and the report
-loop, which extends the empty `support_requests` table rather than adding one.
+⚠️ **AFTER CR-85 MERGES** *(nav rows)*. FIX4's dependency is satisfied — it is merged.
+⚠️ **THE MANDATORY PAUSE IS REAL:** framework → **Sales + Marketing in full** → **STOP and ask the
+owner for Claire's Ops zone list** → Admin → Ops. ⚠️ **His list CANNOT arrive early** — *"i dont have
+claires ops zone list until i see the full sales and marketing dashboards."* **Steps 1, 2 and 4 ship
+without it. Do not hold the merge waiting for it.**
+**Verified in production 2026-08-31 by ORCH6, so the spec's premises are current:**
+`profiles_dashboard_focus_chk` still pins `dashboard_focus` to `trainer|business` *(1 account each,
+11 null)* · `support_requests` **0 rows** · `shifts` **0 rows** · `bookings.kind` = `lesson` **715**,
+`block` **3**, ⚠️ **care bookings still ZERO**.
 
 ## ▶ 4 · TASK-FIX5 — repo hygiene
 
@@ -61,85 +79,64 @@ Read docs/tasks/TASK-FIX5-repo-hygiene.md and build it.
 ```
 **Sonnet · thinking ON · effort HIGH**
 
-⚠️ **MUST RUN AFTER FIX3, FIX4 AND FIX6 HAVE MERGED** — it is the cleanup, so it goes last. Both cite task paths and both create worktrees in
-the directory being cleaned. **Moving files under a running thread is how work is lost.**
+⚠️ **LAST. AFTER CR-85, BOOKS1 AND FIX6 HAVE MERGED.** It moves files everything else cites, and
+creates worktrees in the directory being cleaned. **Moving files under a running thread is how work is
+lost.** The plan is already written in `docs/reference/DOCS-LAYOUT.md`; the execution is mechanical
+breadth, which is what Sonnet is for.
 
-**Sonnet, not Opus:** this is `git mv` plus reference repair, with the plan already written in
-`docs/reference/DOCS-LAYOUT.md`. **The judgement was spent writing the plan; the execution is
-mechanical breadth — which is exactly what Sonnet is for.** ⚠️ **The one real risk is the reference
-repair across 417 files, and that is a grep, not a decision.**
+## ▶ 5 · the zone sweeps — `docs/tasks/ZONE-SWEEPS-A1-A12.md`
 
-## ▶ 5 · FHE-ORCH-6 — the handoff
+**SEVEN threads, not twelve** — grouped by shared spine. **Opus.**
+⚠️ **`A12 Barn operations` owns `resources` / `resource_lots` / `consumption_events` /
+`cost_allocation_rules` / `billable_lines`. THE OWNER RULED THE PER-EVENT COST LEDGER OUT on
+2026-08-31 — cost is a monthly sheet typed in on the horse record. Those five tables STAY UNDRIVEN
+(D32); A12 must not "finish" them.**
 
-```
-FHE-ORCH-6
-
-cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
-Read docs/orch/ORCH6-BRIEF.md, then docs/method/00-START-HERE.md, and take over.
-```
-**Opus · thinking ON · effort HIGH**
-
-⚠️ **THE PATHS ABOVE ASSUME FIX5 HAS RUN.** If ORCH6 is started before FIX5, the files are still at
-`docs/handoff/ORCH6-BRIEF.md` and `docs/handoff/00-START-HERE.md`. **Use whichever exists.**
-
-⚠️ **Its brief §0 says its own §1 is stale** — the six research threads it describes as waiting are
-done, audited and merged. **ORCH6 starts with the twelve zone sweeps, then the enumerated status
-document, then the ORCH7 handoff.**
-
-**Then, per the owner:** ORCH7 the refactor · ORCH8 his hands-on UVT findings · ORCH9 the client side.
+## ▶ 6 · the enumerated status document → his chat thread → **ORCH7**
+then **ORCH8** for his UVT findings, **ORCH9** for the client side.
 
 ---
 
-# ⚠️ AFTER THE QUEUE — CAPTURED 2026-08-31, NOT YET SPECCED
+# ⚠️ SPECCED BUT NOT YET QUEUED — CR-86's other halves
 
-**These are ORCH6's to spec. They are the bulk of what remains.**
-
-| | What | Size |
+| | What | Blocked on |
 |---|---|---|
-| **CR-85** | the nav becomes three sections; People dissolves into Community | small — ⚠️ **blocked on where messaging lives (see the brief)** |
-| **CR-86** | ⚠️ **the books** — unrecorded services · discount/comp designation · cost tracking · the P&L | **large** |
-
-⚠️ **CR-86 HAS A DEADLINE.** `revenue_summary` computes `coalesce(nullif(amount_paid,0), amount, 0)`,
-so a comp recorded as intended *(paid, $0)* books as **full-price revenue** and records no loss.
-**Zero comps exist today, so the books are clean — the fix must land BEFORE the owner's data pass
-enters the first one.** Full detail: `docs/handoff/ORCH6-BRIEF.md` §3.
+| **CR-86 gap 3** | ⚠️ **the monthly cost sheet on the horse record** — one row per horse per month; **boarding · bedding · feed · supplements · medications · vet · farrier · other+note**; annual = the sum of the months. ⚠️ **A blank line is NOT zero**, and the surface must show which horses have **no sheet** for a closed month | nothing — **ORCH6/7 to spec** |
+| **CR-86 gap 1** | services delivered and never recorded | ⚠️ **his data pass, not code** (D30 — after the refactor) |
+| **CR-88** | marketing planning · the campaign builder · financial analysis | ⚠️ **his answer on campaign BUDGET and company-expense categories** — §5 of `ORCH6-BRIEF.md`. **The campaign builder's measurement side already exists (`contacts.client_origin` / `contact_channel`, `TASK-ORIGIN`) — do NOT build a second attribution vocabulary (D18)** |
 
 # ⚠️ OPEN — none of this is in any queued thread
 
 ## Needs an owner ruling
-1. ⚠️ **The `anon` EXECUTE grant on `record_signature` and `remove_my_signature`.** Flagged by three
-   separate threads and never ruled. **Probed 2026-08-31 and NOT exploitable** — `record_signature`
-   stops at `current_contact_id()` being NULL for anon *("no contact for the signing account")*, and
-   `remove_my_signature` raises *"authentication required"*. ⚠️ **It is a grant nothing needs, on the
-   two functions that write signatures. Revoke it or record why it stays** — a fourth thread will
-   otherwise flag it again.
+1. ✅ **CLOSED by FIX1 — the `anon` EXECUTE grant on `record_signature` / `remove_my_signature` was
+   revoked and proven.** *(Migration `20260831T1200_signing_rpcs_are_not_anonymous.sql`.)* **Recorded
+   here so a fifth thread does not flag it again.**
 2. **Where an offering status row links to** — AR6, 138 of 200 feed rows. ⚠️ **Moot if the activity
-   surfaces are removed as ruled; confirm it dies with them.**
+   surfaces are gone as ruled; confirm it died with them.**
 
 ## The owner's own data pass — mechanism ready, timestamps his
 3. **Madeline Do.** Records → Clients → Madeline Do → Orders → *"Their standing weekly time"* → the
-   row stamped **`PUR-000319 · $880.00 · PAID`** → two days and times → Set.
-   ⚠️ **`PUR-000230 · unpaid` is the duplicate to expunge.** Proven in a rolled-back run: **26
-   sessions.**
-4. ⚠️ **Booking `f7881be9-0a32-4d78-880e-3c2f508ab0bf`** (session 2026-08-24 14:00, still `scheduled`)
-   **reads `admin@` and should read `hello@`.** The single proven instance of the instructor
-   overwrite, from `audit_logs` 08-24 23:34. **FIX2 prevents recurrence; this row was never repaired.**
-5. **Every other account's backdated orders, revenue attribution and lesson links** — the owner's
-   stated sweep, once the fixes land.
+   row stamped **`PUR-000319 · $880.00 · PAID`** → two days and times → Set. ⚠️ **`PUR-000230 ·
+   unpaid` is the duplicate to expunge.** Proven in a rolled-back run: **26 sessions.**
+   ⚠️ **He said "handled later today" on 2026-08-31 — CHECK PRODUCTION BEFORE ASKING AGAIN.**
+4. ✅ **Booking `f7881be9` restored to `hello@`** — done, per the ORCH6 brief.
+5. **Every other account's backdated orders, revenue attribution and lesson links.**
+   ⚠️ **EXCEPT: `TASK-BOOKS1` must land before the first COMP is entered** — see its §3.
 
 ## Owner checklists not yet run
-6. **`docs/reports/TASK-FIX1-REPORT.md` §8** and **`TASK-FIX2-REPORT.md` §9** — browser checklists.
-   ⚠️ **The Chromium probes prove reach and wiring. They cannot prove RLS, email delivery, or real
-   data.**
+6. `docs/reports/TASK-FIX1-REPORT.md` §8 · `TASK-FIX2-REPORT.md` §9 · ⚠️ **`TASK-FIX4-REPORT.md` §11
+   — 13 items, and it is the biggest visual change of the three.** **The probes prove reach and
+   wiring; they cannot prove RLS, email delivery, or how it looks on his phone.**
 
 ## Known, deliberately unscheduled
 7. ⚠️ **`AppLayout.tsx` never imports `pageRegistry.ts` and the two have drifted at 14 of 25 rows**
-   (AR3). **Two tables of one fact** — the root cause under several nav symptoms. **A candidate for
-   its own thread before the zone sweeps.**
-8. **Page visibility is unwired** — hiding a page removes no nav row, and `OpsDashboard` says it does
-   (AR3, AR4). **Its own thread.**
+   (AR3). **Two tables of one fact.** ⚠️ **`TASK-CR85` is forbidden to deepen it and will report the
+   count; the convergence itself is still its own thread.**
+8. **Page visibility is unwired** — hiding a page removes no nav row, and `OpsDashboard` says it does.
 9. **The availability inversion (CR-03/CR-06)** — ⚠️ **blocked: neither `request_open_time` nor
-   `confirm_booking` debits a credit, so the request path books for free** (AR1). **The furniture
-   cron is still firing, ~12 rows/day.**
-10. **`offerings.duration_minutes` + its D21 editor** — specced by FIX2 §6.1, not built. **Nothing
-    records how long a service takes, and no booking is 90 minutes.**
+   `confirm_booking` debits a credit, so the request path books for free** (AR1).
+10. **`offerings.duration_minutes` + its D21 editor** — specced by FIX2 §6.1, not built.
+11. **From FIX4, flagged not fixed:** Escape still closes input-bearing dialogs *(deliberate, one line
+    to change)* · `van der Berg` → `Van Der Berg` *(the rule working; worth showing him)* · the
+    back-control sweep is unstarted, ~18 hand-rolled affordances remain · `TeamPage`'s `run()` closes
+    the panel on every action so its "Saved." note has never been visible.
