@@ -49,6 +49,30 @@
  * blanks only, so a public form never overwrites what staff hold. The deal branch
  * already called it; the provisioning branch now calls it too, using the contact_id
  * provision_client_invitation returns. One writer, whichever door they came in.
+ *
+ * FIX1 §A — THE MINOR ARRIVES WITH THE NAME. AR7 F1: this door captured one name
+ * and every word around it said it was the rider's, so a parent enrolling a child
+ * created an account in the child's name. Body now carries isForMinor +
+ * minorFirstName/minorLastName/minorDob on the three paths where a rider may be a
+ * minor. The rule is re-decided HERE from MINOR_PATHS — the browser is not the
+ * authority on which paths may carry a child, exactly as it is not the authority
+ * on which paths require an address.
+ *
+ * The minor is attached through attach_minor_to_guardian(), which IS the block
+ * lifted out of update_my_onboarding_profile (20260831T0910) — guardian is the
+ * account holder, minor is the non-signing PARTICIPANT, linked by
+ * contacts.guardian_contact_id. There is no second minor concept at the door.
+ *
+ * FIX1 §B — A RESUBMISSION MAY CORRECT ITS OWN NAME. AR7 F2: fill_claimant_details
+ * writes blanks only, so a visitor who spotted their own mistake and resubmitted
+ * 109 seconds later was told the send succeeded while the correction was thrown
+ * away. That rule is untouched — it is what stops a public form overwriting staff
+ * data. correct_claimant_name_from_signup() runs BESIDE it and applies the name
+ * only when it can prove the same requester is correcting their own prior
+ * submission, nothing has been signed, and no human has set the name in-app
+ * (20260831T0920). The response carries `nameApplied` so the send-state screen
+ * can say so — echoing the visitor's OWN input, which discloses nothing about
+ * whether we already knew the address.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHash } from 'node:crypto';
@@ -72,6 +96,22 @@ const PATH_CATEGORIES: Record<string, string[]> = {
  *  invitation staff issue from the contract page, so activation creates the
  *  account and lands them on their document in one flow. */
 const DEAL_PATH = 'deal';
+
+/** FIX1 §A — which paths may carry a minor. Owner ruling 2026-08-31: a rider may
+ *  be a minor, a horse owner may not ("both require a person to be 18+ to be
+ *  horse owner"). `rider+horse` is a rider path, so it asks; `horse` and `deal`
+ *  are the horse owner and do not. Mirrors PATH_ALLOWS_MINOR in SignStart.tsx —
+ *  and is the authoritative copy, because the browser does not decide this. */
+const MINOR_PATHS = new Set(['guest', 'rider', 'rider+horse']);
+
+/** Under 18 today. The same test sign_release applies to a kiosk minor release:
+ *  an "18-year-old minor" is a data error, and recording one would put an adult
+ *  in the non-signing PARTICIPANT slot where nobody would ever ask them to sign
+ *  for themselves. */
+function isUnder18(dob: Date): boolean {
+  const eighteenth = new Date(dob.getFullYear() + 18, dob.getMonth(), dob.getDate());
+  return eighteenth > new Date();
+}
 
 function sha256(s: string): string {
   return createHash('sha256').update(s).digest('hex');
@@ -130,6 +170,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const city = ((body.city as string) || '').trim();
   const stateV = ((body.state as string) || '').trim();
   const postalCode = ((body.postalCode as string) || '').trim();
+  // FIX1 §A — the minor, on the paths that may have one. `isForMinor` is only
+  // ever honoured where MINOR_PATHS says it can be; a request that asserts it on
+  // /sign/horse or /sign/deal is not an error, it is simply not a minor path and
+  // the flag is dropped.
+  const minorFirstName = ((body.minorFirstName as string) || '').trim();
+  const minorLastName = ((body.minorLastName as string) || '').trim();
+  const minorDobRaw = ((body.minorDob as string) || '').trim();
+  const isForMinor = Boolean(body.isForMinor) && MINOR_PATHS.has(path);
+  let minorDob: Date | null = null;
+  if (isForMinor) {
+    if (!minorFirstName || !minorLastName) {
+      return res.status(400).json({ error: "the rider's name is required" });
+    }
+    minorDob = minorDobRaw ? new Date(`${minorDobRaw}T00:00:00Z`) : null;
+    if (!minorDob || Number.isNaN(minorDob.getTime())) {
+      return res.status(400).json({ error: "the rider's date of birth is required" });
+    }
+    if (!isUnder18(minorDob)) {
+      return res.status(400).json({ error: 'the named rider is 18 or older; they sign up in their own name' });
+    }
+  }
+
   const addressComplete = Boolean(addressLine1 && city && stateV && postalCode);
   // addressLine2 counts as "started" though it is never required: verified on prod,
   // compose_address(NULL,'Apt 3',NULL,NULL,NULL) returns 'Apt 3', so a lone apartment
@@ -188,6 +250,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let invitationId: string | null = null;
     let sendError: string | null = null;
     let messageId: string | null = null;
+    // FIX1 §B — did the resubmission actually correct the record? Reported to the
+    // caller so the send-state screen can say so instead of staying silent.
+    let nameApplied = false;
 
     if (allowed && isDeal) {
       // ── §1b: claim, don't provision ───────────────────────────────────────
@@ -211,6 +276,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await db.rpc('fill_claimant_details', {
           p_contact_id: claim.contact_id, ...claimantDetails,
         });
+        // FIX1 §B — and if this is the same requester correcting a name they
+        // themselves submitted before, it lands. Same guards, same door.
+        const { data: dealFixed } = await db.rpc('correct_claimant_name_from_signup', {
+          p_contact_id: claim.contact_id,
+          p_first_name: firstName,
+          p_last_name: lastName,
+          p_requester_hash: requesterHash,
+        });
+        nameApplied = Boolean(dealFixed);
 
         // The SAME invitation staff mint from the contract page. Activation
         // redeems it through redeem_contract_invitation, which promotes the
@@ -295,6 +369,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await db.rpc('fill_claimant_details', {
           p_contact_id: out.contact_id, ...claimantDetails,
         });
+
+        /* FIX1 §B — THE CORRECTION LANDS. fill_claimant_details above is
+           unchanged and still blanks-only; this runs beside it and applies the
+           name only when the database can prove all four guards (same
+           requester_hash, nothing signed, no human has set the name in-app, and
+           it actually differs). Everything else keeps today's absolute
+           protection. AR7 F2 is the whole reason this line exists. */
+        const { data: fixed, error: fixErr } = await db.rpc('correct_claimant_name_from_signup', {
+          p_contact_id: out.contact_id,
+          p_first_name: firstName,
+          p_last_name: lastName,
+          p_requester_hash: requesterHash,
+        });
+        if (fixErr) console.error('sign-start: name correction failed', fixErr);
+        nameApplied = Boolean(fixed);
+
+        /* FIX1 §A — THE MINOR, ATTACHED AT THE DOOR. Same spine Onboarding.tsx
+           uses: guardian_contact_id on the child's contact. my_onboarding_state()
+           reads it straight back, so the guardian reaches the corridor with the
+           question already answered, and generate_my_onboarding_documents() puts
+           the child in the PARTICIPANT slot and the guardian in CLIENT.
+           Never blocks the invitation — but never silent either, for the same
+           reason apply_sign_path_documents below is not. */
+        if (isForMinor) {
+          const { error: minorErr } = await db.rpc('attach_minor_to_guardian', {
+            p_guardian_contact_id: out.contact_id,
+            p_first_name: minorFirstName,
+            p_last_name: minorLastName,
+            p_dob: minorDobRaw || null,
+          });
+          if (minorErr) console.error('sign-start: minor not attached', path, minorErr);
+        }
         /* ⚠️ OFFERINGDOCS 2026-08-24 — THE DOOR ASSIGNS THE PAPERWORK NOW.
            `p_categories` above is still sent and still recorded, but a category
            no longer writes a single document: `_ensure_client_account` stopped
@@ -353,7 +459,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('sign-start: could not record the attempt', recErr);
     }
 
-    return res.status(200).json({ ok: true, status, attemptId });
+    /* FIX1 §B — `nameApplied` is safe to return. It is true only when the name
+       the visitor JUST TYPED was written, so the screen echoes their own input
+       back; it never reveals what we held before, and it never reveals whether
+       the address was already known to us. Anti-enumeration is intact. */
+    return res.status(200).json({ ok: true, status, attemptId, nameApplied });
   } catch (err) {
     console.error('sign-start error', err);
     return res.status(500).json({ error: 'could not process your request' });

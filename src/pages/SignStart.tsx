@@ -34,6 +34,43 @@
  * api/sign-start.ts writes the address through fill_claimant_details on both
  * branches, and enforces the same deal-only requirement server-side.
  *
+ * FIX1 §A — THE PAGE ASKS WHOSE NAME IT IS. TASK-AR7 F1, the root cause of the
+ * 2026-08-28 incident: this form had one name field, and every word around it —
+ * the welcome copy, the chooser card that leads here — is written in the first
+ * person for a self-serving adult. A parent enrolling a child had exactly one
+ * place to put a name and every signal said it was the rider's. One did, and
+ * his daughter's name became the account holder, the contact, the profile, the
+ * printed CLIENT slot and four signature lines.
+ *
+ * So the question is asked HERE, where the name is captured — not in
+ * Onboarding.tsx, which has asked it since it shipped but only AFTER the email,
+ * the click and the first login, by which point the wrong person already exists.
+ *
+ * WHICH PATHS (owner ruling, 2026-08-31): "sign/rider and sign/guest … are the
+ * only places a minor is applicable. the other two cannot be a minor, one is a
+ * horse owner for horse care services and the other is horse owner for deal
+ * party, both require a person to be 18+ to be horse owner."
+ *
+ * ⚠️ He said "the other two" believing there were four paths. There are FIVE,
+ * and the fifth changes the answer: `rider+horse` is a RIDER path — its own
+ * welcome copy is "let's get you and your horse set up for riding lessons" — so
+ * a minor rides on it exactly as they ride on `rider`. PATH_ALLOWS_MINOR below
+ * applies his RULE (a rider may be a minor; a horse owner may not), not his
+ * count: guest, rider and rider+horse ask; horse and deal do not.
+ *
+ * ⚠️ NOT A D22 §0 VIOLATION. The recorded refusal — "i did not intend to invite
+ * this type of question and answer set into my life" — is about backing this
+ * page's per-path field set with `form_definitions` and the forms editor. This
+ * adds ONE constant map beside PATH_REQUIRES_ADDRESS, PATH_SEGMENTS,
+ * PATH_CATEGORIES and WELCOME_COPY, which is the exact idiom D22 §0 protects.
+ *
+ * Ticking it produces guardian-as-account-holder and minor-as-participant
+ * through the spine Onboarding.tsx already uses — contacts.guardian_contact_id,
+ * read back by my_onboarding_state() and placed in the PARTICIPANT slot by
+ * generate_my_onboarding_documents(). No second minor concept exists at the
+ * door: api/sign-start.ts calls attach_minor_to_guardian(), which IS the block
+ * lifted out of update_my_onboarding_profile (20260831T0910).
+ *
  * Anti-enumeration is unchanged: the outcome describes OUR send, never whether the
  * address was already known to us.
  */
@@ -63,6 +100,13 @@ type SendStatus = 'sent' | 'send_failed' | 'rate_limited' | 'unavailable';
 interface SendOutcome {
   status: SendStatus;
   attemptId: string | null;
+  /** FIX1 §B — the server applied the name from THIS submission to a record it
+   *  already held. Only ever true for a genuine self-correction, and what it
+   *  echoes is the visitor's own input, so showing it discloses nothing about
+   *  whether the address was already known to us. */
+  nameApplied: boolean;
+  /** What was actually submitted, so the confirmation can name it. */
+  submittedName: string;
 }
 
 const WELCOME_COPY: Record<SignPath, string> = {
@@ -95,6 +139,55 @@ const PATH_REQUIRES_ADDRESS: Record<SignPath, boolean> = {
   'rider+horse': false,
   deal: true,
 };
+
+/**
+ * Which paths may be signing up a MINOR (FIX1 §A; owner ruling 2026-08-31).
+ *
+ * The rule, in the owner's words: a RIDER may be a minor; a HORSE OWNER may not,
+ * "both require a person to be 18+ to be horse owner". `horse` is horse care for
+ * an owner and `deal` is a contract counterparty — both are the horse owner, and
+ * both must be an adult. The other three all put a person on a horse.
+ *
+ * Same idiom as PATH_REQUIRES_ADDRESS above: a constant in the page, deliberately
+ * NOT configuration (D22 §0).
+ */
+const PATH_ALLOWS_MINOR: Record<SignPath, boolean> = {
+  guest: true,
+  rider: true,
+  horse: false,
+  'rider+horse': true,
+  deal: false,
+};
+
+/** The question each path asks, in the words that path already uses. `horse` and
+ *  `deal` never ask, so they have no copy here. */
+const MINOR_QUESTION: Partial<Record<SignPath, { question: string; self: string; child: string }>> = {
+  guest: {
+    question: 'Who is visiting?',
+    self: 'Me',
+    child: 'My child (I am the parent or legal guardian)',
+  },
+  rider: {
+    question: 'Who will be riding?',
+    self: 'Me',
+    child: 'My child (I am the parent or legal guardian)',
+  },
+  'rider+horse': {
+    question: 'Who will be riding?',
+    self: 'Me',
+    child: 'My child (I am the parent or legal guardian)',
+  },
+};
+
+/** Under 18 on the day they sign up. The same test sign_release already applies
+ *  to a kiosk minor release — a "minor" who is 18 or older is a data error, and
+ *  recording one would put an adult in the non-signing PARTICIPANT slot. */
+function isUnder18(dob: string): boolean {
+  const d = new Date(`${dob}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return false;
+  const eighteenth = new Date(d.getFullYear() + 18, d.getMonth(), d.getDate());
+  return eighteenth > new Date();
+}
 
 function normalizePath(raw: string | undefined): SignPath | null {
   const decoded = decodeURIComponent(raw ?? '').trim().toLowerCase();
@@ -233,6 +326,20 @@ function SendStateScreen({ outcome, email, isDeal }: { outcome: SendOutcome; ema
                 : `Your activation email is on its way to ${email}.`}
             </span>
           </p>
+          {/* ── FIX1 §B — THE CORRECTION IS ACKNOWLEDGED ────────────────────
+              Until 2026-08-31 a second submission with a corrected name was
+              discarded in silence and the screen said the send had succeeded —
+              which it had. The person who spotted their own mistake was told it
+              worked when the part that mattered had not (AR7 F2). This says
+              which name we will use. It names the string THEY just typed, never
+              the one we held, so a public form still tells nobody whether we
+              already knew this address. */}
+          {outcome.nameApplied && outcome.submittedName !== '' && (
+            <p className="text-sm text-green-800 bg-green-50 border border-green-200 p-3 mb-3">
+              We&apos;ve updated your name to <strong>{outcome.submittedName}</strong>.
+              That is the name that will appear on your paperwork.
+            </p>
+          )}
           <p className="body-text text-sm mb-3">
             {isDeal
               ? 'Go to your email, find the message from us, and click the link inside — it opens your contract and sets up your account at the same time.'
@@ -345,6 +452,15 @@ export default function SignStart() {
       });
   }, [path]);
 
+  /* FIX1 §A — WHO IS THIS FOR. `null` is "not answered yet" and is deliberately
+     distinct from 'self': on a path that asks, the person must actually choose,
+     because a silent default to "me" is precisely the assumption that caused the
+     incident. On a path that does not ask, this stays null and is never read. */
+  const [signingFor, setSigningFor] = useState<'self' | 'child' | null>(null);
+  const [minorFirst, setMinorFirst] = useState('');
+  const [minorLast, setMinorLast] = useState('');
+  const [minorDob, setMinorDob] = useState('');
+
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -374,12 +490,44 @@ export default function SignStart() {
      this list for exactly that reason, even though it is never required. */
   const addressStarted = [line1, line2, city, stateV, zip].some((v) => v.trim() !== '');
 
+  /* FIX1 §A. `allowsMinor` decides whether the question is on the page at all;
+     `isForChild` is only ever true where it is. */
+  const allowsMinor = path ? PATH_ALLOWS_MINOR[path] : false;
+  const minorCopy = path ? MINOR_QUESTION[path] : undefined;
+  const isForChild = allowsMinor && signingFor === 'child';
+  const minorNamesFilled = minorFirst.trim() !== '' && minorLast.trim() !== '';
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!path) return;
-    if (!namesFilled) {
-      setError('Please enter your first and last name.');
+    /* Asked first, because it changes what every field below MEANS. Until it is
+       answered, "First name" is ambiguous — and that ambiguity is the defect. */
+    if (allowsMinor && signingFor === null) {
+      setError(`Please tell us ${minorCopy?.question.replace(/\?$/, '').toLowerCase() ?? 'who this is for'}.`);
       return;
+    }
+    if (!namesFilled) {
+      setError(isForChild
+        ? 'Please enter YOUR first and last name — the parent or guardian on the account.'
+        : 'Please enter your first and last name.');
+      return;
+    }
+    if (isForChild) {
+      if (!minorNamesFilled) {
+        setError("Please enter your child's first and last name.");
+        return;
+      }
+      if (!minorDob.trim()) {
+        setError("Please enter your child's date of birth.");
+        return;
+      }
+      if (!isUnder18(minorDob)) {
+        /* Not pedantry: an 18-year-old put in the PARTICIPANT slot is an adult
+           recorded as a dependent, and they would never be asked to sign for
+           themselves. sign_release refuses the same case for the same reason. */
+        setError('That date of birth is 18 or older. An adult rider signs up in their own name — choose "Me" above.');
+        return;
+      }
     }
     if (!phoneValid) {
       setError('Please enter a phone number we can reach you on.');
@@ -415,6 +563,13 @@ export default function SignStart() {
           path,
           firstName: firstName.trim(),
           lastName: lastName.trim(),
+          /* Sent only when the page actually asked and the answer was "my child".
+             api/sign-start.ts re-decides both — the browser is not the authority
+             on which paths may carry a minor. */
+          isForMinor: isForChild,
+          minorFirstName: isForChild ? minorFirst.trim() : '',
+          minorLastName: isForChild ? minorLast.trim() : '',
+          minorDob: isForChild ? minorDob.trim() : '',
           phone: phone.trim(),
           email: email.trim(),
           confirmEmail: confirmEmail.trim(),
@@ -426,14 +581,18 @@ export default function SignStart() {
         }),
       });
       if (!res.ok) throw new Error('request failed');
-      const body = (await res.json()) as { status?: SendStatus; attemptId?: string | null };
+      const body = (await res.json()) as {
+        status?: SendStatus; attemptId?: string | null; nameApplied?: boolean;
+      };
       setOutcome({
         status: body.status ?? 'unavailable',
         attemptId: body.attemptId ?? null,
+        nameApplied: Boolean(body.nameApplied),
+        submittedName: `${firstName.trim()} ${lastName.trim()}`.trim(),
       });
     } catch {
       // The request itself never arrived, so there is no attempt to escalate from.
-      setOutcome({ status: 'unavailable', attemptId: null });
+      setOutcome({ status: 'unavailable', attemptId: null, nameApplied: false, submittedName: '' });
     } finally {
       setSubmitting(false);
     }
@@ -517,9 +676,50 @@ export default function SignStart() {
                   find it.
                 </p>
               )}
+              {/* ── FIX1 §A — THE QUESTION, ABOVE THE NAME FIELDS ──────────
+                  It sits first because it decides what every field below means.
+                  Two radios, no default: on a path that asks, an unanswered
+                  question is refused rather than assumed, because assuming "me"
+                  is the defect. `horse` and `deal` never render this — the owner
+                  ruled a horse owner must be 18+. */}
+              {allowsMinor && minorCopy && (
+                <fieldset className="mb-6 border border-green-800/10 p-4">
+                  <legend className="form-label px-2">{minorCopy.question} *</legend>
+                  <div className="flex flex-col gap-2">
+                    {([['self', minorCopy.self], ['child', minorCopy.child]] as const).map(([value, label]) => (
+                      <label key={value} className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="sign-signing-for"
+                          className="mt-1"
+                          value={value}
+                          checked={signingFor === value}
+                          onChange={() => setSigningFor(value)}
+                        />
+                        <span className="body-text text-sm">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+
+              {/* The heading appears ONLY once "my child" is chosen. Without it
+                  the two name blocks are indistinguishable, which is the whole
+                  problem this fix exists to solve. */}
+              {isForChild && (
+                <>
+                  <h2 className="form-label mb-1">Your details</h2>
+                  <p className="body-text text-sm text-muted mb-4">
+                    You are the account holder — the person we email, invoice and
+                    hold to the agreement. You will sign the paperwork.
+                  </p>
+                </>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
                 <div>
-                  <label className="form-label" htmlFor="sign-first">First name *</label>
+                  <label className="form-label" htmlFor="sign-first">
+                    {isForChild ? 'Your first name *' : 'First name *'}
+                  </label>
                   <input
                     id="sign-first"
                     className="form-input"
@@ -530,7 +730,9 @@ export default function SignStart() {
                   />
                 </div>
                 <div>
-                  <label className="form-label" htmlFor="sign-last">Last name *</label>
+                  <label className="form-label" htmlFor="sign-last">
+                    {isForChild ? 'Your last name *' : 'Last name *'}
+                  </label>
                   <input
                     id="sign-last"
                     className="form-input"
@@ -676,6 +878,73 @@ export default function SignStart() {
                   />
                 </div>
               </div>
+
+              {/* ── FIX1 §A — THE RIDER'S DETAILS ──────────────────────────────
+                  A separate, labelled block, so there is no longer one name box
+                  doing two jobs. The child is the non-signing PARTICIPANT; the
+                  guardian above signs. Date of birth is required here because it
+                  is the fact that makes them a minor — and because
+                  generate_my_onboarding_documents merges it into the release. */}
+              {isForChild && (
+                <fieldset className="mb-5 border border-green-800/10 p-4">
+                  <legend className="form-label px-2">The rider&apos;s details</legend>
+                  <p className="body-text text-sm text-muted mb-4">
+                    Your child rides; they do not sign. Their name goes on the
+                    paperwork as the participant, and yours goes on it as the
+                    person agreeing to it.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="form-label" htmlFor="sign-minor-first">
+                        Child&apos;s first name *
+                      </label>
+                      <input
+                        id="sign-minor-first"
+                        className="form-input"
+                        required
+                        value={minorFirst}
+                        onChange={(e) => setMinorFirst(e.target.value)}
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label" htmlFor="sign-minor-last">
+                        Child&apos;s last name *
+                      </label>
+                      <input
+                        id="sign-minor-last"
+                        className="form-input"
+                        required
+                        value={minorLast}
+                        onChange={(e) => setMinorLast(e.target.value)}
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="sign-minor-dob">
+                      Child&apos;s date of birth *
+                    </label>
+                    <input
+                      id="sign-minor-dob"
+                      type="date"
+                      className="form-input"
+                      required
+                      value={minorDob}
+                      onChange={(e) => setMinorDob(e.target.value)}
+                    />
+                    {/* Live, at the field, and only once a full date is present —
+                        the same rule the confirm-email note follows. */}
+                    {minorDob.trim() !== '' && !isUnder18(minorDob) && (
+                      <p role="alert" className="form-error mt-1 text-sm">
+                        That date of birth is 18 or older. An adult rider signs up
+                        in their own name — choose &ldquo;Me&rdquo; above.
+                      </p>
+                    )}
+                  </div>
+                </fieldset>
+              )}
+
               {error && (
                 <p className="form-error mb-4" role="alert">{error}</p>
               )}
@@ -689,9 +958,14 @@ export default function SignStart() {
                    one to a different email and it doesnt flag it... didnt refuse
                    to proceed." A confirm field that does not visibly confirm is
                    worse than no confirm field: it buys trust it has not earned. */
+                /* FIX1 §A adds three to the same list, for the same reason: a
+                   button that invites a click it will refuse is the pattern the
+                   comment above was written about. */
                 disabled={submitting || !firstName || !lastName || !phone
                   || !emailsMatch
-                  || (addressRequired && !addressFilled)}
+                  || (addressRequired && !addressFilled)
+                  || (allowsMinor && signingFor === null)
+                  || (isForChild && (!minorNamesFilled || !minorDob.trim() || !isUnder18(minorDob)))}
                 className="btn-primary w-full justify-center"
               >
                 {submitting ? 'Sending…' : 'Continue'}
