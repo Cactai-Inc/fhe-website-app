@@ -110,3 +110,55 @@ fix them.**
 ⚠️ **NOT WHILE `TASK-FIX3` AND `TASK-FIX4` ARE IN FLIGHT.** They cite task paths, and moving files
 under a running thread is how work gets lost. **After FIX4 merges, before the zone sweeps** — the
 sweeps then read a clean tree, which is exactly when it pays for itself.
+
+---
+
+# PART 2 — THE SHARED WORKSPACE, `~/Downloads/claude-code-repo/`
+
+> *"the markdown files in claude code repo should be moved to their appropriate place as well as any
+> files in the downloads folder itself that have a home somewhere inside claude code repo inside one
+> of the repos."*
+
+⚠️ **This is a SHARED workspace holding several repos** — `fhe-website-app`, `orchestration`,
+`rabbit-hole-v3`, `FRACTAL`, `vscode-mods`. **Loose files at its root belong to none of them and are
+invisible to every repo's history.** Surveyed 2026-08-31.
+
+## THE ELEVEN LOOSE MARKDOWN FILES — ten are FHE's, one is not
+
+| File | Home | Note |
+|---|---|---|
+| `ADMIN-IA-REVISION.md` | `fhe/docs/design/` | *"Revises ADMIN-IA.md §1"* — its sibling is already in the repo. ⚠️ **Cited by `TASK-AR6`; a live document living outside the repo it governs.** |
+| `04-SEQUENCE-AND-RULINGS.md` | `fhe/docs/design/` | part of the same refactor set |
+| `CHAT-THREAD-ADMIN-REFACTOR-2026-08-26.md` | `fhe/docs/design/` | the chat thread's output |
+| `REFACTOR-POSITION-2026-08-22.md` | `fhe/docs/archive/` | *"My current opinion"* — superseded by `REBUILD-SCOPE-multi-tenant-platform` |
+| `THREAD-ASSESSMENT-2026-08-22.md` | `fhe/docs/archive/` | a thread's own synthesis, historical |
+| `TASK-AUTHORITY-one-owner-one-write-path.md` | `fhe/docs/tasks/` | **merged as `a1eebe9` — archive with the task set** |
+| `SETUP-REMOTE.md` | `fhe/docs/reference/` | setup instructions |
+| ⚠️ `TASK-ONERAIL-…md` | **nowhere** | ⚠️ **BYTE-IDENTICAL to `fhe/docs/tasks/`'s copy. Delete the root one.** |
+| ⚠️ `01-DESIGN-SYSTEM.md` | **decide first** | ⚠️ **DIFFERS from `fhe/docs/design/refactor/prior-thread-2026-08-20/01-DESIGN-SYSTEM.md`. A blind move OVERWRITES a real difference — diff and reconcile before touching it.** |
+| `v2authoringbrief.md` | ⚠️ **NOT FHE** | *"v2.0 GAS Build"* — a different project. **Ask the owner; do not file it into FHE.** |
+| `handoff.zip` · `orchestration.zip` | archive | ⚠️ **`orchestration/` exists as a live directory — confirm the zip is not the only copy of something before archiving.** |
+
+⚠️ **`Icon` is a macOS artefact — leave it.**
+
+## ⚠️ NINE MERGED WORKTREES ARE STILL SITTING THERE
+
+`wt-ar1` … `wt-ar7`, `wt-fix1`, `wt-fix2` — **all nine verified merged into `main`.**
+**Per `ORCHESTRATOR.md` §6 each should have been archive-tagged and removed at merge, and I did not
+do it.** ⚠️ **That is the same hygiene failure the owner is describing, and it is mine.**
+
+**Per worktree: `git merge-base --is-ancestor` ✅ · `git status --porcelain` must be EMPTY ·
+`git tag archive/<name>-<date>` · `git worktree remove` · `git branch -d`.**
+⚠️ **`wt-fix3` and `wt-fix4` are NOT in this list — they have not run yet. Do not touch them.**
+
+## SEQUENCE — and the same caution as Part 1
+
+1. ⚠️ **Reconcile `01-DESIGN-SYSTEM.md` first** — it is the only one that can lose content.
+2. Move the nine unambiguous files with `git mv` **into the FHE repo**, so they gain history.
+3. Delete the byte-identical `TASK-ONERAIL` duplicate.
+4. **Ask about `v2authoringbrief.md`.**
+5. Archive-tag and remove the nine merged worktrees.
+6. **Grep for references to every moved path and fix them.**
+
+⚠️ **NOT WHILE `TASK-FIX3` / `TASK-FIX4` ARE IN FLIGHT** — they will create `wt-fix3` and `wt-fix4`
+in this directory, and moving files under a running thread is how work is lost.
