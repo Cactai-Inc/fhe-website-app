@@ -7,7 +7,17 @@
 import payloads from '../ui/fixtures/contractsend-rpc-payloads.json';
 
 declare global {
-  interface Window { __rpc: { name: string; args: unknown }[] }
+  interface Window {
+    __rpc: { name: string; args: unknown }[];
+    /* FIX1 §D — TABLE AND RPC FIXTURES, INSTALLED BY THE HARNESS ENTRY.
+     * The ContractPage harness needs neither and sets neither, so both default to
+     * undefined and every existing probe keeps exactly today's behaviour: from()
+     * resolves to [] and rpc() falls through to the captured payloads. A second
+     * entry (documents-content.tsx) that needs its own rows installs them here
+     * BEFORE render rather than editing this shared file for one page. */
+    __tables?: Record<string, unknown[]>;
+    __rpcFixtures?: Record<string, unknown>;
+  }
 }
 window.__rpc = [];
 
@@ -59,6 +69,9 @@ export const supabase = {
   rpc(name: string, args?: unknown) {
     window.__rpc.push({ name, args });
     const a = (args ?? {}) as Record<string, unknown>;
+    if (window.__rpcFixtures && name in window.__rpcFixtures) {
+      return result(window.__rpcFixtures[name]);
+    }
     if (name === 'set_contract_field') {
       writeField(a.p_field_key as string, { value: a.p_value as string });
       return result({ value: a.p_value });
@@ -79,13 +92,19 @@ export const supabase = {
   },
   from(table: string) {
     const row = table === 'profiles' ? PROFILE : table === 'members' ? { status: 'active' } : null;
+    /* Filters are collected but NOT applied. Every fixture set is written to be
+       the answer for the one caller under test, so pretending to implement
+       PostgREST here would only invent a second, wrong query planner. The list
+       is recorded so a probe can assert WHAT WAS ASKED FOR, which is the part
+       that can actually be wrong. */
+    const rows = window.__tables?.[table] ?? [];
     const chain: Record<string, unknown> = {};
     for (const m of ['select', 'eq', 'in', 'order', 'limit', 'is', 'neq', 'not', 'filter']) {
       chain[m] = () => chain;
     }
-    chain.maybeSingle = () => result(row);
-    chain.single = () => result(row);
-    chain.then = (res: (v: unknown) => unknown) => result([]).then(res);
+    chain.maybeSingle = () => result(rows.length > 0 ? rows[0] : row);
+    chain.single = () => result(rows.length > 0 ? rows[0] : row);
+    chain.then = (res: (v: unknown) => unknown) => result(rows).then(res);
     return chain;
   },
   auth: {

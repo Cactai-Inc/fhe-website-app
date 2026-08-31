@@ -29,6 +29,36 @@ import type { SeedDocument } from '../../lib/seed';
  * unchanged) so neither surface loses anything either direction.
  */
 
+/**
+ * ── FIX1 §D — THE INLINE SIGNING BOX IS RETIRED. THE PAGE IS NOT. ───────────
+ *
+ * Source of truth: docs/reports/TASK-AR7-REPORT.md §3, §9 and R9.
+ *
+ * ⚠️ AR7 EXONERATED THIS FILE. The premise that /app/documents was a second
+ * onboarding corridor is WRONG: all 49 contact_required_documents rows in
+ * production are AT_LOGIN, so while anyone owes paperwork the wall makes
+ * /app/onboarding the only reachable route in the whole app and this page cannot
+ * be reached at all. Its name box has never signed anything, and it did not sign
+ * the four documents in the 2026-08-28 incident — those were signed inside the
+ * corridor, through Onboarding.tsx, which showed a name and gated on it.
+ *
+ * So this is not a fix for the incident. It is the removal of a live hazard: an
+ * unchecked, unlabelled name box that becomes reachable for the first WHEN_READY
+ * assignment, and that manufactures an e-sign consent record for a checkbox the
+ * member was never shown (AR7 F6). One place a member signs, and it is the
+ * corridor.
+ *
+ * ⚠️ D32 — FLAGGED, NEVER DELETED. The flag is here, the component below it is
+ * intact, and flipping this to `true` restores today's behaviour exactly.
+ *
+ * ⚠️ AND THE PAGE STAYS. Reading the full paginated body, downloading the signed
+ * PDF, emailing yourself a copy and the contract deep-link exist ONLY here —
+ * Onboarding.tsx has none of the four. Retiring the page would be a regression;
+ * retiring the box is not. Carrying the reader and the PDF into the corridor is
+ * AR7 R10 and is not in this task's scope.
+ */
+const MEMBER_INLINE_SIGN_ENABLED = false;
+
 /** Splits a document's merged body into readable "paper" pages. Lifted
  *  unchanged from the old DocumentsPanel, which computed this eagerly for
  *  every row; here it's computed once, when a document is opened to read. */
@@ -191,12 +221,21 @@ function ReadButton({ onOpen }: { onOpen: () => void }) {
 }
 
 /**
- * MEMBER self-sign row (mirrors the staff SigningPanel's SignPartyRow, but
- * client-facing): the member types THEIR name and signs THEIR OWN party role.
- * The `record_signature` RPC (20260702000000) verifies server-side that the
- * caller's contact IS the party — the UI never chooses whose signature to seal.
- * A rejected sign renders inline and the row stays unsigned (refresh happens
- * only on success).
+ * MEMBER document row.
+ *
+ * It USED to be the self-sign row: the member typed their name and signed their
+ * own party role here. Behind MEMBER_INLINE_SIGN_ENABLED (see the flag at the
+ * top of this file) that box no longer renders and every unsigned row deep-links
+ * into the corridor instead. The signing branch below is kept whole, not
+ * deleted, per D32 — one constant restores it.
+ *
+ * What the row still does, and what nothing else does: read the full merged text
+ * as paginated paper, download the executed PDF, and email yourself a copy.
+ *
+ * The `record_signature` RPC verifies server-side that the caller's contact IS
+ * the party — the UI never chooses whose signature to seal — and since FIX1 §C
+ * (20260831T0900) it also checks the typed name against the signer's own contact
+ * record. A rejected sign renders inline and the row stays unsigned.
  */
 function SelfSignRow({
   item,
@@ -279,10 +318,29 @@ function SelfSignRow({
               )}
             </div>
           ) : isContractDoc ? (
-            <Link to={`/app/contracts/${doc.id}`} state={fromHere(location)}
+            /* FIX1 §D — /start, not the bare document. AR7 §9: the two surfaces
+               deep-linked differently and Onboarding's is the better of the two,
+               because /start asks for missing party fields BEFORE the contract
+               rather than presenting a document with holes in it. Converge on it. */
+            <Link to={`/app/contracts/${doc.id}/start`} state={fromHere(location)}
               className="btn-outline-gold inline-flex items-center mt-3 text-sm">
               Open to review &amp; sign →
             </Link>
+          ) : !MEMBER_INLINE_SIGN_ENABLED ? (
+            /* FIX1 §D — the retired box's replacement. An unsigned non-contract
+               document is onboarding paperwork, and the corridor is where it gets
+               signed: it shows the member the name they must type, captures real
+               e-sign consent against a real checkbox, and sequences the set by
+               onboarding_order. This row keeps the reader, so nothing is lost —
+               the member can still READ what they are being asked to sign from
+               here, they simply sign it in one place. */
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Link to="/app/onboarding" state={fromHere(location)}
+                className="btn-outline-gold inline-flex items-center text-sm">
+                Open to review &amp; sign →
+              </Link>
+              {doc.merged_body && <ReadButton onOpen={openReader} />}
+            </div>
           ) : (
             <div className="mt-3 flex flex-wrap items-end gap-3">
               <div>
