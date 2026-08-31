@@ -126,25 +126,126 @@ two booleans for one fact — establish the live state rather than trusting the 
 
 ---
 
-## THE TWELVE PROMPTS
+## ⚠️ HOW THESE ARE ACTUALLY RUN — SEVEN THREADS, NOT TWELVE (revised 2026-08-30)
 
-**Each is two lines. Model and effort are stated outside the block so the block stays copyable.**
+**The twelve areas above stay as the map. They are not twelve threads.** Owner, 2026-08-30:
+*"why are we running all 12 separately? is there a way to group them based on the model tier? or is
+there a real logical reason to make me do 12 separate threads?"* — and *"i cant run something with
+mixed model tiers."*
+
+⚠️ **There was no good reason for twelve. The original split was by subject boundary, and nobody
+asked what the right BATCH was.** But **model tier is the wrong axis to group on** — it optimises
+configuration convenience, not the quality of the sweep. **The axis that matters is whether two areas
+share a spine**, because a sweep that can only see half a seam reports half a finding, which is the
+exact failure this method exists to end.
+
+**Measured against production, 2026-08-30 — this is what decided the grouping:**
+
+| Evidence | Consequence |
+|---|---|
+| `contacts` is referenced by **63 tables**; `profiles` by **50** | ⚠️ **Identity is not an area, it is the substrate.** It gets its own sweep and nothing is merged into it |
+| `bookings`, `lesson_credits` and `fulfillment_units` **all carry FKs into `purchases` / `purchase_items` / `offerings`** | ⚠️ **A3–A6 are ONE connected component.** Splitting them four ways was the mistake |
+| `documents` referenced by **25** tables | contracts are their own spine |
+| `horses` referenced by **15**, crossing into `contacts` **9** times | coherent enough to stand alone |
+
+**Two kinds of grouping, and the difference is honest:**
+- **MERGED** — the areas share a spine, so the thread produces **ONE report** covering them, because
+  a single finding spans them.
+- **BATCHED** — the areas are independent; one thread produces **TWO SEPARATE REPORTS**, back to
+  back. ⚠️ **The saving is your tab count, not analytic depth — and the brief says so, so no thread
+  blends two unrelated areas into one mushy report.**
+
+| # | Sweep | Areas | Kind | Reports |
+|---|---|---|---|---|
+| **S1** | Identity & access | A1 + A2 | merged | `SWEEP-S1-REPORT.md` |
+| **S2** | Orders & money | A3 + A4 | merged | `SWEEP-S2-REPORT.md` |
+| **S3** | Scheduling & fulfilment | A5 + A6 | merged | `SWEEP-S3-REPORT.md` |
+| **S4** | Contracts & documents | A7 | single | `SWEEP-S4-REPORT.md` |
+| **S5** | Horses & the stable | A8 | single | `SWEEP-S5-REPORT.md` |
+| **S6** | Delivery & community | A9 + A10 | batched | **two reports** |
+| **S7** | Config, kit & barn ops | A11 + A12 | batched | **two reports** |
+
+⚠️ **S2 AND S3 SHARE `purchases` AND MUST BOTH REPORT ON THAT SEAM.** D6 is the documented interface
+— `fulfillment_units` are generated from `purchase_items` by `config_kind`. **Each sweep states what
+it expects of the other side; ORCH6 reconciles the two statements.** That seam is where the split
+was made, and it is the one place a finding could fall between them.
+
+## THE SEVEN PROMPTS
 
 ```
-SWEEP-A1
+SWEEP-S1
 
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
-Read docs/tasks/ZONE-SWEEPS-A1-A12.md and sweep area A1.
+Read docs/tasks/ZONE-SWEEPS-A1-A12.md and sweep S1 — areas A1 and A2, as one merged report.
 ```
-*(…identical for A2 … A12, changing only the identifier on line 1 and the area on line 3.)*
 
-**Model and effort, per area — judgement-heavy areas get Opus:**
+```
+SWEEP-S2
 
-| Area | Model | Effort | Why |
-|---|---|---|---|
-| **A1 Identity** · **A2 Access** · **A3 Order spine** · **A4 Money** · **A7 Contracts** | **Opus** | HIGH | model-level judgement, locked rulings to build to, and the highest cost of being wrong |
-| **A5 Scheduling** | **Opus** | HIGH | the availability inversion is a design decision, not an inventory |
-| **A6 Fulfilment** · **A8 Horses** · **A10 Community** | **Opus** | MEDIUM | real judgement, smaller blast radius |
-| **A9 Notifications** · **A11 Admin config** · **A12 Barn ops** | **Sonnet** | HIGH | mechanical breadth with the traps already written out |
+cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
+Read docs/tasks/ZONE-SWEEPS-A1-A12.md and sweep S2 — areas A3 and A4, as one merged report.
+```
 
-**Thinking: ON for all twelve.**
+```
+SWEEP-S3
+
+cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
+Read docs/tasks/ZONE-SWEEPS-A1-A12.md and sweep S3 — areas A5 and A6, as one merged report.
+```
+
+```
+SWEEP-S4
+
+cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
+Read docs/tasks/ZONE-SWEEPS-A1-A12.md and sweep S4 — area A7.
+```
+
+```
+SWEEP-S5
+
+cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
+Read docs/tasks/ZONE-SWEEPS-A1-A12.md and sweep S5 — area A8.
+```
+
+```
+SWEEP-S6
+
+cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
+Read docs/tasks/ZONE-SWEEPS-A1-A12.md and sweep S6 — areas A9 and A10, as two separate reports.
+```
+
+```
+SWEEP-S7
+
+cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
+Read docs/tasks/ZONE-SWEEPS-A1-A12.md and sweep S7 — areas A11 and A12, as two separate reports.
+```
+
+**Worktree `wt-s<n>`, branch `task/s<n>`. Commit the report(s) only. Do not push.**
+
+## CONFIGURATION — one tier per thread
+
+⚠️ **A thread runs at ONE model tier**, so the per-area table that used to sit here was unusable.
+**Every sweep is Opus, thinking ON.** The only variable is effort:
+
+| Sweep | Model | Thinking | Effort | Why |
+|---|---|---|---|---|
+| **S1** Identity & access | Opus | ON | **MAX** | 63-table substrate, RLS across 162 tables, and D30 names this model first for the rebuild |
+| **S2** Orders & money | Opus | ON | **MAX** | two locked rulings to build to, and two measured data faults already known |
+| **S3** Scheduling & fulfilment | Opus | ON | **HIGH** | the availability inversion is a design decision, not an inventory |
+| **S4** Contracts & documents | Opus | ON | **HIGH** | 61+ executed documents are evidence; a live lease is in production |
+| **S5** Horses & the stable | Opus | ON | **HIGH** | bounded, with known unfixed defects to confirm |
+| **S6** Delivery & community | Opus | ON | **HIGH** | two reports; the anon-read question in A10 is a security decision |
+| **S7** Config, kit & barn ops | Opus | ON | **HIGH** | two reports; mostly breadth, but D13/D21 judgement runs through A11 |
+
+⚠️ **Opus throughout is deliberate.** These sweeps exist to find what is not written down — the job
+the earlier Sonnet allocation was worst suited to. **Effort is where the dial moves.**
+
+## RUN ORDER
+
+**All seven are read-only, so all seven CAN run at once.** ⚠️ **Do not.** Batch **three, then four** —
+the constraint is not contention, it is that ORCH6 has to audit every report against production, and
+seven audits at once is where a rubber-stamp creeps in.
+
+**Recommended: S1 · S2 · S3 first** — they are the substrate and the spine, they carry both MAX
+sweeps, and the other four all reference their findings. **Then S4 · S5 · S6 · S7.**
