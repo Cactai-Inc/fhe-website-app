@@ -25,6 +25,26 @@ platform    macOS. Every path above is absolute and real.
 
 ---
 
+# 0. ⚠️ READ THIS FIRST — SECTION 1 BELOW IS STALE
+
+**Updated 2026-08-31.** This brief was written on 2026-08-29, before the work it describes ran.
+⚠️ **The six `TASK-AR*` research threads it lists as "waiting for you" are DONE** — seven reports in
+all, audited against production by ORCH5 and merged. **Three fix threads followed; two are merged.**
+
+⚠️ **DO NOT RE-AUDIT FINISHED WORK. Your starting point is `docs/handoff/RUN-QUEUE.md`** — it carries
+what remains, in order, with model settings, plus every open item. **Read it before anything below.**
+
+**What is actually left for you:**
+1. **Confirm `TASK-FIX3` and `TASK-FIX4` merged** *(the owner runs them; ORCH5 queued them)*.
+2. **The twelve zone sweeps** — `docs/tasks/ZONE-SWEEPS-A1-A12.md`, **seven threads not twelve**,
+   grouped by shared spine. Method: `docs/METHOD-area-sweeps.md`.
+3. **Review the sweeps with the owner**, then **produce the enumerated status document** he hands to
+   his Claude chat thread for authoring the refactor.
+4. **Write the ORCH7 handoff.**
+
+**Sections 2–5 below remain accurate — the sequence, the traps and the ending rules are unchanged.**
+⚠️ **Section 4's two rulings are still owed**, and `RUN-QUEUE.md` carries a third.
+
 # 1. WHAT IS WAITING FOR YOU
 
 **Six `TASK-AR*` research threads were launched by the owner on 2026-08-29.** They are **read-only**:
