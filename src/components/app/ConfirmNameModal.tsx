@@ -11,8 +11,16 @@ import { toErrorMessage } from '../../lib/ops/errors';
  *
  * SOFT by design: it blocks the two actions where a wrong name does damage —
  * filling a form and signing a contract — and nothing else. The member can still
- * browse, read their documents and use the community. The authoritative gate is
- * server-side in record_signature(), so this is the friendly half, not the fence.
+ * browse, read their documents and use the community.
+ *
+ * There IS an authoritative gate server-side now: record_signature() compares the
+ * typed signature against the signer's own contact record and refuses a mismatch
+ * (FIX1 §C, 20260831T0900). Until 2026-08-31 this comment claimed that fence
+ * existed when it did not (AR7 F3) — the server checked only that the typed name
+ * was non-empty. What the fence does NOT do is decide WHICH name is right, which
+ * is precisely this modal's job: it enforces agreement with the record, so a
+ * wrong record produces a confidently wrong signature. That is the 2026-08-28
+ * incident in one sentence, and it is why this soft gate matters.
  *
  * The copy deliberately does not accuse anyone of an error or explain our data
  * model. From the member's side this is simply: confirm how your name should
