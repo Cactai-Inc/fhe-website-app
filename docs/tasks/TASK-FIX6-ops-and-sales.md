@@ -95,9 +95,38 @@ repeated defect.** **Migrate the two live rows so neither owner loses their boar
 five pages. **A dashboard view also called Admin makes "go to Admin" ambiguous** — the same defect as
 the two nav rows both labelled "Records". **Flag it and let the owner name it.**
 
-⚠️ **TRAINER IS A SUBSET OF SALES, PER THE OWNER — SO CHECK BEFORE BUILDING TWO.** *"a trainer
-dashboard would be a subset of the sales dashboard."* **If the zones confirm it, Trainer is Sales with
-fewer zones — one config, role-filtered, which cannot drift.** **If the zones say otherwise, say so.**
+### ⚠️ THE ROLES, DEFINED BY THE OWNER — and this CORRECTS an earlier note in this file
+> *"trainer is for training horses and instructing people, instructor only gives lessons to people.
+> care taker is someone who handles horses and helps with horse care services and may help a trainer
+> or instructor get the horses ready or wash them after a lesson and put them in the stall."*
+
+| Role | Works on | Does |
+|---|---|---|
+| **Trainer** | ⚠️ **horses AND people** | trains horses · instructs people |
+| **Instructor** | **people only** | gives lessons |
+| **Care-taker** | **horses only** | horse care services · prepares, washes and stalls horses for a trainer or instructor |
+
+⚠️ **SUPERSEDES the earlier "trainer is a subset of sales" note.** With these definitions **it is
+not** — **trainer, instructor and care-taker are JOB roles; Sales is a BUSINESS FUNCTION** (leads,
+orders, schedule, payments). **A trainer's board is the horses and people they are working with. That
+is a different lens, not a filtered Sales.**
+
+⚠️ **THE REAL SUBSET RELATIONSHIP IS DIFFERENT, AND IT IS THE ONE TO BUILD ON:**
+**INSTRUCTOR ⊂ TRAINER.** A trainer instructs people **and** trains horses; an instructor does only
+the first. ⚠️ **So Instructor is Trainer minus the horse-training zones — one config, role-filtered,
+which cannot drift.** **Care-taker overlaps both on the HORSE side** *(preparation, washing,
+stalling)* **without training or teaching** — **it shares zones with Trainer but is not a subset of
+it.**
+
+⚠️ **THEREFORE THE ZONE MODEL IS TWO AXES, NOT ONE LIST:** **horses** and **people**. Trainer holds
+both · Instructor holds people · Care-taker holds horses *(care and preparation, not training)*.
+**Define each zone once against an axis and compose the boards from them** — the registry already
+registers one zone into two boards. ⚠️ **Three hand-built boards that happen to share zones is the
+duplication this codebase keeps producing.**
+
+⚠️ **AND NOTE WHAT THIS MEANS FOR CLAIRE:** she trains horses **and** instructs, so she holds
+**Trainer**, not Instructor. **The existing `trainer` value on `hello@fhequestrian.com` is therefore
+correctly named and must survive the migration.**
 
 ⚠️ **BUILD THE FRAMEWORK FOR SIX; BUILD ONLY THE BOARDS THAT HAVE OCCUPANTS.** **There is one
 instructor — Claire — which is the same fact that made an instructor picker unnecessary in `FIX2`.
