@@ -2775,3 +2775,87 @@ the server catches the wrong person.**
 2. **A one-time pass over existing records**, or new entries only? *(Four signatures are affected;
    the contact count is unmeasured.)* ⚠️ **A signature's `typed_name` must NEVER be rewritten — it is
    sealed evidence** (`block_signed_signature_update`). **Any backfill is contacts-only.**
+
+---
+
+## CR-84 · G9 · captured — never lose what someone typed, and show them what we changed
+
+**SAID (owner, 2026-08-31), five requirements in one message:**
+> *"silent correction is not the way to do it if we can avoid it, we should show the normalization by
+> normalizing after they click out of the input field for everything we normalize. names, phone
+> numbers, and if we make the email addresses all lowercase we can show that too. for the old
+> documents, leave documents alone, just correct the client records. we need to update the flows to
+> give a back button to every page with lossless action and if possible make sure refresh, and
+> browser back button is lossless and exit has resume function with lossless capability … any modal
+> that opens doesnt close from clicking out once an input is entered into it. we need to make sure
+> there is a save and a close button, if save isnt clicked the exit clears the inputs, a clear form
+> button should also be there on all input forms/modals. when save is clicked opening that modal
+> again resumes with the inputs."*
+
+⚠️ **These are one change request because they are one principle: THE APP NEVER LOSES OR SILENTLY
+ALTERS WHAT A PERSON TYPED.** Split across six threads they become six idioms.
+
+### 1 · Normalisation happens ON BLUR, in front of them
+**Not on submit, not on save — when they leave the field**, so the correction is visible and
+revisable. **Applies to: names (CR-83's rules) · phone numbers · email lowercasing.**
+⚠️ **"Silent correction is not the way to do it" is the whole requirement.** A value the app changed
+without showing them is indistinguishable from a value they typed wrong.
+
+### 2 · Documents are untouched; only the client record is corrected
+> *"for the old documents, leave documents alone, just correct the client records."*
+⚠️ **Settles CR-83's open ASK-OWNER #2.** Backfill is **contacts-only**. **A signature's `typed_name`
+is sealed evidence** (`block_signed_signature_update`) **and is never rewritten** — the four
+uncapitalised executed signatures stay exactly as they are.
+
+### 3 · A back button on every page, and it loses nothing
+⚠️ **MEASURED: `Onboarding.tsx` has EIGHT steps and TWO `Back` controls** — one on the *done* screen
+pointing at the dashboard, one inside the horse sub-flow. **From `sign` there is no route back to the
+field holding the name.** Also carries CR-53's *"a back button in the top left area of the page"* and
+`TASK-AR5`'s finding of **20+ hand-rolled back affordances and no shared component.**
+
+### 4 · Refresh and browser-back are lossless; exit resumes
+**The three ways people actually leave a form**, and none may discard input.
+⚠️ **Browser-back is the one that needs a real mechanism** — a step held only in React state is gone
+on reload. **Recommend the storage seam rather than assuming one.**
+
+### 5 · ⚠️ A MODAL WITH INPUT IN IT DOES NOT CLOSE ON A BACKDROP CLICK
+**MEASURED 2026-08-31, and the number is the finding:**
+
+| | |
+|---|---|
+| modals closing on backdrop-click or Escape | **33** |
+| of those, carrying `<input>`, `<textarea>` or `<select>` | **18** |
+| ⚠️ of those 18, using the shared `ops/kit/Modal` | ⚠️ **ZERO — all 18 are hand-rolled** |
+
+⚠️ **The shared `Modal` already has `disableBackdropClose`, and not one input-bearing modal uses it.**
+**So this is 18 separate implementations of one bug** — and it is CR-68a, which the owner reported on
+2026-08-25 after losing horse-intake data, still live six days later.
+⚠️ **The fix is CONVERGENCE ON THE SHARED COMPONENT, not 18 patches.** A 19th hand-rolled overlay
+with a guard bolted on is the failure this repo keeps repeating.
+
+### 6 · Save · Close · Clear, and save means resume
+| Control | Behaviour |
+|---|---|
+| **Save** | commits; ⚠️ **reopening the modal RESUMES with those inputs** |
+| **Close** | ⚠️ **discards — "if save isnt clicked the exit clears the inputs"** |
+| **Clear form** | on **all** input forms and modals |
+
+⚠️ **NOTE THE TENSION WITH CR-75, AND DO NOT RESOLVE IT BY GUESSING.** CR-75 rules that on an
+**expanding card** *"closing is never a discard"* — the card header closes and **saves**. Here, on a
+**modal**, close **discards** unless saved. **Both are the owner's rulings and they are about
+different surfaces.** ⚠️ **A card saves on close. A modal discards on close.** Write it into whatever
+component work implements this, or the next thread will "fix" one to match the other.
+
+**FOUND (measured, 2026-08-31):**
+- ⚠️ **No name, phone or email normalisation exists anywhere.**
+- ⚠️ **No shared back-button component exists** — 20+ hand-rolled instances (`TASK-AR5`).
+- ⚠️ **18 input-bearing modals, none using the shared kit component, all closing on backdrop click.**
+- **CR-37 measured the same pattern from the other side:** 33 screens build their own overlay against
+  7 using the shared one.
+
+**ASK-OWNER**
+1. ⚠️ **CR-83 #1 is still open and this message did not settle it:** does on-blur normalisation apply
+   to **staff-entered** names on a contact record, or only where a person types their **own** name?
+   *(Silent-vs-shown is answered; WHERE is not.)*
+2. **Does "resume with the inputs" survive a page reload, or only within one session?** ⚠️ Reload
+   survival means persisted per-user draft state — materially larger, and it overlaps #4.
