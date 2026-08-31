@@ -57,7 +57,7 @@ INTO `FIX4`. `CR-85` and `CR-86` ARE NOT SPECCED — they are yours to spec.**
 Contacts and Stable)*. ⚠️ **The order is already correct; the only change is People dissolving.**
 ⚠️ **The orchestrator argued against this and was WRONG** — Catalog and Messages **are** community
 content *(the view lives in Community, the editor in Admin — `Products` at `pageRegistry.ts:267`)*.
-⚠️ **Blocked on §5 #1 — where messaging lives. If the Messages page is retired, Community is Catalog alone.**
+✅ **UNBLOCKED — `CR-87` rules the Messages page SURVIVES, so Community keeps both rows.**
 **Home:** whatever next touches `AppLayout.tsx` + `pageRegistry.ts`. **Nothing owns them now.**
 
 ### CR-86 · the books ⚠️ **THE LARGEST UNSPECCED ITEM, AND IT HAS A DEADLINE**
@@ -137,11 +137,18 @@ twice on one.**
 
 | # | Question | Blocks |
 |---|---|---|
-| 1 | ⚠️ **WHERE MESSAGING LIVES** *(`04-OPEN-QUESTIONS.md` §1)* — ⚠️ **he did not recognise "the messaging A/B"; DESCRIBE it, never name it.** There are chat-style notes panels on **lessons, horse-care activity records and contracts**, AND a standalone **Messages** page — two systems for one job. **Either the notes panels BECOME the messages and the Messages page lists every conversation from all three, or messaging lives only on those surfaces and the Messages page is retired.** ⚠️ **ORCH5 recommends the first**, for his own stated reason: *"not needing to look at a specific place for a specific thing."* | **CR-85** — if the page is retired, Community is Catalog alone |
-| 2 | **Does a Marketing planning store exist?** ⚠️ **If not, that is a build inside a build — flag it, do not invent a campaign tracker.** | FIX6 |
-| 3 | **Madeline Do's two standing slots**, and her four existing bookings *(Wed 17:30 · Fri 08:00 · Mon 17:30, plus a 13-hour midnight row)* | ⚠️ **He said "handled later today" on 2026-08-31 — CHECK PRODUCTION BEFORE ASKING AGAIN** |
+| 1 | **Does a Marketing planning store exist?** ⚠️ **If not, that is a build inside a build — flag it, do not invent a campaign tracker.** | FIX6 |
+| 2 | **Madeline Do's two standing slots**, and her four existing bookings *(Wed 17:30 · Fri 08:00 · Mon 17:30, plus a 13-hour midnight row)* | ⚠️ **He said "handled later today" on 2026-08-31 — CHECK PRODUCTION BEFORE ASKING AGAIN** |
 
 ### ✅ CLOSED — carry these as ANSWERS, not questions
+- ⚠️ **MESSAGING IS RULED — see `CR-87`. It is NOT an A-or-B and `04-OPEN-QUESTIONS.md` §1 IS
+  SUPERSEDED.** **Threads STAY on their surfaces** *(lessons · horse-care records · contracts)*; **the
+  Messages page ENUMERATES them in one view and is an INDEX, not a second store**; **each listed thread
+  LINKS BACK to its originating surface.** ⚠️ **Do not migrate messages into a central table** (D18).
+  ⚠️ **Five message-shaped tables exist and the panels may not all use the same one — establish which
+  each surface uses before designing the index.** **All five are empty and that is NOT a finding.**
+  ✅ **CR-85 IS THEREFORE UNBLOCKED: the Messages page survives, so Community keeps Catalog AND
+  Messages.**
 - ⚠️ **A comp's loss is the LIST price.** *(Asked twice. He answered once and was asked again — do not
   make it three.)* **Build consequence: `purchase_items` has only the price CHARGED, so a comp at $0
   leaves nothing to value the loss from. CAPTURE THE LIST PRICE ON THE LINE AT THE TIME OF SALE** —
