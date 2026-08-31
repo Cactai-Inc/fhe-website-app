@@ -4,8 +4,10 @@ import { useAuth } from '../../../contexts/AuthContext';
 import {
   GRANTABLE_SURFACES, listAllGrants, addGrant, removeGrant, type SurfaceGrant,
 } from '../../../lib/grants';
+import { Modal } from '../../../components/ops/kit/Modal';
+import { useFieldNormalizer, useFormDraft } from '../../../lib/formState';
 import { toErrorMessage } from '../../../lib/ops/errors';
-import { X, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import {
   adminListMembers, adminSetRole, adminSetSuspended, adminSendInvitation,
   adminUpdateProfile, adminHardDeleteMember,
@@ -158,6 +160,17 @@ function TeamMemberPanel({
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
+  const normalize = useFieldNormalizer();
+
+  /* TASK-FIX4 §6 — keyed on the member, so an interrupted edit of THIS person
+     comes back and never lands on somebody else's row. */
+  const draft = useFormDraft(`ops.team.${member.user_id}`, form, (d) => {
+    setForm((f) => ({ ...f, ...d }));
+  });
+  function clearForm() {
+    setForm((f) => Object.fromEntries(Object.keys(f).map((k) => [k, ''])) as typeof f);
+    draft.clear();
+  }
 
   /* The default-view save does NOT go through `run()`, and that is deliberate.
      `run()` ends in `onChanged()`, which this page defines as
@@ -195,14 +208,13 @@ function TeamMemberPanel({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
-      <div className="bg-cream w-full max-w-md h-full overflow-y-auto overscroll-contain shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b border-green-800/10 sticky top-0 bg-cream z-10">
-          <h2 className="font-serif text-lg text-green-900 truncate">{memberName(member)}</h2>
-          <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
-        </div>
-
-        <div className="p-4 flex flex-col gap-5">
+    /* ⚠️ TASK-FIX4 §3 — converged onto the shared dialog's `drawer` variant, which
+       is why the panel still slides in from the right rather than becoming a box.
+       The backdrop no longer discards a half-edited staff record; `Save record`
+       is the affirmative action and remains the only write. */
+    <Modal open onClose={onClose} variant="drawer" size="sm" panelClassName="bg-cream"
+      title={memberName(member)} onClear={clearForm} saveStatus={draft.status}>
+        <div className="flex flex-col gap-5">
           <p className="text-xs text-muted">
             {ROLE_LABEL[member.role ?? ''] ?? 'Staff'}{member.is_suspended ? ' · Suspended' : ''}
           </p>
@@ -215,17 +227,24 @@ function TeamMemberPanel({
               <div className="flex flex-col gap-3">
                 <p className="form-label">Record</p>
                 <div className="grid grid-cols-2 gap-3">
+                  {/* ⚠️ TASK-FIX4 §4 — *"yes staff-entered inputs normalize too"*
+                      (owner, 2026-08-31). Shown on blur, never silently. */}
                   <label className="text-sm"><span className="form-label">First name</span>
-                    <input className="form-input" value={form.first_name} onChange={set('first_name')} /></label>
+                    <input className="form-input" value={form.first_name} onChange={set('first_name')}
+                      onBlur={normalize('first_name', 'name', form.first_name, (v) => setForm((f) => ({ ...f, first_name: v })))} /></label>
                   <label className="text-sm"><span className="form-label">Last name</span>
-                    <input className="form-input" value={form.last_name} onChange={set('last_name')} /></label>
+                    <input className="form-input" value={form.last_name} onChange={set('last_name')}
+                      onBlur={normalize('last_name', 'name', form.last_name, (v) => setForm((f) => ({ ...f, last_name: v })))} /></label>
                 </div>
                 <label className="text-sm"><span className="form-label">Display name</span>
-                  <input className="form-input" value={form.display_name} onChange={set('display_name')} /></label>
+                  <input className="form-input" value={form.display_name} onChange={set('display_name')}
+                    onBlur={normalize('display_name', 'name', form.display_name, (v) => setForm((f) => ({ ...f, display_name: v })))} /></label>
                 <label className="text-sm"><span className="form-label">Email</span>
-                  <input type="email" className="form-input" value={form.email} onChange={set('email')} /></label>
+                  <input type="email" className="form-input" value={form.email} onChange={set('email')}
+                    onBlur={normalize('email', 'email', form.email, (v) => setForm((f) => ({ ...f, email: v })))} /></label>
                 <label className="text-sm"><span className="form-label">Phone</span>
-                  <input className="form-input" value={form.phone} onChange={set('phone')} /></label>
+                  <input className="form-input" value={form.phone} onChange={set('phone')}
+                    onBlur={normalize('phone', 'phone', form.phone, (v) => setForm((f) => ({ ...f, phone: v })))} /></label>
                 <label className="text-sm"><span className="form-label">Riding level</span>
                   <input className="form-input" value={form.riding_level} onChange={set('riding_level')} /></label>
                 <label className="text-sm"><span className="form-label">Bio</span>
@@ -352,8 +371,7 @@ function TeamMemberPanel({
             </>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

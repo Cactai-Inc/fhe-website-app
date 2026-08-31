@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, FileText, PencilLine, X, Loader2, Printer, Download, Mail } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, PencilLine, Loader2, Printer, Download, Mail } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
+import { Modal } from '../../../components/ops/kit/Modal';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import {
   dealDetail, dealDocumentStatus, addDealDocument, dealRecordExport, dealActivity,
@@ -60,40 +61,30 @@ function DealRecordModal({ dealId, name, onClose }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto overscroll-contain p-4"
-      role="dialog" aria-modal="true" aria-label="Deal record"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-8">
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-green-800/10">
-          <h2 className="font-serif text-green-900 text-lg">Deal record</h2>
-          <div className="flex items-center gap-1.5">
-            <button type="button" className="btn-outline-gold text-xs" onClick={download} disabled={!body}>
-              <Download size={13} /> Download
-            </button>
-            <a className="btn-outline-gold text-xs"
-              href={`mailto:?subject=${encodeURIComponent(name)}&body=${encodeURIComponent(body ?? '')}`}>
-              <Mail size={13} /> Email
-            </a>
-            <button type="button" className="btn-outline-gold text-xs" onClick={print} disabled={!body}>
-              <Printer size={13} /> Print
-            </button>
-            <button type="button" aria-label="Close" className="text-muted hover:text-green-800 focus-ring ml-1"
-              onClick={onClose}>
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-        <div className="p-5">
-          {err && <p role="alert" className="form-error">{err}</p>}
-          {body === null && !err && <p className="text-sm text-muted">Building the record…</p>}
-          {body && (
-            <pre className="whitespace-pre-wrap font-sans text-[13px] leading-relaxed text-green-950">
-              {body}
-            </pre>
-          )}
-        </div>
-      </div>
-    </div>
+    /* ⚠️ TASK-FIX4 §3 — converged. A generated record with nothing typed into it,
+       so click-out still closes it. */
+    <Modal open onClose={onClose} title="Deal record" size="lg" error={err}
+      footer={
+        <>
+          <button type="button" className="btn-outline-gold text-xs" onClick={download} disabled={!body}>
+            <Download size={13} /> Download
+          </button>
+          <a className="btn-outline-gold text-xs"
+            href={`mailto:?subject=${encodeURIComponent(name)}&body=${encodeURIComponent(body ?? '')}`}>
+            <Mail size={13} /> Email
+          </a>
+          <button type="button" className="btn-outline-gold text-xs" onClick={print} disabled={!body}>
+            <Printer size={13} /> Print
+          </button>
+        </>
+      }>
+        {body === null && !err && <p className="text-sm text-muted">Building the record…</p>}
+        {body && (
+          <pre className="whitespace-pre-wrap font-sans text-[13px] leading-relaxed text-green-950">
+            {body}
+          </pre>
+        )}
+    </Modal>
   );
 }
 
