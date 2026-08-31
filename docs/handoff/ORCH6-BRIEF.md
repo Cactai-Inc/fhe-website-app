@@ -132,14 +132,28 @@ badge — never "Claire" by default.**
 
 # 5. ⚠️ WAITING ON THE OWNER — do not build past these
 
+**⚠️ THREE WERE ANSWERED 2026-08-31 AND ARE CLOSED. DO NOT RE-ASK THEM — he has already been asked
+twice on one.**
+
 | # | Question | Blocks |
 |---|---|---|
-| 1 | ⚠️ **WHERE MESSAGING LIVES** *(`04-OPEN-QUESTIONS.md` §1)* — ⚠️ **the owner did not recognise this as "the messaging A/B"; describe it, do not name it.** There are chat-style notes panels on **lessons, horse-care activity records and contracts**, AND a standalone **Messages** page — two systems for one job. **Either (A) the notes panels BECOME the messages and the Messages page lists every conversation from all three, or (B) messaging lives only on those surfaces and the Messages page is retired.** ⚠️ **ORCH5 recommends A**, for his own stated reason: *"not needing to look at a specific place for a specific thing"* — under A a message reaches him without him first remembering which lesson, horse or contract it hung off. | **CR-85** — if B, Community is Catalog alone |
-| 2 | **Claire's Ops zone list** | FIX6 step 5 |
-| 3 | **Is a comp's loss the LIST price or the ORDER-LINE price?** *(they diverge when a discount and a comp meet on one order)* | CR-86 |
-| 4 | **Does a standing cost stop by itself?** A horse that leaves must stop accruing boarding **or the P&L drifts quietly every month.** | CR-86 |
-| 5 | **Does a Marketing planning store exist?** ⚠️ **If not, that is a build inside a build — flag it, do not invent a campaign tracker.** | FIX6 |
-| 6 | **Madeline Do's two standing slots**, and what happens to her four existing bookings *(Wed 17:30 · Fri 08:00 · Mon 17:30, plus the 13-hour midnight row)* | ⚠️ **He said "handled later today" 2026-08-31 — CHECK BEFORE ASKING AGAIN** |
+| 1 | ⚠️ **WHERE MESSAGING LIVES** *(`04-OPEN-QUESTIONS.md` §1)* — ⚠️ **he did not recognise "the messaging A/B"; DESCRIBE it, never name it.** There are chat-style notes panels on **lessons, horse-care activity records and contracts**, AND a standalone **Messages** page — two systems for one job. **Either the notes panels BECOME the messages and the Messages page lists every conversation from all three, or messaging lives only on those surfaces and the Messages page is retired.** ⚠️ **ORCH5 recommends the first**, for his own stated reason: *"not needing to look at a specific place for a specific thing."* | **CR-85** — if the page is retired, Community is Catalog alone |
+| 2 | **Does a Marketing planning store exist?** ⚠️ **If not, that is a build inside a build — flag it, do not invent a campaign tracker.** | FIX6 |
+| 3 | **Madeline Do's two standing slots**, and her four existing bookings *(Wed 17:30 · Fri 08:00 · Mon 17:30, plus a 13-hour midnight row)* | ⚠️ **He said "handled later today" on 2026-08-31 — CHECK PRODUCTION BEFORE ASKING AGAIN** |
+
+### ✅ CLOSED — carry these as ANSWERS, not questions
+- ⚠️ **A comp's loss is the LIST price.** *(Asked twice. He answered once and was asked again — do not
+  make it three.)* **Build consequence: `purchase_items` has only the price CHARGED, so a comp at $0
+  leaves nothing to value the loss from. CAPTURE THE LIST PRICE ON THE LINE AT THE TIME OF SALE** —
+  offering prices change, and valuing an old comp from today's catalogue would be wrong.
+- ⚠️ **A standing cost stops by itself, because NOTHING ACCRUES.** *"we stop the cost accumulation when
+  we stop inputting the data into the record."* **No sheet, no cost — so the P&L cannot drift on its
+  own.** ⚠️ **But the failure mode INVERTS: a month nobody enters reads as £0, not "missing". The
+  surface must show which horses have no sheet for a closed month.**
+- ⚠️ **Claire's Ops zone list CANNOT arrive early** — *"i dont have claires ops zone list until i see
+  the full sales and marketing dashboards."* **The FIX6 pause is therefore non-negotiable and cannot
+  be short-circuited by asking sooner. Steps 1, 2 and 4 SHIP WITHOUT IT; Ops and the role boards are a
+  separate later task. Do not hold the merge.**
 
 # 6. HIS DATA PASS — after the refactor, with one exception
 
