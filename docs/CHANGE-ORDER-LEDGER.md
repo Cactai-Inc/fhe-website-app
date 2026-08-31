@@ -3155,3 +3155,36 @@ already wrong**, and every P&L built on them inherits it. ⚠️ **ANSWER THAT B
 4. **Cost tracking scope: purchase-and-consume** *(the existing `resource_lots` model)* **or simple
    expense logging?** ⚠️ **The built spine assumes the former; the owner's list — "medication, feed,
    bedding" — reads like the former too. Confirm before driving it.**
+
+### ⚠️ CR-86 — WHERE EACH PART LIVES (owner, 2026-08-31)
+> *"the books is on my side, the visible kpi is shown on the dashboard. the inputs happen on claires
+> side and on my side."*
+
+⚠️ **THE BOOKS ARE NOT ONE SURFACE. THREE CONCERNS, THREE HOMES, AND THEY MUST NOT BE COLLAPSED:**
+
+| Concern | Where | Who |
+|---|---|---|
+| **THE BOOKS** — the ledger itself: reconciliation, the P&L, period reports | ⚠️ **the owner's side (Admin)** | him alone |
+| **THE KPI** — money in / money out / profit / discounts given in a period | **the dashboard**, as a zone | ⚠️ **both boards, at their own DEPTH** — a headline on Ops, the full picture on Admin |
+| **THE INPUTS** — cost and consumption logged as it happens; discounts and comps applied at the point of sale | ⚠️ **CLAIRE'S SIDE *AND* HIS** | whoever is doing the thing |
+
+⚠️ **THE INPUT HALF IS THE ONE THAT WILL BE BUILT IN THE WRONG PLACE.** *"the inputs happen on claires
+side and on my side."* **Claire opens a bag of feed, gives a bute, uses bedding — she is the person
+who knows, and she is not going to visit an accounting page to say so.** ⚠️ **So logging consumption
+belongs ON HER WORKING SURFACES — on the horse, on the care item, on the day — not on a books screen.**
+**A cost model that requires a trip to Admin to record a bag of shavings will not be used, and an
+unused ledger is worse than none because the P&L it feeds looks authoritative and is wrong.**
+
+⚠️ **AND THE SAME APPLIES TO A DISCOUNT OR A COMP: they are applied WHEN THE SALE IS MADE**, by
+whoever makes it, on the order line. **Not reconstructed later on a books screen.** ⚠️ **This is why
+CR-16/CR-38…CR-42's line-item editing model is the home for discount and comp — the owner already
+ruled those are ONE model.**
+
+⚠️ **CONSEQUENCE FOR `TASK-FIX6`:** the **KPI zone** is in scope *(it is a dashboard zone, and Ops
+shows the shallow form while Admin shows the deep one — the two-depth rule)*. ⚠️ **The BOOKS surface
+and the INPUT surfaces are NOT — they are CR-86's own build.** **FIX6 renders numbers; it does not
+create the means of recording them.**
+
+⚠️ **AND UNTIL THE INPUTS EXIST, THE KPI HAS NOTHING TO SHOW.** **Do not ship a P&L tile reading
+zero** — `04-OPEN-QUESTIONS.md` §3: *"a zero on an always-visible strip is indistinguishable from a
+real zero."* **Name it as not-yet-computable and leave it out until CR-86 lands.**
