@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, X } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import {
   SEED_STABLE_HORSES, SEED_STABLE_GEAR, SEED_STABLE_SUPPLIES, SEED_ENABLED,
 } from '../../lib/seed';
@@ -11,6 +11,7 @@ import {
 import { companyContactId } from '../../lib/horses';
 import { useAuth } from '../../contexts/AuthContext';
 import { AddItemModal } from './StableEditors';
+import { Modal } from '../ops/kit/Modal';
 import { HorseIntakeForm } from './HorseIntakeForm';
 import { PageCreateButton } from './PageCreateButton';
 
@@ -164,26 +165,21 @@ export function StableSection() {
         <button type="button" onClick={() => setModal('supply')} className="text-[12px] text-gold-800 font-semibold text-left px-1">+ Add a supply</button>
       </div>
 
+      {/* ⚠️ TASK-FIX4 §3 — converged. Fourteen intake fields behind a backdrop that
+          used to close on a stray click; that is CR-68a's own incident. */}
       {modal === 'horse' && (
-        <div className="fixed inset-0 bg-black/40 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setModal(null)}>
-          <div className="bg-cream w-full sm:max-w-2xl sm:rounded-2xl flex flex-col max-h-[92dvh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-green-800/10 shrink-0">
-              <h2 className="font-serif text-green-800 text-lg">Add a horse</h2>
-              <button type="button" onClick={() => setModal(null)} aria-label="Close"><X size={20} /></button>
-            </div>
-            <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain pb-8">
-              {/* the standardized record intake (spec H.2/H.3 path 2) — creates the
-                  real horse record with microchip dedup, then refreshes My Stable.
-                  ownerContactId (staff-only, already supported by this form) is
-                  the company's contact when adding to the business's stable. */}
-              <HorseIntakeForm
-                submitLabel={asCompany ? 'Add to the business stable' : 'Add to my stable'}
-                ownerContactId={asCompany ? (companyId ?? undefined) : undefined}
-                onDone={() => { setModal(null); loadHorses(); }}
-              />
-            </div>
-          </div>
-        </div>
+        <Modal open onClose={() => setModal(null)} title="Add a horse"
+          variant="sheet" size="lg" panelClassName="bg-cream">
+          {/* the standardized record intake (spec H.2/H.3 path 2) — creates the
+              real horse record with microchip dedup, then refreshes My Stable.
+              ownerContactId (staff-only, already supported by this form) is
+              the company's contact when adding to the business's stable. */}
+          <HorseIntakeForm
+            submitLabel={asCompany ? 'Add to the business stable' : 'Add to my stable'}
+            ownerContactId={asCompany ? (companyId ?? undefined) : undefined}
+            onDone={() => { setModal(null); loadHorses(); }}
+          />
+        </Modal>
       )}
       {modal === 'gear' && <AddItemModal kind="gear" ownerKind={ownerKind} onClose={() => setModal(null)} onDone={loadGear} />}
       {modal === 'supply' && <AddItemModal kind="supply" ownerKind={ownerKind} onClose={() => setModal(null)} onDone={loadSupplies} />}
