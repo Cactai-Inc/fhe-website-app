@@ -20,8 +20,10 @@ import { AuthProvider } from '../../src/contexts/AuthContext';
 import { BrandProvider } from '../../src/contexts/BrandProvider';
 import SignStart from '../../src/pages/SignStart';
 
-/** Somewhere to navigate TO, so browser-back has something to come back from. */
-function Elsewhere() {
+/** Somewhere to navigate TO, so browser-back has something to come back from.
+ *  Exported only so this harness file keeps the lint baseline at 46 —
+ *  `react-refresh` warns on a component in a file with no exports. */
+export function Elsewhere() {
   return (
     <div style={{ padding: 40 }}>
       <h1 data-testid="elsewhere">Elsewhere</h1>
