@@ -154,3 +154,43 @@ export function isBlankSnapshot(value: Record<string, unknown>): boolean {
       (Array.isArray(v) && v.length === 0),
   );
 }
+
+/* ── WHO THE DRAFTS BELONG TO ───────────────────────────────────────────────
+   ⚠️ A MODULE REGISTRY, NOT A REACT CONTEXT, AND DELIBERATELY. Every input
+   surface needs the namespace, and threading `useAuth()` through 20 dialogs
+   would (a) couple each one to the auth context — which throws outside its
+   provider, so a component test could no longer render a dialog on its own —
+   and (b) be 20 chances to forget. `AuthProvider` publishes here once; every
+   `useFormDraft` reads it.
+
+   `resolved` matters: on the first paint the session is still loading, so the
+   owner is not yet KNOWN to be anonymous. Restoring during that window would
+   read the `anon` namespace, find nothing, and then never look again — a
+   signed-in person would silently lose their draft. `useFormDraft` waits. */
+
+type OwnerState = { owner: string; resolved: boolean };
+
+let ownerState: OwnerState = { owner: ANON_OWNER, resolved: false };
+const ownerListeners = new Set<(s: OwnerState) => void>();
+
+export function getDraftOwner(): OwnerState {
+  return ownerState;
+}
+
+/** Called by `AuthProvider` once the session settles, and on every change. */
+export function setDraftOwner(userId: string | null): void {
+  const next: OwnerState = { owner: userId ?? ANON_OWNER, resolved: true };
+  if (next.owner === ownerState.owner && ownerState.resolved) return;
+  ownerState = next;
+  for (const fn of ownerListeners) fn(next);
+}
+
+export function subscribeDraftOwner(fn: (s: OwnerState) => void): () => void {
+  ownerListeners.add(fn);
+  return () => { ownerListeners.delete(fn); };
+}
+
+/** Test seam — put the registry back to its pre-boot state. */
+export function resetDraftOwner(): void {
+  ownerState = { owner: ANON_OWNER, resolved: false };
+}

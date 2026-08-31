@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { X } from 'lucide-react';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { captureContactInfo, type PartyField, type PartySummary } from '../../lib/contracts';
+import { Modal } from '../ops/kit/Modal';
+import { useFieldNormalizer, useFormDraft } from '../../lib/formState';
 
 /**
  * CAPTURE MISSING INFO — the one reusable modal for collecting a party's required
@@ -13,6 +14,11 @@ import { captureContactInfo, type PartyField, type PartySummary } from '../../li
  * It never presumes a value exists: it validates each field on submit and only the
  * fields actually requested (or missing) are shown, so we capture, validate, then
  * display — not the other way around.
+ *
+ * ⚠️ TASK-FIX4 — converged on the shared dialog. The backdrop used to carry
+ * `onClick={onClose}`, so a stray click discarded a re-typed address on a contract
+ * that could not be locked without it. **Save is the affirmative action and the
+ * only thing that writes to the contact record**; the draft persists on its own.
  */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -35,6 +41,7 @@ export function CaptureInfoModal({
 }) {
   const want = fields && fields.length ? fields : party.missing;
   const need = (f: PartyField) => want.includes(f);
+  const normalize = useFieldNormalizer();
 
   const [first, setFirst] = useState(party.first_name ?? '');
   const [last, setLast] = useState(party.last_name ?? '');
@@ -76,6 +83,31 @@ export function CaptureInfoModal({
     return e;
   }
 
+  /* ⚠️ Keyed on the PARTY, not the document — the same person's half-typed
+     address should come back whichever contract prompted for it. */
+  const draft = useFormDraft(
+    party.contact_id ? `contract.capture-info.${party.contact_id}` : null,
+    { first, last, email, phone, line1, line2, city, stateV, zip },
+    (d) => {
+      if (typeof d.first === 'string') setFirst(d.first);
+      if (typeof d.last === 'string') setLast(d.last);
+      if (typeof d.email === 'string') setEmail(d.email);
+      if (typeof d.phone === 'string') setPhone(d.phone);
+      if (typeof d.line1 === 'string') setLine1(d.line1);
+      if (typeof d.line2 === 'string') setLine2(d.line2);
+      if (typeof d.city === 'string') setCity(d.city);
+      if (typeof d.stateV === 'string') setStateV(d.stateV);
+      if (typeof d.zip === 'string') setZip(d.zip);
+    },
+  );
+
+  function clearForm() {
+    setFirst(''); setLast(''); setEmail(''); setPhone('');
+    setLine1(''); setLine2(''); setCity(''); setStateV(''); setZip('');
+    setErrors({}); setSubmitErr(null);
+    draft.clear();
+  }
+
   async function submit() {
     const e = validate();
     setErrors(e);
@@ -95,6 +127,7 @@ export function CaptureInfoModal({
         patch.postal_code = zip.trim();
       }
       await captureContactInfo(documentId, party.contact_id, patch);
+      draft.clear();
       onSaved();
     } catch (err) {
       setSubmitErr(toErrorMessage(err, 'Could not save. Please try again.'));
@@ -108,30 +141,27 @@ export function CaptureInfoModal({
     : `Complete the required details for ${roleLabel} ${party.name ?? ''}`.trim();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      role="dialog" aria-modal="true" aria-label="Add missing information"
-      onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto overscroll-contain"
-        onClick={(ev) => ev.stopPropagation()}>
-        <div className="flex items-start justify-between gap-3 p-5 pb-3 border-b border-green-800/10">
-          <div>
-            <h2 className="font-serif text-lg text-green-800">Add missing information</h2>
-            <p className="text-sm text-muted mt-0.5">{fieldNote}. Saved to their contact record and reused across every document.</p>
-          </div>
-          <button type="button" className="text-muted hover:text-green-900 focus-ring rounded-lg p-1"
-            onClick={onClose} aria-label="Close"><X size={18} /></button>
-        </div>
-
-        <div className="p-5 flex flex-col gap-3.5">
+    <Modal open onClose={onClose} size="sm"
+      title="Add missing information"
+      subtitle={`${fieldNote}. Saved to their contact record and reused across every document.`}
+      onClear={clearForm} saveStatus={draft.status} error={submitErr}
+      footer={
+        <button type="button" className="btn-primary text-sm" onClick={() => void submit()} disabled={busy}>
+          {busy ? 'Saving…' : 'Save'}
+        </button>
+      }>
+        <div className="flex flex-col gap-3.5">
           {need('name') && (
             <div className="grid grid-cols-2 gap-2.5">
               <label className="block">
                 <span className="form-label">First name</span>
-                <input className="form-input" value={first} onChange={(e) => setFirst(e.target.value)} />
+                <input className="form-input" value={first} onChange={(e) => setFirst(e.target.value)}
+                  onBlur={normalize('first', 'name', first, setFirst)} />
               </label>
               <label className="block">
                 <span className="form-label">Last name</span>
-                <input className="form-input" value={last} onChange={(e) => setLast(e.target.value)} />
+                <input className="form-input" value={last} onChange={(e) => setLast(e.target.value)}
+                  onBlur={normalize('last', 'name', last, setLast)} />
               </label>
               {errors.name && <p className="form-error col-span-2">{errors.name}</p>}
             </div>
@@ -142,6 +172,7 @@ export function CaptureInfoModal({
               <span className="form-label">Email</span>
               <input type="email" inputMode="email" className="form-input"
                 value={email} onChange={(e) => setEmail(e.target.value)}
+                onBlur={normalize('email', 'email', email, setEmail)}
                 aria-invalid={!!errors.email} placeholder="name@example.com" />
               {errors.email && <p className="form-error">{errors.email}</p>}
             </label>
@@ -152,6 +183,7 @@ export function CaptureInfoModal({
               <span className="form-label">Phone</span>
               <input type="tel" inputMode="tel" className="form-input"
                 value={phone} onChange={(e) => setPhone(e.target.value)}
+                onBlur={normalize('phone', 'phone', phone, setPhone)}
                 aria-invalid={!!errors.phone} placeholder="(858) 555-0123" />
               {errors.phone && <p className="form-error">{errors.phone}</p>}
             </label>
@@ -193,17 +225,8 @@ export function CaptureInfoModal({
             </div>
           )}
 
-          {submitErr && <p role="alert" className="form-error">{submitErr}</p>}
         </div>
-
-        <div className="flex items-center justify-end gap-2 p-5 pt-0">
-          <button type="button" className="btn-secondary text-sm" onClick={onClose} disabled={busy}>Cancel</button>
-          <button type="button" className="btn-primary text-sm" onClick={() => void submit()} disabled={busy}>
-            {busy ? 'Saving…' : 'Save'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

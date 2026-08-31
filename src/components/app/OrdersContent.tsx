@@ -7,6 +7,7 @@ import {
 } from '../../lib/api';
 import type { Order } from '../../lib/types';
 import { toErrorMessage } from '../../lib/ops/errors';
+import { Modal } from '../ops/kit/Modal';
 
 /**
  * MY ORDERS — the shared subject content (TASK-ACCOUNTSURFACE §1/§3), rendered
@@ -197,10 +198,9 @@ function ManagePaymentModal({ order, onClose, onChanged }: {
   }
 
   return (
-    <div className="fixed inset-0 z-[80] bg-green-950/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-        <h2 className="font-serif text-xl text-green-900 mb-4">Manage payment</h2>
-
+    /* ⚠️ TASK-FIX4 — converged. This dialog holds two selects, so the backdrop no
+       longer closes it; `Save` and `Transfer` remain the only writes. */
+    <Modal open onClose={onClose} title="Manage payment" size="sm" error={err}>
         <label className="block text-xs text-muted mb-1" htmlFor="pay-method">Payment method</label>
         <div className="flex gap-2 mb-4">
           <select id="pay-method" className="form-input flex-1" value={method} onChange={(e) => setMethod(e.target.value)}>
@@ -223,9 +223,6 @@ function ManagePaymentModal({ order, onClose, onChanged }: {
           </button>
         </div>
 
-        {err && <p role="alert" className="text-sm text-red-700 mt-3">{err}</p>}
-        <button type="button" onClick={onClose} className="w-full mt-4 py-2 text-sm text-muted hover:text-green-800">Close</button>
-      </div>
-    </div>
+    </Modal>
   );
 }

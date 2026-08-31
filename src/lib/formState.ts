@@ -19,9 +19,10 @@
  * no user would input data and click close and expect the form submitted."*
  * **Closing does neither of the first two. That is exactly why it is safe.**
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
-  ANON_OWNER, clearDraft, isBlankSnapshot, omitKeys, readDraft, sweepExpired, writeDraft,
+  clearDraft, getDraftOwner, isBlankSnapshot, omitKeys, readDraft, subscribeDraftOwner,
+  sweepExpired, writeDraft,
 } from './formDraft';
 import { normalizeOnBlur, type NormalizeKind } from './normalize';
 
@@ -30,8 +31,16 @@ export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 /* ═══ 1 · useFormDraft — reload and browser-back are lossless ═══════════════ */
 
+/**
+ * The namespace drafts are written under, and whether the session has settled.
+ * ⚠️ Nothing is restored until `resolved` — see the registry note in `formDraft.ts`.
+ */
+export function useDraftOwner() {
+  return useSyncExternalStore(subscribeDraftOwner, getDraftOwner, getDraftOwner);
+}
+
 export interface FormDraftOptions {
-  /** The signed-in user's id. Omit for the anonymous `/sign/*` paths. */
+  /** Override the namespace. Almost never needed — the registry supplies it. */
   owner?: string | null;
   /** Hold the restore back until the form's own initial load has finished. */
   ready?: boolean;
@@ -64,7 +73,12 @@ export function useFormDraft<T extends Record<string, unknown>>(
   opts: FormDraftOptions = {},
 ): FormDraftHandle {
   const { owner, ready = true, omit = [], delay = 400 } = opts;
-  const ns = owner ?? ANON_OWNER;
+  const resolvedOwner = useDraftOwner();
+  const ns = owner ?? resolvedOwner.owner;
+  /* ⚠️ Wait for the session. Reading the `anon` namespace during the loading
+     window and arming against it is how a signed-in person's draft would be
+     looked for once, in the wrong place, and never again. */
+  const canRestore = ready && (owner != null || resolvedOwner.resolved);
 
   const [status, setStatus] = useState<SaveStatus>('idle');
   const [restored, setRestored] = useState(false);
@@ -76,10 +90,12 @@ export function useFormDraft<T extends Record<string, unknown>>(
   const omitRef = useRef(omit);
   omitRef.current = omit;
 
-  /** Set once the restore attempt has run. ⚠️ Nothing is written before it: an
-   *  empty initial form would otherwise overwrite the stored draft in the gap
-   *  between mount and restore, which is the draft-eats-itself bug. */
-  const armed = useRef(false);
+  /** The namespace the restore attempt has run for. ⚠️ Nothing is written before
+   *  it is set: an empty initial form would otherwise overwrite the stored draft
+   *  in the gap between mount and restore, which is the draft-eats-itself bug.
+   *  Keyed by namespace rather than a boolean so that anon → signed-in re-reads
+   *  under the right owner instead of staying armed against the wrong one. */
+  const armedFor = useRef<string | null>(null);
   /** The last snapshot actually written, so an unchanged render writes nothing. */
   const lastWritten = useRef<string | null>(null);
 
@@ -87,8 +103,8 @@ export function useFormDraft<T extends Record<string, unknown>>(
 
   // ── restore, once ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (armed.current || !ready || !formKey) return;
-    armed.current = true;
+    if (armedFor.current === ns || !canRestore || !formKey) return;
+    armedFor.current = ns;
     const draft = readDraft<Partial<T>>(ns, formKey);
     if (draft && typeof draft === 'object' && !isBlankSnapshot(draft as Record<string, unknown>)) {
       lastWritten.current = JSON.stringify(draft);
@@ -96,10 +112,10 @@ export function useFormDraft<T extends Record<string, unknown>>(
       setRestored(true);
       setStatus('saved');
     }
-  }, [ns, formKey, ready]);
+  }, [ns, formKey, canRestore]);
 
   const write = useCallback(() => {
-    if (!armed.current || !formKey) return;
+    if (armedFor.current !== ns || !formKey) return;
     const snapshot = omitKeys(valueRef.current, omitRef.current);
     const encoded = JSON.stringify(snapshot);
     if (encoded === lastWritten.current) return;
@@ -118,12 +134,12 @@ export function useFormDraft<T extends Record<string, unknown>>(
   // ── persist, debounced ───────────────────────────────────────────────────
   const encoded = JSON.stringify(omitKeys(value, omit));
   useEffect(() => {
-    if (!armed.current || !formKey) return;
+    if (armedFor.current !== ns || !formKey) return;
     if (encoded === lastWritten.current) return;
     setStatus('saving');
     const t = setTimeout(write, delay);
     return () => clearTimeout(t);
-  }, [encoded, write, delay, formKey]);
+  }, [encoded, write, delay, formKey, ns]);
 
   /* ⚠️ A RELOAD RIGHT AFTER A KEYSTROKE MUST NOT FALL INSIDE THE DEBOUNCE.
      `pagehide` fires on reload, on navigation and on browser-back; `hidden` covers
