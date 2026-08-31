@@ -38,11 +38,25 @@
  *
  * ── THE HUB / CHILD RULE: NO CASCADE ────────────────────────────────────────
  *
- * Every page here has (or will have) its OWN nav row, children included. So
- * hiding a hub hides one row and cannot orphan anything — its children keep
- * their own rows and stay reachable. Those two decisions are joined: no-cascade
- * is only safe BECAUSE the children are in the nav. If the child nav rows are
- * ever removed, this rule has to become cascade-with-warning.
+ * Hiding a hub hides one row and does not cascade to its children.
+ *
+ * ⚠️ CORRECTED 2026-08-31 (TASK-FIX3). This paragraph used to read "Every page
+ * here has (or will have) its OWN nav row, children included… no-cascade is only
+ * safe BECAUSE the children are in the nav. If the child nav rows are ever
+ * removed, this rule has to become cascade-with-warning."
+ * ⚠️ THE CHILDREN WERE NEVER IN THE NAV. Counted 2026-08-31: 12 of the 30 rows
+ * below have no nav row anywhere — the eight module children, the three
+ * `lessons.*` rows, and the dead `records.hub`. They are reachable only from
+ * their hub's own link cards. So the premise the no-cascade rule rests on has
+ * never been true, and the condition the paragraph named for revisiting it was
+ * met before it was written.
+ *
+ * It is left as no-cascade rather than changed here, because the honest fix is
+ * either eleven nav rows or a cascade-with-warning, and both are bigger than a
+ * comment. ⚠️ It is also moot today: page visibility is wired to NOTHING — the
+ * nav never reads `org_page_visibility` (see `manageNavGroups()` in
+ * AppLayout.tsx, whose `visible()` filter checks only modules and `adminOnly`).
+ * Reported by TASK-FIX3, its own thread.
  *
  * A hub page's own link cards are NOT filtered by visibility — a hub the owner
  * kept still lists a child he put away, and clicking it works. The task rules
@@ -103,16 +117,38 @@ export const MODULE_LABEL: Record<string, string> = {
   'mod.employees': 'Employees & Scheduling',
 };
 
+/** ⚠️ NOT DEAD CODE, WHATEVER FOUR DOCUMENTS SAY. Until TASK-AR4 checked, the
+ *  standing rule in `docs/tasks/ADMIN-REVIEW-ANALYSIS-STANDARD.md` §5 was that
+ *  this map "is exported and read by NOTHING". It is read by `pageSections()`
+ *  below, which `AdminPageVisibilityPage.tsx` renders as the visible section
+ *  headings on /app/ops/admin/pages. ⚠️ THIS AND THE `label:` FIELDS IN
+ *  `manageNavGroups()` (AppLayout.tsx) ARE ONE FACT WRITTEN TWICE. Change one
+ *  and you must change the other, or the page whose entire job is to describe
+ *  the staff menu will describe a menu that no longer exists.
+ *
+ *  TASK-FIX3 (owner, 2026-08-31): `community` reads "Admin" and `settings` no
+ *  longer names a section of the rail — its pages are rows inside Admin now.
+ *  The KEYS are untouched on purpose: they are the first half of every stored
+ *  `page_key` in `org_page_visibility`, CHECK-constrained to `group.page`. */
 export const GROUP_LABEL: Record<PageGroup, string> = {
   management: 'Management',
   accounts: 'People',
-  community: 'Community',
+  community: 'Admin',
   modules: 'Modules',
+  /* Kept because five registry rows still carry `group: 'settings'` and their
+     keys cannot move (see above). It renders as a section heading on
+     /app/ops/admin/pages only — `pageSections()` files those five under Admin
+     now, so this string reaches no surface today. Left in place rather than
+     deleted because `PageGroup` is a closed union and the keys outlive it. */
   settings: 'Settings',
 };
 
 /**
- * EVERY staff page with a nav row of its own, in nav order.
+ * The staff pages a tenant may hide, in nav order.
+ *
+ * ⚠️ This heading used to read "EVERY staff page with a nav row of its own".
+ * It is not that, and was not on the day it was written — 12 of the 30 rows
+ * below have no nav row at all (see THE HUB / CHILD RULE above).
  *
  * Not listed, deliberately:
  *  - the six `core.*` modules — substrate (tenancy, roles, contracts, payments,
@@ -122,15 +158,28 @@ export const GROUP_LABEL: Record<PageGroup, string> = {
  *  - the Review rows themselves — nav position IS their status, and hiding one
  *    would falsify the acceptance signal. The real pages behind them ARE here,
  *    under their permanent homes;
- *  - the App-pages block (Messages, and Calendar/Catalog while they are parked
- *    in Review) — it is hand-written JSX, not a NavItem table, so it has no row
- *    to filter. Recorded as a follow-up in the report rather than half-done.
+ *  - the App-pages block — Catalog and Messages, hand-written JSX in
+ *    `StaffNavItems` rather than a NavItem table, so they have no row to filter.
+ *    ⚠️ Calendar WAS in that block and is now `mgmt.calendar` below
+ *    (TASK-FIX3, 2026-08-31), which makes Catalog the last page left in that
+ *    shape. Reported, not fixed — the owner asked for Calendar.
  */
 export const PAGE_REGISTRY: PageEntry[] = [
   // ── Management ───────────────────────────────────────────────────────────
   { key: 'mgmt.dashboard', path: '/app/dashboard', label: 'Dashboard', group: 'management' },
+  /* TASK-FIX3 (owner, 2026-08-31) — Calendar's FIRST registry row. It has been
+     a routed page since Phase 6 with a hand-written nav entry inside
+     `StaffNavItems` and no registry presence at all, so the tenant could not
+     hide it and this file's own header claim to list "EVERY staff page with a
+     nav row of its own" was false. It is a NavItem in MANAGEMENT_GROUP now. */
+  { key: 'mgmt.calendar', path: '/app/calendar', label: 'Calendar', group: 'management' },
   { key: 'mgmt.support', path: '/app/ops/support', label: 'Support', group: 'management' },
   { key: 'mgmt.payments_review', path: '/app/ops/payments/review', label: 'Payment review', group: 'management' },
+  /* MOVED 2026-08-31 (TASK-FIX3): Evaluations left the Community/Admin section
+     for Management. ⚠️ The KEY stays `community.evaluations` — it is stored in
+     `org_page_visibility` and this file's header is explicit that a key never
+     follows its page. Only `group` moved. */
+  { key: 'community.evaluations', path: '/app/ops/evaluations', label: 'Evaluations', group: 'management' },
   // mgmt.horses RETIRED 2026-08-15 (TASK-HORSEONE's anticipated move happened,
   // then went further): the standalone Horses page is gone, not moved — its
   // one nav row was Records' own Horses tab wearing a second hat. people.records
@@ -149,15 +198,33 @@ export const PAGE_REGISTRY: PageEntry[] = [
   // Documents, Files and Deals joined them the same way later (2026-08-15) —
   // one key covers every tab, because hiding operates on the nav row and there
   // is only one.
-  { key: 'people.records', path: '/app/records', label: 'Records', group: 'accounts' },
+  /* TASK-FIX3 (owner, 2026-08-31): one row became two, and "People" is a
+     rendered heading again as a result.
+     ⚠️ `people.records` KEEPS ITS KEY and its path; only the LABEL is Contacts.
+     The key is stored and this file's header forbids re-deriving it. */
+  { key: 'people.records', path: '/app/records', label: 'Contacts', group: 'accounts' },
+  /* The horses. The name was settled by the owner on 2026-08-08
+     (docs/reference/nav-icon-exercise.md): "Rename it Stable, which also
+     matches the member-side term already in use (My Stable)."
+     ⚠️ It points at the Horses TAB, not at /app/stable — TASK-AR3 F3 measured
+     /app/stable returning 0 of the tenant's 3 horses for staff, because it
+     reads the member-scoped my_stable_horses(). Mounting the staff roster there
+     needs RecordsPage.tsx, which TASK-FIX2 owns. */
+  { key: 'people.stable', path: '/app/records/horses', label: 'Stable', group: 'accounts' },
 
-  // ── Community ────────────────────────────────────────────────────────────
-  { key: 'community.activity', path: '/app/ops/activity', label: 'Activity', group: 'community' },
-  { key: 'community.evaluations', path: '/app/ops/evaluations', label: 'Evaluations', group: 'community' },
+  // ── Admin (group key `community`; see GROUP_LABEL) ────────────────────────
+  /* RETIRED 2026-08-31 (owner): `community.activity` (/app/ops/activity) and
+     `community.oversight` (/app/ops/oversight). Both pages are gone — route,
+     component, nav row and dashboard zone. ⚠️ Not "empty and therefore
+     unfinished": full, and saying nothing. The reasoning, and the conditions
+     under which an activity log earns a surface again, are written down in
+     docs/reference/ACTIVITY-LOG-why-it-has-no-surface.md.
+     `community.evaluations` moved up to Management, above.
+     Orphan `org_page_visibility` rows for the two retired keys are harmless —
+     nothing reads a key the registry no longer lists (this file's header). */
   { key: 'community.moderation', path: '/app/ops/moderation', label: 'Moderation', group: 'community' },
   { key: 'community.lookups', path: '/app/ops/lookups', label: 'Field options', group: 'community' },
   { key: 'community.content', path: '/app/ops/content', label: 'Content store', group: 'community' },
-  { key: 'community.oversight', path: '/app/ops/oversight', label: 'Oversight', group: 'community' },
 
   // ── Modules ──────────────────────────────────────────────────────────────
   // Lessons' hub has always sat in Management rather than Modules; it keeps that
@@ -265,9 +332,18 @@ export function pageSections(): PageSection[] {
     });
   }
 
-  const groupOrder: PageGroup[] = ['management', 'accounts', 'community', 'modules', 'settings'];
+  /* TASK-FIX3: `settings` is no longer a section of the staff menu — its pages
+     are rows inside Admin. ⚠️ The five `group: 'settings'` rows keep their
+     stored keys, so they are folded into the Admin section HERE rather than by
+     rewriting their `group` field, which would break the `group.page` grammar
+     the database CHECK enforces on `page_key`. This page describes the menu; the
+     menu has four sections; so does this. */
+  const groupOrder: PageGroup[] = ['management', 'accounts', 'community', 'modules'];
+  const FOLDED_INTO: Partial<Record<PageGroup, PageGroup>> = { settings: 'community' };
   for (const g of groupOrder) {
-    const pages = PAGE_REGISTRY.filter((p) => p.group === g && !p.module);
+    const pages = PAGE_REGISTRY.filter(
+      (p) => (FOLDED_INTO[p.group] ?? p.group) === g && !p.module,
+    );
     if (pages.length === 0) continue;
     sections.push({ id: `group:${g}`, label: GROUP_LABEL[g], pages });
   }

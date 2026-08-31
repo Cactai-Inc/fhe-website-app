@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   UserRound, Bell, ShieldCheck, Grid3x3, GraduationCap, Bookmark, FileText, Boxes,
-  ShoppingBag, Gift, Paperclip, ChevronRight, Settings, Layers,
+  ShoppingBag, Gift, Paperclip, ChevronRight, Home as HomeIcon, Contact,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { SavedPanel } from '../../components/app/AccountPanels';
@@ -93,7 +93,7 @@ function NavRow({
 }
 
 export default function AccountHub() {
-  const { profile, isStaff } = useAuth();
+  const { profile, isStaff, hasModule } = useAuth();
   const realName = profile?.display_name
     || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
     || 'Your profile';
@@ -162,13 +162,17 @@ export default function AccountHub() {
             staff before today: useNavPresence (the sidebar's own "My
             Stable" link) is disabled entirely for staff
             (`useNavPresence(!isStaff)` in AppLayout.tsx), so this was the
-            only door. Settings ranked first ("i will need to use more
-            frequently"); Modules last ("really just for reference"). */}
+            only door.
+
+            ⚠️ THE "SETTINGS" CARD IS GONE (owner, 2026-08-31). Settings is no
+            longer a thing with a landing page you visit — its four pages are
+            ordinary rows in the Admin section of the staff menu, which is where
+            the owner asked them to end up. The route /app/ops/settings still
+            renders its card grid for anyone holding the URL, but this page no
+            longer advertises it: two doors onto the same four pages is the
+            duplication this change exists to end. */}
         {isStaff && (
-          <>
-        <NavRow icon={Boxes} title="My Stable" sub="The business's horses, gear, and supplies" to="/app/stable" />
-        <NavRow icon={Settings} title="Settings" sub="Team, branding, products & forms" to="/app/ops/settings" />
-          </>
+          <NavRow icon={Boxes} title="My Stable" sub="The business's horses, gear, and supplies" to="/app/stable" />
         )}
 
         {!isStaff && (
@@ -207,9 +211,31 @@ export default function AccountHub() {
 
         {/* Last, deliberately (owner: "modules last wherever its shown
             because its really just for reference and not as important to me
-            as the settings"). */}
-        {isStaff && (
-          <NavRow icon={Layers} title="Modules" sub="The optional features enabled for this tenant" to="/app/ops/modules" />
+            as the settings").
+
+            TASK-FIX3 (owner, 2026-08-31): the Modules section leaves the staff
+            menu and lands HERE — and as the module hubs themselves, not as one
+            card that opens a page of cards. One hop removed.
+
+            ⚠️ GATED THE SAME WAY THE NAV GATED THEM — `hasModule()`, the exact
+            check `manageNavGroups()`'s own `visible()` filter uses, so a tenant
+            without boarders sees no Boarding card at all rather than a locked
+            one. That matches how /app/ops/modules already behaves. Page
+            VISIBILITY is deliberately not consulted: nothing in the nav consults
+            it either (it is wired to nothing — reported, its own thread), and
+            these cards should match today's behaviour rather than silently
+            becoming the first surface that finally honours it.
+
+            Icons are MODULES_GROUP's own, unchanged, so a person who knew the
+            old menu recognises the rows. /app/ops/modules still renders. */}
+        {isStaff && hasModule('mod.boarding') && (
+          <NavRow icon={HomeIcon} title="Boarding" sub="Stalls, board agreements & charges" to="/app/ops/boarding" />
+        )}
+        {isStaff && hasModule('mod.barnops') && (
+          <NavRow icon={Boxes} title="Barn Ops" sub="Resources, consumption & allocation rules" to="/app/ops/barnops" />
+        )}
+        {isStaff && hasModule('mod.employees') && (
+          <NavRow icon={Contact} title="Employees" sub="Staff roster & the schedule" to="/app/ops/employees" />
         )}
       </div>
     </div>

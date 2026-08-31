@@ -43,34 +43,21 @@ export async function setSupportStatus(id: string, status: SupportStatus): Promi
 }
 
 
-// ─── Oversight (Slice 5) ─────────────────────────────────────────────────────
-
-export interface OversightUsage {
-  members: number;
-  open_engagements: number;
-  open_support: number;
-  feed_posts: number;
-  flagged_posts: number;
-}
-
-export interface OversightActivity {
-  occurred_at: string;
-  action: string;
-  table_name: string | null;
-  actor_user_id: string | null;
-}
-
-export interface Oversight {
-  usage: OversightUsage;
-  activity: OversightActivity[];
-}
-
-/** Admin oversight snapshot — usage numbers + recent activity from audit_logs. */
-export async function adminOversight(): Promise<Oversight> {
-  const { data, error } = await supabase.rpc('admin_oversight');
-  if (error) throw error;
-  return data as Oversight;
-}
+/* ─── Oversight (Slice 5) — REMOVED 2026-08-31 (owner, TASK-FIX3) ────────────
+ *
+ * `adminOversight()` and its three types were read by exactly one file,
+ * `OversightPage.tsx`, and that page is gone. The client wrapper goes with it
+ * rather than sitting here with zero call sites.
+ *
+ * ⚠️ THE DATABASE FUNCTION `admin_oversight()` IS NOT DROPPED (D32) and is now
+ * unreachable from the app — which incidentally closes the finding TASK-AR6
+ * filed against it: its activity block reads `audit_logs` with NO WHERE clause
+ * under SECURITY DEFINER, and `audit_logs` has no `org_id` column to filter by,
+ * so it would have become a cross-tenant read on the tenant admin's own page
+ * the moment a second organization existed. That is a schema fix, not a query
+ * fix, and it belongs to whoever resurfaces an activity log — see
+ * docs/reference/ACTIVITY-LOG-why-it-has-no-surface.md.
+ */
 
 // ─── Document integrity (CONTRACTORPHAN) ─────────────────────────────────────
 

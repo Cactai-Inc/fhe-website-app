@@ -160,7 +160,7 @@ export const REVIEW_GROUPS: ReviewGroup[] = [
       {
         slot: 'A', label: 'People A · Records (in use)', to: '/app/records', incumbent: true,
         what: 'RecordsPage — Leads / Clients / Partners / Vendors / Horses, one tab strip over independent renderers (TASK-RECORDS). Composes Admin (Clients) and ContactDirectory (Leads/Partners/Vendors/All) unchanged, plus HorseRecordsPage as a fifth peer tab.',
-        origin: { where: 'AppLayout ACCOUNTS_GROUP — one row, "Records", icon BookOpen (replaces the three-row Clients/Leads/Directory origin below)', moved: true },
+        origin: { where: 'AppLayout ACCOUNTS_GROUP — two rows since 2026-08-31 (TASK-FIX3): "Contacts" (icon Contact2) and "Stable" (icon Fence). It was one row, "Records", icon BookOpen, which itself replaced the three-row Clients/Leads/Directory origin below', moved: true },
       },
       {
         slot: 'B', label: 'People B · retired directory', to: '/app/ops/review/contacts',
@@ -299,7 +299,7 @@ export const REVIEW_GROUPS: ReviewGroup[] = [
       {
         slot: 'B', label: 'Staff roster B · employees module', to: '/app/ops/employees/staff',
         what: 'StaffPage — the employees module’s own roster. Owns title and pay type, which TeamPage does not.',
-        warn: 'mod.employees is DISABLED for FHE, so this renders ModuleGate’s locked fallback. Enabling the module in org_modules is the only way to see the page, and nothing here does that.',
+        warn: 'STALE CLAIM CORRECTED 2026-08-31 (TASK-FIX3): this used to say mod.employees was DISABLED for FHE and the page therefore unreachable. Queried directly against production, all six modules are enabled (mod.barnops, mod.boarding, mod.brokerage, mod.employees, mod.horserecords, mod.lessons) and StaffPage renders for real — it holds title and pay_type for the staff who have them, which TeamPage does not. D20 (one roster, and it is Team) is therefore still UNRESOLVED, and retiring this page means moving those two fields first.',
       },
     ],
   },

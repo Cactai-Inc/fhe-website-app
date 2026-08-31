@@ -46,8 +46,15 @@ export interface ZoneDef {
   /** What the all-quiet footer says is absent. Lower case, no full stop:
    *  "nothing on the calendar today". */
   quiet: string;
-  /** The surface that owns this work. The zone header links here. */
-  to: string;
+  /** The surface that owns this work. The zone header links here.
+   *  ⚠️ OPTIONAL, since TASK-FIX3 — and the option is not a convenience. N1
+   *  (Notifications) pointed at /app/ops/activity, a page that read
+   *  `status_events` and had NEVER read `notifications`; the heading was a link
+   *  to the wrong ledger. That page is gone and notifications have no surface of
+   *  their own, so N1 now has no `to` and DashboardChrome renders its title as
+   *  plain text. ⚠️ A zone with no destination is a gap worth seeing, not one
+   *  worth papering over with a link somewhere adjacent. */
+  to?: string;
 }
 
 export const ZONES: ZoneDef[] = [
@@ -64,9 +71,9 @@ export const ZONES: ZoneDef[] = [
      the greeting bar on 2026-08-25, "they need to be part of the page and move
      with the rest of the content on scroll." */
   { key: 'N1', view: 'trainer', order: 5, title: 'Notifications',
-    quiet: 'no unread notifications', to: '/app/ops/activity' },
+    quiet: 'no unread notifications' },
   { key: 'N1', view: 'business', order: 5, title: 'Notifications',
-    quiet: 'no unread notifications', to: '/app/ops/activity' },
+    quiet: 'no unread notifications' },
 
   /* ── Claire · the day sheet ─────────────────────────────────────────── */
   { key: 'C1', view: 'trainer', order: 10, title: 'Today',
@@ -104,9 +111,16 @@ export const ZONES: ZoneDef[] = [
     quiet: 'nobody is stuck part-way in', to: '/app/records/clients' },
   { key: 'B8', view: 'business', order: 50, title: 'Catalog & tenant setup',
     quiet: 'the catalog and the roster are complete', to: '/app/ops/admin/products' },
-  { key: 'B6', view: 'business', order: 60, title: 'What the app has been doing',
-    quiet: 'nothing recorded in the last two weeks', to: '/app/ops/activity',
-    hint: 'D19: five ledgers the app writes and never read back. This is the read.' },
+  /* B6 "What the app has been doing" REMOVED 2026-08-31 (owner, TASK-FIX3):
+     *"the pages are virtually worthless… i vote to remove this from all
+     surfaces… the result being less clutter in the menus and on the dashboard."*
+     The zone went with the two pages it linked to.
+     ⚠️ `dash_activity_readback()` — five ledgers, org-scoped, fair-share per
+     ledger so the noisiest cannot drown the rest — IS RETAINED IN THE DATABASE.
+     It is the one honest read of D19's ledgers that has ever been built, and it
+     is the starting point if an activity surface is ever earned back. The
+     conditions for that are written down:
+     docs/reference/ACTIVITY-LOG-why-it-has-no-surface.md. */
 ];
 
 export function zonesFor(view: DashboardView): ZoneDef[] {

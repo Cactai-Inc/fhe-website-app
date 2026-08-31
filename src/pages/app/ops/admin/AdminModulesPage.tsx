@@ -5,8 +5,15 @@ import { getMyOrgId, listOrgModules, type OrgModuleRow } from '../../../../lib/o
 import { toErrorMessage } from '../../../../lib/ops/errors';
 
 /**
- * OPS-ADMIN-MODULES — the tenant entitlement panel (admin route: requireAdmin
- * is on the route; no ModuleGate — this IS the module switchboard).
+ * OPS-ADMIN-MODULES — the tenant entitlement panel (no ModuleGate — this IS the
+ * module switchboard).
+ *
+ * ⚠️ CORRECTED 2026-08-31 (TASK-FIX3): this said "admin route: requireAdmin is
+ * on the route". The route is `requireSuperAdmin` (App.tsx), and has been. A
+ * tenant admin cannot open this page at all — which is consistent with the
+ * server, where `set_org_module()` is restricted to SUPER_ADMIN / the billing
+ * service, but not with the sentence below about a tenant admin's attempt being
+ * "surfaced here". A tenant admin never gets here to make one.
  *
  * Renders the full platform module catalog (modules table, world-readable)
  * joined against this tenant's org_modules rows: on/off + source (TIER/ADDON/

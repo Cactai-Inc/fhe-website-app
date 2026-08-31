@@ -5,7 +5,7 @@ import {
   fetchTodayPlan, fetchWeekStrip, fetchMoneyWaiting, fetchPeopleWaiting,
   fetchNotesLoop, fetchStableBoard, fetchDocumentsOnboarding, fetchCommunityPulse,
   fetchEvaluationsDue, fetchGifts, fetchMoneyHealth, fetchClairesPlate,
-  fetchDealsContracts, fetchActivityReadback, fetchCatalogHygiene,
+  fetchDealsContracts, fetchCatalogHygiene,
   fetchOnboardingPipeline, fetchTrainerKpis, fetchBusinessKpis, fetchNotifications,
   type ZoneResult, type TrainerKpis, type BusinessKpis, type RevenueWindow,
 } from '../../../lib/ops/api-dashboard';
@@ -23,7 +23,7 @@ import {
   DocumentsZone, CommunityZone, EvaluationsZone, GiftsZone,
 } from '../../../components/app/dashboard/TrainerZones';
 import {
-  MoneyHealthZone, MirrorZone, DealsZone, PipelineZone, HygieneZone, ActivityZone,
+  MoneyHealthZone, MirrorZone, DealsZone, PipelineZone, HygieneZone,
 } from '../../../components/app/dashboard/BusinessZones';
 import { NotificationsZone } from '../../../components/app/dashboard/NotificationsZone';
 import { toErrorMessage } from '../../../lib/ops/errors';
@@ -80,7 +80,6 @@ const LOADERS: Record<string, Loader> = {
   B1: fetchMoneyHealth as Loader,
   B2: fetchClairesPlate as Loader,
   B3: fetchDealsContracts as Loader,
-  B6: (() => fetchActivityReadback(40)) as Loader,
   B8: fetchCatalogHygiene as Loader,
   B9: fetchOnboardingPipeline as Loader,
 };
@@ -270,7 +269,6 @@ function renderZone(
     case 'B1':  return <MoneyHealthZone items={items as any} />;
     case 'B2':  return <MirrorZone items={items as any} onOpenTrainer={chooseView} />;
     case 'B3':  return <DealsZone items={items as any} />;
-    case 'B6':  return <ActivityZone items={items as any} />;
     case 'B8':  return <HygieneZone items={items as any} />;
     case 'B9':  return <PipelineZone items={items as any} />;
     /* eslint-enable @typescript-eslint/no-explicit-any */

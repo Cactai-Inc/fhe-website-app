@@ -152,13 +152,22 @@ export function Zone({
       data-testid={`zone-${def.key}`}
     >
       <div className="mb-2 flex items-baseline gap-2.5">
-        <Link
-          to={def.to}
-          className="group inline-flex items-baseline gap-1.5 text-[0.72rem] font-semibold uppercase tracking-wide text-gold-800 focus-ring"
-        >
-          {def.title}
-          <ChevronRight size={13} className="translate-y-px opacity-50 transition-transform duration-320 ease-glide group-hover:translate-x-0.5" aria-hidden="true" />
-        </Link>
+        {/* ⚠️ Not every zone owns a page. `to` is optional since TASK-FIX3 —
+            see the note on ZoneDef. A title with no destination renders as
+            text, never as a link with nowhere to go. */}
+        {def.to ? (
+          <Link
+            to={def.to}
+            className="group inline-flex items-baseline gap-1.5 text-[0.72rem] font-semibold uppercase tracking-wide text-gold-800 focus-ring"
+          >
+            {def.title}
+            <ChevronRight size={13} className="translate-y-px opacity-50 transition-transform duration-320 ease-glide group-hover:translate-x-0.5" aria-hidden="true" />
+          </Link>
+        ) : (
+          <span className="inline-flex items-baseline text-[0.72rem] font-semibold uppercase tracking-wide text-gold-800">
+            {def.title}
+          </span>
+        )}
         {count > 0 && (
           <span className="rounded-full bg-gold-100 px-2 py-0.5 text-[0.66rem] font-semibold text-gold-800">
             {count}

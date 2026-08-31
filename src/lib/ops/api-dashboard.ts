@@ -240,17 +240,15 @@ export interface DealRow {
 }
 export const fetchDealsContracts = () => zone<DealRow>('dash_deals_contracts');
 
-/* ── B6 · activity read-back ───────────────────────────────────────────── */
-export interface ActivityRow {
-  ledger: 'status' | 'notification' | 'delivery' | 'receipt' | 'audit';
-  at: string;
-  subject: string | null;
-  subject_id: string | null;
-  what: string | null;
-  detail: string | null;
-}
-export const fetchActivityReadback = (limit = 40) =>
-  zone<ActivityRow>('dash_activity_readback', { p_limit: limit });
+/* ── B6 · activity read-back — REMOVED 2026-08-31 (owner, TASK-FIX3) ──────
+ * The zone went with /app/ops/activity and /app/ops/oversight: *"remove this
+ * from all surfaces… less clutter in the menus and on the dashboard."*
+ * ⚠️ `dash_activity_readback(p_limit)` IS STILL IN THE DATABASE and still
+ * correct — five ledgers, org-scoped, fair-share per ledger. It is the working
+ * starting point if an activity surface is ever earned back, which is why it is
+ * retained rather than dropped. What it would take is written down in
+ * docs/reference/ACTIVITY-LOG-why-it-has-no-surface.md.
+ */
 
 /* ── B8 · catalog & tenant hygiene ─────────────────────────────────────── */
 export interface HygieneRow {
