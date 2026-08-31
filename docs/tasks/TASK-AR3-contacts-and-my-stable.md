@@ -56,15 +56,37 @@ component is an asset. Identify it precisely so it survives the move.**
 
 ## 3. THE TRAPS
 
-⚠️ **CR-30 IS AN OWNER RULING AND IT REMOVES LEADS FROM THIS PAGE ENTIRELY:**
-> *"We get rid of leads as a record tab from the record page and they exist as a notification on the
-> dashboard that when clicked opens the modal to show us the submission and the buttons for handling
-> it."*
+### ⚠️ UPDATE, 2026-08-30 — THE CR-30 COLLISION IS RESOLVED. STOP TREATING IT AS OPEN.
 
-**So item 3 as written — "move Leads … to a Page called Contacts" — sits against a ruling he made on
-2026-08-25 that a lead is an inbox item, not a record.** ⚠️ **Do not silently pick one.** Report the
-collision plainly, with both quotes, and let ORCH6 put it to him. **It may be that he has changed his
-mind, which is his right and would supersede CR-30 — but it must be asked, not assumed.**
+**An earlier version of this brief told you to surface a collision with CR-30, which ruled that leads
+leave the records page entirely. The owner has now ruled again and the collision is gone:**
+
+> *"yes i changed my mind on item 3, after testing the unified single records page it was clearly not
+> the right decision. This new revision set should help me understand the other side of the options
+> and if i like it, then its the basis for the refactor, if i dont like it, the refactor has more
+> work to do to come up with a 3rd option."*
+
+⚠️ **Under the ledger's override rule the earlier statement is DELETED — proceed as if it was never
+made.** **Leads belong on Contacts, with Clients, Partners and Vendors. Build the plan for that. Do
+not raise it as a question, and do not hedge the plan against CR-30.**
+
+⚠️ **BUT CARRY HIS REASONING INTO YOUR PLAN, BECAUSE IT CHANGES WHAT "GOOD" MEANS HERE.** He is not
+claiming this shape is right — **he is buying information.** The unified records page was tested and
+rejected; this build exists so he can judge the opposite option against something real.
+
+**Three consequences for your report:**
+1. ⚠️ **This is an experiment with a declared exit.** *"if i dont like it, the refactor has more work
+   to do to come up with a 3rd option."* **A third option still being needed is a SUCCESS of this
+   build, not a failure of it.**
+2. **So plan it to be JUDGED, not to be permanent.** ⚠️ **Prefer the reversible option at every fork,
+   and say in your plan what it would cost to undo.** Retire behind a flag (D32), never delete.
+3. ⚠️ **Say explicitly what QUESTION this build answers for him** — what he will be able to tell
+   after using it that he cannot tell today. **That sentence is the real success criterion**, and it
+   belongs at the top of your plan.
+
+**The other half of CR-30 survives:** a lead can be a row on Contacts *and* surface as a dashboard
+item. **Only "get rid of leads as a record tab" is deleted.** Full ruling: `docs/CHANGE-ORDER-LEDGER.md`,
+the CR-30 supersession entry.
 
 ⚠️ **CR-75 rules the client record is an EXPANDING ROW on the list**, not a page you travel to.
 **Whatever Contacts becomes has to host that pattern.**
