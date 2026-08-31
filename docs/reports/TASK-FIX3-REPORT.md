@@ -519,3 +519,14 @@ $ ps aux | grep -iE "psql|vite|node.*(dev|vitest)" | grep -v grep
 `test/ui/fix3_nav_sections.test.ts`, and this report).
 ⚠️ **`RecordsPage.tsx`, `Admin.tsx` and `ContactDossierModal.tsx` were READ and NOT EDITED** —
 TASK-FIX2 owns them.
+
+**Divergence at hand-off:** `origin/main` gained **4 commits** while this branch was being built
+(`344dd0b6`, `fe369886`, `52ff5df9`, `dd9c7c67` — ORCHESTRATOR.md, the TASK-FIX5 doc, and a signing-RPC
+migration). ⚠️ **Checked by content, not just by `merge-base`: the overlap with this branch's 22
+changed files is EMPTY.** This branch merges clean.
+
+⚠️ **One thing for whoever integrates:** that branch's migration is
+`20260831T1200_signing_rpcs_are_not_anonymous.sql` and this one's is
+`20260831T1200_two_alerts_stop_pointing_at_a_page_that_is_gone.sql` — **two different files sharing
+one timestamp prefix.** They touch disjoint functions, so order does not matter, but the collision is
+worth knowing before a third thread picks the same minute.
