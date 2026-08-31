@@ -46,39 +46,68 @@ give it the right names.** *(D18: never build a second implementation beside a w
 schedule, and payments"* — client-centric. **If the trainer zones are Claire's day rather than the
 client pipeline, say so and propose the honest split rather than forcing the label.**
 
-## 2b. ⚠️ ROLE-SCOPING — CLARIFIED BY THE OWNER, AND IT ALREADY EXISTS
+## 2b. ⚠️ THE MODEL IS PROVISIONING, NOT A DEFAULT — rewritten 2026-08-31, third and final statement
 
-**Owner, 2026-08-31:**
-> *"OwnerDashboard is acceptable as replacement for Ops, what we really need is Ops and Sales. two
-> dashboard configs so they can be toggled or only one is selected (by admin for a staff, ie: role
-> scoped)"*
+**This section was amended twice as the owner refined it. This is the settled version; ignore any
+earlier framing you may have seen quoted elsewhere.**
 
-**So the requirement is two configurations where a person may hold BOTH (and toggles) or exactly ONE
-(assigned by an admin).** ⚠️ **Measured 2026-08-31 — the whole mechanism is already built:**
+**Owner, in sequence:**
+> *"two dashboard configs so they can be toggled or only one is selected (by admin for a staff, ie:
+> role scoped)"*
+> *"a trainer dashboard would be a subset of the sales dashboard that claire is using … that leaves
+> sales, trainer, instructor, care taker, as the four open dashboards we can build and role scope
+> them"*
+> *"In my admin portion of the app i need to have the ability to provision any user's view, this
+> applies to me and to claire. and when things are mutually exclusive we can use a toggle when both
+> are enabled."*
 
+### THE MODEL, IN ONE SENTENCE
+⚠️ **A dashboard view is PROVISIONED to an account — any number of them — and the toggle appears only
+when an account holds more than one.** **It is not "two views with a default".** *"This applies to me
+and to claire"* — **the owner is not exempt from his own provisioning.**
+
+### ⚠️ WHAT ALREADY EXISTS — measured 2026-08-31, and it is more than expected
 | | |
 |---|---|
-| **`profiles.dashboard_focus`** | the stored per-account default. **Live values: `business` → `admin@fhequestrian.com`, `trainer` → `hello@fhequestrian.com`** |
-| **`set_dashboard_focus(p_user_id, p_focus)`** | ⚠️ **ALREADY ADMIN-SETTABLE FOR ANOTHER ACCOUNT** — `p.user_id = auth.uid() OR coalesce(is_admin(), false)`. **The "by admin for a staff" half needs no new function.** |
-| the fallback | `role = 'ADMIN' → business`, otherwise `trainer` — **and its own comment says this is a fallback, "never an identity check"** |
+| **`profiles.dashboard_focus`** | the stored value. Live: `business` → `admin@fhequestrian.com`, `trainer` → `hello@fhequestrian.com` |
+| **`set_dashboard_focus(p_user_id, p_focus)`** | ⚠️ **already admin-settable for ANOTHER account** — `p.user_id = auth.uid() OR coalesce(is_admin(), false)` |
+| ⚠️ **`TeamPage.tsx:175`** | ⚠️ **ALREADY CALLS IT FOR ANOTHER MEMBER.** **The provisioning surface EXISTS. There is no D13 gap.** |
+| the toggle | live, in `sessionStorage` under `fhe.dashboard.view` |
 
-⚠️ **WHAT IS GENUINELY MISSING IS THE "ONLY ONE" CASE.** Today `dashboard_focus` sets which view you
-**land on**, and **both views stay reachable by everyone** — `OwnerDashboard`'s header says so
-outright: *"Both views are reachable by both accounts, always."*
+### ⚠️ THE ONE THING THAT BLOCKS THE WHOLE MODEL
+```
+CHECK (dashboard_focus IS NULL OR dashboard_focus = ANY (ARRAY['trainer','business']))
+```
+⚠️ **A single TEXT column with a two-value CHECK cannot express "this account holds Sales AND
+Instructor".** **The column is the constraint, and it must become a SET.**
 
-**So build exactly one thing here: a way to say a given staff account gets ONE config and no toggle.**
-⚠️ **Do NOT rebuild the default, the toggle or the setter.** **Extend, do not replace** (D18).
+**Recommended: a `dashboard_views text[]` on `profiles`, with the value list in `lookup_options` so
+the owner can add a view without a migration (D13/D21).** ⚠️ **`dashboard_focus` is RETAINED as the
+landing preference — "which of my views do I open on" — because that is a genuinely different fact
+from "which do I hold".** ⚠️ **Do not overload one column with both; that is this codebase's most
+repeated defect.** **Migrate the two live rows so neither owner loses their board.**
 
-⚠️ **AND ASK RATHER THAN ASSUME:** is "only one" a **third value** on `dashboard_focus`
-*(`business` · `trainer` · and a locked variant)*, or a **separate boolean** meaning *this account does
-not get the toggle*? **The second is cleaner — it keeps "which view" and "may they switch" as two
-facts rather than overloading one column**, which is this codebase's most repeated defect. **Recommend
-one, state the trade-off, and let the owner confirm.**
+### THE SIX VIEWS, AND ⚠️ WHICH TO ACTUALLY BUILD
+**Named by the owner:** Ops *(Claire's)* · Admin *(his)* · Sales · Trainer · Instructor · Care-taker.
 
-⚠️ **THE ADMIN SURFACE THAT SETS IT:** `set_dashboard_focus` exists but **find out whether any UI
-calls it for another account.** If nothing does, **that is the D13 gap** — the owner cannot assign a
-staff member's dashboard without a thread. **It belongs on the Team page, beside the other per-person
-settings.**
+⚠️ **NAMING COLLISION — RAISE IT, DO NOT SILENTLY PICK.** **"Admin" is already a NAV SECTION** —
+`TASK-FIX3` renamed Community→Admin, holding Moderation, Field options, Content store and Settings'
+five pages. **A dashboard view also called Admin makes "go to Admin" ambiguous** — the same defect as
+the two nav rows both labelled "Records". **Flag it and let the owner name it.**
+
+⚠️ **TRAINER IS A SUBSET OF SALES, PER THE OWNER — SO CHECK BEFORE BUILDING TWO.** *"a trainer
+dashboard would be a subset of the sales dashboard."* **If the zones confirm it, Trainer is Sales with
+fewer zones — one config, role-filtered, which cannot drift.** **If the zones say otherwise, say so.**
+
+⚠️ **BUILD THE FRAMEWORK FOR SIX; BUILD ONLY THE BOARDS THAT HAVE OCCUPANTS.** **There is one
+instructor — Claire — which is the same fact that made an instructor picker unnecessary in `FIX2`.
+Care-taker and Instructor have nobody.** **Register them as available-but-empty so they light up on
+assignment.** ⚠️ **Four boards nobody occupies is exactly the pattern that produced the eight
+features `ORCHESTRATOR.md` §3b lists as reachable by nothing.**
+
+### THE TOGGLE
+**Zero or one view → no toggle.** **Two or more → a toggle listing exactly what that account holds.**
+⚠️ **Never a toggle offering a view the account was not provisioned.**
 
 ## 3. WHAT BOTH VIEWS SHARE — his list, and it is a real constraint
 
