@@ -119,7 +119,7 @@ THAT ORGANISE DIFFERENTLY. Do not model them as one flat list.**
 |---|---|
 | **Sales** | ⚠️ **strictly revenue numbers**, and *"could encompass some of the conversion and traffic KPIs"* |
 | **Marketing** | **campaigns** — running them, their results, **and what is still in planning** |
-| **Ops** | *"overall company activities; horses, supplies, staff, things related to the ongoing daily tasks"* |
+| **Ops** | ⚠️ **THE OVERLAP — see above.** *"overall company activities; horses, supplies, staff, things related to the ongoing daily tasks"*, composed from every other view and shared by both owners |
 | **Admin** | ⚠️ **higher level** — company signage, app updates, **investigating issues anyone is having with the app**, website monitoring |
 
 ⚠️ **THIS SUPERSEDES THE EARLIER "Ops is Claire's view, Admin is mine" NOTE.** **Ops is a business
@@ -138,6 +138,37 @@ views (§2b) and not a single stored value.
 KPIs; **Marketing is also about conversion.** ⚠️ **Define each KPI ONCE and register it into both
 lenses** — the registry already does this. ⚠️ **Sales is REVENUE-first and Marketing is CAMPAIGN-first;
 if a zone cannot be assigned to one of those two intents, ask rather than putting it in both.**
+
+### ⚠️ OPS IS THE OVERLAP — the shared board, not a fifth lens
+
+> *"the overlap is Ops for me and claire, that encompasses the things for
+> trainer/instructor/care-taker/sales/marketing."*
+
+⚠️ **THIS CHANGES WHAT OPS IS, NOT JUST WHO HOLDS IT.** Ops is **the shared working surface for the
+owner AND Claire**, and it **spans** the other views — trainer, instructor, care-taker, sales,
+marketing. **It is the union, not a sibling.**
+
+| | |
+|---|---|
+| **Ops** | ⚠️ **the OVERLAP.** Held by **both** the owner and Claire. Draws from every other view |
+| **Sales · Marketing · Admin** | the owner's focused lenses — he cycles between them |
+| **Trainer · Instructor · Care-taker** | job roles, normally one per person |
+
+⚠️ **SO OPS IS THE DEFAULT LANDING BOARD FOR BOTH OWNERS, and the focused views are what you switch
+INTO when you want one subject at a time.** That is consistent with D26 — *"She should live in her
+dashboard as the action surface she uses to manage her day/week/month"* — and with the ruling that the
+dashboard is the **landing surface**, shown on a fresh login and after ~30 minutes away.
+
+⚠️ **THE BUILD CONSEQUENCE, AND IT IS THE WHOLE REASON THIS MATTERS: OPS MUST BE COMPOSED, NEVER
+AUTHORED.** If Ops is the union of the other boards, then **every zone on it already belongs to one of
+them.** ⚠️ **Hand-building an Ops board duplicates six others and guarantees drift** — the exact
+failure this codebase repeats. **Ops renders the zones the other views define, filtered to what has
+something to show** *(D13's recorded exception: a self-arranging surface needs no arrangement
+editor — "surfaces should be fluid and dynamic and only shown when there is something to show")*.
+
+⚠️ **AND IT ANSWERS A QUESTION §2b LEFT OPEN:** the owner holds **Ops + Sales + Marketing + Admin**;
+Claire holds **Ops + Trainer**. **Neither is "one view", so both get the cycler** — which is only
+expressible if held views are a SET.
 
 ### ⚠️ THE ROLES, DEFINED BY THE OWNER — and this CORRECTS an earlier note in this file
 > *"trainer is for training horses and instructing people, instructor only gives lessons to people.
