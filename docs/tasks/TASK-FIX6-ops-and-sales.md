@@ -166,6 +166,31 @@ failure this codebase repeats. **Ops renders the zones the other views define, f
 something to show** *(D13's recorded exception: a self-arranging surface needs no arrangement
 editor — "surfaces should be fluid and dynamic and only shown when there is something to show")*.
 
+### 🔒 THE BUILD ORDER — Sales and Marketing FIRST, Ops LAST
+> *"ill need to see the sales and marketing dashboards first, so i know what to tell it to show on the
+> ops dashboard."*
+
+⚠️ **THIS SETS THE ORDER OF WORK INSIDE THIS TASK, AND IT IS NOT NEGOTIABLE.** Ops carries **a snippet
+of sales and marketing** (see above), **and the owner cannot specify the snippet until he has seen what
+it is a snippet OF.** **Building Ops first would mean guessing at his summary.**
+
+| # | Build | Why |
+|---|---|---|
+| **1** | **the framework** — the held-views SET, the landing preference, the cycler, the scope parameter, the two zone depths | everything else composes from it |
+| **2** | ⚠️ **SALES and MARKETING**, in full | **he reviews these and only then specifies Ops** |
+| **3** | ⚠️ **STOP. HAND THEM OVER. ASK FOR CLAIRE'S OPS LIST.** | ⚠️ **A REAL PAUSE, NOT A FORMALITY** |
+| **4** | **Admin** — his home board: app issues, company work, projects and tasks | independent of the pause |
+| **5** | **Ops**, from his list | the composed board, last |
+
+⚠️ **THE THREAD MUST NOT INVENT CLAIRE'S ZONE LIST.** *"i can list all of the things to include in the
+ops view."* **If the task reaches step 3 and the owner has not supplied it, STOP AND REPORT — do not
+proceed to step 5 with a guess.** **Steps 1, 2 and 4 are a complete, shippable deliverable on their
+own.**
+
+⚠️ **ROLE BOARDS (Trainer / Instructor / Care-taker) ALSO WAIT FOR STEP 5** — Ops aggregates them, and
+their zones are the ones Claire's list will draw from. **Do not build them speculatively; there are no
+occupants today.**
+
 ### ⚠️ THE ASSIGNED-HELPER BADGE — and the assignment it needs DOES NOT EXIST YET
 > *"she will need to see everything, and see the things that are assigned to people is very important
 > for tracking what they are doing and so those items will have badges showing the person assigned to
