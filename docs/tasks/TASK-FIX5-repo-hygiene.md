@@ -20,16 +20,37 @@ real work citing a claim already three days stale (D20). `AppLayout.tsx:636` ass
 never written, so **the owner reported the same nav defect three times.** **A tree where the current
 instruction cannot be told from the superseded one produces exactly these.**
 
-## 2. ⚠️ THE BLAST RADIUS — MEASURED, AND IT IS THE WHOLE DIFFICULTY
+## 2. THE BLAST RADIUS — corrected 2026-08-31, and it is SMALLER than first stated
+
+⚠️ **The orchestrator first wrote "417 files cite a docs/ path" as the headline risk. That number is
+real but MISLEADING, and the owner challenged it.** Broken down:
+
+| Where | Files citing a `docs/…` path |
+|---|---|
+| `docs/` itself | **338** — 175 tasks · 105 reports · 33 root · 25 elsewhere |
+| `supabase/migrations/` | 44 |
+| `src/` | 20 · `test/` 11 · `api/` 1 · `README.md` 1 · `CLAUDE.md` 1 |
+
+⚠️ **BUT `docs/tasks/`, `docs/reports/`, `docs/reference/` AND `docs/design/` DO NOT MOVE — they are
+already the target layout.** So most citations point at paths that stay put. **Measured:**
 
 | | |
 |---|---|
-| files citing a `docs/…` path | ⚠️ **417** |
-| citations inside `src/` and `supabase/migrations/` | ⚠️ **75** — code comments and migration headers |
-| `CLAUDE.md` | **15** |
+| task + report files citing a path that **MOVES** *(`docs/handoff/`, `HANDOFF-ORCH*`)* | ⚠️ **5** |
+| task + report files citing `docs/tasks\|reports\|reference\|design` — **unaffected** | **255** |
 
-⚠️ **EVERY MOVE BREAKS A REFERENCE SOMEWHERE. The moving is trivial; the repair is the task.**
-⚠️ **Migration files are HISTORY — if a header cites a moved path, fix it, but never alter a
+⚠️ **SO THE REPAIR IS ~5 FILES PLUS THE 33 LOOSE ROOT FILES PLUS WHATEVER ARCHIVING RELOCATES — NOT
+417.** **Do not spend the task grinding a 417-file grep.**
+
+**The honest rule: repair is proportional to what MOVES, not to what CITES.**
+1. **Move a batch.**
+2. **Grep for the OLD paths of that batch only.**
+3. **Fix what breaks, then move the next batch.**
+
+⚠️ **THE ONE PLACE THE BIG NUMBER STILL MATTERS: `docs/reports/` archiving.** Moving 500+ reports into
+`docs/archive/` relocates paths that **255 files may cite.** ⚠️ **That step alone deserves the full
+grep. The folder renames do not.**
+⚠️ **Migration headers cite `docs/` in 44 files. Fix a header if it breaks; NEVER alter a
 migration's SQL.**
 
 ## 3. THE TARGET LAYOUT
@@ -147,8 +168,9 @@ the `orchestration/` repo's own contents *(a product artifact — see `docs/ORCH
 
 1. **`docs/` root holds only folders** — paste `ls docs/`.
 2. **Every file is in the folder its type dictates.** Name the exceptions and why.
-3. ⚠️ **ZERO broken `docs/…` references across all 417 files.** **Paste the grep proving it** — this
-   is the acceptance test for the whole task.
+3. ⚠️ **ZERO broken `docs/…` references.** **Paste the grep** — run it against the OLD path of every
+   batch you moved, not against all 417. ⚠️ **The `docs/reports/` archiving step gets the full sweep;
+   the folder renames do not.**
 4. **`CLAUDE.md`'s 15 citations all resolve.**
 5. **`npm run build`, `typecheck`, `typecheck:api`, lint ≤46** — proving the four migration scripts
    still work.
