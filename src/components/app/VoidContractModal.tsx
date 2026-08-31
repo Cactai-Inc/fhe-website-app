@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { X, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { voidDocument, setDocumentPartyHidden, emailVoidNotice } from '../../lib/contracts';
+import { Modal } from '../ops/kit/Modal';
 import { toErrorMessage } from '../../lib/ops/errors';
 
 /**
@@ -68,20 +69,12 @@ export function VoidContractModal({
   const dismissable = page === 1 || page === 2;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
-      onClick={() => { if (dismissable) onClose(); }}>
-      <div className="bg-white rounded-xl border border-green-800/15 shadow-lg max-w-lg w-full p-6"
-        role="dialog" aria-modal="true"
-        aria-label={page === 1 ? 'Void this document' : page === 2 ? 'Keep or remove' : 'Document voided'}
-        onClick={(e) => e.stopPropagation()}>
-
-        {dismissable && (
-          <button type="button" aria-label="Close" onClick={onClose}
-            className="float-right -mt-2 -mr-2 p-2 text-muted hover:text-green-900 focus-ring rounded">
-            <X size={18} />
-          </button>
-        )}
-
+    /* ⚠️ TASK-FIX4 §3 — converged. Page 1 holds the note to the other party, so a
+       backdrop click no longer discards it; pages 2 and 3 are past the point of
+       return and were already undismissable. */
+    <Modal open onClose={onClose} size="md"
+      title={page === 1 ? 'Void this document' : page === 2 ? 'Keep or remove' : 'Document voided'}
+      disableBackdropClose={!dismissable}>
         {/* ── PAGE 1 — confirm + note ────────────────────────────────────── */}
         {page === 1 && (
           <>
@@ -155,8 +148,7 @@ export function VoidContractModal({
             </div>
           </>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }
 
