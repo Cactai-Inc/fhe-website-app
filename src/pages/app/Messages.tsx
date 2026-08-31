@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { Modal } from '../../components/ops/kit/Modal';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Send, ArrowLeft, PenSquare, Search, Trash2, Pencil, Check, X, MoreVertical, ExternalLink,
@@ -62,12 +63,12 @@ function NewMessageModal({ members, onPick, onClose }: {
   }, [members, q]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-green-900/40 flex items-start justify-center p-4 pt-[10vh]" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl max-h-[70vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-green-800/10">
-          <h2 className="font-serif text-lg text-green-900">New message</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-green-800/60 hover:text-green-900 text-xl leading-none">×</button>
-        </div>
+    /* ⚠️ TASK-FIX4 §3 — converged, with `allowBackdropClose` set DELIBERATELY. The
+       only field here is a search box over a member list: nothing is being
+       composed, nothing is lost, and click-out is the gesture a picker like this
+       is expected to answer. That is the escape hatch the shared dialog provides
+       for exactly this case, and it is the only place in the app that uses it. */
+    <Modal open onClose={onClose} title="New message" size="sm" allowBackdropClose bare>
         <div className="px-4 py-3 border-b border-green-800/10">
           <div className="flex items-center gap-2 px-3 py-2 bg-cream-100 rounded-lg">
             <Search size={15} className="text-muted shrink-0" />
@@ -75,7 +76,7 @@ function NewMessageModal({ members, onPick, onClose }: {
               className="bg-transparent flex-1 text-sm outline-none" aria-label="Search members" />
           </div>
         </div>
-        <div className="overflow-y-auto overscroll-contain p-2">
+        <div className="p-2">
           {filtered.length === 0 ? (
             <p className="text-sm text-muted text-center py-6">No members found.</p>
           ) : filtered.map((m) => {
@@ -92,8 +93,7 @@ function NewMessageModal({ members, onPick, onClose }: {
             );
           })}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

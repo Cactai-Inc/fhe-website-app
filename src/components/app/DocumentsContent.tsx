@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { fromHere } from '../../lib/linkOrigin';
-import {
-  FileText, Check, Download, History, Mail, BookOpen, X, ChevronLeft, ChevronRight,
-} from 'lucide-react';
+import { FileText, Check, Download, History, Mail, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { myDocuments, emailMyDocumentCopy, type MyDocumentRow } from '../../lib/api';
 import {
   listMySignableDocuments,
   signMyDocument,
   type SignableDocument,
 } from '../../lib/ops/api-client';
+import { Modal } from '../ops/kit/Modal';
 import { toErrorMessage } from '../../lib/ops/errors';
 import type { SeedDocument } from '../../lib/seed';
 
@@ -141,31 +140,23 @@ function PaperViewer({ doc, onClose }: { doc: SeedDocument; onClose: () => void 
   const [page, setPage] = useState(0);
   const total = doc.pages.length;
   return (
-    <div className="fixed inset-0 bg-green-950/50 backdrop-blur-[2px] z-[70] flex flex-col" onClick={onClose}>
-      {/* top bar */}
-      <div className="flex items-center justify-between px-4 h-14 bg-white/95 border-b border-green-800/10 shrink-0" onClick={(e) => e.stopPropagation()}>
-        <div className="min-w-0">
-          <p className="font-serif text-green-800 text-[15px] font-semibold truncate">{doc.title}</p>
-          <p className="text-[11px] text-muted">{doc.signedOn}</p>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={async () => {
-              const text = doc.body ?? doc.pages.join('\n\n');
-              const { downloadDocumentPdf } = await import('../../lib/documentPdf');
-              await downloadDocumentPdf(doc.title, text);
-            }}
-            className="inline-flex items-center gap-1.5 text-[12px] text-green-800 hover:text-green-700 px-2.5 py-1.5 rounded-lg border border-green-800/15 hover:border-green-800/30 focus-ring"
-          >
-            <Download size={14} /> PDF
-          </button>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-secondary hover:text-green-800 p-2 -mr-2"><X size={20} /></button>
-        </div>
-      </div>
-
-      {/* paper scroll region */}
-      <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:py-8" onClick={(e) => e.stopPropagation()}>
+    /* ⚠️ TASK-FIX4 §3 — converged. A reader: no field, so click-out still closes. */
+    <Modal open onClose={onClose} size="full" title={doc.title} subtitle={doc.signedOn}
+      panelClassName="h-[92dvh]" bare
+      footer={
+        <button
+          type="button"
+          onClick={async () => {
+            const text = doc.body ?? doc.pages.join('\n\n');
+            const { downloadDocumentPdf } = await import('../../lib/documentPdf');
+            await downloadDocumentPdf(doc.title, text);
+          }}
+          className="inline-flex items-center gap-1.5 text-[12px] text-green-800 hover:text-green-700 px-2.5 py-1.5 rounded-lg border border-green-800/15 hover:border-green-800/30 focus-ring"
+        >
+          <Download size={14} /> PDF
+        </button>
+      }>
+      <div className="px-4 py-6 sm:py-8 bg-cream-100 h-full overflow-y-auto overscroll-contain">
         <div className="max-w-[640px] mx-auto">
           {/* the sheet */}
           <div className="bg-white shadow-2xl shadow-green-950/30 rounded-[3px] mx-auto"
@@ -203,7 +194,7 @@ function PaperViewer({ doc, onClose }: { doc: SeedDocument; onClose: () => void 
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

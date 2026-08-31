@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import {
-  X, Mail, KeyRound, ArrowRight, ArrowLeft, Check, Eye, EyeOff,
-  Loader2, MailCheck, AlertCircle, Sparkles,
+  Mail, KeyRound, ArrowRight, ArrowLeft, Check, Eye, EyeOff, Loader2, MailCheck, AlertCircle, Sparkles,
 } from 'lucide-react';
+import { Modal } from '../ops/kit/Modal';
+import { normalizeEmail } from '../../lib/normalize';
 import { toErrorMessage } from '../../lib/ops/errors';
 
 /**
@@ -128,27 +129,19 @@ export function EmailChangeModal({
   const stepIndex = screen === 'enter' ? 0 : screen === 'password' ? 1 : 2;
 
   return (
-    <div className="fixed inset-0 bg-green-950/40 backdrop-blur-[2px] z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <div
-        className="bg-cream w-full sm:max-w-[440px] sm:rounded-2xl max-h-[94vh] overflow-y-auto overscroll-contain shadow-2xl shadow-green-950/30 animate-fade-up"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Branded header band */}
-        <div className="relative px-5 pt-5 pb-4 bg-gradient-to-br from-green-800 to-green-900 text-white">
-          <button type="button" onClick={onClose} aria-label="Close"
-            className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors focus-ring rounded">
-            <X size={20} />
-          </button>
-          <div className="w-10 h-10 rounded-xl bg-white/10 grid place-items-center mb-3">
-            <Mail size={20} className="text-gold-400" />
+    /* ⚠️ TASK-FIX4 §3 — converged. A typed-in new address no longer disappears on
+       a backdrop click. ⚠️ NO DRAFT HERE, deliberately: two of the four fields are
+       a password, and this dialog's own `omit` would be the whole form. */
+    <Modal open onClose={onClose} variant="sheet" size="sm" panelClassName="bg-cream"
+      title="Change your email" subtitle={`Signed in as ${currentEmail}`}
+      bare>
+        <div className="px-5 pt-4 pb-2 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-green-800/10 grid place-items-center shrink-0">
+            <Mail size={20} className="text-gold-600" />
           </div>
-          <h2 className="font-serif text-xl leading-tight">Change your email</h2>
-          <p className="text-white/70 text-[12.5px] mt-1 font-sans">
-            Signed in as <span className="text-gold-200">{currentEmail}</span>
-          </p>
         </div>
 
-        <div className="p-5">
+        <div className="p-5 pt-0">
           {/* STEP: enter new email */}
           {screen === 'enter' && (
             <div className="flex flex-col gap-4 animate-fade-in">
@@ -157,6 +150,7 @@ export function EmailChangeModal({
                 <input
                   type="email" autoFocus value={email}
                   onChange={(e) => { setEmail(e.target.value); setErr(null); }}
+                  onBlur={() => setEmail((v) => normalizeEmail(v))}
                   className="form-input rounded-lg" placeholder="you@example.com"
                   aria-invalid={!!err}
                 />
@@ -301,7 +295,6 @@ export function EmailChangeModal({
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

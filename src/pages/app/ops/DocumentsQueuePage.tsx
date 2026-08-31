@@ -35,6 +35,7 @@
  * preset is active — that's what the task's acceptance test exercises.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Modal } from '../../../components/ops/kit/Modal';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -233,13 +234,18 @@ function VersionDecisions() {
         ))}
       </div>
 
+      {/* ⚠️ TASK-FIX4 §3 — converged. It never closed on a backdrop click; what it
+          lacked was a Close control, which every dialog now has. */}
       {picking && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-green-950/40 px-4"
-          role="dialog" aria-modal="true" aria-labelledby="vd-heading">
-          <div className="bg-white rounded-2xl border border-green-800/10 p-6 max-w-md w-full max-h-[80vh] overflow-y-auto overscroll-contain">
-            <h2 id="vd-heading" className="font-serif text-lg text-green-800 mb-1">
-              Who should re-sign {picking.title}?
-            </h2>
+        <Modal open onClose={() => setPicking(null)} size="sm"
+          title={`Who should re-sign ${picking.title}?`}
+          footer={
+            <button type="button" className="btn-primary text-sm"
+              disabled={busy || chosen.size === 0}
+              onClick={() => void confirmSelected()}>
+              {busy ? 'Saving…' : `Require from ${chosen.size}`}
+            </button>
+          }>
             <p className="text-[12.5px] text-muted mb-4">
               Everyone below signed v{picking.from_version ?? 0} or earlier. Unticking
               someone leaves their existing signature in place.
@@ -271,17 +277,7 @@ function VersionDecisions() {
                 ))}
               </div>
             )}
-            <div className="flex justify-end gap-2">
-              <button type="button" className="btn-secondary text-sm" disabled={busy}
-                onClick={() => setPicking(null)}>Cancel</button>
-              <button type="button" className="btn-primary text-sm"
-                disabled={busy || chosen.size === 0}
-                onClick={() => void confirmSelected()}>
-                {busy ? 'Saving…' : `Require from ${chosen.size}`}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
