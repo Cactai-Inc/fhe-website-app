@@ -2711,3 +2711,67 @@ and this build exists to show him the opposite option so he can judge it against
 **The dashboard-notification lead handling from CR-30 is not retired by this** — a lead can be both a
 row on Contacts and an item that surfaces on the dashboard. **Only the "get rid of leads as a record
 tab" half is deleted.**
+
+---
+
+## CR-83 · G6/G9 · captured — normalise a typed name, and let them correct it before they sign
+
+**SAID (owner, 2026-08-31):**
+> *"nearly no names start with a lowercase first letter for the first or last name. names like
+> LaBuzetta is a departure from normal single capitalized letter last name but not a unique
+> situation, its common. What we should be doing with name entries like Elisheva fiszer, is
+> correcting the non capitalized last name to normalize it, what we should not do is change
+> LaBuzetta to Labuzetta, and we cannot be expected to get labuzetta properly changed to LaBuzetta
+> but Labuzetta is better than labuzetta, the user can adjust it manually on their own. if it was
+> la buzetta we could concievably change that to La Buzetta and if the person corrects it to
+> La buzetta that is ok we shouldnt recorrect it."*
+
+> *"if we do this prior to signature, we need to allow them to go back (ui must contain a back button
+> so data entered isnt lost and if possible also not lost on browser back button) so they can revise
+> our normalization prior to signing. Signing must require exact match so they catch any typo or
+> capitalization error before signing the documents."*
+
+**THE RULE, stated as four cases:**
+| Input | Becomes | Why |
+|---|---|---|
+| `fiszer` | **`Fiszer`** | a leading lowercase letter is capitalised |
+| `labuzetta` | **`Labuzetta`** | better than nothing; the person fixes the interior capital themselves |
+| `LaBuzetta` | ⚠️ **`LaBuzetta`** | **an interior capital is NEVER touched** |
+| `la buzetta` | **`La Buzetta`** | per WORD, not per field |
+
+⚠️ **AND THE RULE THAT STOPS IT FIGHTING THE USER:** *"if the person corrects it to La buzetta that
+is ok we shouldnt recorrect it."* **Normalise on ENTRY, never on every save.** A re-normalising field
+overwrites a deliberate correction, and the person cannot win.
+
+**THE TWO REQUIREMENTS THAT COME WITH IT — the owner attached them himself, and they are not
+optional:**
+1. ⚠️ **A BACK PATH FROM SIGNING TO THE NAME FIELD**, so the normalisation can be revised *before*
+   anything is signed. **In-UI back button, and browser-back must not lose entered data either.**
+2. ⚠️ **SIGNING STAYS AN EXACT MATCH** — *"so they catch any typo or capitalization error before
+   signing."* **The exact gate is a FEATURE: it is the last moment a wrong name is visible.**
+
+⚠️ **THIS SETTLES A JUDGEMENT CALL `TASK-FIX1` FLAGGED (§4.4).** FIX1 relaxed `Onboarding.tsx`'s
+exact, case-sensitive gate to the server's case-insensitive rule, on the reasoning that the failure
+mode was a *stale record* rather than a wrong one. **The owner's ruling reverses that for the CLIENT
+gate: the browser gate goes back to exact.** The **server** rule stays case-insensitive — it exists to
+stop a mismatched signature, and it must keep accepting the four legitimate variants already executed
+(`"Brian olenik"`, three × `"Elisheva fiszer"`). **Two gates, two jobs: the browser catches the typo,
+the server catches the wrong person.**
+
+**FOUND (measured 2026-08-31, before any of this is built):**
+- ⚠️ **NOTHING NORMALISES A NAME ANYWHERE.** `"Elisheva fiszer"` is stored exactly as typed.
+- ⚠️ **THERE IS NO WAY BACK FROM THE SIGNING STEP.** `Onboarding.tsx` has eight steps
+  (`order · details · horse · shop · sign · payment · slots · done`) and **two** `Back` controls in
+  the entire file: one on the *done* screen pointing at the dashboard, and one inside the horse
+  sub-flow. **From `sign` there is no route to the field holding the name.**
+  ⚠️ **So normalising before signature WITHOUT requirement 1 would change a person's name and leave
+  them no way to fix it. Requirement 1 is not polish — it is what makes the feature safe.**
+- **Four executed signatures carry an uncapitalised surname today** — Brian Olenik ×1, Elisheva
+  Fiszer ×3. **They are legitimate and must not be invalidated.**
+
+**ASK-OWNER**
+1. **Every name entry point, or only the public ones?** `/sign/*` and onboarding are where a stranger
+   types their own name; staff-entered names on the contact record are a different case.
+2. **A one-time pass over existing records**, or new entries only? *(Four signatures are affected;
+   the contact count is unmeasured.)* ⚠️ **A signature's `typed_name` must NEVER be rewritten — it is
+   sealed evidence** (`block_signed_signature_update`). **Any backfill is contacts-only.**
