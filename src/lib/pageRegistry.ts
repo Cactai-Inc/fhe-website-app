@@ -38,11 +38,25 @@
  *
  * ── THE HUB / CHILD RULE: NO CASCADE ────────────────────────────────────────
  *
- * Every page here has (or will have) its OWN nav row, children included. So
- * hiding a hub hides one row and cannot orphan anything — its children keep
- * their own rows and stay reachable. Those two decisions are joined: no-cascade
- * is only safe BECAUSE the children are in the nav. If the child nav rows are
- * ever removed, this rule has to become cascade-with-warning.
+ * Hiding a hub hides one row and does not cascade to its children.
+ *
+ * ⚠️ CORRECTED 2026-08-31 (TASK-FIX3). This paragraph used to read "Every page
+ * here has (or will have) its OWN nav row, children included… no-cascade is only
+ * safe BECAUSE the children are in the nav. If the child nav rows are ever
+ * removed, this rule has to become cascade-with-warning."
+ * ⚠️ THE CHILDREN WERE NEVER IN THE NAV. Counted 2026-08-31: 12 of the 30 rows
+ * below have no nav row anywhere — the eight module children, the three
+ * `lessons.*` rows, and the dead `records.hub`. They are reachable only from
+ * their hub's own link cards. So the premise the no-cascade rule rests on has
+ * never been true, and the condition the paragraph named for revisiting it was
+ * met before it was written.
+ *
+ * It is left as no-cascade rather than changed here, because the honest fix is
+ * either eleven nav rows or a cascade-with-warning, and both are bigger than a
+ * comment. ⚠️ It is also moot today: page visibility is wired to NOTHING — the
+ * nav never reads `org_page_visibility` (see `manageNavGroups()` in
+ * AppLayout.tsx, whose `visible()` filter checks only modules and `adminOnly`).
+ * Reported by TASK-FIX3, its own thread.
  *
  * A hub page's own link cards are NOT filtered by visibility — a hub the owner
  * kept still lists a child he put away, and clicking it works. The task rules
@@ -130,7 +144,11 @@ export const GROUP_LABEL: Record<PageGroup, string> = {
 };
 
 /**
- * EVERY staff page with a nav row of its own, in nav order.
+ * The staff pages a tenant may hide, in nav order.
+ *
+ * ⚠️ This heading used to read "EVERY staff page with a nav row of its own".
+ * It is not that, and was not on the day it was written — 12 of the 30 rows
+ * below have no nav row at all (see THE HUB / CHILD RULE above).
  *
  * Not listed, deliberately:
  *  - the six `core.*` modules — substrate (tenancy, roles, contracts, payments,
