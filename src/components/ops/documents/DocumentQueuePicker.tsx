@@ -23,11 +23,12 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, FileSignature, FileText } from 'lucide-react';
+import { FileSignature, FileText } from 'lucide-react';
 import { documentTypeOptions } from '../../../lib/api';
 import type { DocumentTypeOption } from '../../../lib/ops/types';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { AssignDocumentsModal } from '../../app/ClientRecordActions';
+import { Modal } from '../kit/Modal';
 
 /** contract_kind → where authoring that kind actually starts. Only kinds
  *  with a real standalone entry point are listed; anything else (a new
@@ -111,21 +112,9 @@ export function DocumentQueuePicker({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <div
-        className="bg-cream w-full sm:rounded-2xl sm:max-w-md flex flex-col max-h-[92dvh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center p-4 border-b border-green-800/10 bg-cream shrink-0">
-          <div />
-          <h2 className="font-serif text-green-800 text-lg text-center">Add New</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="justify-self-end text-secondary hover:text-green-800">
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="p-4 sm:p-5 overflow-y-auto overscroll-contain pb-8">
-          {err && <p role="alert" className="form-error mb-3">{err}</p>}
+    /* ⚠️ TASK-FIX4 §3 — converged. A picker with nothing typed into it. */
+    <Modal open onClose={onClose} title="Add New" variant="sheet" size="sm"
+      panelClassName="bg-cream" error={err}>
           {!options && !err && <p className="text-sm text-muted">Loading…</p>}
           {options && (
             <div className="flex flex-col gap-2.5">
@@ -149,8 +138,6 @@ export function DocumentQueuePicker({ onClose }: { onClose: () => void }) {
               )}
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
