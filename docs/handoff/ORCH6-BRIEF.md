@@ -88,7 +88,13 @@ content *(the view lives in Community, the editor in Admin — `Products` at `pa
 `revenue_summary` computes `coalesce(nullif(p.amount_paid, 0), p.amount, 0)`. **A zero becomes NULL
 and falls through to the FULL LIST PRICE.** ⚠️ **So a comp recorded as the owner intends — paid,
 `amount_paid = 0` — books as full-price REVENUE and records no loss. A double error in one direction.**
-✅ **Verified: all three paid orders are genuine and ZERO comps exist, so the books are clean TODAY.**
+✅ **Verified: all paid orders are genuine and ZERO comps exist, so the books are clean TODAY.**
+⚠️ **CORRECTED 2026-08-31 BY ORCH6, FROM THE FUNCTION BODIES — the mechanism above is not yet armed.**
+`grant_lesson_credit` writes a comp as `amount = 0, amount_paid = 0`, so `nullif` falls through to a
+ZERO and books nothing. ⚠️ **The trap arms itself the moment a line carries the LIST price — i.e. the
+moment the designation is built.** **So the fix and the designation must ship in ONE branch.** Full
+working: `docs/tasks/TASK-BOOKS1-what-a-sale-was-worth.md` §3, and the ledger's CR-86 addendum.
+*(Also: there are FOUR paid orders now, not three — `PUR-000333 $55` was paid 2026-08-31.)*
 ⚠️ **THE COMP DESIGNATION AND THE `revenue_summary` FIX MUST LAND BEFORE HIS DATA PASS ENTERS THE FIRST
 COMP.** After that the error is retroactive and every P&L inherits it silently.
 ⚠️ **The cost simplification does NOT touch this — that is the COST side, this is the REVENUE side.
