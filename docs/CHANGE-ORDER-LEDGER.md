@@ -2909,3 +2909,53 @@ that outlives the page**, because a reload and a browser-back both destroy React
 implementation note and not a second requirement.** ⚠️ **CR-84 ASK-OWNER #2 is therefore ANSWERED:
 resume must survive a reload.** That means persisted draft state, and it is the largest single piece
 of this change request. **Size it honestly rather than treating it as a modal detail.**
+
+### ⚠️ CR-84 — CORRECTED AGAIN, 2026-08-31. THE ORCHESTRATOR MIS-RECORDED THE DESIGN.
+
+**SAID:**
+> *"i said we use the fix as authored, no save button, only a close button and a clear form button
+> are needed since it saves, we need to show auto-save so the user knows the inputs are saved, the
+> close will be intentional now so its less of an issue … we should auto-save after input and when
+> normalizing input we do it after the input is normalized … we only need to add the clear form
+> button, the auto-save indicator, and make sure the modals have a close button. then … implement a
+> global solution rather than updating each modal with the fix directly."*
+
+⚠️ **THE PREVIOUS ENTRY IS WRONG AND IS SUPERSEDED. There is NO Save button and close does NOT
+discard.** I recorded a Save/Close/discard model; the owner had said the opposite. **The dossier fix
+is the pattern to generalise, not an exception to it.**
+
+### THE ACTUAL DESIGN — auto-save, and the controls that remain
+
+| | |
+|---|---|
+| **Saving** | ⚠️ **AUTOMATIC, after input** — and **after normalisation runs**, so what is stored is what the person sees (CR-83) |
+| **Save button** | ⚠️ **NONE. Do not add one.** |
+| **Close button** | **Required on every modal** — closing is now the deliberate act |
+| **Clear form** | **Required on every input form and modal** |
+| **Auto-save indicator** | ⚠️ **REQUIRED — *"so the user knows the inputs are saved"***. Without it, auto-save is indistinguishable from data loss |
+| **Backdrop click, modal with inputs** | ⚠️ **BLOCKED.** *"the main issue is that closing the modal accidentally from clicking outside of it cleared the input"* |
+| **Backdrop click, information / empty modal** | ✅ closes |
+
+⚠️ **ORDER MATTERS AND IT IS EASY TO GET BACKWARDS: normalise on blur FIRST, then auto-save the
+normalised value.** Saving raw then normalising leaves the stored value and the displayed value
+disagreeing until the next read.
+
+⚠️ **THE PREVIOUS ENTRY'S "CR-75 EXCEPTION" DISSOLVES.** A card and a modal now behave the same way —
+**both save, neither discards.** There is no divergence to preserve and nothing to harmonise.
+
+### ⚠️ AND THE DOSSIER FIX IS ONLY HALF OF IT — MEASURED
+`ContactDossierModal` accumulates edits in `dirty` and **commits ONLY on close** (`commitRef` →
+`requestClose`, `ContactDossierModal.tsx:211-249`). ⚠️ **It does not auto-save after input.** So a
+browser crash, a closed tab or a reload still loses everything typed since the modal opened. **The
+authored fix solved accidental-close; it did not solve auto-save.** ⚠️ **Do not read "we use the fix
+as authored" as "the behaviour is complete" — the owner is adopting its CLOSE semantics, and
+auto-save-after-input is the part still to build.**
+
+### THE SCOPE, RESTATED
+1. **A global solution** — ⚠️ *"implement a global solution rather than updating each modal with the
+   fix directly."* **17 hand-rolled input modals converge on the shared `ops/kit/Modal`**, which
+   already has `disableBackdropClose` and no adopters.
+2. **Every form page AND modal gets:** clear-form · auto-save · the indicator · on-blur normalisation
+   · reload/browser-back persistence.
+3. ⚠️ **A back button on anything that is a FLOW** — *"onboarding, orders, etc"*. **Not every page: a
+   flow.** `Onboarding.tsx` has eight steps and two Back controls, neither reachable from `sign`.
