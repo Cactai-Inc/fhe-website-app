@@ -3188,3 +3188,59 @@ create the means of recording them.**
 ⚠️ **AND UNTIL THE INPUTS EXIST, THE KPI HAS NOTHING TO SHOW.** **Do not ship a P&L tile reading
 zero** — `04-OPEN-QUESTIONS.md` §3: *"a zero on an always-visible strip is indistinguishable from a
 real zero."* **Name it as not-yet-computable and leave it out until CR-86 lands.**
+
+### ⚠️ CR-86 — WHO INPUTS, AND THE HORSE-SPECIFIC / COMPANY-ATTRIBUTABLE SPLIT (owner, 2026-08-31)
+> *"she has to be the one to input the stuff to track and the money can be updated by her or me once
+> its in the system. particularly with respect to recurring monthly costs like feed, bedding,
+> boarding, and then things like farrier for our horses count against the same things, horse specific,
+> but company attributable."*
+
+**TWO ROLES ON ONE RECORD, AND THEY ARE SEPARATE:**
+| Act | Who | Why |
+|---|---|---|
+| **Logging that it happened** — the bag opened, the farrier came, the bedding used | ⚠️ **CLAIRE, and only she is positioned to** | she is the one present |
+| **Attaching or correcting the MONEY** | **either of them, afterwards** | the invoice may arrive later than the event |
+
+⚠️ **SO A COST RECORD MUST BE VALID BEFORE ITS PRICE IS KNOWN.** **Claire logs the event; the amount
+lands later.** ⚠️ **A model that demands a price at logging time forces her to guess or skip — and a
+skipped log is a permanently missing cost.** **Design for cost-arrives-later as the NORMAL case, not
+an edge case.**
+
+### ⚠️ HORSE-SPECIFIC BUT COMPANY-ATTRIBUTABLE — the distinction that decides the model
+**A farrier visit for one of OUR horses attaches to that HORSE and is paid by the COMPANY.** The
+identical event on a CLIENT's horse attaches to that horse and is paid by the CLIENT.
+⚠️ **Same event, same shape, opposite side of the P&L — and the ONLY thing that differs is who owns
+the horse.**
+
+### ✅ MEASURED — THE EXISTING SPINE ALREADY EXPRESSES THIS. DO NOT DESIGN A NEW ONE.
+| | |
+|---|---|
+| `consumption_events` | ⚠️ **already has `horse_id`, `administered_by`, `qty`, `occurred_at`, `notes`** — the event Claire logs, attributed to a horse and a person |
+| `resource_lots` | **`unit_cost`, `vendor_contact_id`, `qty_purchased`, `on_hand`** — where the money lives, **separate from the event**, which is exactly the cost-arrives-later shape |
+| `cost_allocation_rules` | ⚠️ **`scope` CHECK allows `horse` · `lease` · `board` · `default`, plus `payer_contact_id` and `share_pct`** — **this IS the company-vs-client split, and it even supports a SHARED cost** |
+
+⚠️ **THE MODEL THE OWNER IS DESCRIBING WAS ALREADY BUILT AND HAS NEVER BEEN DRIVEN — 0 rows in all
+five tables.** **The work is wiring and surfaces, not schema.** ⚠️ **Establish WHY it was never driven
+before driving it; if it was abandoned for a reason, that reason still applies** (D18).
+
+### ⚠️ THE ONE REAL GAP — RECURRING MONTHLY COSTS
+**He names feed, bedding and boarding as *recurring monthly*.** ⚠️ **`resources` has
+`resource_key · name · category · unit_of_measure · is_consumable` and NO recurrence, NO schedule and
+NO standing amount.** **`resource_lots` models a PURCHASE — a lot bought on a date — which is the
+right shape for a delivery of shavings and the WRONG shape for a monthly boarding charge that arrives
+whether or not anything was delivered.**
+
+⚠️ **So there are TWO cost shapes and only one is built:**
+1. **CONSUMED** — bought as a lot, drawn down by events. ✅ **built** *(feed, bedding, medication)*
+2. ⚠️ **STANDING** — a recurring monthly charge, not a lot and not consumed *(boarding, and arguably
+   the farrier on a cycle)*. ❌ **no model**
+
+**Do NOT force a standing charge into `resource_lots`** — a fake lot with a fake quantity corrupts
+`on_hand` and every consumption figure drawn from it. ⚠️ **And do not build a second cost table
+either: establish whether a standing charge is a `resources` row with a recurrence, or belongs beside
+the existing spine.** **Recommend, with the trade-off stated.**
+
+**ASK-OWNER:** ⚠️ **is boarding a cost we PAY (our horses stabled elsewhere), revenue we CHARGE, or
+both?** *(`cost_allocation_rules.scope` already contains `board`, and `A12 Barn operations` owns
+boarding agreements and charges.)* **The answer decides which side of the P&L it lands on, and the
+word alone does not.**
