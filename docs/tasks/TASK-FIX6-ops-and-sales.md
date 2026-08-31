@@ -166,6 +166,58 @@ failure this codebase repeats. **Ops renders the zones the other views define, f
 something to show** *(D13's recorded exception: a self-arranging surface needs no arrangement
 editor — "surfaces should be fluid and dynamic and only shown when there is something to show")*.
 
+### ⚠️ OPS IS CLAIRE'S BOARD. THE OWNER HOLDS IT ONLY TO SEE WHAT SHE SEES.
+> *"if I give claire the ops view. she sees everything on the trainer/instructor/care-taker side,
+> right now that is all one role and shes it, and she sees a snippet of the sales and marketing
+> information. i can list all of the things to include in the ops view but that would be specifically
+> for her, and my having access to it is just so i know what she sees. admin is just for me, sales and
+> marketing are just for me. she isnt going to toggle between trainer, instructor, care-taker, but she
+> can hire someone or someone can volunteer to help out and if we give them an app account and a role
+> they get the focused view of whats assigned to them in that role, claire sees all of it in her ops
+> dashboard."*
+
+⚠️ **SUPERSEDES "the shared working surface for the owner AND Claire".** **Ops is designed FOR CLAIRE.**
+The owner holds it **only to see what she sees** — ⚠️ **so when a design choice would suit him and not
+her, IT IS HERS. He is an observer on this board, not a second user to compromise for.**
+
+| View | Who | Why |
+|---|---|---|
+| **Ops** | **Claire** — owner holds it read-alike, to see what she sees | her whole working surface |
+| **Admin · Sales · Marketing** | ⚠️ **the owner ONLY** | not Claire's; she never sees them as boards |
+| **Trainer · Instructor · Care-taker** | **whoever holds that role** | a focused view of **what is assigned to them** |
+
+### ⚠️ WHAT OPS CONTAINS — and the two halves are NOT the same depth
+1. **EVERYTHING on the trainer / instructor / care-taker side.** ⚠️ **Not a snippet — all of it.**
+   **Today those three are one role and Claire is it**, so Ops is currently the whole of that side.
+2. **A SNIPPET of sales and marketing.** ⚠️ **Shallow, per the depth rule above.**
+
+⚠️ **SO OPS IS DEEP ON THE JOB-ROLE SIDE AND SHALLOW ON THE BUSINESS SIDE.** **It is not uniformly
+shallow, and §"Ops is the shallow layer" applies ONLY to sales and marketing.** **Do not flatten the
+job-role half.**
+
+### ⚠️ THE PART THAT DECIDES THE ARCHITECTURE — Ops AGGREGATES OTHER PEOPLE
+> *"she can hire someone or someone can volunteer … if we give them an app account and a role they get
+> the focused view of whats assigned to them in that role, claire sees all of it in her ops dashboard."*
+
+⚠️ **A ROLE VIEW IS SCOPED TO WHAT IS ASSIGNED TO THAT PERSON. OPS IS SCOPED TO EVERYONE.** So the same
+zone must answer two questions — *"what is assigned to me"* and *"what is assigned to anyone in this
+role"*. ⚠️ **That is a PARAMETER on one zone, not two zones.** **A zone that hardcodes
+`assignee = auth.uid()` cannot serve Ops, and a second copy that omits it is the drift this whole
+model exists to prevent.**
+
+⚠️ **AND IT MUST HOLD WITH ZERO OTHER STAFF.** Today Claire is the only person on that side, **so Ops
+and Trainer show identical content and the aggregation looks like decoration.** **It is not — it is
+what makes the first hire work without a rebuild. Build the scope parameter now; it costs almost
+nothing today and everything later.**
+
+⚠️ **CLAIRE HOLDS OPS ONLY — NOT Ops + Trainer as §"Ops is the overlap" stated.** *"she isnt going to
+toggle between trainer, instructor, care-taker."* **She has no cycler. The owner has one, across Ops ·
+Admin · Sales · Marketing.**
+
+⚠️ **THE OWNER WILL SUPPLY THE OPS CONTENTS.** *"i can list all of the things to include in the ops
+view."* **ASK HIM FOR THAT LIST BEFORE BUILDING THE BOARD.** Build the framework, the scope parameter
+and the cycler; **do not invent Claire's zone list.**
+
 ### ⚠️ AND OPS IS THE SHALLOW LAYER — depth is what separates it from the focused views
 > *"the sales and marketing view is deeper than the ops view of those categories."*
 
