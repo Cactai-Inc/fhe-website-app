@@ -2959,3 +2959,55 @@ auto-save-after-input is the part still to build.**
    · reload/browser-back persistence.
 3. ⚠️ **A back button on anything that is a FLOW** — *"onboarding, orders, etc"*. **Not every page: a
    flow.** `Onboarding.tsx` has eight steps and two Back controls, neither reachable from `sign`.
+
+### ⚠️ CR-84 — CORRECTED A THIRD TIME, 2026-08-31. THE COMMIT TRIGGER IS THE ACTION, NEVER THE CLOSE.
+
+**SAID:**
+> *"commits on continue/send/commit/done...etc... not a close button click, no user would input data
+> and click close and expect the form submitted."*
+
+⚠️ **HE IS RIGHT, AND THE SHIPPED FIX HAS EXACTLY THE BEHAVIOUR HE IS CALLING WRONG.** Verified in
+`ContactDossierModal.tsx:248`:
+```
+commitRef.current = async () => { if (await commit()) onClose(); };
+const requestClose  = () => { void commitRef.current(); };
+```
+**Every exit — the X, Escape, the backdrop — runs `commit()` and then closes.** ⚠️ **So today, clicking
+the close control on that record SUBMITS the form.** That is the *"no user would … click close and
+expect the form submitted"* case, live in production.
+
+### THE RULE, FINALLY STATED CORRECTLY
+| Trigger | Commits? |
+|---|---|
+| **The affirmative action** — Continue · Send · Save · Done · Commit · Next | ✅ **YES. This is the ONLY commit trigger.** |
+| **Auto-save after input** *(and after normalisation)* | ✅ yes — the draft persists so nothing is lost |
+| ⚠️ **Close · X · Escape · backdrop** | ⚠️ **NO. NEVER. Closing is not consent.** |
+| **Clear form** | discards the draft deliberately |
+
+⚠️ **THE DISTINCTION THAT MAKES ALL THREE OF HIS RULINGS COHERENT — and it is the thing I kept
+missing:**
+**PERSISTING a draft and COMMITTING a record are different acts.**
+- **Auto-save persists** what was typed, so an accidental close, a crash or a reload loses nothing.
+  **It is not a submission.**
+- **The affirmative action commits** — that is the moment the person says "this is my answer."
+- **Closing does neither.** The draft survives *(auto-save already put it somewhere)*; the record is
+  untouched.
+
+**So the earlier entries were wrong in BOTH directions.** The Save/Close/discard model was wrong
+because closing must not discard. *"Commits on close"* was wrong because closing must not submit.
+⚠️ **The answer is neither: closing does nothing at all, which is exactly why it is safe.**
+
+### ⚠️ CONSEQUENCE — THE DOSSIER FIX IS NOT THE PATTERN TO GENERALISE
+The previous entry recorded it as the pattern. **It is not.** It solved accidental-close by making
+close SUBMIT, which trades a data-loss bug for an unintended-write bug. ⚠️ **Do not roll
+`requestClose` out to the other 17 modals.**
+
+**What to keep from it:** the failure handling — *"IF THE SAVE FAILS THE RECORD STAYS OPEN with the
+edits still in the boxes and the reason on screen."* **That instinct is right and belongs in the
+shared component.**
+**What to replace:** the commit-on-exit trigger, with auto-save-on-input plus an affirmative action.
+
+⚠️ **AND IT NEEDS A DELIBERATE DECISION, NOT A SILENT REWRITE:** `ContactDossierModal` is a live
+surface `TASK-FIX2` just rewrote and the orchestrator merged. **Changing its commit trigger is a
+behaviour change on a shipped fix — flag it as such in whatever task implements this**, and state
+what happens to a record edited between now and then.
