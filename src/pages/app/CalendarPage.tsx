@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CalendarDays, CalendarClock, ChevronLeft, ChevronRight, X, Wallet, Settings } from 'lucide-react';
+import { CalendarDays, CalendarClock, ChevronLeft, ChevronRight, Wallet, Settings } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { weekWindow, monthWindow } from '../../lib/dashboard/windows';
 /* §7.4 — the same formatter the dashboard tile uses. The probe caught these
@@ -39,6 +39,8 @@ import { serviceLabel, standingSlotSummary } from '../../lib/standingSlots';
 import { fetchOfferings, createDraftOrder } from '../../lib/api';
 import type { Offering } from '../../lib/types';
 import { myBookableItems, type MemberBookableItem } from '../../lib/ops/api-member';
+import { Modal } from '../../components/ops/kit/Modal';
+import { useFormDraft } from '../../lib/formState';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useNavigate, Link } from 'react-router-dom';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
@@ -846,12 +848,10 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
-      <div className="bg-cream w-full max-w-sm h-full overflow-y-auto overscroll-contain shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-serif text-lg text-green-900">{itemLabel(item)}</h2>
-          <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
-        </div>
+    /* ⚠️ TASK-FIX4 §3 — converged on the shared dialog's `drawer` variant. The
+       backdrop no longer closes over a half-filled reschedule or request. */
+    <Modal open onClose={onClose} variant="drawer" size="sm" panelClassName="bg-cream"
+      title={itemLabel(item)} error={error}>
         <dl className="space-y-3 text-sm mb-4">
           <div>
             <dt className="text-xs uppercase tracking-wide text-muted">When</dt>
@@ -1087,9 +1087,7 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
           </div>
         )}
 
-        {error && <p role="alert" className="form-error mt-3">{error}</p>}
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -1113,6 +1111,23 @@ function RequestTimePanel({ start, onClose, onDone }: { start: Date; onClose: ()
     myBookableItems().then(setItems).catch(() => setItems([]));
   }, []);
 
+  /* TASK-FIX4 §6 — keyed on the slot, so a request typed for Tuesday 4pm comes
+     back to Tuesday 4pm and never to a different time. */
+  const draft = useFormDraft(
+    `calendar.request-time.${start.toISOString()}`,
+    { duration, note, recurring, itemCreditId },
+    (d) => {
+      if (typeof d.duration === 'string') setDuration(d.duration);
+      if (typeof d.note === 'string') setNote(d.note);
+      if (typeof d.recurring === 'boolean') setRecurring(d.recurring);
+      if (typeof d.itemCreditId === 'string') setItemCreditId(d.itemCreditId);
+    },
+  );
+  function clearForm() {
+    setDuration('60'); setNote(''); setRecurring(false); setItemCreditId('');
+    setError(null); draft.clear();
+  }
+
   const weekday = start.toLocaleDateString(undefined, { weekday: 'long' });
   const clock = start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 
@@ -1135,12 +1150,10 @@ function RequestTimePanel({ start, onClose, onDone }: { start: Date; onClose: ()
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
-      <div className="bg-cream w-full max-w-sm h-full overflow-y-auto overscroll-contain shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-serif text-lg text-green-900">Request this time</h2>
-          <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
-        </div>
+    /* ⚠️ TASK-FIX4 §3 — converged on the shared dialog's `drawer` variant. The
+       backdrop no longer closes over a half-filled reschedule or request. */
+    <Modal open onClose={onClose} variant="drawer" size="sm" panelClassName="bg-cream"
+      title="Request this time" onClear={clearForm} saveStatus={draft.status}>
         {done ? (
           <p className="bg-green-50 border border-green-200 text-green-800 text-sm p-3 rounded">
             Requested — we’ll confirm your time shortly.
@@ -1186,8 +1199,7 @@ function RequestTimePanel({ start, onClose, onDone }: { start: Date; onClose: ()
             {error && <p role="alert" className="form-error">{error}</p>}
           </div>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -1219,13 +1231,9 @@ function PurchaseLessonsPanel({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
-      <div className="bg-cream w-full max-w-sm h-full overflow-y-auto overscroll-contain shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-serif text-lg text-green-900">Buy lessons</h2>
-          <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
-        </div>
-        {error && <p role="alert" className="form-error mb-3">{error}</p>}
+    /* ⚠️ TASK-FIX4 §3 — converged. A list of things to buy, nothing typed. */
+    <Modal open onClose={onClose} variant="drawer" size="sm" panelClassName="bg-cream"
+      title="Buy lessons" error={error}>
         {offerings === null ? (
           <p className="text-sm text-muted">Loading…</p>
         ) : offerings.length === 0 ? (
@@ -1253,8 +1261,7 @@ function PurchaseLessonsPanel({ onClose }: { onClose: () => void }) {
         <p className="form-hint mt-4">
           You’ll get Zelle payment instructions on the next screen. Each session is still confirmed by our staff — paying holds your purchase, not a specific time.
         </p>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
+import { Modal } from '../../components/ops/kit/Modal';
 import { toErrorMessage } from '../../lib/ops/errors';
 import {
   fetchBusinessHours,
@@ -107,13 +108,10 @@ export function CalendarSettingsPanel({ onClose, onSaved }: { onClose: () => voi
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/30 flex justify-end" onClick={onClose}>
-      <div className="bg-cream w-full sm:max-w-md h-full overflow-y-auto overscroll-contain shadow-xl p-5" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-serif text-lg text-green-900">Calendar settings</h2>
-          <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
-        </div>
-
+    /* ⚠️ TASK-FIX4 §3 — converged. Settings that were half-changed no longer
+       vanish on a backdrop click; each `Save …` remains the affirmative act. */
+    <Modal open onClose={onClose} variant="drawer" size="sm" panelClassName="bg-cream"
+      title="Calendar settings" error={error}>
         <p className="form-label mb-2">Business hours</p>
         <div className="flex flex-col gap-1.5 mb-5">
           {hours.map((h) => (
@@ -188,9 +186,7 @@ export function CalendarSettingsPanel({ onClose, onSaved }: { onClose: () => voi
         </div>
 
         {msg && <p className="text-green-800 text-sm">{msg}</p>}
-        {error && <p role="alert" className="form-error">{error}</p>}
-      </div>
-    </div>
+    </Modal>
   );
 }
 
