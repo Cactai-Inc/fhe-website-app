@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, X, Check, Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
+import { Modal } from '../ops/kit/Modal';
+import { BackControl } from './BackControl';
 import { toErrorMessage } from '../../lib/ops/errors';
 import {
   changesSinceSignature, postContractComment, type ChangeSinceSignature,
@@ -88,29 +90,17 @@ export function ReviewChangesModal({
   const accepted = Object.values(outcomes).filter((o) => o === 'accepted').length;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto overscroll-contain p-4"
-      role="dialog" aria-modal="true" aria-label="Review the changes"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white rounded-xl shadow-xl max-w-xl w-full my-8">
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-green-800/10">
-          {rejecting ? (
-            <button type="button" aria-label="Back to the change"
-              className="text-muted hover:text-green-800 focus-ring"
-              onClick={() => { setRejecting(false); setNote(''); }}>
-              <ArrowLeft size={16} />
-            </button>
-          ) : <span className="w-4" />}
-          <h3 className="font-serif text-green-900 text-base flex-1 text-center">
-            {done ? 'Review complete' : 'Review the changes'}
-          </h3>
-          <button type="button" aria-label="Close" className="text-muted hover:text-green-800 focus-ring"
-            onClick={onClose}>
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="p-5">
-          {err && <p role="alert" className="form-error mb-3">{err}</p>}
+    /* ⚠️ TASK-FIX4 §3/§7 — converged, and the step back is `BackControl`. The
+       rejection note is a textarea, so the backdrop no longer discards it. */
+    <Modal open onClose={onClose} size="md" title={done ? 'Review complete' : 'Review the changes'}
+      error={err}>
+        <div>
+          {rejecting && (
+            <div className="mb-3">
+              <BackControl label="Back to the change"
+                onClick={() => { setRejecting(false); setNote(''); }} />
+            </div>
+          )}
 
           {changes === null && <p className="text-sm text-muted">Loading the changes…</p>}
 
@@ -193,7 +183,6 @@ export function ReviewChangesModal({
             </>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

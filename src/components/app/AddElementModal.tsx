@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Modal } from '../ops/kit/Modal';
 import { createPortal } from 'react-dom';
-import { X, Plus, ChevronUp, ChevronDown, Trash2, ListFilter, ToggleLeft, Type as TypeIcon } from 'lucide-react';
+import {
+  Plus, ChevronUp, ChevronDown, Trash2, ListFilter, ToggleLeft, Type as TypeIcon,
+} from 'lucide-react';
 import {
   addContractComposition, proposeClause, proposeContractComposition, removeContractComposition,
   type CompositionElement, type CompositionLine, type CompositionSpec,
@@ -923,13 +926,13 @@ function AddElementModal({
   /* It used to render at the TOP of a modal that scrolls, while the button that
      produces it is at the BOTTOM — so a failed save looked exactly like a
      silent no-op. It now sits above the footer and scrolls itself into view. */
-  const errBox = useRef<HTMLParagraphElement>(null);
+  const errBox = useRef<HTMLSpanElement>(null);
   useEffect(() => { if (err) errBox.current?.scrollIntoView({ block: 'nearest' }); }, [err]);
 
-  /* S6 — CLOSING ON THE BACKDROP. `onClick` alone fires on mouse-UP, so
-     selecting text inside the modal and releasing outside it closed the modal.
-     A close now requires the gesture to have STARTED on the backdrop. */
-  const downOnBackdrop = useRef(false);
+  /* S6's "the gesture must have STARTED on the backdrop" guard moved into
+     `ops/kit/Modal` with TASK-FIX4, alongside the stronger rule that a dialog
+     holding a field does not close on a backdrop click at all. Nothing local
+     is left to track. */
 
   // Escape: dismiss the open chip popover first, then the modal.
   useEffect(() => {
@@ -947,19 +950,23 @@ function AddElementModal({
   // of the viewport: the modal rendered clipped, its header and Name field cut
   // off above the fold with no way to scroll to them. Rendering through a
   // portal puts it back on the viewport where `fixed` means what it says.
+  /* ⚠️ TASK-FIX4 §3 — converged on the shared dialog, which now owns the
+     "started on the backdrop" guard AND the stronger rule: this dialog holds a
+     textarea, so a backdrop click does not close it at all. `Discard draft`
+     below is this file's `Clear form`, kept where it already was because it
+     carries its own explanation. */
   return createPortal((
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-green-950/40 p-4 overflow-y-auto overscroll-contain"
-      onMouseDown={(e) => { downOnBackdrop.current = e.target === e.currentTarget && !openChip; }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget && downOnBackdrop.current) onClose();
-        downOnBackdrop.current = false;
-      }}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[88vh] overflow-y-auto overscroll-contain p-6 my-auto">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-serif text-lg text-green-900">Add to this contract</h3>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-muted hover:text-green-800 focus-ring rounded"><X size={18} /></button>
-        </div>
-
+    <Modal open onClose={onClose} size="xl" title="Add to this contract" error={err}
+      footer={
+        <>
+          <button type="button" className="btn-secondary text-sm" onClick={onClose}>
+            {added.length > 0 ? 'Done' : 'Close'}
+          </button>
+          <button type="button" className="btn-primary text-sm" disabled={busy} onClick={() => void submit()}>
+            <Plus size={14} /> {mode === 'clause' ? 'Propose' : 'Add to the contract'}
+          </button>
+        </>
+      }>
         {modes.length > 1 && (
           <div className="flex gap-1.5 mb-4">
             {modes.map((m) => (
@@ -1287,18 +1294,8 @@ function AddElementModal({
           </div>
         )}
 
-        {err && <p role="alert" ref={errBox} className="form-error mt-4">{err}</p>}
-
-        <div className="flex justify-end gap-2 mt-5">
-          <button type="button" className="btn-secondary text-sm" onClick={onClose}>
-            {added.length > 0 ? 'Done' : 'Close'}
-          </button>
-          <button type="button" className="btn-primary text-sm" disabled={busy} onClick={() => void submit()}>
-            <Plus size={14} /> {mode === 'clause' ? 'Propose' : 'Add to the contract'}
-          </button>
-        </div>
-        <p className="form-hint text-right mt-1">Closing keeps your draft — it reopens where you left off.</p>
-      </div>
-    </div>
+        <span ref={errBox} />
+        <p className="form-hint text-right mt-4">Closing keeps your draft — it reopens where you left off.</p>
+    </Modal>
   ), document.body);
 }
