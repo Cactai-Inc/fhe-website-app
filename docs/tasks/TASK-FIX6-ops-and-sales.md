@@ -166,6 +166,33 @@ failure this codebase repeats. **Ops renders the zones the other views define, f
 something to show** *(D13's recorded exception: a self-arranging surface needs no arrangement
 editor — "surfaces should be fluid and dynamic and only shown when there is something to show")*.
 
+### 🔒 SETTLED — CLAIRE IS OPS, THE OWNER IS ADMIN. This is the final shape.
+> *"yea shes ops im admin, in the strictest sense of it."*
+
+⚠️ **THIS SECTION SUPERSEDES EVERY EARLIER FRAMING IN THIS FILE.** The model was refined across six
+messages; **read this table and treat conflicting detail above as working notes.**
+
+| Board | Whose | Kind |
+|---|---|---|
+| **Ops** | ⚠️ **CLAIRE'S HOME BOARD** | where she lives. Deep on the job-role side, a snippet of sales/marketing |
+| **Admin** | ⚠️ **THE OWNER'S HOME BOARD** | its counterpart. App issues, company-level work, his projects and tasks |
+| **Sales · Marketing** | the owner, **focused** | he cycles INTO them for one subject at a time |
+| **Trainer · Instructor · Care-taker** | whoever holds the role | scoped to **what is assigned to them** |
+
+⚠️ **ADMIN IS NOT ONE OF FOUR EQUAL LENSES — IT IS HIS HOME**, the way Ops is hers. **He cycles into
+Sales and Marketing; he does not cycle into Admin, he lands there.**
+
+⚠️ **THE NAMING COLLISION IS RESOLVED AND NEEDS NO RENAME.** *"Admin"* is also a **nav section**
+(`TASK-FIX3` renamed Community→Admin: Moderation · Field options · Content store · Settings' five).
+**These are different kinds of thing — a nav section holds configuration pages; a board is a person's
+home surface — and "the Admin board" vs "the Admin section" disambiguate the way "my dashboard" does.**
+⚠️ **Do NOT rename either. This was raised and settled deliberately; do not re-open it.**
+
+**Landing:** **Claire lands on Ops. The owner lands on Admin.** ⚠️ **`profiles.dashboard_focus`
+already stores exactly this** — the landing preference — **which is why §2b keeps it as a separate
+fact from the SET of views an account holds.** **Live values: `business` → `admin@`, `trainer` →
+`hello@`; both must migrate to the new names without either owner losing their board.**
+
 ### ⚠️ OPS IS CLAIRE'S BOARD. THE OWNER HOLDS IT ONLY TO SEE WHAT SHE SEES.
 > *"if I give claire the ops view. she sees everything on the trainer/instructor/care-taker side,
 > right now that is all one role and shes it, and she sees a snippet of the sales and marketing
