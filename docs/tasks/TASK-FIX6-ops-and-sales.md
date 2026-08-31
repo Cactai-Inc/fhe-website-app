@@ -166,6 +166,55 @@ failure this codebase repeats. **Ops renders the zones the other views define, f
 something to show** *(D13's recorded exception: a self-arranging surface needs no arrangement
 editor — "surfaces should be fluid and dynamic and only shown when there is something to show")*.
 
+### ⚠️ THE ASSIGNED-HELPER BADGE — and the assignment it needs DOES NOT EXIST YET
+> *"she will need to see everything, and see the things that are assigned to people is very important
+> for tracking what they are doing and so those items will have badges showing the person assigned to
+> do the thing, so when a helper is handling a horse for a horse care service like putting it in the
+> turnout or getting them ready for a clipping appointment, claire can see that on the scheduled item;
+> [horse name] [scheduled service] [scheduled date] [assigned helper]."*
+
+**The required row shape, verbatim:** `[horse name] · [scheduled service] · [scheduled date] ·
+[assigned helper]`.
+
+⚠️ **THIS IS NOT A DISPLAY CHANGE. THE ASSIGNMENT DOES NOT EXIST — measured 2026-08-31:**
+
+| | |
+|---|---|
+| assignment columns on `bookings` | ⚠️ **exactly ONE: `instructor_user_id`** *(plus `account_user_id`, the client)* |
+| ⚠️ **CARE bookings in production** | ⚠️ **ZERO.** `bookings.kind` holds only **`lesson` (676)** and **`block` (3)** |
+| `instructor_user_id` populated | **46 of 676 lessons** |
+| a `shifts` table | exists — `staff_user_id · role · starts_at · ends_at` — ⚠️ **0 rows, and it is a ROTA, not a per-item assignment** |
+| any assignment table | ⚠️ **none** |
+
+⚠️ **SO TWO THINGS ARE MISSING, AND THE BADGE IS THE SMALLER ONE.**
+1. **A horse-care service has no scheduled item to badge.** The offerings exist
+   *(`config_kind = scheduled` 13, `recurring` 12)*, **but no `kind = 'care'` booking has ever been
+   written.** ⚠️ **`TASK-FIX2` proved the care path is refused without a horse AND that person's care
+   paperwork — so this may be unreachable rather than unused. ESTABLISH WHICH.**
+2. **Nothing records WHO is doing it.** `instructor_user_id` is the *lesson teacher*. ⚠️ **A helper
+   who preps, washes and stalls a horse for someone else's appointment is a THIRD party on that item
+   — not the instructor, not the client.**
+
+⚠️ **DO NOT OVERLOAD `instructor_user_id`.** Two meanings in one column is this codebase's most
+repeated defect, and `TASK-FIX2` has just finished repairing an instructor-stamp bug in that exact
+column. **A helper assignment is its own fact.**
+
+⚠️ **AND CHECK `shifts` BEFORE ADDING A COLUMN.** It is empty and unwired, but it is the existing
+staff-time concept. **Say whether the assignment belongs ON the booking (this horse, this service,
+this person) or in `shifts` (this person, this window).** ⚠️ **The owner's row shape is per-ITEM, so
+the booking is the likely home — but a table that already exists and does nothing deserves an explicit
+verdict rather than silence** (D18: never leave a second implementation beside a correct one).
+
+⚠️ **THE BADGE IS WHERE THE TWO SCOPES MEET, AND IT IS THE PROOF OF THE SCOPE PARAMETER:**
+**On a helper's own role board the item appears because it is theirs. On Claire's Ops board it appears
+with a badge naming who it belongs to.** **Same zone, same read, one scope parameter** — exactly the
+mechanism above. ⚠️ **If the badge is built as a second query it will disagree with the role board
+eventually.**
+
+⚠️ **AND IT MUST DEGRADE HONESTLY WITH NOBODY TO ASSIGN.** **Claire is the only staff on that side
+today.** **An unassigned item shows no badge — it does not show "Claire" by default**, or the badge
+means nothing the moment a real helper exists.
+
 ### 🔒 SETTLED — CLAIRE IS OPS, THE OWNER IS ADMIN. This is the final shape.
 > *"yea shes ops im admin, in the strictest sense of it."*
 
