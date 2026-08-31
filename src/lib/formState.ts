@@ -142,9 +142,9 @@ export function useFormDraft<T extends Record<string, unknown>>(
   }, [encoded, write, delay, formKey, ns]);
 
   /* ⚠️ A RELOAD RIGHT AFTER A KEYSTROKE MUST NOT FALL INSIDE THE DEBOUNCE.
-     `pagehide` fires on reload, on navigation and on browser-back; `hidden` covers
-     the mobile case where a tab is backgrounded and later discarded. Both write
-     synchronously, so the last 400ms of typing survives. */
+     `pagehide` fires on a reload, a real navigation and a browser-back; `hidden`
+     covers the mobile case where a tab is backgrounded and later discarded. Both
+     write synchronously, so the last 400ms of typing survives. */
   useEffect(() => {
     const flushNow = () => write();
     const onVisibility = () => { if (document.visibilityState === 'hidden') write(); };
@@ -155,6 +155,21 @@ export function useFormDraft<T extends Record<string, unknown>>(
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [write]);
+
+  /* ⚠️ AND THE CASE `pagehide` DOES NOT COVER — CAUGHT BY THE CHROMIUM PROBE,
+     WHICH IS WHY TASK-FIX4 §10 INSISTED ON ONE. A client-side route change (a
+     react-router navigation, closing a modal) unmounts this hook WITHOUT any page
+     lifecycle event: the document never goes away, so `pagehide` never fires and
+     the pending debounce timer is simply cleared. Everything typed since the last
+     tick was lost — on the exact gesture people use most.
+
+     `probe-lossless.mjs` failed on it (`last came back as "La buzetta"` instead of
+     "Olenik") and a jsdom test could not have: jsdom has no page lifecycle to
+     miss. Flushing on unmount closes it. Held in a ref so this runs once, at the
+     end, with the current writer. */
+  const writeRef = useRef(write);
+  writeRef.current = write;
+  useEffect(() => () => { writeRef.current(); }, []);
 
   const clear = useCallback(() => {
     if (formKey) clearDraft(ns, formKey);
