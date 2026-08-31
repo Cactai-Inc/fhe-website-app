@@ -3011,3 +3011,60 @@ shared component.**
 surface `TASK-FIX2` just rewrote and the orchestrator merged. **Changing its commit trigger is a
 behaviour change on a shipped fix — flag it as such in whatever task implements this**, and state
 what happens to a record edited between now and then.
+
+---
+
+## CR-85 · G9 · 🔒 RULED — the nav is three sections, and Community is member-facing by design
+
+**SAID (owner, 2026-08-31):**
+> *"Community has been the top section. but you are correct to think we should move it down since i
+> live in the other layers more. But Community, People, Managment, Admin, is the correct order. The
+> calendar needs its own direct link and it is in community, we could move people into community and
+> then remove that as a standalone section, now we have community, management, admin."*
+
+> *"catalog and messages belong in community. the only reason i have catalog view and why its in the
+> community section is because that is what the community sees. conversely i have a separate surface
+> for editing the catalog contents in the admin section."*
+
+### ⚠️ THE ORCHESTRATOR ARGUED AGAINST THIS AND WAS WRONG
+
+**I proposed retiring the hand-written Community block, on the reading that Catalog and Messages were
+stray member-facing links with no lens in common.** ⚠️ **They are not stray — they ARE the lens.**
+**Community means "what the community sees", and the block is exactly that.** The owner's own words
+settle it: the **view** lives in Community, the **editor** lives in Admin.
+
+**Verified 2026-08-31, and the split he describes is already built:**
+| Surface | Where | What |
+|---|---|---|
+| **Catalog** *(view)* | the Community block | what a member sees |
+| **Products** *(editor)* | `pageRegistry.ts:267`, Admin | ⚠️ **already a registry row — the editing half exists and is correctly placed** |
+
+⚠️ **AND MY OTHER PREMISE WAS ALSO WRONG: Calendar already has its own direct link and is already in
+Management** (`pageRegistry.ts:175`, moved by `TASK-FIX3`). **So "the calendar needs its own direct
+link" is satisfied, and it is not a reason to restructure anything.**
+
+### 🔒 THE RULING — THREE SECTIONS, IN THIS ORDER
+```
+1. Community    what the community sees — Catalog · Messages · (Calendar has its own link in Management)
+2. Management   the daily working lens — Dashboard · Calendar · Support · Payments · Lessons · Evaluations
+3. Admin        configuration and oversight — Moderation · Field options · Content store · Settings' five
+```
+**People dissolves into Community**, per his *"move people into community and then remove that as a
+standalone section."* ⚠️ **People is only two rows — Contacts and Stable** — which is why it does not
+earn a section of its own.
+
+⚠️ **THE ORDER IS A REVERSAL OF TODAY'S AND IS DELIBERATE.** Community currently renders **first**
+because the hand-written block sits above `navGroups` at both render sites. **He wants it first→…no:
+he wants the order Community · Management · Admin, which happens to keep Community where it already
+is.** ⚠️ **Confirm this against the live rail before building — the FIX3 report flagged the order as
+`Community · Management · People · Admin`, so the only change is People dissolving.**
+
+### ⚠️ THE OPEN QUESTION THIS DEPENDS ON, AND IT IS STILL HIS
+**Messages is in the Community block, and the messaging A/B is UNANSWERED** —
+`docs/handoff/04-OPEN-QUESTIONS.md` §1: do the notes panels become the inbox (A), or is the collective
+messages page retired (B)? ⚠️ **If B, Community loses a row and the section is Catalog alone.**
+**Settle the A/B before or with this build; do not let a nav change quietly decide a product question.**
+
+**Where this is built:** ⚠️ **NOT in `TASK-FIX6`** — that owns the dashboard. **This is a nav change,
+so it belongs with whatever next touches `AppLayout.tsx` and `pageRegistry.ts`.** ⚠️ **`TASK-FIX3`
+has merged, so nothing owns those two files right now.**
