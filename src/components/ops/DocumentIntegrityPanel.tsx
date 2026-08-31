@@ -12,8 +12,17 @@ import {
 
 /**
  * DOCUMENT INTEGRITY (CONTRACTORPHAN Parts 2 + 3) — the panel that makes broken
- * documents visible on the Oversight page, and lets the owner clear them himself
- * instead of being told about the next one by a thread.
+ * documents visible, and lets the owner clear them himself instead of being told
+ * about the next one by a thread.
+ *
+ * ⚠️ NOT MOUNTED ANYWHERE TODAY. It lived on /app/ops/oversight until the owner
+ * removed that page on 2026-08-31 (TASK-FIX3). The ruling that removed the page
+ * was about ACTIVITY LOGGING, and this is not that, so the panel was retired
+ * rather than destroyed: it is mounted on the documents ledger
+ * (DocumentsQueuePage.tsx) behind `DOCUMENT_INTEGRITY_PANEL_RETIRED`, which is
+ * `true`. Flip that one boolean and this renders again, on the surface that owns
+ * documents. `document_integrity()` and `cleanup_document()` are untouched in
+ * the database (D32) and still work.
  *
  * Owner ruling 2026-08-10: "delete entirely and provide ui elements for me to be
  * able to see this and the functionality to be able to cleanup the mess next time".

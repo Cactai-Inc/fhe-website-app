@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type {
-  MoneyHealthRow, MirrorRow, DealRow, ActivityRow, HygieneRow, PipelineRow,
+  MoneyHealthRow, MirrorRow, DealRow, HygieneRow, PipelineRow,
 } from '../../../lib/ops/api-dashboard';
 import { contactHref, documentHref, dealHref } from '../../../lib/dashboard/registry';
 import type { DashboardView } from '../../../lib/dashboard/registry';
@@ -204,67 +203,19 @@ export function HygieneZone({ items }: { items: HygieneRow[] }) {
   );
 }
 
-/* ── B6 · WHAT THE APP HAS BEEN DOING ───────────────────────────────────── */
-const LEDGER_LABEL: Record<ActivityRow['ledger'], string> = {
-  status: 'Status',
-  notification: 'Notified',
-  delivery: 'Delivered',
-  receipt: 'Receipt',
-  audit: 'Changed',
-};
+/* ── B6 · WHAT THE APP HAS BEEN DOING — REMOVED 2026-08-31 (owner, TASK-FIX3)
+ *
+ * `ActivityZone` and its `LEDGER_LABEL` map rendered `dash_activity_readback()`
+ * as a collapsed 12-row summary, with a footer link reading "Open the full
+ * activity log →" that pointed at /app/ops/activity — a page showing ONE of the
+ * five ledgers this zone showed, i.e. strictly less than the summary that linked
+ * to it. The owner removed the activity surfaces entirely: *"they show massive
+ * repeating entries with the same thing all of which doesnt actually tell me
+ * anything… remove this from all surfaces… less clutter in the menus and on the
+ * dashboard."*
+ *
+ * ⚠️ The DATABASE function `dash_activity_readback()` is retained — see
+ * src/lib/ops/api-dashboard.ts and
+ * docs/reference/ACTIVITY-LOG-why-it-has-no-surface.md.
+ */
 
-/** Owner, 2026-08-23: "the logs being visible is a nice touch but it needs
- *  to be collapsed and i can expand to see them if i want." Collapsed by
- *  default — a one-line summary with an expand control, not the raw feed. */
-export function ActivityZone({ items }: { items: ActivityRow[] }) {
-  const [expanded, setExpanded] = useState(false);
-  const shown = items.slice(0, 12);
-
-  if (!expanded) {
-    return (
-      <div className="dash-card px-3.5 py-2.5">
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className="flex w-full items-center justify-between text-left focus-ring"
-        >
-          <span className="text-[0.8rem] text-green-900">
-            {shown.length === 0 ? 'Nothing recent' : `${shown[0].what}${shown.length > 1 ? ` · ${shown.length - 1} more` : ''}`}
-          </span>
-          <span className="shrink-0 pl-3 text-[0.72rem] font-medium text-green-800/70">Show</span>
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="dash-card divide-y divide-green-900/8 px-0 py-0">
-      <button
-        type="button"
-        onClick={() => setExpanded(false)}
-        className="block w-full px-3.5 py-2 text-left text-[0.76rem] font-medium text-green-800/70 focus-ring"
-      >
-        Hide
-      </button>
-      {shown.map((r, i) => (
-        <div key={`${r.ledger}-${r.subject_id}-${i}`} className="grid grid-cols-[5.4rem_1fr_auto] items-baseline gap-3 px-3.5 py-2">
-          <span className="text-[0.62rem] font-semibold uppercase tracking-wide text-gold-800">
-            {LEDGER_LABEL[r.ledger]}
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-[0.8rem] text-green-900">{r.what}</span>
-            <span className="block truncate text-[0.72rem] text-green-800/55">
-              {r.subject}{r.detail ? ` · ${r.detail}` : ''}
-            </span>
-          </span>
-          <span className="shrink-0 text-[0.7rem] text-green-800/45">
-            {new Date(r.at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-          </span>
-        </div>
-      ))}
-      <Link to="/app/ops/activity" className="block px-3.5 py-2 text-[0.76rem] font-medium text-green-800/70 focus-ring">
-        Open the full activity log &rarr;
-      </Link>
-    </div>
-  );
-}

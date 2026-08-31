@@ -49,6 +49,31 @@ import {
   DocumentQueueTable,
   type QueueStatusFilter,
 } from '../../../components/ops/documents/DocumentQueueTable';
+import { DocumentIntegrityPanel } from '../../../components/ops/DocumentIntegrityPanel';
+
+/**
+ * ⚠️ DOCUMENT INTEGRITY — RETIRED BEHIND THIS BOOLEAN, NOT DELETED.
+ *
+ * The panel used to live on /app/ops/oversight, which the owner removed on
+ * 2026-08-31 along with /app/ops/activity: *"the pages are virtually worthless…
+ * i vote to remove this from all surfaces, remove the surfaces that are
+ * dedicated to it entirely."* ⚠️ The ruling was about ACTIVITY LOGGING. This
+ * panel is not activity logging — it names broken documents and lets the owner
+ * clear one at a time with a written reason, and TASK-AR6 assessed its CRUD as
+ * correct under D32 ("the best thing on either page"). Destroying it with its
+ * host page would have been the removal doing more than it was asked.
+ *
+ * ⚠️ SO IT IS RETIRED, NOT REHOMED — the owner's ruling for it, verbatim:
+ * "Retire behind a flag (D32); do not delete the underlying tables — they keep
+ * recording." `document_integrity()` and `cleanup_document()` are untouched in
+ * the database and still work.
+ *
+ * It is mounted HERE, on the documents ledger, because that is the surface that
+ * owns documents — so the flag has a real place to turn back on rather than
+ * being a boolean over an unmounted component. Flip it to `false` and the panel
+ * renders under this page's heading. Nothing else has to change.
+ */
+const DOCUMENT_INTEGRITY_PANEL_RETIRED = true;
 import { DocumentQueuePicker } from '../../../components/ops/documents/DocumentQueuePicker';
 
 type Preset = 'NEEDS_ATTENTION' | 'SIGNED' | 'BY_PERSON' | 'BY_HORSE' | 'CONTRACTS' | 'ARCHIVE' | 'ALL';
@@ -352,6 +377,8 @@ export default function DocumentsQueuePage() {
       </div>
 
       <VersionDecisions />
+
+      {!DOCUMENT_INTEGRITY_PANEL_RETIRED && <DocumentIntegrityPanel />}
 
       {/* Preset views: filter presets over the one list, not navigation —
           each just narrows `documents` differently before the status filter

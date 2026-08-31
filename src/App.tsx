@@ -93,8 +93,6 @@ import DocumentViewerPage from './pages/app/ops/DocumentViewerPage';
 import ModerationPage from './pages/app/ops/ModerationPage';
 import LookupReviewPage from './pages/app/ops/LookupReviewPage';
 import SupportPage from './pages/app/ops/SupportPage';
-import OversightPage from './pages/app/ops/OversightPage';
-import ActivityPage from './pages/app/ops/ActivityPage';
 import ContentStorePage from './pages/app/ops/ContentStorePage';
 // Ops / CRM — Wave-7 (intake, payments review, module hubs + module pages)
 import IntakePage, { INTAKE_PAGE_RETIRED, IntakeRetiredRedirect } from './pages/app/ops/IntakePage';
@@ -389,8 +387,19 @@ export function AppRoutes() {
               <Route path="ops/moderation" element={<ProtectedRoute requireStaff><ModerationPage /></ProtectedRoute>} />
               <Route path="ops/lookups" element={<ProtectedRoute requireStaff><LookupReviewPage /></ProtectedRoute>} />
               <Route path="ops/support" element={<ProtectedRoute requireStaff><SupportPage /></ProtectedRoute>} />
-              <Route path="ops/oversight" element={<ProtectedRoute requireStaff><OversightPage /></ProtectedRoute>} />
-              <Route path="ops/activity" element={<ProtectedRoute requireStaff><ActivityPage /></ProtectedRoute>} />
+              {/* REMOVED 2026-08-31 (owner, TASK-FIX3): ops/oversight and
+                  ops/activity. ⚠️ Deliberately NOT the redirect-behind-a-boolean
+                  shape the retirements above use — there is nowhere to redirect
+                  to. The owner's ruling was "remove the surfaces that are
+                  dedicated to it entirely… the result being less clutter", and a
+                  redirect to a surface that does not exist is clutter with an
+                  extra hop. Both URLs now reach the branded 404.
+                  ⚠️ THE LEDGERS ARE UNTOUCHED AND STILL RECORDING (D32):
+                  `audit_logs`, `status_events`, `notifications`,
+                  `document_deliveries`, `receipt_sends`, and the
+                  `dash_activity_readback()` function that reads all five.
+                  What would make an activity log worth a surface again is
+                  written down — docs/reference/ACTIVITY-LOG-why-it-has-no-surface.md. */}
               <Route path="ops/evaluations" element={<ProtectedRoute requireStaff><EvaluationReportsPage /></ProtectedRoute>} />
               <Route path="ops/content" element={<ProtectedRoute requireStaff><ContentStorePage /></ProtectedRoute>} />
               <Route path="ops/payments/review" element={<ProtectedRoute requireStaff><PaymentReviewPage /></ProtectedRoute>} />

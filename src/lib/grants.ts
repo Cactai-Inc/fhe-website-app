@@ -20,7 +20,12 @@ export const GRANTABLE_SURFACES: { key: string; label: string }[] = [
   { key: '/app/ops/payments/review', label: 'Payment review' },
   { key: '/app/ops/billing', label: 'Billing' },
   { key: '/app/ops/content', label: 'Content store' },
-  { key: '/app/ops/oversight', label: 'Oversight' },
+  /* REMOVED 2026-08-31 (TASK-FIX3): '/app/ops/oversight'. The page no longer
+     exists — and the grant had never worked anyway, for two independent
+     reasons TASK-AR6 proved: grants are only consulted for rows carrying
+     `adminOnly` (Oversight carried none, so the row was already visible to
+     every instructor), and `admin_oversight()` rejected non-admins server-side
+     regardless. An admin control that reported success and did nothing. */
 ];
 
 /** The nav keys that apply to the SIGNED-IN user (global + personal). */

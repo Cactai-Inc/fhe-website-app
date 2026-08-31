@@ -220,7 +220,11 @@ export default function OpsDashboard({
           <span className="uppercase tracking-wide text-xs">Locked</span> means your plan does not
           include it. <span className="uppercase tracking-wide text-xs">Hidden</span> means you
           have it and put it away — it still opens, and you can bring its menu entry back under{' '}
-          <Link to="/app/ops/admin/pages" className="underline">Settings &rarr; Page visibility</Link>.
+          {/* TASK-FIX3: the section this named was dissolved on 2026-08-31 —
+              Page visibility is a row in the Admin section now, and has a nav
+              row of its own for the first time, so this is no longer the only
+              way in. The words had to move with it. */}
+          <Link to="/app/ops/admin/pages" className="underline">Admin &rarr; Page visibility</Link>.
         </p>
         <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {MODULE_TILES.map((tile) => {

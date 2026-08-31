@@ -6,15 +6,19 @@ import { dmUnreadTotal } from '../../lib/community';
 import {
   CalendarDays, Users, FileText, UserRound, ReceiptText, Shield, LogOut,
   GraduationCap, Home as HomeIcon, Boxes, Contact, LayoutDashboard,
-  /* BookOpen was the Directory row's icon (REVIEW SECTION move, TASK-REVIEWNAV).
-     TASK-RECORDS (2026-08-12) reclaims it for the single Records entry that
-     replaces Leads/Clients/Directory — Contact and Users are both already
-     doing other jobs in this rail (Employees, Community), and the task's own
-     instruction is to inherit one of the three retired icons rather than add
-     a fourth glyph. */
-  BookOpen,
+  /* TASK-FIX3 (2026-08-31): BookOpen left with the row it was reclaimed for.
+     "Records" is two rows now — Contacts and Stable — and each takes the mark
+     the icon exercise already settled: People -> Contact2
+     (docs/reference/nav-icon-exercise.md §5, owner 2026-08-08), and Fence for
+     the stable, which is unused anywhere in this rail. Deliberately NOT Boxes:
+     that glyph is already the member rail's "My Stable" AND Barn Ops, so a
+     third use would put one mark on three different rows.
+     Activity left with the Activity row (removed, owner 2026-08-31). Eye did
+     NOT leave with Oversight — it moves to Page visibility below, which is the
+     one row in this rail actually about what is and is not seen. */
+  Contact2, Fence,
   ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, ListChecks,
-  PanelLeftClose, PanelLeftOpen, Activity, Compass, Grid3x3, Bookmark,
+  PanelLeftClose, PanelLeftOpen, Compass, Grid3x3, Bookmark,
   Receipt, Eye, Library, NotebookPen, CreditCard,} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useStaffLanding } from '../../lib/dashboard/landing';
@@ -501,17 +505,16 @@ const MANAGEMENT_GROUP: NavItem[] = [
      experiment ends; the duplicate-page ruling now lives in TASK-PAGEMERGE.
      Dashboard's badge is injected by route below, not by table position. */
   { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  // Moved up from its own "People" heading (owner, 2026-08-15) — Records
-  // (the People/Clients/Partners/Vendors/Horses tabs page) now sits directly
-  // in Management; the People group is gone, not hidden — it had no other
-  // member (ACCOUNTS_GROUP below is kept, empty, for anything that lands
-  // there later; manageNavGroups() drops empty groups already).
-  //
-  // The standalone Horses row that used to sit right below this one is
-  // retired (owner, same session: "we dont need horses as its own page if
-  // we have horses on the records page") — Records' own Horses tab, one
-  // click away, is the only entry point now.
-  { to: '/app/records', label: 'Records', icon: BookOpen },
+  /* TASK-FIX3 (owner, 2026-08-31): Calendar moves in from the App-pages block.
+     It was hand-written JSX in StaffNavItems and therefore had no registry row
+     — the D17 shape exactly. It is a NavItem here now, and `mgmt.calendar` in
+     pageRegistry.ts, so the tenant can hide it like every other row.
+     Catalog and Messages stay in that block; only Calendar was asked for. */
+  { to: '/app/calendar', label: 'Calendar', icon: CalendarDays },
+  /* The "Records" row that sat here moved to ACCOUNTS_GROUP below and became
+     two rows, Contacts and Stable (owner, 2026-08-31). "People" is a rendered
+     heading again as a result — it was empty, and manageNavGroups() drops
+     empty groups. */
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
   // Lessons, Documents, Deals RETIRED from here 2026-08-15 (owner: "lessons…
   // is really a records ledger so it should be added to the records page
@@ -523,33 +526,66 @@ const MANAGEMENT_GROUP: NavItem[] = [
   /* Receipt, not ReceiptText — which My Orders already uses in the member nav.
      Two different pages were wearing one glyph. */
   { to: '/app/ops/payments/review', label: 'Payment review', icon: Receipt },
+  /* TASK-FIX3 (owner, 2026-08-31): Evaluations arrives from the section that is
+     now Admin. D27 files an evaluation as a record on a rider or a horse, which
+     makes it day-to-day work, not tenant configuration. */
+  { to: '/app/ops/evaluations', label: 'Evaluations', icon: FileText },
 ];
-/* PEOPLE (and horses). TASK-RECORDS (2026-08-12) folded what used to be four
- * separate nav rows — Leads, Clients, Contacts (already gone), Directory —
- * plus Horses into ONE row, Records, whose five internal tabs carry the
- * distinctions this comment used to describe: Leads / Clients / Partners /
- * Vendors / Horses. Team is still not here — "that is a business
- * configuration activity" (owner) — it lives in Settings.
+/* PEOPLE (and horses). TASK-RECORDS (2026-08-12) folded four nav rows — Leads,
+ * Clients, Contacts (already gone), Directory — plus Horses into ONE row,
+ * Records, and 2026-08-15 moved that row into MANAGEMENT_GROUP because a
+ * heading over a single row was overhead.
  *
- * MOVED 2026-08-15 (owner): Records relocated into MANAGEMENT_GROUP, directly
- * above Horses — a standalone "People" heading for one row was overhead. This
- * group is kept, empty, as the landing spot if anything else joins it;
- * manageNavGroups() already drops empty groups from the rendered rail. */
-const ACCOUNTS_GROUP: NavItem[] = [];
+ * TASK-FIX3 (owner, 2026-08-31) splits it back into TWO rows, which is what
+ * puts the heading back:
+ *
+ *   CONTACTS — the four person populations (Leads · Clients · Partners ·
+ *   Vendors). One stored column, `contacts.contact_type`, four filters.
+ *
+ *   STABLE — the horses. The name is not new: the owner settled it on
+ *   2026-08-08 (docs/reference/nav-icon-exercise.md — "Rename it Stable, which
+ *   also matches the member-side term already in use"), and it is what
+ *   AccountHub already calls the staff horse surface.
+ *
+ * ⚠️ BOTH ROWS POINT AT RecordsPage's OWN TABS, deliberately. This task owns the
+ * NAV, not that page: TASK-FIX2 owns RecordsPage.tsx / Admin.tsx /
+ * ContactDossierModal.tsx and is rebuilding the record surface underneath these
+ * two doors. Pointing Stable at /app/stable instead was considered and rejected
+ * — TASK-AR3 F3 proved that surface returns 0 of the tenant's 3 horses for
+ * staff, because it reads the member-scoped my_stable_horses(). A door onto an
+ * empty room is worse than a door onto a tab strip.
+ *
+ * Team is still not here — "that is a business configuration activity" (owner)
+ * — it lives in the Admin section below. */
+const ACCOUNTS_GROUP: NavItem[] = [
+  { to: '/app/records', label: 'Contacts', icon: Contact2 },
+  { to: '/app/records/horses', label: 'Stable', icon: Fence },
+];
 /* SERVICING and BUSINESS were folded into Management 2026-07-31 (owner): the
  * goal is fewer headings, not more. Their items live in MANAGEMENT_GROUP above.
  * BUSINESS_GROUP returns when there is more in it than a single link. */
-const COMMUNITY_GROUP: NavItem[] = [
-  { to: '/app/ops/activity', label: 'Activity', icon: Activity },
-  { to: '/app/ops/evaluations', label: 'Evaluations', icon: FileText },
+/* ADMIN — was COMMUNITY_GROUP until TASK-FIX3 (owner, 2026-08-31, item: rename
+ * the Community section to Admin). The GROUP KEY stays `community`: it is never
+ * rendered (see manageNavGroups below), but it IS the `group` field on six
+ * pageRegistry.ts rows whose stored `page_key`s begin `community.` and are
+ * CHECK-constrained to that grammar. Renaming the key would either orphan those
+ * keys or force a data migration to buy nothing. The LABEL is the thing the
+ * owner sees, and the label moved — in both places it is written, here and in
+ * GROUP_LABEL (pageRegistry.ts), which TASK-AR4 proved is NOT dead code: it
+ * renders the section headings on /app/ops/admin/pages.
+ *
+ * TWO ROWS LEFT THIS ARRAY AND ARE NOT COMING BACK (owner, 2026-08-31):
+ * Activity and Oversight. See docs/reference/ACTIVITY-LOG-why-it-has-no-surface.md.
+ * EVALUATIONS also left, upward, into MANAGEMENT_GROUP.
+ * The four SETTINGS_GROUP rows join this section at the render site — see
+ * manageNavGroups(); the array itself stays separate because /app/ops/settings
+ * still renders from it. */
+const ADMIN_GROUP: NavItem[] = [
   { to: '/app/ops/moderation', label: 'Moderation', icon: Shield },
   { to: '/app/ops/lookups', label: 'Field options', icon: ListChecks },
-  // Library, not BookOpen — Directory (People) already holds BookOpen.
+  /* Library — the Directory row that used to hold BookOpen is gone, and so is
+     BookOpen; this row's mark never changed. */
   { to: '/app/ops/content', label: 'Content store', icon: Library },
-  /* Eye, not Shield. Shield was on Moderation, Oversight, all three Settings
-     pages and all three Platform pages — the "eight identical Shield icons" the
-     icon exercise names. This takes one of them off it. */
-  { to: '/app/ops/oversight', label: 'Oversight', icon: Eye },
 ];
 const MODULES_GROUP: NavItem[] = [
   // Brokerage has no staff hub page yet (mod.brokerage's live surfaces are the
@@ -601,12 +637,23 @@ const SETTINGS_GROUP: NavItem[] = [
      whose entries mean nothing away from the thing they appear on. One row now.
      The three pages keep their routes (D32) and this is the only way in. */
   { to: '/app/ops/admin/editor', label: 'Editor', icon: NotebookPen, adminOnly: true },
+  /* TASK-FIX3 (2026-08-31). This row did not exist. `settings.page_visibility`
+     has been in pageRegistry.ts since TASK-PAGEVIS — the ONE `protected: true`
+     row, the page that brings every other page back — and its only door in the
+     whole app was a sentence of prose on the Ops dashboard's Modules panel.
+     D17 by the letter, on the page whose entire job is being reachable.
+     The task's own membership list for Settings was short exactly this row;
+     TASK-AR4 found it by enumerating the registry instead of the document.
+     `Eye` is free because Oversight took it away with it, and it is the right
+     mark: this is the row about what is and is not seen.
+     adminOnly matches the route, which is requireAdmin (App.tsx). */
+  { to: '/app/ops/admin/pages', label: 'Page visibility', icon: Eye, adminOnly: true },
 ];
 
 // kept for compatibility with anything importing MANAGE_NAV
 export const MANAGE_NAV: NavItem[] = [
   ...MANAGEMENT_GROUP, ...ACCOUNTS_GROUP,
-  ...COMMUNITY_GROUP, ...MODULES_GROUP, ...SETTINGS_GROUP,
+  ...ADMIN_GROUP, ...MODULES_GROUP, ...SETTINGS_GROUP,
 ];
 
 /** Build the grouped rail for the caller's role. Instructor grants (nav keys)
@@ -632,19 +679,28 @@ export function manageNavGroups(
        gone; the queues live here and Leads moved to People. */
     { key: 'management', label: 'Management', items: visible(MANAGEMENT_GROUP), defaultOpen: true },
     { key: 'accounts', label: 'People', items: visible(ACCOUNTS_GROUP), defaultOpen: true },
-    { key: 'community', label: 'Community', items: visible(COMMUNITY_GROUP) },
-    /* Settings and Modules stay in THIS array and are filtered out of the
-       SIDEBAR at the render site below — they are not nav rows any more (owner
-       2026-08-15: "modules and settings should all be inside of the account
-       page", then on finding them still there: "the settings and modules
-       sections are still in the nav and they still show pages").
+    /* ADMIN — the section formerly labelled Community, now carrying the four
+       Settings rows as well (owner, 2026-08-31: "settings dissolves into
+       Admin"). The two arrays are concatenated HERE rather than merged at
+       their declarations because SETTINGS_GROUP has a second consumer that
+       still needs it whole: /app/ops/settings, see the note below. */
+    { key: 'community', label: 'Admin', items: visible([...ADMIN_GROUP, ...SETTINGS_GROUP]) },
+    /* ⚠️ SETTINGS AND MODULES ARE NOT SIDEBAR SECTIONS. They are here so that
+       /app/ops/settings and /app/ops/modules can render their own card grids,
+       which they do by calling this same function and looking themselves up BY
+       KEY (NavGroupCardsPage.tsx, App.tsx). The destination and the group are
+       fed by one source, deliberately, "so this can never drift from what the
+       nav shows" — so the entries cannot be deleted here without blanking both
+       pages.
 
-       They cannot simply be deleted here: /app/ops/settings and /app/ops/modules
-       render their own contents by calling this same manageNavGroups() and
-       looking themselves up BY KEY (NavGroupCardsPage:35, App.tsx:425-429).
-       Removing the entries would blank both pages — the destination and the
-       discarded nav row are fed by one source, deliberately, "so this can never
-       drift from what the nav shows". */
+       ⚠️ THE FILTER THAT KEEPS THEM OUT OF THE RAIL IS `CARD_PAGE_ONLY` BELOW,
+       APPLIED AT ALL THREE RENDER SITES. Until TASK-FIX3 (2026-08-31) this
+       comment claimed a filter that did not exist: the owner asked for these
+       two sections to leave the nav on 2026-08-15, said so twice ("the settings
+       and modules sections are still in the nav and they still show pages"), a
+       comment was written asserting the fix, and the code was never written.
+       Sixteen days later both sections were still on screen. If you remove the
+       filter, remove this paragraph with it. */
     { key: 'settings', label: 'Settings', items: visible(SETTINGS_GROUP) },
     { key: 'modules', label: 'Modules', items: visible(MODULES_GROUP) },
     /* REVIEW SECTION removed 2026-08-15 (owner: "the menu fixed… back to
@@ -654,6 +710,24 @@ export function manageNavGroups(
        group is gone. */
   ];
   return groups.filter((g) => g.items.length > 0);
+}
+
+/** ⚠️ THE GROUPS THAT ARE NOT SIDEBAR SECTIONS — see manageNavGroups() above.
+ *  `settings` and `modules` are returned by that function only so
+ *  /app/ops/settings and /app/ops/modules can look themselves up by key; every
+ *  nav surface filters them out through `railNavGroups()`.
+ *
+ *  Settings' pages reach the rail inside the Admin section instead; Modules'
+ *  pages reach the staff from the Account page, as one card per hub
+ *  (AccountHub.tsx). Both landing pages still render, unchanged. */
+const CARD_PAGE_ONLY = new Set(['settings', 'modules']);
+
+/** The rail/drawer view of manageNavGroups(). ⚠️ EVERY nav surface renders THIS,
+ *  never `manageNavGroups()` directly — there are three of them (the avatar
+ *  drop-down, the desktop rail, the mobile drawer) and the last time only some
+ *  of them were changed, the miss went unnoticed for sixteen days. */
+function railNavGroups(groups: NavGroup[]): NavGroup[] {
+  return groups.filter((g) => !CARD_PAGE_ONLY.has(g.key));
 }
 
 /** C4 — delayed hover/focus label for icon-only rail rows, replacing the old
@@ -1124,8 +1198,11 @@ function ClientNavItems({ bellCount, dmCount, presence, lessonsOn, onNavigate }:
 function StaffNavItems({ dmCount, open = true }: { dmCount: number; open?: boolean }) {
   return (
     <>
-      {/* RESTORED 2026-08-15 (Review experiment ended), in the recorded order. */}
-      <RailLink to="/app/calendar" label="Calendar" icon={CalendarDays} open={open} />
+      {/* RESTORED 2026-08-15 (Review experiment ended), in the recorded order.
+          TASK-FIX3 (owner, 2026-08-31): Calendar left this block for
+          MANAGEMENT_GROUP, where it is a NavItem with a registry row instead of
+          hand-written JSX. Catalog is now the only page left in this shape —
+          same missing-registry-row problem, not asked for, reported. */}
       <RailLink to="/app/catalog" label="Catalog" icon={ShoppingBag} open={open} />
       <RailLink to="/app/messages" label="Messages" icon={MessageSquare} badge={dmCount} open={open} />
     </>
@@ -1479,13 +1556,23 @@ export default function AppLayout() {
         items: g.items.map((it) => (it.to === '/app/dashboard' ? { ...it, badge: unreadCount + inboundCount } : it)),
       }))
     : [];
-  /* UIO-012: the first five items (Community Feed + the four StaffNavItems)
+  /* ⚠️ WHAT EVERY NAV SURFACE BELOW RENDERS. `navGroups` still contains the
+     `settings` and `modules` groups, because /app/ops/settings and
+     /app/ops/modules build their card grids from the same function — see
+     manageNavGroups(). They are not sections of this rail. */
+  const railGroups = railNavGroups(navGroups);
+  /* UIO-012: the first four items (Community Feed + the three StaffNavItems)
    *  sat above MANAGEMENT with no heading — the only group in the rail that
    *  could not collapse. Not a real entry in `navGroups` (its content is
    *  CommunityNav + StaffNavItems, not a flat NavItem[] a RailLink can
    *  render), so it's a separate pseudo-group carrying only what
    *  `groupOpen`/`toggleGroup` need — `items` stays empty and unused. */
-  const APP_PAGES_GROUP: NavGroup = { key: 'app-pages', label: 'App pages', items: [], defaultOpen: true };
+  /* TASK-FIX3 (owner, 2026-08-31): "App pages" is called Community now. ⚠️ The
+     rename alone was a desktop-only change — TASK-AR4 found this heading is
+     rendered by the desktop rail and by NOTHING on mobile, so the owner, whose
+     working device is a phone, would have seen no change at all. The mobile
+     drawer gets a heading element of its own below. */
+  const APP_PAGES_GROUP: NavGroup = { key: 'app-pages', label: 'Community', items: [], defaultOpen: true };
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const groupOpen = (g: NavGroup) => openGroups[g.key] ?? g.defaultOpen ?? false;
   // `[...navGroups, APP_PAGES_GROUP]` — APP_PAGES_GROUP isn't IN navGroups,
@@ -1677,9 +1764,9 @@ export default function AppLayout() {
           })}
         </>
       )}
-      {navGroups.length > 0 && (
+      {railGroups.length > 0 && (
         <div className="lg:hidden">
-          {navGroups.map((g) => (
+          {railGroups.map((g) => (
             <div key={g.key}>
               <div className="mt-1 border-t border-green-800/10 pt-2 px-4 pb-1 text-xs uppercase tracking-wide text-secondary/60">
                 {g.label}
@@ -1932,9 +2019,9 @@ export default function AppLayout() {
                 </div>
               )}
               <div className="flex flex-col gap-1">
-                {navGroups.map((g) => (
+                {railGroups.map((g) => (
                   <div key={g.key}>
-                    {navGroups.length > 1 && staffRailPinned && (
+                    {railGroups.length > 1 && staffRailPinned && (
                       <button type="button" onClick={() => toggleGroup(g.key)}
                         /* UIO-003: no transition at all before this — the
                            group heading snapped straight to its hover colour
@@ -1950,7 +2037,7 @@ export default function AppLayout() {
                       </button>
                     )}
                     {/* collapsed strip: group headings shrink to a plain separator */}
-                    {navGroups.length > 1 && !staffRailPinned && (
+                    {railGroups.length > 1 && !staffRailPinned && (
                       <div className={`my-1 border-t ${NAV_DIVIDER}`} role="separator" aria-label={g.label} />
                     )}
                     {/* ── REVIEW SECTION (temporary — TASK-REVIEWNAV) ────────
@@ -1968,7 +2055,7 @@ export default function AppLayout() {
                     {g.note && staffRailPinned && groupOpen(g) && (
                       <p className={`${NAV_INSET_ROW} pb-1.5 text-[11px] leading-snug text-gold-800`}>{g.note}</p>
                     )}
-                    {(navGroups.length === 1 || groupOpen(g) || !staffRailPinned) && (
+                    {(railGroups.length === 1 || groupOpen(g) || !staffRailPinned) && (
                       <div className="flex flex-col gap-0.5">
                         {g.items.map((it) => <RailLink key={it.to} {...it} open={staffRailPinned} />)}
                       </div>
@@ -2156,16 +2243,31 @@ export default function AppLayout() {
               )}
             </div>
             {!isSuperAdmin && (
-              <div className="flex flex-col gap-0.5 mb-1">
-                <CommunityNav onNavigate={closeMobileNav} />
-                {!showRail ? (
-                  <ClientNavItems bellCount={unreadCount} dmCount={dmCount} presence={presence} lessonsOn={lessonsOn} onNavigate={closeMobileNav} />
-                ) : (
-                  <StaffNavItems dmCount={dmCount} />
+              <>
+                {/* TASK-FIX3 — THE HEADING THAT DID NOT EXIST. Every other group
+                    in this drawer gets one (below); this block got none, so the
+                    "App pages" -> "Community" rename would have been invisible
+                    on the owner's own device. Same markup as the group headings
+                    below, deliberately, so the two cannot drift apart.
+                    Staff only: for a member this block is CommunityNav plus
+                    their own personal links (My Orders, My Documents…), and
+                    "Community" would be a heading over the wrong thing. */}
+                {showRail && (
+                  <div className={`mt-2 border-t ${NAV_DIVIDER} pt-2 ${NAV_INSET_ROW} pb-1 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold`}>
+                    {APP_PAGES_GROUP.label}
+                  </div>
                 )}
-              </div>
+                <div className="flex flex-col gap-0.5 mb-1">
+                  <CommunityNav onNavigate={closeMobileNav} />
+                  {!showRail ? (
+                    <ClientNavItems bellCount={unreadCount} dmCount={dmCount} presence={presence} lessonsOn={lessonsOn} onNavigate={closeMobileNav} />
+                  ) : (
+                    <StaffNavItems dmCount={dmCount} />
+                  )}
+                </div>
+              </>
             )}
-            {navGroups.map((g) => (
+            {railGroups.map((g) => (
               <div key={g.key}>
                 <div className={`mt-2 border-t ${NAV_DIVIDER} pt-2 ${NAV_INSET_ROW} pb-1 text-[10px] tracking-widest uppercase ${NAV_HEADING} font-semibold`}>
                   {g.label}
