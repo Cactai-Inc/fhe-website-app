@@ -2678,3 +2678,36 @@ thread will read it as a D23 violation and refuse to build it.**
    weeks?** *(2× weekly at $880/month is $110 a lesson at 4 weeks; a half month is not always 4 of 8.)*
 2. **Do the no-prorate credits expire?** D23's holding-form credits do; these are compensation for a
    month he was paid in full for.
+
+---
+
+## 🔒 CR-30 — SUPERSEDED IN PART, 2026-08-30. LEADS RETURN TO A RECORDS-STYLE PAGE.
+
+**SAID (owner, 2026-08-30):**
+> *"yes i changed my mind on item 3, after testing the unified single records page it was clearly not
+> the right decision. This new revision set should help me understand the other side of the options
+> and if i like it, then its the basis for the refactor, if i dont like it, the refactor has more
+> work to do to come up with a 3rd option."*
+
+⚠️ **THIS SUPERSEDES CR-30's "LEADS LEAVE THE RECORDS PAGE ENTIRELY" RULING** *(2026-08-25: "we get
+rid of leads as a record tab from the record page and they exist as a notification on the
+dashboard")*. **Under the ledger's own override rule, the earlier statement is DELETED — proceed as
+if it was never made.** Leads belong on the **Contacts** page alongside Clients, Partners and
+Vendors, per item 3 of the 2026-08-29 admin list.
+
+⚠️ **AND THE REASONING IS THE PART THAT OUTLIVES THIS DECISION.** He is **not** asserting the new
+shape is right. He is **buying information**: the unified single records page was tested and rejected,
+and this build exists to show him the opposite option so he can judge it against something real.
+
+**Three consequences, and they bind the refactor:**
+1. ⚠️ **THIS IS AN EXPERIMENT WITH A DECLARED EXIT.** *"if i like it, then its the basis for the
+   refactor, if i dont like it, the refactor has more work to do to come up with a 3rd option."*
+   **A third option remaining necessary is a SUCCESS of this build, not a failure of it.**
+2. **So it must be built to be JUDGED, not to be permanent.** Nothing downstream should assume the
+   Contacts shape survives. **Do not let a later task cite it as settled architecture.**
+3. ⚠️ **`TASK-AR3` is instructed to surface this as an unresolved collision. It is now resolved —
+   ORCH6 must tell AR3's report so, and must not re-put the question to the owner.**
+
+**The dashboard-notification lead handling from CR-30 is not retired by this** — a lead can be both a
+row on Contacts and an item that surfaces on the dashboard. **Only the "get rid of leads as a record
+tab" half is deleted.**
