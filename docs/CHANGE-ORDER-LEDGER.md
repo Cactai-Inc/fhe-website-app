@@ -3430,3 +3430,50 @@ will not until Sales and Marketing are in front of him.**
 ⚠️ **FIX6 STEPS 1, 2 AND 4 (framework · Sales + Marketing · Admin) ARE A COMPLETE SHIPPABLE
 DELIVERABLE. Ops (step 5) and the role boards are a SEPARATE, LATER TASK.** **Do not hold the merge
 waiting for the list.**
+
+---
+
+## 🔒 CR-87 · G6/G10 · RULED — messaging: threads stay on their surface, one page enumerates them
+
+**SAID (owner, 2026-08-31):**
+> *"we already litigated the messaging discussion and choice. we said keep the messaging on the
+> surfaces, enumerate the threads in one view on the messages page, make the originating surface
+> accessible via link from the message thread shown on messages page."*
+
+⚠️ **THE ORCHESTRATOR KEPT PUTTING THIS AS AN A-OR-B AND IT IS NEITHER — IT IS BOTH, AND IT WAS
+ALREADY DECIDED.** `04-OPEN-QUESTIONS.md` §1 framed it as *"(A) the notes panels BECOME the messages"*
+**versus** *"(B) messaging lives only on the action surfaces and the collective page is retired."*
+**He has ruled a synthesis, and the false dichotomy is why it kept resurfacing as unanswered.**
+⚠️ **`04-OPEN-QUESTIONS.md` §1 IS SUPERSEDED. Do not re-ask this.**
+
+### THE RULING — three parts, all required
+1. ⚠️ **MESSAGING STAYS ON THE SURFACE IT BELONGS TO.** The chat threads on **lessons · horse-care
+   activity records · contracts** remain where they are. **The conversation lives with its subject.**
+2. ⚠️ **THE MESSAGES PAGE ENUMERATES THEM — it does not own them.** One view listing every thread
+   across all surfaces. ⚠️ **It is an INDEX, not a second store.** **The page is NOT retired.**
+3. ⚠️ **EACH THREAD IN THAT LIST LINKS BACK TO ITS ORIGINATING SURFACE.** From the Messages page you
+   reach the lesson, the care record or the contract the conversation is about.
+
+### WHY THIS IS THE RIGHT SHAPE — and it answers his own stated goal
+**His goal was *"not needing to look at a specific place for a specific thing"* while also *"giving
+everyone what they will actually use."*** ⚠️ **Part 1 keeps the conversation in context, where the
+person doing the work already is. Part 2 means nothing is lost if you do not remember WHICH lesson or
+horse it hung off. Part 3 gets you from the index back to the work.** **Neither surface is redundant —
+they answer different questions.**
+
+### ⚠️ WHAT THIS MEANS FOR THE BUILD
+- ⚠️ **DO NOT MIGRATE MESSAGES INTO A CENTRAL TABLE.** The threads stay where they are; **the page
+  READS across them.** **A second store would be the duplicate-implementation defect this repo keeps
+  producing** (D18).
+- ⚠️ **The measured state:** `direct_messages` · `channel_messages` · `threads` · `thread_posts` ·
+  `contract_note_messages` are **all 0 rows** — ⚠️ **and that is NOT evidence of anything. Nobody is
+  in the app yet** *(his own correction, 2026-08-26; `ORCHESTRATOR.md` §4: "empty is not a finding")*.
+- ⚠️ **ESTABLISH WHICH TABLE EACH SURFACE ACTUALLY USES before designing the index** — five
+  message-shaped tables exist and the notes panels may not all use the same one. **The enumeration is
+  only as coherent as what it reads.**
+- **Each listed thread needs its subject, its surface, its last activity and its unread state** — an
+  index that cannot be triaged at a glance is a list, not an inbox.
+
+### ✅ CONSEQUENCE FOR CR-85 — THE NAV IS UNBLOCKED
+⚠️ **The Messages page SURVIVES, so Community keeps both rows: Catalog and Messages.**
+**CR-85 was waiting on this and is no longer blocked.**
