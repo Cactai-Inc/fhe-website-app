@@ -156,6 +156,13 @@ export function CalendarItemPanel({
     }).catch(() => setLocations([]));
   }, []);
 
+  /** TASK-FIX2 §1: the stamp's name, once `calendar_free_busy` has handed it back
+   *  (staff branch only). Falls through to "Recorded" when the stamped user is not
+   *  on the instructor roster — a fact we hold but cannot name is still a fact. */
+  const instructorName = item?.instructor_user_id
+    ? (instructors.find((s) => s.user_id === item.instructor_user_id)?.name ?? null)
+    : null;
+
   async function addLocation() {
     const name = window.prompt('New location name');
     if (!name?.trim()) return;
@@ -340,7 +347,13 @@ export function CalendarItemPanel({
       // BOOKWRITE: who delivers it. Left blank on a client-bound lesson/care
       // item, the RPC records the acting staff member; an open availability
       // slot is nobody's yet and stays unassigned.
-      instructor_user_id: type === 'offering' && !isFlexible ? instructorId || null : null,
+      /* ⚠️ TASK-FIX2 §1: on an EDIT the panel has nothing truer to say than what is
+         already stored, so it says nothing. `save_calendar_item` reads a NULL here
+         as "unchanged" (it coalesces onto the stored stamp) rather than as "make
+         it mine", but sending the key at all on an edit is the shape that caused
+         the overwrite, so it is not sent. */
+      instructor_user_id: editing ? null
+        : (type === 'offering' && !isFlexible ? instructorId || null : null),
       location_id: locationId || null,
       address: offsite ? address || selectedLocation?.address || null : null,
       travel_before_minutes: offsite ? Number(travelBefore) || 0 : 0,
@@ -679,7 +692,36 @@ export function CalendarItemPanel({
                   )}
                 </div>
               )}
-              {!isFlexible && instructors.length > 0 && (
+              {/* ⚠️ TASK-FIX2 §1 — WHO IS DELIVERING IT, AND WHY THIS IS NOT A PICKER
+                  ON AN EXISTING SESSION.
+
+                  The select below used to render on every session, initialised from
+                  `item?.instructor_user_id` — a key `calendar_free_busy` did not
+                  return, so it ALWAYS read "You (whoever books it)" and ALWAYS sent
+                  NULL. `save_calendar_item` then defaulted NULL to `auth.uid()` and
+                  wrote it unconditionally, so opening a lesson to fix a typo moved it
+                  to whoever pressed Submit. 45 of 47 stamps are hello@ and 2 are
+                  admin@; those 2 are the damage.
+
+                  Both halves are fixed: the RPC now returns the stamp (staff branch
+                  only), and an edit preserves it. Owner ruling 2026-08-31 — *"This is
+                  only one instructor, the head trainer/owner, Claire, this means we
+                  dont need a selection method for this until we add another instructor
+                  in the future."* — so on an EXISTING session this states the stamp
+                  and does not offer to change it. On a NEW one the picker stays,
+                  because that is a create-time default, not an overwrite. */}
+              {!isFlexible && editing && (
+                <div className="text-sm">
+                  <span className="form-label">Instructor</span>
+                  <p className="text-green-900">
+                    {instructorName ?? (item?.instructor_user_id ? 'Recorded' : 'Not recorded')}
+                  </p>
+                  <span className="text-xs text-green-800/70 mt-1 block">
+                    Who is delivering this. Saving this session does not change it.
+                  </span>
+                </div>
+              )}
+              {!isFlexible && !editing && instructors.length > 0 && (
                 <label className="text-sm">
                   <span className="form-label">Instructor</span>
                   <select className="form-input" value={instructorId} onChange={(e) => setInstructorId(e.target.value)}>

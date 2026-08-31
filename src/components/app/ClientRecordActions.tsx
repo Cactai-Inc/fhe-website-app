@@ -19,6 +19,10 @@ import { fetchOfferings } from '../../lib/api';
 import { HorseIntakeForm } from './HorseIntakeForm';
 import { toErrorMessage } from '../../lib/ops/errors';
 import type { Offering } from '../../lib/types';
+import {
+  fetchClientStandingSlots, setMyStandingSchedule, type StandingSlotChoice,
+} from '../../lib/ops/api-calendar';
+import { WEEKDAYS, WEEKDAY_PLURAL } from '../../lib/standingSlots';
 
 /** The small "+ add" button these panels share. */
 /**
@@ -331,6 +335,40 @@ export function ClientHorseRecordsCard({ contactId }: { contactId: string }) {
 
 /** Orders tab action: attach offering(s) to this existing client account via the
  *  canonical spine (attach_offerings_to_client → _provision_purchase_for_offerings). */
+/**
+ * ⚠️ TASK-FIX2 §2 — SELLING A WEEKLY PLAN AND PLACING IT ARE ONE ACT.
+ *
+ * WHAT WAS MEASURED. Six live recurring purchases; FIVE have `config = {}` —
+ * no chosen days, no times, no horizon — and one of those five is `PUR-000319`,
+ * Madeline Do's `2x Weekly Lessons`, **paid, $880, which placed 0 bookings and
+ * minted 0 credits**. The only plan that worked is the only one with a non-empty
+ * `config`, and it was configured 98 seconds after provisioning through a modal
+ * that closes on page reload.
+ *
+ * WHY. `attach_offerings_to_client → _provision_purchase_for_offerings` takes no
+ * schedule argument and writes no `config`. It writes an order line and stops.
+ * Under D23 the chosen days ARE the entitlement for a recurring SKU — a weekly
+ * plan is a reserved time, not a credit balance — so an order line with no days
+ * is an order that delivered nothing, and it looked identical to one that had.
+ *
+ * WHAT THIS DOES. When a picked offering is `config_kind = 'recurring'`, the
+ * attach act asks the question the plan exists to answer, in the same breath as
+ * the sale: one day and time per weekly session (`weekly_frequency`). It then
+ * attaches, finds the purchase item the attach just created, and calls
+ * `setMyStandingSchedule` — which materialises the month through
+ * `set_recurring_days` + `_ensure_plan_horizon`.
+ *
+ * ⚠️ IT IS NOT A SECOND WRITER (D18). `set_my_standing_schedule` is the same RPC
+ * `StandingSlotPicker` calls from the member's Calendar, the onboarding wizard and
+ * the staff record. This panel holds no scheduling arithmetic; it collects the
+ * answer and hands it to the one engine.
+ *
+ * ⚠️ AND STAFF CAN STILL DECLINE TO ANSWER. Leaving the days blank attaches the
+ * plan anyway and says so — a plan awaiting a day is a real state (the client may
+ * be picking it on the phone tomorrow). What is no longer possible is doing it
+ * SILENTLY: the order line then carries a "no day chosen yet" mark and the
+ * standing-slot section opens underneath with the question in it.
+ */
 export function AttachOfferingPanel({ contactId, onAttached }: { contactId: string; onAttached: () => void }) {
   const [open, setOpen] = useState(false);
   const [offerings, setOfferings] = useState<Offering[]>([]);
@@ -340,6 +378,9 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
   const [method, setMethod] = useState('Zelle');
   const [working, setWorking] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  /** Day + time per weekly session, keyed by offering id. */
+  const [weekly, setWeekly] = useState<Record<string, StandingSlotChoice[]>>({});
+  const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => { if (open) fetchOfferings().then(setOfferings).catch(() => setOfferings([])); }, [open]);
 
@@ -352,16 +393,59 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
     .reduce((s, o) => s + (o.price_amount ?? 0), 0);
   const toggle = (id: string) => setPicked((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
 
+  /** The picked offerings that are weekly plans, with how many sessions a week
+   *  each one is. `weekly_frequency` is the SKU's own answer; never fewer than 1. */
+  const recurringPicked = purchasable.filter(
+    (o) => picked.includes(o.id) && o.config_kind === 'recurring');
+  const freqOf = (o: Offering) => Math.max(o.weekly_frequency ?? 1, 1);
+  const choicesFor = (o: Offering): StandingSlotChoice[] =>
+    weekly[o.id] ?? Array.from({ length: freqOf(o) }, () => ({ day: '', time: '' }));
+  const setChoice = (o: Offering, i: number, patch: Partial<StandingSlotChoice>) =>
+    setWeekly((prev) => {
+      const cur = prev[o.id] ?? Array.from({ length: freqOf(o) }, () => ({ day: '', time: '' }));
+      return { ...prev, [o.id]: cur.map((c, n) => (n === i ? { ...c, ...patch } : c)) };
+    });
+  /** A plan is placeable when every session has a distinct day and a time. */
+  const placeable = (o: Offering) => {
+    const cs = choicesFor(o);
+    return cs.every((c) => c.day && c.time) && new Set(cs.map((c) => c.day)).size === cs.length;
+  };
+
   async function submit() {
     if (picked.length === 0) return;
-    setWorking(true); setErr(null);
+    setWorking(true); setErr(null); setNote(null);
     try {
-      await adminAttachOfferings(contactId, picked, {
+      const { purchaseId } = await adminAttachOfferings(contactId, picked, {
         markPaid: payStatus === 'paid',
         ...(payStatus !== 'unpaid' ? { paymentMethod: method } : {}),
         ...(payStatus === 'partial' ? { partialAmount: Number(partial) || 0 } : {}),
       });
-      setOpen(false); setPicked([]); setPayStatus('unpaid'); setPartial('');
+
+      /* ⚠️ TASK-FIX2 §2 — PLACE WHAT WAS JUST SOLD. `attach_offerings_to_client`
+         returns the purchase; `client_standing_slots` is the staff-gated read that
+         resolves it to the purchase ITEM the standing time hangs off. Answered
+         plans go through `setMyStandingSchedule`, the one writer; unanswered ones
+         are named out loud rather than left as a silent `{}`. */
+      const toPlace = recurringPicked.filter(placeable);
+      const unplaced = recurringPicked.filter((o) => !placeable(o));
+      if (purchaseId && toPlace.length > 0) {
+        const slots = await fetchClientStandingSlots(contactId);
+        for (const o of toPlace) {
+          const slot = slots.find((sl) => sl.purchase_id === purchaseId && sl.offering_id === o.id);
+          if (!slot) continue;
+          await setMyStandingSchedule({
+            purchaseItemId: slot.purchase_item_id,
+            slots: choicesFor(o),
+            durationMinutes: slot.duration_minutes || 60,
+          });
+        }
+      }
+      if (unplaced.length > 0) {
+        setNote(`${unplaced.map((o) => o.name).join(' and ')} ${unplaced.length === 1 ? 'has' : 'have'} `
+          + 'no day or time yet — set it in "Their standing weekly time" below.');
+      }
+
+      setOpen(false); setPicked([]); setPayStatus('unpaid'); setPartial(''); setWeekly({});
       onAttached();
     } catch (e) {
       setErr(toErrorMessage(e, 'Could not attach offering.'));
@@ -383,6 +467,8 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
           className="inline-flex items-center gap-1.5 border border-green-800/40 text-green-900 text-xs font-medium px-2 py-1 hover:bg-green-50 focus-ring">
           <Plus size={12} /> Add offerings
         </button>
+        {note && <p role="status" className="text-[11.5px] text-gold-900 mt-2">{note}</p>}
+        {err && <p role="alert" className="form-error text-xs mt-2">{err}</p>}
       </div>
     );
   }
@@ -416,6 +502,51 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
           )}
         </div>
       )}
+      {recurringPicked.map((o) => (
+        <div key={o.id} className="border border-gold-600/40 bg-gold-50/40 p-3 mb-3">
+          <p className="text-sm font-medium text-green-900">
+            {/* D25: the rider is told about their Riding Lesson, not about a SKU —
+                but this is a STAFF surface picking from the price list, so the
+                plan is named as it is sold. */}
+            {o.name} — {freqOf(o) === 1 ? 'one session a week' : `${freqOf(o)} sessions a week`}
+          </p>
+          <p className="text-[11.5px] text-muted mb-2">
+            A weekly plan is a reserved time, not a pool of credits (D23). Pick the
+            day{freqOf(o) > 1 ? 's' : ''} and time{freqOf(o) > 1 ? 's' : ''} now and the month goes on
+            the calendar with the order. Leave it blank and the plan is attached with
+            no time yet — it will be marked as awaiting one.
+          </p>
+          {choicesFor(o).map((c, i) => (
+            <div key={i} className="flex flex-wrap items-end gap-2 mb-2">
+              <label className="flex-1 min-w-[8rem]">
+                <span className="form-label text-[11px]">
+                  {freqOf(o) === 1 ? 'Day' : `Session ${i + 1} — day`}
+                </span>
+                <select className="form-input py-1 text-sm" value={c.day}
+                  onChange={(e) => setChoice(o, i, { day: e.target.value })}>
+                  <option value="">Not yet</option>
+                  {WEEKDAYS.map((dd) => (
+                    <option key={dd} value={dd}
+                      disabled={choicesFor(o).some((other, n) => n !== i && other.day === dd)}>
+                      {WEEKDAY_PLURAL[dd]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex-1 min-w-[8rem]">
+                <span className="form-label text-[11px]">Time</span>
+                <input type="time" className="form-input py-1 text-sm" value={c.time}
+                  onChange={(e) => setChoice(o, i, { time: e.target.value.slice(0, 5) })} />
+              </label>
+            </div>
+          ))}
+          <p className="text-[11.5px] text-green-900">
+            {placeable(o)
+              ? `${choicesFor(o).map((c) => `${WEEKDAY_PLURAL[c.day] ?? c.day} at ${c.time}`).join(' and ')} — held every week from now on.`
+              : 'No day chosen yet — this plan will be attached awaiting a time.'}
+          </p>
+        </div>
+      ))}
       {err && <p className="form-error text-xs mb-2">{err}</p>}
       <div className="flex gap-2">
         <button type="button" disabled={working || picked.length === 0} onClick={submit} className="btn-primary text-xs py-1.5 px-3">

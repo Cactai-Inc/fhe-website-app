@@ -702,6 +702,16 @@ export async function setMyStandingSchedule(input: {
 export interface StandingSlot {
   purchase_id: string;
   purchase_item_id: string;
+  /* ⚠️ TASK-FIX2 §2 — WHICH ORDER THIS PLAN IS. Madeline Do holds two live
+     `2x Weekly Lessons` plans, one PAID and one not, and both rendered as the
+     same sentence with no way to tell which the money is on. Staff-read only;
+     `my_standing_slots` (the member's own read) is a different function and is
+     unchanged. Optional because that member-side read fills the same type. */
+  purchase_code?: string | null;
+  purchase_status?: string | null;
+  payment_status?: string | null;
+  purchase_amount?: number | null;
+  purchased_at?: string | null;
   offering_id: string;
   offering_name: string;
   segment: string;

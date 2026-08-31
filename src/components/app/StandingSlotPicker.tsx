@@ -166,6 +166,7 @@ export function StandingSlotPicker({
           <div key={s.purchase_item_id}
             className="bg-green-50 border border-green-200 p-4 flex flex-wrap items-start justify-between gap-3">
             <div>
+              {staff && <OrderStamp slot={s} />}
               <p className="text-sm font-sans text-green-900">
                 <span className="font-medium">{label}</span>
                 {summary && (
@@ -197,6 +198,11 @@ export function StandingSlotPicker({
       {/* ── The question ───────────────────────────────────────────────────── */}
       {open && (
         <div className="border border-green-800/15 p-4">
+          {/* ⚠️ TASK-FIX2 §2 — WHICH ORDER IS BEING PLACED. Staff only: a member
+              has one plan in front of them and does not think in order codes,
+              but Claire may be looking at two identical-looking ones and only
+              one of them is paid. D19 — the act states itself before it runs. */}
+          {staff && <OrderStamp slot={open} />}
           <h3 className="form-label mb-1 flex items-center gap-2">
             <CalendarClock size={16} aria-hidden="true" />
             {/* D25 — "Select the day and time for your weekly Riding Lesson(s)". */}
@@ -275,6 +281,42 @@ export function StandingSlotPicker({
 
       {note && <p role="status" className="text-sm text-green-900">{note}</p>}
     </div>
+  );
+}
+
+/**
+ * ⚠️ TASK-FIX2 §2 — WHICH ORDER A WEEKLY PLAN BELONGS TO.
+ *
+ * Madeline Do holds two live `2x Weekly Lessons`: `PUR-000319`, PAID $880 on
+ * 2026-08-26, which placed nothing, and `PUR-000230`, unpaid, which is the one
+ * her four booked sessions hang off. Both rendered as the identical sentence.
+ * Placing 26 sessions against the wrong one is a value-moving mistake nobody
+ * could have seen coming, so the row now says which order it is and whether the
+ * money is in. Fields come from `client_standing_slots` (staff read); they are
+ * absent on the member's own `my_standing_slots`, and this only renders for staff.
+ */
+function OrderStamp({ slot }: { slot: StandingSlot }) {
+  if (!slot.purchase_code && !slot.payment_status) return null;
+  const paid = slot.payment_status === 'paid';
+  return (
+    <p className="mb-1 flex flex-wrap items-center gap-1.5 text-[11px] font-sans">
+      {slot.purchase_code && (
+        <span className="text-muted">{slot.purchase_code}</span>
+      )}
+      {slot.purchase_amount != null && (
+        <span className="text-muted">${Number(slot.purchase_amount).toFixed(2)}</span>
+      )}
+      <span className={`rounded-full border px-2 py-0.5 uppercase tracking-wide ${
+        paid ? 'border-green-300 bg-green-50 text-green-900'
+             : 'border-gold-500 bg-gold-50 text-gold-900'}`}>
+        {paid ? 'paid' : (slot.payment_status ?? slot.purchase_status ?? 'unpaid')}
+      </span>
+      {slot.purchased_at && (
+        <span className="text-muted">
+          ordered {new Date(slot.purchased_at).toLocaleDateString()}
+        </span>
+      )}
+    </p>
   );
 }
 

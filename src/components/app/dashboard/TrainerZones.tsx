@@ -84,23 +84,33 @@ export function WeekZone({ items }: { items: WeekDay[] }) {
       {items.map((d) => {
         const day = new Date(`${d.day}T12:00:00`);
         return (
-          <Link
+          /* ⚠️ TASK-FIX2 §4 — THE SESSION IS THE THING BEING POINTED AT.
+             This whole card was one `Link` to `?on=<day>`, so clicking a named
+             session landed on that day's grid and left Claire to find it again.
+             Its sibling `TodayZone` has always used `bookingHref` (`?item=`),
+             which `CalendarPage` reads and opens the panel from — the helper is
+             imported two lines above. The card is now a div: the DAY header keeps
+             `?on=`, and each session is its own link to itself. */
+          <div
             key={d.day}
-            to={`/app/calendar?on=${d.day}`}
-            className={`dash-card min-h-[5.4rem] px-2 py-2 focus-ring ${
+            className={`dash-card min-h-[5.4rem] px-2 py-2 ${
               d.is_today ? 'border-gold-600/70 bg-gold-50' : ''}`}
           >
-            <span className="block text-[0.62rem] font-semibold uppercase tracking-wide text-green-800/55">
+            <Link
+              to={`/app/calendar?on=${d.day}`}
+              className="block text-[0.62rem] font-semibold uppercase tracking-wide text-green-800/55 focus-ring hover:text-green-800"
+            >
               {day.toLocaleDateString(undefined, { weekday: 'short' })}
               {d.is_today ? ' · today' : ''}
-            </span>
+            </Link>
             {d.items.slice(0, 3).map((it) => (
-              <span
+              <Link
                 key={it.booking_id}
-                className="mt-1 block truncate rounded border-l-[3px] border-green-400 bg-green-50 px-1.5 py-0.5 text-[0.68rem] leading-tight text-green-900"
+                to={bookingHref(it.booking_id, it.starts_at)}
+                className="mt-1 block truncate rounded border-l-[3px] border-green-400 bg-green-50 px-1.5 py-0.5 text-[0.68rem] leading-tight text-green-900 focus-ring hover:bg-green-100"
               >
                 {formatTime(it.starts_at)} {it.client_name ?? serviceWording(it.service_type).label}
-              </span>
+              </Link>
             ))}
             {d.booked > 3 && (
               <span className="mt-1 block text-[0.66rem] text-green-800/50">+{d.booked - 3} more</span>
@@ -115,7 +125,7 @@ export function WeekZone({ items }: { items: WeekDay[] }) {
             {d.booked === 0 && d.open > 0 && (
               <span className="mt-1 block text-[0.66rem] text-green-800/40">{d.open} open</span>
             )}
-          </Link>
+          </div>
         );
       })}
     </div>

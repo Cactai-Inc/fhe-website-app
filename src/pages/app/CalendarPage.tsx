@@ -509,7 +509,8 @@ export default function CalendarPage() {
             onEmpty={onEmptyClick}
           />
         ) : (
-          <MonthGrid anchor={anchor} items={items} onPickDay={(d) => { setView('week'); setAnchor(d); }} />
+          <MonthGrid anchor={anchor} items={items} onSelect={onItemClick}
+            onPickDay={(d) => { setView('week'); setAnchor(d); }} />
         )}
       </div>
 
@@ -615,14 +616,39 @@ function WeekGrid({
   );
 }
 
+/**
+ * ⚠️ TASK-FIX2 §4 — WHAT THE MONTH VIEW SHOWED, AND WHY IT SHOWED NOTHING.
+ *
+ * `dayItems.slice(0, 3)` rendered the first three items in `calendar_free_busy`'s
+ * order, which is START TIME. The hourly `/api/calendar-reminders` cron publishes
+ * one generated `available` slot per business hour (08:00–20:00, seven days), so
+ * every day begins with 8:00 Open, 9:00 Open, 10:00 Open. On Tuesday 2026-09-01
+ * the day's two real lessons sat at ranks 10 and 11 — inside "+11 more", which was
+ * not clickable. The month view of a working barn showed three empty hours and hid
+ * every session on it.
+ *
+ * ⚠️ THE FURNITURE IS NOT DELETED HERE (AR1 F3/F4/F6). A cron regenerates it hourly
+ * and the replacement booking path (`request_open_time`) does not debit a credit
+ * yet, so removing it would give lessons away. The fix is ordering and reach:
+ * REAL items take the three visible ranks, generated availability fills what is
+ * left, and every chip is its own control so a session in view can be opened.
+ */
+function dayRank(it: CalendarItem): number {
+  // 0 = a real session (scheduled / pending / confirmed / completed / draft),
+  // 1 = generated open availability. Chronological inside each band.
+  return it.status === 'available' ? 1 : 0;
+}
+
 function MonthGrid({
   anchor,
   items,
   onPickDay,
+  onSelect,
 }: {
   anchor: Date;
   items: CalendarItem[];
   onPickDay: (d: Date) => void;
+  onSelect: (i: CalendarItem) => void;
 }) {
   const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
   const gridStart = startOfWeek(first);
@@ -630,7 +656,10 @@ function MonthGrid({
   const today = new Date();
 
   function itemsOn(day: Date): CalendarItem[] {
-    return items.filter((it) => sameDay(new Date(it.starts_at), day));
+    return items
+      .filter((it) => sameDay(new Date(it.starts_at), day))
+      .sort((a, b) => dayRank(a) - dayRank(b)
+        || new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
   }
 
   return (
@@ -645,26 +674,39 @@ function MonthGrid({
           const dayItems = itemsOn(d);
           const inMonth = d.getMonth() === anchor.getMonth();
           return (
-            <button
+            /* The cell is a div carrying the day click, and each chip is its own
+               button that stops propagation — the identical shape `WeekGrid`
+               already uses for its hour cells, so a chip in the month view opens
+               the same panel a chip in the week view does. */
+            <div
               key={d.toISOString()}
-              type="button"
               onClick={() => onPickDay(d)}
-              className={`min-h-[92px] border-b border-l border-green-800/10 p-1.5 text-left align-top ${
+              className={`min-h-[92px] cursor-pointer border-b border-l border-green-800/10 p-1.5 text-left align-top ${
                 inMonth ? '' : 'bg-green-800/[0.02] text-green-800/40'
               } ${sameDay(d, today) ? 'bg-gold-50' : ''}`}
             >
               <div className="text-xs font-semibold text-green-900">{d.getDate()}</div>
               <div className="mt-1 space-y-0.5">
                 {dayItems.slice(0, 3).map((it) => (
-                  <div key={it.id} className={`rounded px-1 py-0.5 text-[10px] leading-tight truncate ${itemClass(it)}`}>
+                  <button
+                    key={it.id}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onSelect(it); }}
+                    className={`block w-full rounded px-1 py-0.5 text-left text-[10px] leading-tight truncate ${itemClass(it)}`}
+                  >
                     {formatTimeRange(it.starts_at, it.ends_at ?? it.starts_at).split(' – ')[0]} {itemLabel(it)}
-                  </div>
+                  </button>
                 ))}
                 {dayItems.length > 3 && (
-                  <div className="text-[10px] text-muted">+{dayItems.length - 3} more</div>
+                  /* Says WHAT is hidden, not just how much. Three ranks of "Open"
+                     with "+11 more" underneath was the whole defect. */
+                  <div className="text-[10px] text-muted">
+                    +{dayItems.length - 3} more
+                    {dayItems.slice(3).every((it) => it.status === 'available') ? ' open' : ''}
+                  </div>
                 )}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
