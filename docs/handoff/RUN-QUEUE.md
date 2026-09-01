@@ -18,6 +18,23 @@ lint **46** · `npm run build` **exit 0** · `test:db` **red, documented baselin
 
 ---
 
+## ⚠️ RESEQUENCED 2026-08-31 BY THE OWNER — READ THIS BEFORE THE ORDER BELOW
+
+**He is running `TASK-FIX5` next, then `TASK-FIX6`.** ⚠️ **FIX5 MOVES EVERY DOC PATH IN THIS FILE.**
+**After it merges, every prompt below must be re-issued with `docs/tasks/` → the new layout.**
+**Do not paste a stale path.**
+
+**And three specs were written or rewritten after the owner's 2026-08-31 corrections:**
+- ⚠️ **`TASK-BOOKS1` was REWRITTEN** — a comp is a **payment disposition on an ordinary order**
+  (`CR-89`), not a special zero-priced grant. **Any earlier reading of it is superseded.**
+- **`TASK-MODAL2` is NEW** (`CR-93`) — Escape, system-triggered dialogs, and the save state beside the
+  close icon. **It corrects `TASK-FIX4`, which has already merged.**
+- **`TASK-CR85` is unchanged.**
+
+**Still to spec, and ORCH6 owns it:** ⚠️ **`CR-90` — the 30-day standing schedule and month-end
+invoicing.** **It is the one with an operational deadline that has already passed** *(see the OPEN
+section)*.
+
 ## ▶ 1 · TASK-CR85 — three nav sections, People dissolves into Community
 
 ```
