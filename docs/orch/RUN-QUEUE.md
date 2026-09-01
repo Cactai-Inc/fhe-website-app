@@ -14,7 +14,9 @@ run: the brief's "READY" was one step stale. Audit in the merge commit message; 
 
 **Baselines re-measured on `main` AFTER that merge:** typecheck **0** · typecheck:api **0** ·
 lint **46** · `npm run build` **exit 0** · `test:db` **red, documented baseline, proof of nothing**.
-**Worktrees: NONE LIVE.** All ten were merged, tagged `archive/<name>-2026-08-31`, and removed.
+⚠️ **WORKTREE STATE IS NOT KEPT HERE — see `docs/orch/BOARD.md`.** *(This line read "NONE LIVE" while
+five were live, and it misled `DSGN-1` on 2026-09-01. A status claim in a queue file is a hypothesis,
+D20; the board is written on every dispatch and merge.)*
 
 ---
 
