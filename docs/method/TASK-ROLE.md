@@ -120,5 +120,7 @@ own task wrong or unsafe — that one you chase.**
 8. **The owner's render checklist.**
 9. **TEARDOWN census.**
 
-⚠️ **ORCH VALIDATES YOUR CLAIMS AND APPENDS ITS VERDICT TO THIS FILE.** **A self-reported "done" is
+⚠️ **ORCH VALIDATES YOUR CLAIMS AND APPENDS ITS VERDICT TO THIS FILE.** 🔒 **A gap it finds goes back
+to `DSGN`, which amends the spec and adds the miss to THE TEST — so re-read your spec when it is
+re-issued; something in it has changed.** **A self-reported "done" is
 never taken at face value — write the report so it can be checked, not so it sounds finished.**

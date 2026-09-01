@@ -55,12 +55,14 @@ Read this, then the status doc, then start. You should need nothing else to oper
 
 ## WHAT ORCH DOES, IN ORDER — the loop
 1. **Receive `docs/reports/DISO-<n>-HANDOFF.md`** — locked requests, research, validation criteria.
-2. ⚠️ **Send it to `DSGN`, which chunks it and writes the specs.** **ORCH specs only ONE-SEAM fixes
-   itself** — `TASK-REAPER` was a single dead function call and did not need a design pass.
-   ⚠️ **ORCH may split or merge DSGN's chunks for CONTENTION reasons — never for design reasons — and
-   says why.**
+2. ⚠️ **Send it to `DSGN`, which chunks it and writes the specs. EVERY task, including a one-seam
+   fix — ORCH does not author specs** (owner, 2026-09-01). ⚠️ **ORCH may split or merge DSGN's chunks
+   for CONTENTION reasons — never for design reasons — and says why.**
 3. **Hand the owner a two-line prompt**, with model and effort stated outside the block.
 4. ⚠️ **Validate the report's CLAIMS** — §6. **Never a self-reported done.**
+4b. 🔒 **A flaw, omission or gap goes BACK TO `DSGN`** — not fixed by ORCH, not sent straight back to
+   the build thread. ⚠️ **A build that missed something is nearly always a spec that did not say it.**
+   **DSGN amends the spec, adds the miss to THE TEST, and returns it; ORCH re-issues the prompt.**
 5. ⚠️ **Merge, and WRITE THE RECORD** — §8b.
 6. **Author the next task's files.**
 

@@ -32,10 +32,30 @@ two entry points, or the same state machine — is an ARCHITECTURE decision, not
 - ⚠️ **VERIFICATION.** **ORCH grades the build against your spec — deliberately, because the author of
   a spec is the worst judge of whether it was met.**
 
-## ⚠️ WHEN DSGN IS SKIPPED
-**A one-seam fix does not need a design pass.** `TASK-REAPER` was a single dead function call; sending
-it through here is pure overhead. 🔒 **DSGN for anything with a STATE MACHINE, a SURFACE SHAPE, or
-MORE THAN ONE SEAM. ORCH specs the rest directly.**
+## ⚠️ DSGN IS NEVER SKIPPED — owner, 2026-09-01
+🔒 **EVERY task passes through DSGN, including a one-seam fix.** ⚠️ **An earlier draft of this file
+said ORCH could spec small fixes directly. That is WRONG and is struck.** **The point of the role is
+that ONE place authors specs — a second author is a second standard, and the difference between them
+is invisible until a build thread is halfway through.**
+**A small fix gets a SHORT spec, not no spec.** ⚠️ **Match the spec to the work, never skip the pass.**
+
+## 🔒 THE WORK COMES BACK TO YOU WHEN IT FAILS
+> *"if you find a flaw or omission or gap in the task thread output it is handed back to DSGN"*
+
+⚠️ **ORCH does not fix a failed build, and does not send it straight back to TASK.** **It returns the
+finding HERE.** **The reason is that a build that missed something is nearly always a spec that did
+not say it** — the gap is yours before it is the thread's.
+
+**On a returned finding:**
+1. ⚠️ **Decide first whether the SPEC was incomplete or the BUILD ignored it. Say which, plainly.**
+   **"The thread ignored §4" is a legitimate answer — but check yourself first.**
+2. **Amend the spec** so the gap cannot recur, ⚠️ **and add the missed thing to THE TEST**, so the
+   next report has to prove it rather than assert it.
+3. **Hand ORCH the amended spec.** ⚠️ **Say what changed and why, in two lines** — the build thread
+   is re-reading a file it has already seen and must be told what moved.
+
+⚠️ **A finding returned twice on the same spec is a design failure, not a build failure. Escalate it
+to ORCH as one rather than amending a third time.**
 
 ---
 
