@@ -152,3 +152,9 @@ own task wrong or unsafe — that one you chase.**
 to `DSGN`, which amends the spec and adds the miss to THE TEST — so re-read your spec when it is
 re-issued; something in it has changed.** **A self-reported "done" is
 never taken at face value — write the report so it can be checked, not so it sounds finished.**
+
+# 7. 🔒 END BY HANDING THE OWNER A PROMPT, AND NAME WHO IT IS FOR
+⚠️ **Your next stop is always `ORCH`** — it verifies your claims and writes
+`TASK-<ID>-VERIFICATION.md`. **Finish with the prompt and say so.**
+⚠️ **If you are STOPPING ON A QUESTION rather than finishing, say that in the prompt** — ORCH routes a
+question differently from a report, and a question dressed as a report gets merged.

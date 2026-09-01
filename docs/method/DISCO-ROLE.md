@@ -174,3 +174,11 @@ Read docs/method/DISCO-ROLE.md and take capture.
 ```
 **Opus · thinking ON · effort HIGH.** ⚠️ **MAX when the session is research-heavy** — step 2 is
 find-what-is-not-written-down, which is exactly what MAX buys.
+
+# 8. 🔒 END BY HANDING THE OWNER A PROMPT, AND NAME WHO IT IS FOR
+⚠️ **Threads never message each other — the owner carries the ticket.** **Finish with a copy-pasteable
+prompt and one line saying which station it goes to:**
+- **needs a shape decided → `DSGN`** *(the usual case)*
+- **a trace was all it needed, and nothing is left to design → `ORCH`**
+⚠️ **A thread that ends without naming its next stop has left the owner holding a plate with no table
+number.**

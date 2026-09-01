@@ -162,3 +162,9 @@ Read docs/method/DSGN-ROLE.md and prepare <the DISCO handoff or CR numbers> for 
 ```
 **Opus · thinking ON · effort HIGH.** ⚠️ **MAX when the chunking is genuinely unclear** — that is
 judgement under uncertainty, which is what MAX buys.
+
+# 8. 🔒 END BY HANDING THE OWNER A PROMPT, AND NAME WHO IT IS FOR
+⚠️ **Threads never message each other — the owner carries the ticket.** **Your next stop is always
+`ORCH`**, which sequences your chunks and dispatches them. **Finish with the prompt and say so.**
+⚠️ **If something in your handoff needs the OWNER before any build starts — a shape, a state a user
+will see — SAY THAT IN THE SAME BREATH**, so ORCH does not fire a ticket the GM has not seen.
