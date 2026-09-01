@@ -299,6 +299,12 @@ what survives; the prompt is thrown away the moment it is pasted.
 a ruling, a report or a role file matters to the build, THE SPEC LINKS IT.** **ORCH does not get to
 patch the gap in chat.**
 
+🔒 **THE WORKTREE RIDES OUTSIDE THE BLOCK, WITH MODEL AND EFFORT — AND IT IS ORCH's TO ASSIGN
+(D36, 2026-09-01).** **Every TASK dispatch states its pool worktree (`wt-1`/`wt-2`/`wt-3`) beside
+the model line, and the board records the assignment BEFORE the prompt is handed over.** ⚠️ **A TASK
+thread never self-selects — the wt-1 collision came from a thread choosing from a minutes-stale
+census while another thread was claiming the same tree.**
+
 ## 🔒 THE FRONT DOOR IS `DISCO`, AND IT IS THE ONLY ONE
 ⚠️ **EVERY new request, problem, idea or correction enters through `DISCO`.** **Not through ORCH.**
 **ORCH receives DSGN handoffs and TASK reports — never a fresh requirement.**

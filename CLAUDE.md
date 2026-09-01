@@ -876,3 +876,27 @@ reporting success.
   🔒 **AND: a thread that applies a migration re-runs its own verification immediately before
   reporting**, because between apply and report someone else may have replaced what it just proved.
   ⚠️ **A green check from an hour ago is not evidence.**
+
+- **D36 — THE POOL SURVIVES; SELF-SELECTION DOES NOT. ORCH ASSIGNS EVERY WORKTREE (2026-09-01).**
+  Rules on the wt-1 collision and on the owner's question of reverting ORCH6's recycled-pool rule.
+  **The recycling was not the cause and is kept** — what reuse saves is real (`.env`/`.env.db`,
+  which never propagate, and 449 MB of `node_modules` per tree; `git worktree add` itself is 1s).
+  ⚠️ **The cause was the SELECTION protocol: a thread chose its own worktree from an observational
+  idleness test.** Reflog-proven sequence: REQCARDS' census recorded `wt-1` idle at ~14:11;
+  SIGNBOOK claimed it seconds later; when REQCARDS converted mid-flight to LIFECYCLE — a task with
+  no worktree assignment, because the conversion happened after dispatch — it fell back to
+  "take one that is idle", trusted its minutes-old census, and checked out `task/lifecycle` inside
+  `wt-1` under SIGNBOOK. **A read-then-act idleness test is a race; recycling merely created the
+  shared resource it raced on.**
+
+  🔒 **THE RULE, three parts, all binding:**
+  1. **ORCH names the worktree at dispatch** — beside the model and effort, outside the prompt
+     block — **and records it on the board BEFORE the prompt is handed over.** Contention over a
+     directory is right-of-way, and right-of-way is ORCH's, not a station's.
+  2. ⚠️ **A TASK thread with no assignment STOPS AND ASKS. It never picks.** A mid-flight task
+     conversion is precisely the case: the new task needs a fresh assignment from ORCH.
+  3. **The thread-side guard stays, and runs immediately before the checkout, in the same turn:**
+     detached HEAD + clean `git status --porcelain`, else the tree is OCCUPIED whatever the board
+     says — stop and report. **And the `task/<id>` branch checkout is the CLAIM, run as the first
+     act in the tree** — it makes occupancy visible in `git worktree list`, so the next entrant's
+     guard fails loudly instead of silently sharing a directory.

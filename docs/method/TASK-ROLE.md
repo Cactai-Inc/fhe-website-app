@@ -107,23 +107,32 @@ no reproduction, no measurement, no third paragraph. ⚠️ **The exception is a
 own task wrong or unsafe — that one you chase.**
 
 # 5. MECHANICS
-- ⚠️ **USE A POOL WORKTREE — `~/Downloads/claude-code-repo/wt-1`, `wt-2`, `wt-3` — NOT a new one.**
+- ⚠️ **USE THE POOL WORKTREE YOUR DISPATCH NAMES — `wt-1`/`wt-2`/`wt-3`, stated beside the model
+  line — NOT one you pick and NOT a new one (D36).**
   **Measured 2026-09-01: `git worktree add` is 1.0s and `npm ci` 5.2s, but `node_modules` is 449 MB
   per tree and is NOT hardlinked.** ⚠️ **What reuse really saves is the `.env` / `.env.db` copy** —
   both gitignored, neither propagates, `npm run build` dies without `.env`, and forgetting them is a
   recurring trap. **A pool worktree already has them.**
-  **Take one that is idle** *(detached HEAD, `git status --porcelain` empty)*, then:
+  🔒 **NO ASSIGNMENT, NO WORKTREE.** ⚠️ **If you have no named worktree — your task changed
+  mid-flight, the prompt omitted it, anything — STOP and ask ORCH through the owner. Never
+  self-select.** *(2026-09-01: a thread that converted from REQCARDS to LIFECYCLE picked "idle"
+  `wt-1` from its own minutes-old census and checked out under SIGNBOOK mid-flight — two live
+  threads in one directory.)*
+  **On entering your assigned worktree, run the guard IMMEDIATELY BEFORE the checkout, in the same
+  turn — a census from earlier in your session is not evidence:** it must be **detached HEAD** with
+  **`git status --porcelain` empty**. 🔒 **If either fails, the worktree is OCCUPIED whatever the
+  board says — STOP and report; do not proceed.** Then:
   ```
   git fetch origin && git checkout -b task/<id> origin/main
   git clean -xdf -e node_modules -e .env -e .env.db
   ```
+  ⚠️ **The `task/<id>` branch checkout IS the claim** — it is what makes your occupancy visible in
+  `git worktree list`, so run it as your first act in the tree, before any reading or measuring.
   ⚠️ **THE CLEAN IS NOT OPTIONAL.** Inherited `dist/`, coverage output and un-tracked installs *(FIX4
   installed Playwright with `--no-save`)* make a build pass or fail for reasons that have nothing to
   do with your branch.
-  ⚠️ **NEVER take a worktree whose branch is unmerged or whose tree is dirty — that is someone's work.**
   **Branch from `origin/main` every time**, so ORCH's audit diff against the merge-base stays readable.
-  **If every pool worktree is busy, create `wt-<id>` and say so in your report** — and copy `.env`
-  and `.env.db` in.
+  **If ORCH assigns a fresh `wt-<id>` because the pool is full, copy `.env` and `.env.db` in.**
 - ⚠️ **NEVER `~/Desktop`.** **Delete nothing** — retire behind a flag (D32). **Templates are never
   deleted, hard or soft.**
 - **Migrations:** `BEGIN; … ROLLBACK;` → apply → verify → commit. `YYYYMMDDTHHMM_sentence_name.sql`.
