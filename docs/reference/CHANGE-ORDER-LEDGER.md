@@ -4117,3 +4117,81 @@ second reader cannot leak a state a UI filter forgot to hide (D18).
 **The occupied labels already exist — `CalendarPage.tsx:121` renders `Booked`, `Unavailable` at :124.
 Reuse them. ⚠️ `Pending reschedule` is the ONE new label this CR adds — and it needs a legend entry
 beside the other two, or it is a colour nobody can read.**
+
+---
+
+## CR-98 · G1 · ⚠️ URGENT — `/sign/*` asks for everything and shows a purchase block nobody authorised
+
+**SAID (owner, 2026-09-01):**
+> *"on the page for /sign/rider remove the block of shit that says 'what youll be able to purchase' I
+> never authorized this design, i never asked for it to be setup this way and its very confusing to
+> visitors and it looks broken because the block of shit you added to the page looks like buttons that
+> dont click. if any of the other /sign pages have this same block of 'what youll be able to buy' shit
+> it needs to be removed immediately."*
+
+> *"the purpose of this page is purely to capture the initial information for the setup of an account,
+> it was supposed to only ask for their email address. then it prints a notification to check their
+> email account for the link to click to setup their account, with the spam notice and the report
+> issue link at the bottom."*
+
+### ⚠️ MEASURED 2026-09-01 BY ORCH6 — one file serves all four funnels
+**`src/pages/SignStart.tsx`, 1047 lines, routed as `/sign/:path`** *(guest · rider · horse ·
+rider+horse — `App.tsx:188`)*. **The string is at `SignStart.tsx:662`.** ⚠️ **So it is on EVERY
+`/sign/*` page, not just `/sign/rider`.**
+⚠️ **AND THE SECOND HALF OF HIS COMPLAINT IS CONFIRMED: the page carries FOURTEEN-PLUS `<input>`
+fields.** **It is a full intake form where he specified ONE BOX.**
+
+### 🔒 THE FLOW HE SPECIFIED, END TO END
+1. **`/sign/*` asks for the EMAIL ADDRESS ONLY.** On submit: **confirmation or error**, *"check your
+   email for the link"*, ⚠️ **a spam notice, and a way to contact him for help.**
+2. **The emailed link → the AUTH SETUP page** — *"google button for gmail accounts and password for
+   known non gmail accounts."*
+3. **First page after auth: the personal-information form.** ⚠️ **The MINIMUM the DOCUMENTS require,
+   and WHICH documents is decided by the `/sign/*` path they arrived through** *(rider → participant
+   docs)*.
+4. **Then the documents to read and sign.**
+5. **Then select the offering.** 6. **Then pick a day and time from the calendar.**
+7. **Then submit the booking request.**
+8. **Email to them: copies of every signed document, plus the order contents and the booking request
+   in the body.**
+9. **They exit onto the app's overview modal over the community feed.**
+10. **Company side: a notification AND an email showing the order and the date/time selected.**
+11. **Staff click APPROVE → the client is notified their order and booking are approved and payment
+    is due.**
+12. **Client clicks the email link or the dashboard notification → the PAYMENT MODAL opens** *(from
+    email: the browser opens, the app logs in, lands on the dashboard, modal opens for that order)*.
+13. **The modal shows the order, the total due, and two buttons: PAY CASH · PAY WITH ZELLE.**
+    - **CASH:** records the payment type, notifies the company so staff can confirm the booking to
+      `scheduled`; the modal shows a confirmation page; they close it and the notification is gone.
+    - **ZELLE:** the modal advances to the Zelle payment details; they click to confirm they sent it;
+      they close; the notification is gone.
+14. **Company gets a notification that the client paid by Zelle; when the money posts, staff click a
+    button ON THE NOTIFICATION to mark it paid.**
+
+⚠️ **HE IS NOT ASSUMING THIS IS UNBUILT:** *"if you find that the current implementation already does
+these things we need to investigate what is blocking a new visitor from signing up."* **But the intake
+half is confirmed out of alignment already.**
+
+---
+
+## CR-99 · G4 · captured — request cards on the dashboard need a home, a style, and their actions
+
+**SAID (owner, 2026-09-01):**
+> *"we need a dedicated style and possibly a location where these cluster when there are more than one
+> shown at a time, for the type of card that shows an order and/or booking request. the notification
+> cards need to enable actions that we take in response to these requests, like seeing the contact
+> information so we can contact the client, suggesting a different date and/or time, approving an
+> order and/or approving a booking request and marking an order paid."*
+
+> *"status should set automatically for the calendar entry based on the stage of approval and payment,
+> the payment status should be set based on the inputs from the client and staff, with each seqential
+> interaction that advances the order's payment status being the result of a button clicked by either
+> party as required by the software."*
+
+🔒 **THE CARD IS AN ACTION SURFACE, NOT A NOTICE.** **Its actions: see contact details · suggest a
+different date/time · approve the order · approve the booking · mark it paid.**
+🔒 **STATUS IS DERIVED, NEVER TYPED.** ⚠️ **The calendar entry's status follows the approval and
+payment stage automatically; every advance of payment status is a BUTTON one side or the other
+pressed.**
+⚠️ **THIS IS `CR-97`'s STATE MACHINE SEEN FROM THE STAFF SIDE** — `requested → approved → pending →
+scheduled`. **Same machine. Do not let it become a second one** (D18).
