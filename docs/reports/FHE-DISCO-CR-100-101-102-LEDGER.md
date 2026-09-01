@@ -33,6 +33,10 @@ CORRECTED       DISCO framed CR-102 as "flow only vs app-wide gold→green" — 
                 DISCO-SIGNFLOW in between — that subject guess was overridden); downstream is
                 FHE-DSNR-CR-100-101-102, then FHE-ORCH-CR-100-101-102, then
                 FHE-TASK-CR-100-101-102. Files git-mv'd twice, references updated.
+                Naming nuance (owner, same day): subject names like SIGNFLOW are fine but ONE-USE —
+                burnt once used; future work on the area revisits the original threads only if
+                their context is still accurate, else starts fresh as signflow-2. CR numbers
+                sidestep the burn.
                 ⚠️ FOR ORCH: the role files still template ROLE-<n> (and DSNR-ROLE.md §7 still says
                 "DSGN-<n>" — a stale pre-rename label); both need codifying to the new convention.
                 ALSO (owner, 2026-09-01): every prompt handed to him must state model tier + effort
