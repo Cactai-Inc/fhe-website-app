@@ -1,0 +1,18 @@
+_ensure_plan_horizon(p_purchase_item_id uuid, p_through date) :: postgres=X/postgres | service_role=X/postgres
+book_open_slot(p_booking_id uuid, p_horse_id uuid, p_credit_id uuid) :: postgres=X/postgres | authenticated=X/postgres | service_role=X/postgres
+booking_awaiting_payment(p_booking bookings) :: postgres=X/postgres | authenticated=X/postgres | service_role=X/postgres
+booking_form_applies(p_booking bookings) :: postgres=X/postgres | authenticated=X/postgres | service_role=X/postgres
+booking_status_code(p_status text) :: =X/postgres | postgres=X/postgres | anon=X/postgres | authenticated=X/postgres | service_role=X/postgres
+calendar_free_busy(p_from timestamp with time zone, p_to timestamp with time zone) :: postgres=X/postgres | authenticated=X/postgres | service_role=X/postgres
+calendar_money_items(p_from timestamp with time zone, p_to timestamp with time zone) :: =X/postgres | postgres=X/postgres | anon=X/postgres | authenticated=X/postgres | service_role=X/postgres
+confirm_booking(p_booking_id uuid) :: postgres=X/postgres | authenticated=X/postgres | service_role=X/postgres
+confirm_booking_for_purchase(p_purchase_id uuid) :: postgres=X/postgres | service_role=X/postgres
+decide_booking_change(p_change_id uuid, p_approve boolean, p_waive_fee boolean, p_reason text) :: postgres=X/postgres | authenticated=X/postgres | service_role=X/postgres
+ensure_standing_slots(p_client_id uuid) :: postgres=X/postgres | authenticated=X/postgres | service_role=X/postgres
+mint_recurring_allotments() :: postgres=X/postgres | authenticated=X/postgres | service_role=X/postgres
+my_lesson_sessions() :: postgres=X/postgres | authenticated=X/postgres | service_role=X/postgres
+plan_horizon_through() :: postgres=X/postgres | service_role=X/postgres
+report_my_payment(p_purchase_id uuid, p_method text, p_reference text) :: postgres=X/postgres | authenticated=X/postgres | service_role=X/postgres
+request_booking_change(p_booking_id uuid, p_kind text, p_new_start timestamp with time zone, p_new_end timestamp with time zone, p_scope text, p_note text, p_fee_method text, p_fee_reference text) :: postgres=X/postgres | authenticated=X/postgres | service_role=X/postgres
+request_open_time(p_starts_at timestamp with time zone, p_ends_at timestamp with time zone, p_offering_id uuid, p_horse_id uuid, p_note text) :: postgres=X/postgres | authenticated=X/postgres | service_role=X/postgres
+trg_confirm_bookings_when_paid() :: postgres=X/postgres | service_role=X/postgres

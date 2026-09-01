@@ -17,7 +17,12 @@ exist — and the owner, asked, ruled: BUILD LIFECYCLE FIRST.** That exchange an
 rulings are in `docs/reports/TASK-REQCARDS-LEDGER.md` on `main`; **read it before REQCARDS is
 dispatched again.** This thread is now TASK-LIFECYCLE.
 
-**Progress:** measurement complete · design locked · migrations next.
+**STATE: DONE. Report at `docs/reports/TASK-LIFECYCLE-REPORT.md`. Next station: ORCH.**
+**Six migrations written, rehearsed, APPLIED TO PRODUCTION and verified there.** Six commits on
+`task/lifecycle-b`, **not pushed**. Gates: typecheck 0 · typecheck:api 0 · lint 46/0 errors · build
+clean · test:api 7/7.
+**If this thread died now, nothing is lost:** the migrations are applied and committed, the walks and
+their captured output are in `docs/reports/`, and the report carries the findings.
 
 ## CLNR (zeroth act)
 CLNR: clean — pool worktrees idle and clean, no new §2a breakage.
@@ -87,3 +92,10 @@ build the request cards (REQCARDS owns those).
 ## EVENTS
 - **2026-09-01** — REQCARDS stood down; owner ruled LIFECYCLE first. Measured production; premises
   re-run; one spec error found (`requested` missing from the widening); design locked above.
+
+- **2026-09-01, later** — RELOCATED to `wt-2` on the owner's order (SIGNBOOK took `wt-1`).
+  Migrations A–D written and rehearsed; the rehearsal caught the `created_at`/`clock_timestamp`
+  fence that silently marked nothing pending. Migrations E and F added after sweeping for every
+  other function that read `bookings.status = 'pending'` — **seven of them, none in the spec's list
+  of six**, plus two UI gates that would have removed the staff approve buttons entirely. All six
+  applied to production, ACLs proven unchanged. Report written. **CLOSED.**
