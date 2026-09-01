@@ -40,7 +40,8 @@ Read this, then the status doc, then start. You should need nothing else to oper
 | Role | File | Owns | Six-step |
 |---|---|---|---|
 | **`DISO`** | `docs/method/DISO-ROLE.md` | ⚠️ **the conversation with the owner** — capture, research, discussion & lock. **Disposable by design** | **1 · 2 · 3** |
-| **`ORCH`** | this file | **distillation, sequencing, validation, the record** | **4 · 5 · 6 (the review half)** |
+| **`DSGN`** | `docs/method/DSGN-ROLE.md` | ⚠️ **the CHUNKING and the task specs** — grouping by seam is architecture, not scheduling | **4 · 5 (authoring)** |
+| **`ORCH`** | this file | ⚠️ **sequencing, contention, handoff, validation, the record.** **It stops authoring specs for anything DSGN sizes** | **5 · 6 (review)** |
 | **`TASK`** | `docs/method/TASK-ROLE.md` | **building one spec, in one worktree** | **the deliverables of 4 · 5 · 6** |
 | **`CLNR`** | `docs/method/CLNR-ROLE.md` | **the workspace itself** — ⚠️ **ORCH triggers it, never the owner** | — |
 
@@ -54,7 +55,10 @@ Read this, then the status doc, then start. You should need nothing else to oper
 
 ## WHAT ORCH DOES, IN ORDER — the loop
 1. **Receive `docs/reports/DISO-<n>-HANDOFF.md`** — locked requests, research, validation criteria.
-2. ⚠️ **Distil it into a TASK spec** — §5 of this file. **One task, one issue.**
+2. ⚠️ **Send it to `DSGN`, which chunks it and writes the specs.** **ORCH specs only ONE-SEAM fixes
+   itself** — `TASK-REAPER` was a single dead function call and did not need a design pass.
+   ⚠️ **ORCH may split or merge DSGN's chunks for CONTENTION reasons — never for design reasons — and
+   says why.**
 3. **Hand the owner a two-line prompt**, with model and effort stated outside the block.
 4. ⚠️ **Validate the report's CLAIMS** — §6. **Never a self-reported done.**
 5. ⚠️ **Merge, and WRITE THE RECORD** — §8b.
