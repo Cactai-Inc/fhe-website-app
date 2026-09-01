@@ -25,6 +25,7 @@ import {
   fetchOpenChangeRequests,
   decideBookingChange,
   confirmBooking,
+  bookingAwaitsPayment,
   proposeBookingTime,
   fetchMyPendingChanges,
   updateMyPendingBooking,
@@ -103,10 +104,20 @@ function itemClass(item: CalendarItem): string {
     case 'draft':
       // yellow = a notice / not-yet-committed item that needs attention
       return 'bg-yellow-50 border border-dashed border-yellow-500 text-yellow-800';
+    // ⚠️ TASK-LIFECYCLE — the three stages before a session is firm. Asked for,
+    // said yes to, payment declared: all orange, because to anyone looking at
+    // the calendar they are the same thing — not settled yet.
+    case 'requested':
+    case 'approved':
     case 'pending':
-    case 'pending_slot':
-    case 'pending_payment':
       return 'bg-orange-50 border border-orange-400 text-orange-800';
+    // A HELD SLOT. `moved` is what the parties see on their own row;
+    // `pending_reschedule` is what everyone else gets from calendar_free_busy
+    // over the same booking. Dashed, because the owner's point is that it is
+    // occupied AND likely to open up — a solid block would say the opposite.
+    case 'moved':
+    case 'pending_reschedule':
+      return 'bg-orange-50 border border-dashed border-orange-500 text-orange-800';
     case 'cancelled':
     case 'expired':
     case 'no_show':
@@ -122,6 +133,9 @@ const LEGEND: { label: string; cls: string }[] = [
   { label: 'Pending', cls: 'bg-orange-50 border border-orange-400' },
   { label: 'Draft / notice', cls: 'bg-yellow-50 border border-dashed border-yellow-500' },
   { label: 'Unavailable', cls: 'bg-green-800/5 border border-green-800/15' },
+  // ⚠️ TASK-LIFECYCLE — the ONE new label. A sixth colour with no legend row is
+  // a colour nobody can read, so it ships with the state it explains.
+  { label: 'Pending reschedule', cls: 'bg-orange-50 border border-dashed border-orange-500' },
 ];
 
 /** A short label for an item the caller may or may not see detail on. */
@@ -132,6 +146,14 @@ function itemLabel(item: CalendarItem): string {
   // (staff see every title; a client sees only their own linked appointment's).
   if (item.kind === 'block') return title || 'Unavailable';
   if (item.status === 'unavailable') return 'Unavailable';
+  // ⚠️ TASK-LIFECYCLE — an outsider over a held slot. It is somebody else's
+  // time, and the only thing they are told is that it may open up.
+  if (item.status === 'pending_reschedule') return 'Pending reschedule';
+  // ...and the parties' own row. `cancelled` was invisible to EVERYONE before
+  // this task, including the people it happened to (calendar_free_busy filtered
+  // it out in the WHERE); now they see it, so it needs a word.
+  if (item.is_mine && item.status === 'cancelled') return 'Cancelled';
+  if (item.is_mine && item.status === 'moved') return 'Moving — awaiting approval';
   // D25 (SLOTREACH §4) — "booking" is INTERNAL TAXONOMY and must never appear on a
   // calendar chip. A rider's own item is a Riding Lesson; a horse-care item is a
   // session with their horse; someone else's is opaque anyway.
@@ -760,7 +782,10 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
   const isMine = !!item.is_mine;
   // ONBOARD §7: a booking still waiting on us is EDITABLE, not "changeable by
   // request" — nothing has been agreed, so there is nothing to renegotiate.
-  const isPending = isMine && item.status === 'pending';
+  // ⚠️ TASK-LIFECYCLE — `requested` is the new first state, and this is what
+  // lets the client edit or withdraw their OWN unanswered ask. Without it the
+  // member's own request became read-only the moment it was made.
+  const isPending = isMine && ['requested', 'pending'].includes(item.status);
   const canChange = isMine && ['scheduled', 'confirmed'].includes(item.status);
   const hoursOut = (new Date(item.starts_at).getTime() - Date.now()) / 3_600_000;
   const feeNow = hoursOut < 48 ? fee : 0;
@@ -1296,12 +1321,28 @@ function RequestsBar({ onDecided }: { onDecided: () => void }) {
     } finally { setBusy(null); }
   }
 
+  /** ⚠️ TASK-LIFECYCLE / D19 — IT SAYS WHAT IT IS ABOUT TO DO, BEFORE IT DOES IT.
+   *  Approving a request on an order that still owes money does not confirm the
+   *  session: it lands on `approved` and emails the client a payment request.
+   *  Staff are told which of the two this is before they press, and told again
+   *  afterwards, because the two outcomes look identical on the queue. */
   async function confirmNew(bookingId: string, changeId: string) {
+    let owes = false;
+    try { owes = await bookingAwaitsPayment(bookingId); } catch { owes = false; }
+    const ask = owes
+      ? 'This order is not paid yet.\n\nApproving it will mark the session APPROVED and send the client a payment request. It is not scheduled until the payment is confirmed.\n\nSend the payment request?'
+      : 'Confirm this session? The client will be notified it is scheduled.';
+    if (!window.confirm(ask)) return;
     setBusy(changeId);
     try {
-      await confirmBooking(bookingId);
+      const res = await confirmBooking(bookingId);
+      if (res.payment_requested) {
+        window.alert('Approved — the payment request has been sent. The session schedules itself once you confirm the money arrived.');
+      }
       load();
       onDecided();
+    } catch (e) {
+      window.alert(toErrorMessage(e, 'Could not approve that request.'));
     } finally { setBusy(null); }
   }
 

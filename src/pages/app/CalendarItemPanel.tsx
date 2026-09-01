@@ -17,6 +17,7 @@ import {
   saveCalendarItem,
   deleteCalendarItem,
   confirmBooking,
+  bookingAwaitsPayment,
   fetchOpenChangeRequests,
   decideBookingChange,
   requestHorseIntake,
@@ -419,11 +420,22 @@ export function CalendarItemPanel({
     onClose();
   }
 
+  /** ⚠️ TASK-LIFECYCLE / D19 — the same act as the queue's Confirm, and it says
+   *  the same thing first: on an unpaid order this APPROVES and asks for the
+   *  money, it does not schedule. */
   async function confirm() {
     if (!item?.id) return;
+    let owes = false;
+    try { owes = await bookingAwaitsPayment(item.id); } catch { owes = false; }
+    if (owes && !window.confirm(
+      'This order is not paid yet.\n\nApproving it will mark the session APPROVED and send the client a payment request. It is not scheduled until the payment is confirmed.\n\nSend the payment request?'
+    )) return;
     setBusy(true); setError(null);
     try {
-      await confirmBooking(item.id);
+      const res = await confirmBooking(item.id);
+      if (res.payment_requested) {
+        window.alert('Approved — the payment request has been sent. The session schedules itself once you confirm the money arrived.');
+      }
       done.current = true;
       onSaved();
     } catch (e) {
@@ -937,7 +949,13 @@ export function CalendarItemPanel({
 
         {/* actions */}
         <div className="p-4 border-t border-green-800/10 flex items-center gap-2 sticky bottom-0 bg-cream">
-          {item?.status === 'pending' && (
+          {/* ⚠️ TASK-LIFECYCLE — a fresh ask is `requested` now, not `pending`.
+              Gating this on 'pending' alone would have taken the staff approve
+              and decline buttons off every new request the day the state
+              landed: correct machine, no button. `approved` is deliberately NOT
+              here — that booking has already been approved and its payment
+              request already sent, and pressing this again would send it twice. */}
+          {['requested', 'pending'].includes(item?.status ?? '') && (
             <>
               <button type="button" className="btn-primary justify-center" disabled={busy} onClick={() => void confirm()}>
                 Confirm request

@@ -21,13 +21,22 @@ export interface BusinessHour {
  *  the full detail set. */
 export interface CalendarItem {
   id: string;
+  /** ⚠️ TASK-LIFECYCLE — the owner's six states, plus the calendar's own
+   *  furniture, plus ONE value that is not a booking status at all:
+   *  `pending_reschedule` is what `calendar_free_busy` shows an OUTSIDER over a
+   *  `moved` booking. The row is held; the label says it may open up. Nothing
+   *  ever writes it to `bookings.status`.
+   *  `pending_slot` / `pending_payment` were retired: three spellings of one
+   *  idea, zero rows carrying either. */
   status:
     | 'draft'
     | 'available'
     | 'unavailable'
+    | 'requested'
+    | 'approved'
     | 'pending'
-    | 'pending_slot'
-    | 'pending_payment'
+    | 'moved'
+    | 'pending_reschedule'
     | 'confirmed'
     | 'cancelled'
     | 'expired'
@@ -583,10 +592,39 @@ export async function removeFromMyPurchase(itemId: string): Promise<number> {
   return Number(data ?? 0);
 }
 
-/** Staff confirm a pending booking (a requested time). */
-export async function confirmBooking(bookingId: string): Promise<void> {
-  const { error } = await supabase.rpc('confirm_booking', { p_booking_id: bookingId });
+/** Staff approve a requested time.
+ *
+ *  ⚠️ TASK-LIFECYCLE — this no longer always means "confirmed". On an order that
+ *  still owes money the booking lands on `approved` and the payment request goes
+ *  out (`request_purchase_payment`), and the caller is told so it can say which
+ *  of the two happened. `status` is 'approved' or 'confirmed'. */
+export async function confirmBooking(bookingId: string): Promise<{ status: string; payment_requested: boolean }> {
+  const { data, error } = await supabase.rpc('confirm_booking', { p_booking_id: bookingId });
   if (error) throw error;
+  return (data ?? { status: 'confirmed', payment_requested: false }) as { status: string; payment_requested: boolean };
+}
+
+/** Does approving this booking also ask the client for money? Read BEFORE the
+ *  act, so the surface can state what is about to happen (D19). It is the same
+ *  predicate the two approve paths use, so the screen and the database cannot
+ *  disagree. */
+export async function bookingAwaitsPayment(bookingId: string): Promise<boolean> {
+  // Two plain reads rather than a PostgREST embed: the embed's relationship
+  // name is a thing this cannot be tested against from a worktree, and a silent
+  // false here would hide the payment request from the person about to send it.
+  const { data: bk, error: e1 } = await supabase
+    .from('bookings').select('credit_id, purchase_id').eq('id', bookingId).maybeSingle();
+  if (e1 || !bk) return false;
+  const b = bk as { credit_id: string | null; purchase_id: string | null };
+  if (b.credit_id || !b.purchase_id) return false;
+  const { data: pu, error: e2 } = await supabase
+    .from('purchases').select('payment_status, amount, amount_paid, status, deleted_at')
+    .eq('id', b.purchase_id).maybeSingle();
+  if (e2 || !pu) return false;
+  const p = pu as { payment_status: string | null; amount: number | null; amount_paid: number | null; status: string | null; deleted_at: string | null };
+  if (p.deleted_at || p.status === 'void') return false;
+  return (p.payment_status ?? '') !== 'paid'
+      && Math.max((p.amount ?? 0) - (p.amount_paid ?? 0), 0) > 0;
 }
 
 /** Staff ask a booking's client to provide their horse (A4). Notifies the client
