@@ -21,6 +21,11 @@ DECIDED         🔒 CR-100 NORMALIZE-ONLY (owner, mid-run: "just normalize the 
                 🔒 Validation criteria for all three agreed as proposed ("agree").
 CORRECTED       DISCO framed CR-102 as "flow only vs app-wide gold→green" — both wrong; the owner's
                 rule is by FUNCTION, not by surface. Recorded in the handoff §Item 3.
+                ALSO (owner, 2026-09-01): every prompt handed to him must state model tier + effort
+                level, plus thinking on/off unless the model is Fable (Fable's thinking is always
+                on — MODEL-CHOICE-NOTES-2026-09-01.md). ORCH prompts exempt. The DSNR prompt below
+                was re-handed with the header. Candidate for ORCH to codify in the role files'
+                §END BY HANDING THE OWNER A PROMPT sections.
 DO NOT          do not treat CR-101 as a regression — the 8-24 fix never reverted; it merged and
                 still sits in ContractBody. The defect is UNREACHED PATHS (D17), see §CR-101.
 
