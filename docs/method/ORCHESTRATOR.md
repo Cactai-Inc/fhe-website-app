@@ -280,10 +280,16 @@ FHE-TASK-SIGNBOOK
 Read /Users/cactai/Downloads/claude-code-repo/fhe-website-app/docs/tasks/TASK-SIGNBOOK-….md and build it.
 ```
 
-**LINE 1 — the thread name: `<REPO>-<ROLE>-<UNIQUE TASK NAME>`.** ⚠️ **ROLE ONLY, NEVER THE PROFILE.**
-**`CODR` is a profile and lives INSIDE the file, not in the name** — a profile in the name is a second
-name for one thing. **No spaces; the id must survive as a searchable token and as a truncated tab
-title.**
+**LINE 1 — the thread name: `[REPO]-[ROLE]-[CHANGE NAME]` (owner, 2026-09-01 — D37).**
+🔒 **The CHANGE NAME is coined once, when the change enters the pipeline, and travels with it
+unchanged through every station** — `FHE-DISCO-SIGNFLOW` → `FHE-DSNR-SIGNFLOW` →
+`FHE-ORCH-SIGNFLOW` *(a prompt label for ORCH's standing thread, not a rename)* →
+`FHE-TASK-SIGNFLOW`. **Multiple TASK threads for one change take LETTERS — `-A`/`-B`/`-C`, NEVER
+numbers: numbers are reserved for a future thread set that revisits the same change after its
+context has moved on. Unchanged context means future work revisits the existing DISCO/DSNR
+threads, with NEW task threads lettered continuing after the last that ran.**
+⚠️ **ROLE ONLY, NEVER THE PROFILE.** **`CODR` is a profile and lives INSIDE the file, not in the
+name.** **No spaces; the id must survive as a searchable token and as a truncated tab title.**
 
 **LINE 2 — ONE FILE, BY ABSOLUTE PATH, and the instruction to read it.** ⚠️ **The absolute path is why
 there is no `cd` line: a fresh session starts wherever it starts, and an absolute path works from

@@ -4,8 +4,9 @@
 are not repeated in every spec.** A spec adds what is specific; this file is what is always true.
 **If a spec ever contradicts this file, the spec wins for that task — and you say so in your report.**
 
-**Thread naming: `ORCH` · `DISCO` · `TASK` · `CLNR`.** Your prompt is two lines and your identifier is
-the first.
+🔒 **Thread naming (D37): `[REPO]-[ROLE]-[CHANGE NAME]`** — e.g. `FHE-TASK-SIGNFLOW`; sibling task
+threads for one change are lettered `-A`/`-B`/`-C` (never numbers — reserved for future revision
+sets). Your prompt is two lines and your identifier is the first.
 
 ---
 

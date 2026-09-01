@@ -3,7 +3,16 @@
 **Authored 2026-08-31 by ORCH6, at the owner's direction. ⚠️ NEW ROLE. It takes work that ORCH has
 been doing and should not have been.**
 
-**Thread naming: `ORCH` · `DISCO` · `DSNR` · `TASK` · `CLNR`.** *(Renamed from `DISO` on 2026-09-01 —
+🔒 **THREAD NAMING (owner, 2026-09-01 — D37): `[REPO]-[ROLE]-[CHANGE NAME]`.** **The CHANGE NAME is
+coined once, when the change enters the pipeline, and travels with it unchanged through every
+station:** `FHE-DISCO-SIGNFLOW` → `FHE-DSNR-SIGNFLOW` → `FHE-ORCH-SIGNFLOW` *(a prompt label for
+ORCH's standing thread, not a rename)* → `FHE-TASK-SIGNFLOW`. **Multiple TASK threads for one change
+take LETTERS — `-A`/`-B`/`-C`, NEVER numbers: numbers are reserved for a future thread set that
+revisits the same change after its context has moved on.** **If the context has NOT changed since the
+last run, future work on that change REVISITS the existing DISCO/DSNR threads — their context is the
+asset — but always gets NEW task threads, lettered continuing after the last that ran.**
+🔒 **AND EVERY PROMPT ANY ROLE HANDS THE OWNER states, outside the code block: MODEL TIER · EFFORT ·
+and THINKING on/off when the model is not Fable.** *(Renamed from `DISO` on 2026-09-01 —
 the owner consistently calls it DISCO, and one name for one thing beats a tidy letter count.)*
 
 ## ⚠️ DISCO IS OPENED PER SUBJECT — ORCH SAYS WHEN, AND ORCH SAYS WHEN TO CLOSE

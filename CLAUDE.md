@@ -900,3 +900,17 @@ reporting success.
      says — stop and report. **And the `task/<id>` branch checkout is the CLAIM, run as the first
      act in the tree** — it makes occupancy visible in `git worktree list`, so the next entrant's
      guard fails loudly instead of silently sharing a directory.
+
+- **D37 — THREAD NAMES ARE `[REPO]-[ROLE]-[CHANGE NAME]`, AND EVERY HANDED PROMPT CARRIES
+  MODEL TIER · EFFORT · THINKING (owner, 2026-09-01).** The CHANGE NAME is coined once, when the
+  change enters the pipeline, and travels with it unchanged through every station:
+  `FHE-DISCO-SIGNFLOW` → `FHE-DSNR-SIGNFLOW` → `FHE-ORCH-SIGNFLOW` (a prompt label — ORCH's
+  standing thread is not renamed) → `FHE-TASK-SIGNFLOW`. **Multiple TASK threads for one change are
+  lettered `-A`/`-B`/`-C` — NEVER numbered: numbers are reserved for a future thread set that
+  revisits the same change after its context has moved on.** If the context has NOT changed since
+  the last run, future work on that change revisits the existing DISCO/DSNR threads (their context
+  is the asset) but always gets NEW task threads, lettered continuing after the last that ran.
+  **And every prompt any role hands the owner states, outside the code block: MODEL TIER · EFFORT ·
+  THINKING on/off when the model is not Fable** (Fable needs no thinking line). Recorded in all
+  four role files + `ORCHESTRATOR.md` § THE PROMPT — the role files predated both rules, which is
+  why DISCO's SIGNFLOW handoff shipped without a name or tier line.

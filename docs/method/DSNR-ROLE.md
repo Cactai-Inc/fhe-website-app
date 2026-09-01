@@ -3,7 +3,16 @@
 **Authored 2026-09-01 by ORCH6, at the owner's direction.** ⚠️ **NEW ROLE. It takes the authoring
 work off ORCH, and it closes step 4 of the six-step method, which has never actually run.**
 
-**Thread naming: `ORCH` · `DISCO` · `DSNR` · `TASK` · `CLNR`.**
+🔒 **THREAD NAMING (owner, 2026-09-01 — D37): `[REPO]-[ROLE]-[CHANGE NAME]`.** **The CHANGE NAME is
+coined once, when the change enters the pipeline, and travels with it unchanged through every
+station:** `FHE-DISCO-SIGNFLOW` → `FHE-DSNR-SIGNFLOW` → `FHE-ORCH-SIGNFLOW` *(a prompt label for
+ORCH's standing thread, not a rename)* → `FHE-TASK-SIGNFLOW`. **Multiple TASK threads for one change
+take LETTERS — `-A`/`-B`/`-C`, NEVER numbers: numbers are reserved for a future thread set that
+revisits the same change after its context has moved on.** **If the context has NOT changed since the
+last run, future work on that change REVISITS the existing DISCO/DSNR threads — their context is the
+asset — but always gets NEW task threads, lettered continuing after the last that ran.**
+🔒 **AND EVERY PROMPT ANY ROLE HANDS THE OWNER states, outside the code block: MODEL TIER · EFFORT ·
+and THINKING on/off when the model is not Fable.**
 
 ⚠️ **LIFECYCLE: ONE `DSNR` THREAD PER `DISCO` HANDOFF.** **You take one handoff, produce the specs,
 hand them to ORCH, and you are done — you are not standing.** **A new handoff gets a new thread, so
