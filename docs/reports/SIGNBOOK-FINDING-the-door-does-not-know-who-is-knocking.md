@@ -58,16 +58,51 @@ charlesjzigmund@icloud.com | sent       | f                | —                
 `cjzigs@icloud.com` has had an auth user since 28 July and **no profile** — the exact "known, auth
 exists, nothing else done" case, and the one that 409s.
 
-## 4 · WHAT `TASK-SIGNBOOK` DID AND DID NOT DO
-**Did:** proved the mechanism above and recorded it. **Did not build it**, because every part of it
-lands outside this task's spec and inside files it does not own:
-- `api/sign-start.ts` — `TASK-SIGNDOOR`'s, merged 2026-09-01. SIGNBOOK §7 puts the door out of scope.
-- `api/register-invited.ts` — nobody's; the 409 above is a contained fix and is the one piece that
-  could ship on its own.
-- The website-submission → activation-email link — **does not exist at all**; `submit_public_request`
-  has zero references to invitations or provisioning, and both live order-leads confirm it
-  (`caseyluke1029@`, `msrachelpage@`: *NO INVITATION EVER SENT*).
-- A new email template + a login-destination link — new surface, new copy, D13 template work.
+## 4 · ⚠️ BUILT — the owner directed it be built in this thread rather than routed
+| What | Where |
+|---|---|
+| **One reader of `auth.users`** — `account_state_for_email(text)`, `SECURITY DEFINER`, **service_role only**, `anon`/`authenticated` explicitly revoked | `20260901T1700` |
+| **The third email** — `SIGN_IN_EXISTING`, a template row (D13), link on `/login` | `20260901T1700` |
+| **The door branches** on the state before it provisions anything | `api/sign-start.ts` |
+| **The 409 is fixed** — the dead PostgREST read replaced by that RPC | `api/register-invited.ts` |
+| **The website order finally sends the activation link** | `api/request-activation.ts`, dispatched from `submitRequest` |
+| One shared branch, so the two doors cannot drift (D18) | `api/_lib/accountDoor.ts` |
 
-⚠️ **ORCH: this belongs in `docs/reference/CHANGE-ORDER-LEDGER.md` and then to `DSNR`.** It is the
-same subject as CR-98 A1's *"Establish where this stands today"*, and it now has an answer.
+**Proven on production, all four cases, `BEGIN … ROLLBACK`:**
+```
+active  cjzigs@icloud.com        {"state":"active","user_id":"0a7fc801-…","contact_id":"cfce55a1-…"}
+known   caseyluke1029@gmail.com  {"state":"known","user_id":null,"contact_id":"1d88cfc6-…"}
+new     nobody@example.invalid   {"state":"new","user_id":null,"contact_id":null}
+google  madelinedo@gmail.com     {"state":"active", …}      ← no password, and still active
+case    "  CJZIGS@IcLoUd.CoM "   {"state":"active", …}      ← trimmed and folded
+refused for authenticated: not authorized
+```
+⚠️ **`cjzigs@icloud.com` is the owner's own failing test case, and it now answers `active`** — so
+that address gets "click here to sign in", never an activation link, and never reaches the 409.
+
+### ⚠️ TWO TRAPS CAUGHT WHILE BUILDING IT
+1. **"Has a password" is the WRONG test for "can sign in."** 9 of the 18 live accounts carry no
+   `encrypted_password` at all — they are Google identities and they sign in perfectly well. Testing
+   for a password would have sent every Google member down the auth-setup path they finished months
+   ago. The function tests for an **identity**.
+2. **`p_send: false` on `provision_client_invitation` is not "I'll send it myself".** It sets the
+   invitation's STATUS — `CASE WHEN p_send THEN 'sent' ELSE 'draft' END` — and
+   `api/register-invited.ts` refuses anything not `'sent'` with a 404. Passing it would have minted
+   a link that **404s on arrival**. It is left defaulted, exactly as `api/sign-start.ts` leaves it.
+
+### FLAGGED — one decision the ruling did not settle
+An order-bearing submission now sends the **activation** email **and** still sends
+`/api/inquiry-confirmation`'s *"here is what you sent us"* copy (CAREPATH §C6, his own earlier
+ruling). **That is two emails for one act.** I did not remove the confirmation — it is a standing
+ruling and removing it is subtractive (NOSTRIP) — but he may want one message, not two.
+
+## 5 · WHAT `TASK-SIGNBOOK` DID AND DID NOT DO
+It proved the mechanism, recorded the ruling, **and — on the owner's explicit direction, given when
+offered the choice between fixing only the 409, building all of it, or routing it — built all of
+it.** ⚠️ **`api/sign-start.ts` is `TASK-SIGNDOOR`'s file, merged hours earlier, and SIGNBOOK §7 puts
+the door out of scope. Both were overridden by the owner, deliberately, and this line is the record
+of it.** Nothing was done silently.
+
+⚠️ **ORCH: this still belongs in `docs/reference/CHANGE-ORDER-LEDGER.md`** — as a ruling that is
+already built, not as work to dispatch. It is the answer to CR-98 A1's *"Establish where this stands
+today."*

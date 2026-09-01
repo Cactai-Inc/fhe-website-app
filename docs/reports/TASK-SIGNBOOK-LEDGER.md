@@ -107,3 +107,15 @@ Answered in full in the report (its own section, before "FLAGGED, NOT FIXED"): t
 contact IS matched by email so the order surfaces post-auth; and the consequence is that such a
 person lands on the PROVISIONED door and gets a payment step instead of the time/submit steps.
 ⚠️ **Needs a third door case. Routed to DSNR, not built here.**
+
+### 9 · Two owner directions taken mid-thread, both built here
+1. **The door must know who is knocking** (three states, three emails, three destinations) and the
+   website order submission must send the activation link. Offered the choice of fix-only /
+   build-all / route; **he chose build-all.** Migration `20260901T1700` applied to production;
+   `accountDoor.ts` + three endpoints. Full record:
+   `docs/reports/SIGNBOOK-FINDING-the-door-does-not-know-who-is-knocking.md`.
+2. **The wizard runs with no chrome and is lossless both ways.** Option B of his A/B:
+   `/app/onboarding` moved OUT of `AppLayout` in `App.tsx` (same URL, same member guard, no nav);
+   the "back to your dashboard" fallback is gone so the back chain terminates at the first screen;
+   the time step gained a `useFormDraft`; an unchanged details form no longer re-writes or
+   re-generates documents. Probe now **35/35**.
