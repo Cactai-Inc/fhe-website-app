@@ -1,6 +1,6 @@
 # TASK-AR3 — the Records page becomes Contacts, and horses go to My Stable
 
-⚠️ **READ `docs/tasks/ADMIN-REVIEW-ANALYSIS-STANDARD.md` FIRST.** **You are writing a report. You are
+⚠️ **READ `docs/method/ADMIN-REVIEW-ANALYSIS-STANDARD.md` FIRST.** **You are writing a report. You are
 fixing nothing.**
 
 **Owner, 2026-08-29 — two items, one decision:**

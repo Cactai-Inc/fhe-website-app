@@ -1,6 +1,6 @@
 # TASK-AR6 — should Activity and Oversight be one page?
 
-⚠️ **READ `docs/tasks/ADMIN-REVIEW-ANALYSIS-STANDARD.md` FIRST.** **You are writing a report. You are
+⚠️ **READ `docs/method/ADMIN-REVIEW-ANALYSIS-STANDARD.md` FIRST.** **You are writing a report. You are
 fixing nothing.**
 
 **Owner, 2026-08-29:**

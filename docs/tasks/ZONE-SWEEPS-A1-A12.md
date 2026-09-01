@@ -6,7 +6,7 @@ already being repaired.
 
 **Every sweep reads, in this order:**
 1. **`docs/method/METHOD-area-sweeps.md`** — the directive, the five-part deliverable, the concurrency rule.
-2. **`docs/tasks/ADMIN-REVIEW-ANALYSIS-STANDARD.md`** — the depth requirement and the state matrix.
+2. **`docs/method/ADMIN-REVIEW-ANALYSIS-STANDARD.md`** — the depth requirement and the state matrix.
    ⚠️ **§2 applies unchanged: existence in code is not visibility, and one circumstance is not all
    circumstances.**
 3. **Its own section below.**

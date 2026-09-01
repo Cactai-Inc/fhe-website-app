@@ -1,4 +1,8 @@
-# HANDOFF → ORCH3
+# HANDOFF → ORCH3 [SUPERSEDED — see CLNR-1]
+
+⚠️ **ARCHIVED by `CLNR-1`, 2026-09-01.** Superseded by `docs/orch/BOARD.md` +
+`docs/orch/ORCH6-BRIEF.md` (the folder-based handoff convention; see
+`docs/method/00-START-HERE.md`). Kept for audit-trail detail, not for current state.
 
 ## WHERE YOU ARE — read this before anything else
 

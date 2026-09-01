@@ -1,6 +1,6 @@
 # TASK-AR2 — reaching a client record, and booking a weekly rider
 
-⚠️ **READ `docs/tasks/ADMIN-REVIEW-ANALYSIS-STANDARD.md` FIRST.** ⚠️ **§2's state matrix IS this
+⚠️ **READ `docs/method/ADMIN-REVIEW-ANALYSIS-STANDARD.md` FIRST.** ⚠️ **§2's state matrix IS this
 task** — the whole defect here is that a surface behaves differently depending on where a person is
 in their life. **You are writing a report. You are fixing nothing.**
 

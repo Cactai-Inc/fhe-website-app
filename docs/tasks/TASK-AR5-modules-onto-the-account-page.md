@@ -1,6 +1,6 @@
 # TASK-AR5 — the Modules section moves onto the account page, and everything gets a way back
 
-⚠️ **READ `docs/tasks/ADMIN-REVIEW-ANALYSIS-STANDARD.md` FIRST.** **You are writing a report. You are
+⚠️ **READ `docs/method/ADMIN-REVIEW-ANALYSIS-STANDARD.md` FIRST.** **You are writing a report. You are
 fixing nothing.**
 
 **Owner, 2026-08-29 — the second half of item 8:**

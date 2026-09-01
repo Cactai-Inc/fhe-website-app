@@ -20,7 +20,7 @@ Phase 1 is worth more than four phases begun.
 > that we undertake sequentially, basically all the different workflows and user facing purchase or
 > engagement flows the repo was designed to facilitate."*
 
-This is **step 2 of the owner's three-step plan** (`docs/orch/HANDOFF-ORCH3.md` §3).
+This is **step 2 of the owner's three-step plan** (`docs/archive/HANDOFF-ORCH3.md` §3).
 
 **The complement already exists and is your input, not your job.**
 `docs/reference/SURFACE-INVENTORY.md` (REACHAUDIT, merged `d138017`) maps all 128 routes: reach,

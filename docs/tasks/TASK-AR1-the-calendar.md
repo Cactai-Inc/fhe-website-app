@@ -1,6 +1,6 @@
 # TASK-AR1 — the calendar, all of it
 
-⚠️ **READ `docs/tasks/ADMIN-REVIEW-ANALYSIS-STANDARD.md` FIRST. It is half of this assignment** — the
+⚠️ **READ `docs/method/ADMIN-REVIEW-ANALYSIS-STANDARD.md` FIRST. It is half of this assignment** — the
 depth requirement, the state matrix, the report shape, and the rules that will otherwise cost you a
 finding. **You are writing a report. You are fixing nothing.**
 

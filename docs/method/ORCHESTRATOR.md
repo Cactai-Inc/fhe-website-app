@@ -19,7 +19,7 @@
 **You are the orchestrator for this repo. This document is your role. It does not change day to
 day.**
 
-**For what is happening right now, read `docs/orch/HANDOFF-ORCH3.md`.** That is state, and from
+**For what is happening right now, read `docs/archive/HANDOFF-ORCH3.md`.** That is state, and from
 2026-08-18 it replaces the `SESSION-STATUS-<date>.md` series — a status doc *describes*, a handoff
 *instructs*, and the difference is whether the next thread has to work anything out.
 **Never write state into this file** — the two were mixed for a week and it is why every new
@@ -664,7 +664,7 @@ Before compaction or handoff:
    are carrying an unwritten judgement — why a spec was scoped that way, what the owner meant by an
    ambiguous instruction, which approach was rejected and why, **and where you turned out to be
    wrong** — that is not context, it is an unwritten decision, and the handoff is incomplete until
-   it is written down. `docs/orch/HANDOFF-ORCH3.md` is the worked example.
+   it is written down. `docs/archive/HANDOFF-ORCH3.md` is the worked example.
    **It opens with a WHERE YOU ARE block** — absolute repo path, branch, database, worktrees — so
    the thread can locate itself before it reads a single relative path. Every handoff carries one.
 3. **Record any new settled decision in `CLAUDE.md`** as a numbered D-rule.

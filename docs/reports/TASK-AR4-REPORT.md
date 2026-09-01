@@ -72,7 +72,7 @@ today. Not in this task's scope; noted because AR3 is about to populate it.
 
 ### Finding 1 — ⚠️ Both group-label definitions render. The standing rule that one is dead is wrong.
 
-**What:** `docs/tasks/ADMIN-REVIEW-ANALYSIS-STANDARD.md` §5 states as ground truth: *"`GROUP_LABEL` in
+**What:** `docs/method/ADMIN-REVIEW-ANALYSIS-STANDARD.md` §5 states as ground truth: *"`GROUP_LABEL` in
 `pageRegistry.ts` is exported and read by NOTHING. The nav's real labels are string literals in
 `AppLayout.tsx`."* This task's own doc repeats it: *"Verified: zero readers outside its own file."*
 Both are **half right, half wrong**, and every future `TASK-AR*` thread reads that same standing

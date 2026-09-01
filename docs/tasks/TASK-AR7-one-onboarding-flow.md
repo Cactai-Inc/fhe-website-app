@@ -1,6 +1,6 @@
 # TASK-AR7 — ONE onboarding flow, three ways in
 
-⚠️ **READ `docs/tasks/ADMIN-REVIEW-ANALYSIS-STANDARD.md` FIRST.** ⚠️ **§2's state matrix is the heart
+⚠️ **READ `docs/method/ADMIN-REVIEW-ANALYSIS-STANDARD.md` FIRST.** ⚠️ **§2's state matrix is the heart
 of this task** — the whole defect is that identical people get different flows depending on how they
 arrived. **You are writing a report. You are fixing nothing.**
 

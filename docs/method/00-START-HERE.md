@@ -15,7 +15,7 @@ for the owner's exact words and what it changes.
 ⚠️ **APPENDED 2026-08-27 — THIS FOLDER IS THE ONE CANONICAL ENTRY POINT. A PARALLEL SESSION EXISTS
 UNDER `docs/orch/HANDOFF-ORCH<n>.md` (a single-file convention this folder replaced) AND DID NOT KNOW THIS
 FOLDER EXISTED UNTIL PARTWAY THROUGH ITS SESSION.** That session — spawned from a stale
-`HANDOFF-ORCH4.md` written 2026-08-24, before this folder existed — audited and merged
+`docs/archive/HANDOFF-ORCH4.md` written 2026-08-24, before this folder existed — audited and merged
 `wt-contractoptions` and `wt-surfaceeditor` without reading `03-REMAINING-WORK.md` first, and as a
 direct result **merged `b9bc9edc` to production**, the exact half-measure dashboard commit §4 of that
 file says was deliberately rejected. **Caught and reverted within the same session** (`e3c7da6e`) —
@@ -26,7 +26,7 @@ handoff format to use going forward: use this folder. Retire the single-file con
 letting both continue to accumulate state independently.**
 
 ⚠️ **CLOSED OUT, 2026-08-27, ON THE OWNER'S INSTRUCTION — the single-file lineage above stood down
-here.** That session's own artifact, `docs/orch/HANDOFF-ORCH5.md`, is retained for its audit-trail detail
+here.** That session's own artifact, `docs/archive/HANDOFF-ORCH5.md`, is retained for its audit-trail detail
 on PAMELA and SURFACEEDITOR (already folded into §1/§7 below) but marks itself superseded and should
 not be used to spawn anything. **This folder is now the only live lineage.** No further
 `HANDOFF-ORCH<n>.md` will be produced.
