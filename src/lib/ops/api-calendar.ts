@@ -541,16 +541,46 @@ export async function requestOpenTime(input: {
  *  documents, their order and this request. Nothing money-shaped happens: the
  *  order stays a draft and no credit is minted until it is opened and paid. */
 export async function submitMyBookingRequest(input: {
-  purchaseId: string; startISO: string; endISO: string; note?: string;
-}): Promise<{ booking_id: string; request_id: string | null; status: string }> {
+  purchaseId: string;
+  /** ⚠️ ONE PER LINE. Owner, 2026-09-01: *"then i can pick the date(s) and time(s)
+   *  for the thing(s) in my order and submit it."* Plural, twice. */
+  slots: { itemId: string; startISO: string; endISO: string }[];
+  note?: string;
+}): Promise<{
+  booking_ids: string[]; request_id: string | null;
+  purchase_id: string; first_starts_at: string | null; status: string;
+}> {
   const { data, error } = await supabase.rpc('submit_my_booking_request', {
     p_purchase_id: input.purchaseId,
-    p_starts_at: input.startISO,
-    p_ends_at: input.endISO,
+    p_slots: input.slots.map((s) => ({
+      item_id: s.itemId, starts_at: s.startISO, ends_at: s.endISO,
+    })),
     p_note: input.note?.trim() || null,
   });
   if (error) throw error;
-  return data as { booking_id: string; request_id: string | null; status: string };
+  return data as {
+    booking_ids: string[]; request_id: string | null;
+    purchase_id: string; first_starts_at: string | null; status: string;
+  };
+}
+
+/** Add offerings to a draft order the caller owns — the "change my order" button. */
+export async function addToMyPurchase(purchaseId: string, offeringIds: string[]): Promise<number> {
+  const { data, error } = await supabase.rpc('add_to_my_purchase', {
+    p_purchase_id: purchaseId,
+    p_items: offeringIds.map((id) => ({ offering_id: id, quantity: 1 })),
+  });
+  if (error) throw error;
+  return Number(data ?? 0);
+}
+
+/** Remove one line from a draft order the caller owns. Voided, never deleted (D32).
+ *  Refuses the LAST live line — an order that voids itself under somebody who is
+ *  mid-flow is a dead end, not an edit. */
+export async function removeFromMyPurchase(itemId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('remove_from_my_purchase', { p_item_id: itemId });
+  if (error) throw error;
+  return Number(data ?? 0);
 }
 
 /** Staff confirm a pending booking (a requested time). */

@@ -46,7 +46,7 @@ await arrive('?path=rider');
 const labels = await stepLabels();
 console.log(`     header: ${labels.map((l) => l.replace(/\n/g, ' ')).join('  |  ')}`);
 const order = labels.map((l) => l.replace(/^\d+\.\s*/, '').trim());
-ok(order.join(' → ') === 'Your details → Review & sign → Choose your lesson → Pick a time → Send your request → Request sent',
+ok(order.join(' → ') === 'Your details → Review & sign → Choose your lesson → Your order & times → Submit → Request sent',
   `the header states the owner's order: ${order.join(' → ')}`);
 ok(!order.includes('Payment'), 'no Payment step on the self-serve door (CR-98: pay after approval)');
 
@@ -75,14 +75,18 @@ ok((await heading()).includes('Your first lesson'),
 // step 5 → 6
 await page.locator('button[aria-pressed]').first().click();
 await page.locator('button.btn-primary').first().click();
-await page.waitForFunction(() => document.body.innerText.includes('When would you like'), null, { timeout: 8000 });
-ok((await heading()).includes('When would you like to come'), 'step 6 — the offering step lands on pick a day and time');
+await page.waitForFunction(() => document.body.innerText.includes('Your order'), null, { timeout: 8000 });
+ok((await heading()).includes('Your order'), 'step 6 — the offering step lands on the order, with a calendar per line');
+ok(await page.locator('button:has-text("Change my order")').count() === 1,
+   '⚠️ and the catalog button is there — "i should be able to click a button and see the catalog page"');
+ok(await page.locator('button:has-text("Remove")').count() >= 1,
+   '⚠️ and each line can be removed from the order overview page');
 ok((await world()).orderId !== null, 'the offering step built a draft order');
 
 // step 6 → 7
 const day = new Date(Date.now() + 8 * 86_400_000).toISOString().slice(0, 10);
-await page.locator('input[type="date"]').fill(day);
-await page.locator('input[type="time"]').fill('16:00');
+await page.locator('input[type="date"]').first().fill(day);
+await page.locator('input[type="time"]').first().fill('16:00');
 await page.locator('button.btn-primary').first().click();
 await page.waitForFunction(() => document.body.innerText.includes('Ready to send'), null, { timeout: 5000 });
 ok((await heading()).includes('Ready to send'), 'step 7 — the time step lands on the review-and-send step');
@@ -96,8 +100,10 @@ await page.waitForFunction(() => document.body.innerText.includes('request is wi
 const w = await world();
 ok(w.submitted !== null, 'the send button called submit_my_booking_request');
 ok(w.submitted?.p_purchase_id === w.orderId, 'it submitted THE ORDER the shop step built');
-ok(typeof w.submitted?.p_starts_at === 'string' && w.submitted.p_starts_at.includes(day.slice(0, 7)),
-   'it submitted the day that was chosen');
+ok(Array.isArray(w.submitted?.p_slots) && w.submitted.p_slots.length >= 1,
+   `it submitted a time PER LINE (${w.submitted?.p_slots?.length} slot(s))`);
+ok(String(w.submitted?.p_slots?.[0]?.starts_at ?? '').includes(day.slice(0, 7)),
+   'and each slot carries the day that was chosen for it');
 
 const done = await page.locator('section').first().innerText();
 ok(done.includes('Your request is with us'), '§THE TELL — the last screen says the request was SENT');
@@ -107,18 +113,16 @@ ok(!/paid|booked and confirmed/i.test(done.split('Nothing is confirmed')[0]),
 // step 9 — the overview modal, and WHAT IS BEHIND IT when it closes
 await page.locator('button.btn-primary').first().click();
 await page.waitForTimeout(400);
-ok(await page.locator('[role="dialog"], .fixed').count() > 0,
-   'step 9 — Continue opens the app-overview modal');
-// Owner, 2026-09-01: "they need to see the community feed as the first thing
-// after closing the modal." This asserts the DESTINATION, not the call.
-const closer = page.locator('[role="dialog"] button, .fixed button').last();
-await closer.click();
+// Owner, 2026-09-01: "after clicking the button that says 'continue to the app'
+// im taken to the community feed page and the app overview modal is displayed
+// until i close it." So the button LEAVES; AppLayout opens the tour over the feed,
+// which is the one tour opener (D18) and is not this page's job any more.
 await page.waitForSelector('[data-testid="landed-community-feed"], [data-testid="landed-dashboard"]',
   { timeout: 8000 });
 ok(await page.locator('[data-testid="landed-community-feed"]').count() === 1,
-   'step 9 — closing the modal lands on the COMMUNITY FEED (reverses ONBOARD §5)');
+   '"Continue to the app" lands on the COMMUNITY FEED (reverses ONBOARD §5)');
 ok(await page.locator('[data-testid="landed-dashboard"]').count() === 0,
-   'step 9 — and not on the dashboard');
+   'and not on the dashboard');
 
 // ══ LOSSLESS IN BOTH DIRECTIONS — owner, 2026-09-01 ════════════════════════
 // "moving backward doesnt clear the inputs from the page im leaving and moving
@@ -177,21 +181,21 @@ await page.locator('button.btn-sign').click();
 await page.waitForFunction(() => document.body.innerText.includes('first lesson'), null, { timeout: 8000 });
 await page.locator('button[aria-pressed]').first().click();
 await page.locator('button.btn-primary').first().click();
-await page.waitForFunction(() => document.body.innerText.includes('When would you like'), null, { timeout: 8000 });
+await page.waitForFunction(() => document.body.innerText.includes('Your order'), null, { timeout: 8000 });
 
 const day2 = new Date(Date.now() + 9 * 86_400_000).toISOString().slice(0, 10);
-await page.locator('input[type="date"]').fill(day2);
-await page.locator('input[type="time"]').fill('09:30');
+await page.locator('input[type="date"]').first().fill(day2);
+await page.locator('input[type="time"]').first().fill('09:30');
 await page.locator('textarea').first().fill('I ride better in the morning.');
 await page.locator('button.btn-primary').first().click();
 await page.waitForFunction(() => document.body.innerText.includes('Ready to send'), null, { timeout: 8000 });
 
 // back, and the answers survive
-await page.locator('button:has-text("Change the time")').click();
-await page.waitForFunction(() => document.body.innerText.includes('When would you like'), null, { timeout: 5000 });
-ok(await page.locator('input[type="date"]').inputValue() === day2
-   && await page.locator('input[type="time"]').inputValue() === '09:30',
-   'the time step still holds the day and time after coming back to it');
+await page.locator('button:has-text("Change my order or times")').click();
+await page.waitForFunction(() => document.body.innerText.includes('Your order'), null, { timeout: 5000 });
+ok(await page.locator('input[type="date"]').first().inputValue() === day2
+   && await page.locator('input[type="time"]').first().inputValue() === '09:30',
+   'the order step still holds the day and time after coming back to it');
 ok((await page.locator('textarea').first().inputValue()).includes('better in the morning'),
    'and the note the person typed');
 
@@ -210,14 +214,32 @@ await page.evaluate(() => { sessionStorage.setItem('probe-continue', '1'); });
 console.log('     (matriculation is asserted on the first walk above: the review');
 console.log('      screen printed the order and the day that had just been chosen)');
 
-// ══ THE PROVISIONED DOOR — spec trap 2 / NOSTRIP ═══════════════════════════
-console.log('── staff-provisioned, arriving WITH an order: the page\'s original job ──');
+// ══ ARRIVING WITH AN ORDER — the website lead ══════════════════════════════
+// Owner, 2026-09-01: "if i have an order already in the system (the way a lead
+// from the website would) i should see my pending order and a calendar to select
+// the date and time i want it scheduled for. then i should click submit."
+console.log('── arriving WITH an order: the website lead ──');
 await arrive('?path=rider&door=provisioned');
 const provLabels = (await stepLabels()).map((l) => l.replace(/^\d+\.\s*/, '').trim());
 console.log(`     header: ${provLabels.join('  |  ')}`);
-ok(provLabels.includes('Payment'), 'the payment step is STILL THERE on the provisioned door');
-ok(provLabels.includes('Your order'), 'and it still opens on the order it was provisioned with');
-ok(!provLabels.includes('Send your request'), 'and it does not get the request end-cap');
+ok(!provLabels.includes('Payment'),
+   '⚠️ NO payment step — an order already in the system is scheduled, not paid for here');
+ok(provLabels.includes('Your order & times'), 'they get the order-and-calendar step');
+ok(provLabels.includes('Submit'), 'and the submit step');
+
+// §C9 — this door opens on the order panel; Continue leads to the details form.
+await page.locator('button.btn-primary').first().click();
+await page.waitForSelector('input[name="ob-signing-for"]', { timeout: 8000 });
+await page.locator('input[name="ob-signing-for"]').first().check();
+await page.locator('form button[type="submit"]').first().click();
+await page.waitForSelector('#ob-typed-name', { timeout: 8000 });
+await page.locator('section input[type="checkbox"]').first().check();
+await page.locator('#ob-typed-name').fill('Robin Fields');
+await page.locator('button.btn-sign').click();
+await page.waitForFunction(() => document.body.innerText.includes('Your order'), null, { timeout: 8000 });
+ok((await heading()).includes('Your order'),
+   '⚠️ signing lands them straight on their PENDING ORDER with a calendar — not on payment');
+ok(await page.locator('input[type="date"]').count() >= 1, 'and a day/time picker for the line');
 
 await browser.close();
 console.log(failures === 0 ? '\nALL PASS' : `\n${failures} FAILED`);

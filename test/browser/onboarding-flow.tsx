@@ -142,8 +142,13 @@ window.__rpcFixtures = {
   },
   submit_my_booking_request: (a: unknown) => {
     world.submitted = a as Record<string, unknown>;
-    return { booking_id: '00000000-0000-4000-8000-0000000000b1', request_id: null, status: 'pending' };
+    return {
+      booking_ids: ['00000000-0000-4000-8000-0000000000b1'], request_id: null,
+      purchase_id: world.orderId, first_starts_at: null, status: 'requested',
+    };
   },
+  add_to_my_purchase: () => 1,
+  remove_from_my_purchase: () => 1,
   my_executed_delivery_state: { total: 1, delivered: 1 },
   mark_tour_seen: null,
 };
