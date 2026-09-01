@@ -29,7 +29,8 @@
  * directly, as before. Still one spine either way — `confirm_payment_claim`
  * is not a competing path, it's the claim-aware wrapper around the same one.
  *
- * Body: { purchaseId, method: 'zelle' | 'cash', reference?, amount?, paidAt? }
+ * Body: { purchaseId, method: 'zelle' | 'cash', reference?, amount?, paidAt?,
+ *         disposition?: 'paid' | 'discounted' | 'comped', writeDownReason? }
  *
  * TASK-BACKDATE — `paidAt` is a plain `YYYY-MM-DD` calendar date AT THE BARN
  * (America/Los_Angeles; the DB roles were set to it in 20260817T1600). It is the
@@ -56,6 +57,17 @@
  * Given, only that much is settled: the order stays open with a running
  * amount_paid until the settled entries cover the total, and each part becomes
  * its own numbered payment record saying which money came which way.
+ *
+ * TASK-BOOKS1 (CR-89): `disposition` settles the order SHORT and closes the
+ * books on it. 'discounted' records `amount` as collected and writes the
+ * shortfall down; 'comped' collects nothing and writes the full price down.
+ * Both REQUIRE `writeDownReason` (D19: no reason, no give-away) and both keep
+ * the full price on the order — the write-down is the second figure on the
+ * same sale, never a rewrite of the first. A pending client claim must be
+ * confirmed or declined before a write-down: confirm_payment_claim settles in
+ * full by design, and silently discarding the client's own claim under a
+ * discount would orphan it. A BACKDATED write-down composes: the date rule
+ * above still governs the receipt, so a backfilled comp emails nothing.
  * -> 200 { status: 'paid' | 'part_paid' | 'already_paid', receipt: { sent, reason? },
  *          claimConfirmed: boolean, recordedAt: string | null }
  * -> 400 bad body / future date; 401 no/bad bearer; 403 not staff; 404 unknown purchase
@@ -127,6 +139,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // at all, keeps `now()`, and keeps its receipt.
   const backdated = paidAt !== null && paidAt < today;
 
+  // TASK-BOOKS1: the settlement disposition. Absent = 'paid', the old behaviour.
+  const disposition = body.disposition === 'discounted' ? 'discounted'
+    : body.disposition === 'comped' ? 'comped'
+      : body.disposition === 'paid' || body.disposition === undefined ? 'paid' : '';
+  if (!disposition) return res.status(400).json({ error: "disposition must be 'paid', 'discounted' or 'comped'" });
+  const writeDownReason = typeof body.writeDownReason === 'string' && body.writeDownReason.trim()
+    ? body.writeDownReason.trim() : null;
+  if (disposition !== 'paid' && !writeDownReason) {
+    return res.status(400).json({ error: `a ${disposition} order needs a reason` });
+  }
+  if (disposition === 'comped' && rawAmount !== null) {
+    return res.status(400).json({ error: 'a comp collects nothing — money collected is a discounted settlement' });
+  }
+  if (disposition === 'discounted' && rawAmount === null) {
+    return res.status(400).json({ error: 'a discount needs the amount actually collected' });
+  }
+
   try {
     const db = getSupabaseAdmin();
     const { data: userData, error: userErr } = await db.auth.getUser(bearer);
@@ -143,6 +172,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const asUser = callerClient(bearer);
     const hasPendingClaim = order.client_claim_status === 'pending';
+
+    // BOOKS1: confirm_payment_claim settles the claim IN FULL; a write-down over
+    // a pending claim would orphan it. Staff resolve the claim first.
+    if (hasPendingClaim && disposition !== 'paid') {
+      return res.status(400).json({
+        error: 'this order has a pending client claim — confirm or decline it before recording a discount or comp',
+      });
+    }
 
     let status: string | null;
     if (hasPendingClaim) {
@@ -169,6 +206,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // NULL keeps now() — TASK-ORIGIN §4.3 added this parameter for exactly
         // this and nothing had ever passed it.
         p_paid_at: paidAt,
+        p_disposition: disposition,
+        p_write_down_reason: writeDownReason,
       });
       if (rpcErr) return res.status(400).json({ error: rpcErr.message });
       status = data as string;

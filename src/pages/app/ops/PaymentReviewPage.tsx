@@ -13,6 +13,9 @@ import {
   listOutstandingOrders,
   listPaidOrders,
   markOrderPaid,
+  revertWritedown,
+  fetchRevenuePeriodLines,
+  revenueLinesToCsv,
   type PaymentNotification,
   type PaymentNotificationStatus,
   type CandidateOrder,
@@ -25,6 +28,7 @@ import { asRecordedDate, barnToday } from '../../../lib/recordedDate';
 import { RecordedDateField } from '../../../components/app/RecordedDateField';
 import { orderStatusCode, orderStatusLabel } from '../../../lib/orderStatus';
 import { statusTone } from '../../../lib/ops/api-status';
+import { fetchRevenue, type CalendarRevenue } from '../../../lib/ops/api-calendar';
 
 /**
  * OPS-PAY-REVIEW — the payment review queue (core payments, NOT module-gated;
@@ -108,6 +112,130 @@ function PartPaymentPanel({ order, onRecord, onCancel }: {
   );
 }
 
+/** BOOKS1 (CR-89) — settle SHORT and close the books. One mechanism on a
+ *  spectrum: what was collected decides whether this is a discount or a comp
+ *  (a discount to $0 IS a comp), and the panel SAYS the write-down in dollars
+ *  before anything happens (D19: it states what it will do before it does it).
+ *  The order keeps its full price; the write-down is the second figure. */
+function WritedownPanel({ order, onSettle, onCancel }: {
+  order: { amount: number; amount_paid: number };
+  onSettle: (collected: number, reason: string, method: 'zelle' | 'cash') => Promise<void>;
+  onCancel: () => void;
+}) {
+  const owed = Math.max(order.amount - order.amount_paid, 0);
+  const [collected, setCollected] = useState('0');
+  const [reason, setReason] = useState('');
+  const [method, setMethod] = useState<'zelle' | 'cash'>('zelle');
+  const n = Number(collected);
+  const validAmount = Number.isFinite(n) && n >= 0 && n < owed - 0.005;
+  const validReason = reason.trim().length > 0;
+  const isComp = validAmount && n === 0;
+  const down = validAmount ? owed - n : 0;
+  return (
+    <div className="mt-3 flex flex-col gap-2 rounded-lg border border-green-800/15 bg-cream-100/40 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-muted">Full price {usdShort(owed)} — collect</span>
+        <input value={collected} onChange={(e) => setCollected(e.target.value)}
+          inputMode="decimal" aria-label="Amount actually collected"
+          className="w-28 rounded-lg border border-green-800/15 px-2.5 py-1.5 text-sm focus-ring" />
+        {n > 0 && (
+          <select value={method} onChange={(e) => setMethod(e.target.value === 'cash' ? 'cash' : 'zelle')}
+            aria-label="How the collected money arrived"
+            className="rounded-lg border border-green-800/15 px-2 py-1.5 text-sm focus-ring">
+            <option value="zelle">Zelle</option>
+            <option value="cash">Cash</option>
+          </select>
+        )}
+      </div>
+      <input value={reason} onChange={(e) => setReason(e.target.value)}
+        placeholder="Why — required (e.g. 10% loyalty discount, first month on us)"
+        aria-label="Reason for the write-down"
+        className="rounded-lg border border-green-800/15 px-2.5 py-1.5 text-sm focus-ring" />
+      {/* THE TELL: the amount being written down, in dollars, before it happens. */}
+      {validAmount ? (
+        <p className="text-xs text-green-900">
+          {isComp ? 'Comps this order' : `Records ${usdShort(n)} and closes this order`}
+          {' — '}<strong>{usdShort(down)} is written down</strong>. The full price stays on the
+          order and the client owes $0. This can be undone from “Recently paid”.
+        </p>
+      ) : (
+        <p className="text-xs text-red-700">
+          Enter less than {usdShort(owed)} — collecting it all is an ordinary payment,
+          and a balance still owed is a part payment, not a discount.
+        </p>
+      )}
+      <div className="flex items-center gap-2">
+        <AsyncButton className="btn-secondary" pendingLabel="Recording…"
+          disabled={!validAmount || !validReason}
+          onClick={async () => onSettle(n, reason.trim(), method)}>
+          {isComp ? `Comp — write down ${usdShort(down)}` : `Discount — write down ${usdShort(down)}`}
+        </AsyncButton>
+        <button type="button" className="btn-ghost text-xs" onClick={onCancel}>Cancel</button>
+        {!validReason && <span className="text-xs text-muted">A reason is required.</span>}
+      </div>
+    </div>
+  );
+}
+
+/** The period figures + the accountant's file (R6). Collected and written-down
+ *  come from the SAME revenue_summary call the dashboard ribbon uses, and the
+ *  CSV from the same read that summary aggregates — the numbers cannot disagree. */
+function PeriodFigures({ refreshKey }: { refreshKey: number }) {
+  const now = new Date();
+  const [month, setMonth] = useState(
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
+  const [figures, setFigures] = useState<CalendarRevenue | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const bounds = (m: string): [string, string] => {
+    const [y, mo] = m.split('-').map(Number);
+    return [new Date(y, mo - 1, 1).toISOString(), new Date(y, mo, 1).toISOString()];
+  };
+
+  useEffect(() => {
+    let active = true;
+    const [from, to] = bounds(month);
+    setError(null);
+    fetchRevenue(from, to)
+      .then((f) => active && setFigures(f))
+      .catch((e) => active && setError(toErrorMessage(e, 'Could not load the period figures.')));
+    return () => { active = false; };
+  }, [month, refreshKey]);
+
+  const download = async () => {
+    const [from, to] = bounds(month);
+    const lines = await fetchRevenuePeriodLines(from, to);
+    const url = URL.createObjectURL(new Blob([revenueLinesToCsv(lines)], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `revenue_${month}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <section aria-label="Period figures"
+      className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-green-800/15 bg-white px-4 py-3">
+      <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
+        aria-label="Period" className="rounded-lg border border-green-800/15 px-2 py-1 text-sm focus-ring" />
+      {error ? (
+        <span className="text-xs text-red-700">{error}</span>
+      ) : figures && (
+        <>
+          <span className="text-sm text-green-900">
+            Collected <strong>{usdShort(figures.total)}</strong> ({figures.count} orders)
+          </span>
+          <span className="text-sm text-green-900">
+            Written down <strong>{usdShort(figures.write_down_total ?? 0)}</strong>
+            {' '}({figures.write_down_count ?? 0} discounts/comps)
+          </span>
+        </>
+      )}
+      <AsyncButton className="btn-ghost text-xs" pendingLabel="Building…" onClick={download}>
+        Download CSV
+      </AsyncButton>
+    </section>
+  );
+}
+
 function formatReceived(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
@@ -164,12 +292,24 @@ export function PaymentReviewPage() {
      open with the balance outstanding, and this part becomes its own numbered
      payment record. Omitted, the order settles in full — the behaviour every
      existing button here has always had. */
-  const markPaid = async (order: OrderRow, method: 'zelle' | 'cash', amount?: number) => {
+  const markPaid = async (
+    order: OrderRow,
+    method: 'zelle' | 'cash',
+    amount?: number,
+    disposition?: 'discounted' | 'comped',
+    writeDownReason?: string,
+  ) => {
     try {
       // TASK-BACKDATE: `asRecordedDate` returns undefined for today, so a
       // same-day settlement sends no date and keeps `now()` and its receipt.
-      const result = await markOrderPaid(order.id, method, undefined, amount, asRecordedDate(paidOn));
-      const verb = result.claimConfirmed ? 'Confirmed the client’s claim' : `Marked paid (${method})`;
+      // BOOKS1 composes: the table's date applies to a discount/comp too, so a
+      // backfilled give-away lands in the month it really happened.
+      const result = await markOrderPaid(order.id, method, undefined, amount,
+        asRecordedDate(paidOn), disposition, writeDownReason);
+      const verb = result.claimConfirmed ? 'Confirmed the client’s claim'
+        : disposition === 'comped' ? 'Comped'
+          : disposition === 'discounted' ? `Discounted — collected ${usdShort(amount ?? 0)}`
+            : `Marked paid (${method})`;
       // ⚠️ "receipt NOT sent" with no reason reads as a failure. A backdated
       // settlement suppressed it ON PURPOSE and has to say so.
       const asOf = result.recordedAt ? ` Recorded as of ${result.recordedAt}.` : '';
@@ -188,6 +328,8 @@ export function PaymentReviewPage() {
       );
       await refreshOrders();
       setSplitting(null);
+      setWritingDown(null);
+      setFiguresKey((k) => k + 1);
     } catch (err) {
       toast.error(toErrorMessage(err, 'Could not mark this order paid.'));
     }
@@ -197,6 +339,24 @@ export function PaymentReviewPage() {
   /** TASK-BACKDATE: the date every settlement on this table is recorded against.
    *  One control for the table, not one per row — see the note at the top. */
   const [paidOn, setPaidOn] = useState(barnToday());
+  /* BOOKS1: which outstanding order has the discount/comp panel open, which paid
+     order has the undo confirmation open, and a bump key so the period figures
+     re-read after a settlement or an undo. */
+  const [writingDown, setWritingDown] = useState<OrderRow | null>(null);
+  const [undoing, setUndoing] = useState<OrderRow | null>(null);
+  const [figuresKey, setFiguresKey] = useState(0);
+
+  const undoWritedown = async (order: OrderRow) => {
+    try {
+      const result = await revertWritedown(order.id);
+      toast.success(`Write-down undone — the order reopens owing ${usdShort(result.now_owing)}.`);
+      setUndoing(null);
+      setFiguresKey((k) => k + 1);
+      await refreshOrders();
+    } catch (err) {
+      toast.error(toErrorMessage(err, 'Could not undo the write-down.'));
+    }
+  };
 
   const openMatchPanel = async (row: PaymentNotification) => {
     setSelected(row);
@@ -289,10 +449,24 @@ export function PaymentReviewPage() {
               onClick={() => setSplitting(splitting?.id === r.id ? null : r)}>
               Part payment
             </button>
+            {/* BOOKS1 (CR-89): settle short and CLOSE the books — a discount, or a
+                comp when nothing is collected. Distinct from a part payment, which
+                leaves the order open with a balance owed. */}
+            <button type="button" className="btn-ghost text-xs"
+              onClick={() => { setWritingDown(writingDown?.id === r.id ? null : r); setSplitting(null); }}>
+              Discount / comp
+            </button>
             {splitting?.id === r.id && (
               <PartPaymentPanel order={r}
                 onRecord={(m, a) => void markPaid(r, m, a)}
                 onCancel={() => setSplitting(null)} />
+            )}
+            {writingDown?.id === r.id && (
+              <WritedownPanel order={r}
+                onSettle={(collected, reason, m) =>
+                  markPaid(r, m, collected > 0 ? collected : undefined,
+                    collected > 0 ? 'discounted' : 'comped', reason)}
+                onCancel={() => setWritingDown(null)} />
             )}
           </div>
         ),
@@ -302,10 +476,43 @@ export function PaymentReviewPage() {
   const paidColumns: Column<OrderRow>[] = [
     { key: 'buyer', header: 'Who', render: (r) => r.buyerName },
     { key: 'items', header: 'For', render: (r) => r.items },
-    { key: 'amount', header: 'Paid', render: (r) => <Money amount={r.amount} /> },
+    // BOOKS1: two figures on one sale — the full price, and what was collected.
+    { key: 'amount', header: 'Full price', render: (r) => <Money amount={r.amount} /> },
+    { key: 'collected', header: 'Collected', render: (r) => <Money amount={r.amount_paid} /> },
+    {
+      key: 'disposition',
+      header: 'Disposition',
+      render: (r) =>
+        r.payment_disposition === 'paid' ? 'Paid' : (
+          <span title={r.write_down_reason ?? undefined}>
+            {r.payment_disposition === 'comped' ? 'Comped' : 'Discounted'}
+            {' — '}{usdShort(r.write_down_amount)} written down
+          </span>
+        ),
+    },
     { key: 'method', header: 'Method', render: (r) => r.payment_method ?? '—' },
     { key: 'reference', header: 'Reference', render: (r) => r.payment_reference ?? '—' },
     { key: 'paid_at', header: 'Paid at', render: (r) => (r.paid_at ? formatReceived(r.paid_at) : '—') },
+    {
+      key: 'undo',
+      header: '',
+      render: (r) =>
+        r.payment_disposition === 'paid' ? null
+          : undoing?.id === r.id ? (
+            // D19: it states what it will do before it does it, and only the
+            // affirmative control commits (D34) — the first click arms, never acts.
+            <span className="flex items-center gap-2 text-xs">
+              <span>Reopens the order owing {usdShort(Math.max(r.amount - r.amount_paid, 0))}.</span>
+              <AsyncButton className="btn-secondary" pendingLabel="Undoing…"
+                onClick={() => undoWritedown(r)}>Undo</AsyncButton>
+              <button type="button" className="btn-ghost text-xs" onClick={() => setUndoing(null)}>Keep</button>
+            </span>
+          ) : (
+            <button type="button" className="btn-ghost text-xs" onClick={() => setUndoing(r)}>
+              Undo write-down
+            </button>
+          ),
+    },
   ];
 
   return (
@@ -354,6 +561,9 @@ export function PaymentReviewPage() {
 
       {bucket === 'orders' ? (
         <div className="space-y-8">
+          {/* BOOKS1 (R6): the period's collected + written-down figures and the
+              exportable file, one click — tax season is the stated use. */}
+          <PeriodFigures refreshKey={figuresKey} />
           <section>
             <h2 className="form-label mb-2">Outstanding — who owes money</h2>
             {/* ⚠️ TASK-BACKDATE R6 — the date is stated BEFORE the act, once for

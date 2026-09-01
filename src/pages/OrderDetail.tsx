@@ -160,6 +160,15 @@ export default function OrderDetail() {
 
         {order.status === 'paid' && (
           <div className="bg-green-50 border border-green-200 p-8 text-center">
+            {/* BOOKS1 (R4): a discounted or comped order shows the full price,
+                the reduction, and that $0 is owed — the give-away is visible. */}
+            {order.payment_disposition !== 'paid' && (
+              <p className="body-text text-green-800 mb-3">
+                Order total ${Number(order.amount).toFixed(2)} ·{' '}
+                {order.payment_disposition === 'comped' ? 'Complimentary' : 'Discount'}{' '}
+                −${Number(order.write_down_amount).toFixed(2)} · amount owed $0.00.
+              </p>
+            )}
             <p className="body-text text-green-800 mb-4">
               Everything is confirmed and copies are on their way to your inbox. We can’t wait to
               ride with you.

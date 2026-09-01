@@ -257,6 +257,11 @@ export interface OrderRow {
   client_claim_status: ClaimStatus;
   paid_at: string | null;
   created_at: string;
+  /** BOOKS1 (CR-89): how the order settled. 'discounted'/'comped' carry a stored
+   *  write-down — `amount` stays the FULL price, `amount_paid` what was collected. */
+  payment_disposition: 'paid' | 'discounted' | 'comped';
+  write_down_amount: number;
+  write_down_reason: string | null;
   buyerName: string;
   items: string;
 }
@@ -276,6 +281,9 @@ interface RawOrderRow {
   client_claim_status: ClaimStatus;
   paid_at: string | null;
   created_at: string;
+  payment_disposition: 'paid' | 'discounted' | 'comped';
+  write_down_amount: number;
+  write_down_reason: string | null;
   contacts: { first_name: string | null; last_name: string | null } | null;
   purchase_items: { label: string | null }[] | null;
 }
@@ -283,6 +291,7 @@ interface RawOrderRow {
 const ORDER_COLS = `id, amount, amount_paid, status, current_status, payment_status, payment_method,
   payment_reference, unique_amount, client_reported_method, client_reported_at,
   client_claim_status, paid_at, created_at,
+  payment_disposition, write_down_amount, write_down_reason,
   contacts:buyer_contact_id ( first_name, last_name ),
   purchase_items ( label )`;
 
@@ -367,13 +376,21 @@ export interface MarkOrderPaidResult {
  *  past** (`asRecordedDate` in `src/lib/recordedDate.ts` enforces that) — omitted
  *  keeps `now()` and keeps the receipt, which is the unchanged same-day path.
  *  A past date suppresses the receipt email server-side and comes back as
- *  `receipt.reason === 'backdated'`. A future one is refused with a 400. */
+ *  `receipt.reason === 'backdated'`. A future one is refused with a 400.
+ *
+ *  BOOKS1 (CR-89): `disposition` settles SHORT and closes the books — 'discounted'
+ *  records `amount` as collected and writes the shortfall down; 'comped' collects
+ *  nothing and writes the full price down. Both require `writeDownReason` (D19).
+ *  Composes with `paidAt` (a backfilled discount lands in the right month and
+ *  emails nothing). Omitted, everything behaves exactly as before. */
 export async function markOrderPaid(
   purchaseId: string,
   method: 'zelle' | 'cash',
   reference?: string,
   amount?: number,
   paidAt?: string,
+  disposition?: 'discounted' | 'comped',
+  writeDownReason?: string,
 ): Promise<MarkOrderPaidResult> {
   const { data: sess } = await supabase.auth.getSession();
   const bearer = sess?.session?.access_token;
@@ -381,7 +398,7 @@ export async function markOrderPaid(
   const res = await fetch('/api/orders-mark-paid', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
-    body: JSON.stringify({ purchaseId, method, reference, amount, paidAt }),
+    body: JSON.stringify({ purchaseId, method, reference, amount, paidAt, disposition, writeDownReason }),
   });
   const json = (await res.json().catch(() => ({}))) as Partial<MarkOrderPaidResult> & { error?: string };
   if (!res.ok) throw new Error(json.error || 'Could not mark this order paid.');
@@ -391,4 +408,77 @@ export async function markOrderPaid(
     claimConfirmed: json.claimConfirmed ?? false,
     recordedAt: json.recordedAt ?? null,
   };
+}
+
+/* ─────────────────────────── BOOKS1: the write-down ───────────────────────────
+ * What a sale was worth, what was collected, and what was given away (CR-89 +
+ * CR-86 gaps 2/4). The disposition is settled by mark_purchase_paid above; these
+ * are the read + undo halves: the period figures, the export file, and the
+ * reversal (D19 — a value-moving action can be backed out).
+ */
+
+/* The summary WRAPPER stays where it has always been — `fetchRevenue` in
+ * api-calendar.ts (one wrapper per RPC, the same rule as one payment spine).
+ * revenue_summary itself now also returns write_down_total / write_down_count
+ * (+ the prior-window pair); its CalendarRevenue interface carries them. */
+
+export interface RevenuePeriodLine {
+  purchase_id: string;
+  display_code: string | null;
+  paid_at: string;
+  client: string;
+  full_price: number;
+  collected: number;
+  write_down: number;
+  disposition: 'paid' | 'discounted' | 'comped';
+  reason: string | null;
+}
+
+/** One row per settled order in the period — order · date · client · full price ·
+ *  collected · write-down · disposition · reason (R6). Cost and profit columns
+ *  join this same read when the cost sheet lands; never a second export. */
+export async function fetchRevenuePeriodLines(fromISO: string, toISO: string): Promise<RevenuePeriodLine[]> {
+  const { data, error } = await supabase.rpc('revenue_period_lines', { p_from: fromISO, p_to: toISO });
+  if (error) throw error;
+  return (data ?? []) as RevenuePeriodLine[];
+}
+
+/** The period file for the accountant, built from fetchRevenuePeriodLines rows. */
+export function revenueLinesToCsv(lines: RevenuePeriodLine[]): string {
+  const esc = (v: string | number | null) => {
+    const s = v == null ? '' : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const rows = lines.map((l) => [
+    l.display_code ?? l.purchase_id,
+    l.paid_at.slice(0, 10),
+    l.client,
+    Number(l.full_price).toFixed(2),
+    Number(l.collected).toFixed(2),
+    Number(l.write_down).toFixed(2),
+    l.disposition,
+    l.reason ?? '',
+  ].map(esc).join(','));
+  return ['order,date,client,full_price,collected,write_down,disposition,reason', ...rows].join('\n');
+}
+
+export interface RevertWritedownResult {
+  reverted: boolean;
+  was: 'discounted' | 'comped';
+  write_down_was: number;
+  now_owing: number;
+  payment_status: 'unpaid' | 'pending' | 'paid';
+}
+
+/** Undo a discount/comp: the disposition and the closed state come off, money
+ *  that actually arrived stays recorded, and the order reopens owing the
+ *  difference. The database refuses the undo once credits from the order have
+ *  been spent — the value is already consumed. */
+export async function revertWritedown(purchaseId: string, reason?: string): Promise<RevertWritedownResult> {
+  const { data, error } = await supabase.rpc('revert_purchase_writedown', {
+    p_purchase_id: purchaseId,
+    p_reason: reason ?? null,
+  });
+  if (error) throw error;
+  return data as RevertWritedownResult;
 }
