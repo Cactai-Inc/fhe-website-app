@@ -4257,3 +4257,18 @@ booking · mark it paid.**
 ⚠️ **`TASK-REQCARDS` §9's proposed anatomy and its "Requests band" are SUPERSEDED BY THIS.** **The
 build takes the shape from the incumbent and this ruling, not from §9.** **`DSNR` is not needed here —
 the owner has specified it.**
+
+## CR-100 — address inputs must normalize and validate
+
+**SAID (owner, 2026-09-01, verbatim):**
+> *"we need the address fields to normalize the inputs, when i enter my address, 752 windemere ct
+> san diego ca 92109, it stays looking like that it should normalize to capitalize and it should
+> make sure its a valid address somehow."*
+
+**Recorded by ORCH7 as courier; routed to `DISCO` for the discussion.** Not specced, not discussed
+at the pass. What DISCO will need to establish: where address fields live today (the `/sign/*`
+paths, onboarding details, the contact record — D22 makes the contact record the source of truth
+and `compose_address` composes what is typed), what "normalize" is (capitalization on blur is the
+D34-adjacent idiom: on blur, once, in front of the person, never re-correcting a deliberate
+change), and what "valid address somehow" means — a format-level check vs a real verification
+service, the latter being an external dependency with a cost, which is the owner's call to make.
