@@ -819,6 +819,35 @@ reporting success.
   RE-EXECUTION FLOW TRIGGERED BY A TEMPLATE EDIT.** If a signed agreement genuinely needs to
   change, that is a new document — an amendment or a superseding contract — not a version bump.
 
+- **D34 — PERSISTING AND COMMITTING ARE DIFFERENT ACTS (owner via CR-83/CR-84, built by
+  `TASK-FIX4`, merged 2026-08-31).** **Closing a dialog — the X, Escape, the backdrop — NEVER
+  submits, and NEVER discards.** Input is kept because the surface **auto-saves after input** and
+  flushes the pending write on unmount; the affirmative control is the only thing that commits.
+
+  ⚠️ **THE HISTORY MATTERS, BECAUSE THE THIRD BEHAVIOUR IS NOT A RETURN TO THE FIRST.** Close
+  originally **discarded** (data loss, the owner reported it) · `TASK-FIX2` made close **commit**
+  (an unintended write) · `TASK-FIX4` makes close **do nothing**, which is only safe because the
+  work is already saved. **A thread that "restores" either earlier behaviour is reintroducing a
+  defect the owner has already lived through.**
+
+  **Enforced globally, not per call site:** `src/components/ops/kit/Modal.tsx` decides backdrop
+  close **from the live DOM** — it asks whether the panel currently holds a field — so **no call
+  site can get it wrong by forgetting a flag**, and a dialog whose fields appear on step 2 is
+  protected on step 2. ⚠️ **Do not add a Save button to it; it deliberately offers no way to render
+  one.** Two escape hatches exist and are used once each (`allowBackdropClose` on the Messages
+  member picker, `disableBackdropClose` where a dialog must not be dismissed at all).
+
+  **Settled alongside it, and NOT open for a fresh opinion:** **Escape still closes** *(the a11y
+  contract for `role="dialog"`, a keystroke nobody presses by accident, and nothing is lost)* ·
+  **drafts live in `localStorage`, namespaced per signed-in user** *(a server-side table cannot
+  serve `/sign/*` at all — a stranger typing their name has no `auth.uid()`, and that is exactly
+  where losing input costs most)* · **normalisation happens on blur, once, in front of the person,
+  and never re-corrects what they deliberately changed back.**
+
+  ⚠️ **AND THE TEST THAT PROVES IT MUST ASSERT BOTH HALVES** — that closing writes nothing **and**
+  that the record still saves. A test asserting only the first passes on a dialog that loses
+  everything, which is the defect FIX2 existed to fix.
+
   **Standing consequence, and it is deliberate:** the four lease templates currently sit one
   clause ahead of their retained version 3 (`LEASE_FEE.NO_FEE_CONSIDERATION`, applied
   2026-08-26 by migration `20260826T1900`). The owner declined to mint v4 for it. **Restore-to-v3

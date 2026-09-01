@@ -259,6 +259,11 @@ one-click-copyable.
 3. **Verify the headline claim yourself**, in production, with your own query.
 3b. **Verify the reach**, in the source: the route in `App.tsx`, the row in `pageRegistry.ts`, the
    link that points at it, and the call site. **A green function is not a shipped feature.**
+3c. ⚠️ **COUNT BY THE RENDERED ELEMENT, NOT THE IMPORT PATH.** `CR-84` recorded the shared
+   `ops/kit/Modal` as having **no adopters**; it had **seven**, four of which import it through the
+   `lib/ops` **barrel** — invisible to a grep for `ops/kit/Modal`. **A barrel re-export defeats a
+   path grep**, and the wrong count went into a spec and had to be corrected by the build thread.
+   **Grep for `<Component`, then confirm the import.**
 4. **Read the "flagged, not fixed" section.** It is where the real findings are.
 5. **Typecheck and lint** after merging. Build when CSS changed.
 6. **Push**, then archive and remove the worktree: tag `archive/<name>-<date>`,
