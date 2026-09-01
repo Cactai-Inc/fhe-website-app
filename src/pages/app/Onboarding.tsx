@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Check, Circle, FileText } from 'lucide-react';
 import {
@@ -25,7 +25,7 @@ import {
   type StandingCategory,
   type NavPresence,
 } from '../../lib/api';
-import type { Offering } from '../../lib/types';
+import type { Offering, Segment } from '../../lib/types';
 import OrderPayment from '../../components/order/OrderPayment';
 import type { Order, OrderItem, Payment } from '../../lib/types';
 import { signMyDocument } from '../../lib/ops/api-client';
@@ -487,6 +487,28 @@ export default function Onboarding() {
      door said. Otherwise the block would vanish and they could neither correct
      the child's details nor detach them — a screen that silently drops an edit,
      which is this repo's most common defect shape. */
+  /* ⚠️ THE CATALOG FOLLOWS THE DOOR THEY CAME IN BY — owner, 2026-09-01:
+     *"the horse care, and rider + horse care, deal party, and guest flows need to
+     be evaluated and aligned with the rider flow you just updated … i should be
+     able to click a button and see the catalog page for whatever category im in
+     the flow for."*
+
+     ⚠️ THIS WAS HARDCODED TO `segment === 'rider'`, AND IT WAS SHIPPING. A
+     `/sign/horse` visitor — a horse owner who came for turnout, clipping or
+     training — reached the offering step and was shown RIDING LESSONS, with the
+     evaluation-lesson gate greying out everything else. There are 6 schedulable
+     horse-care offerings and they were unreachable from their own funnel.
+
+     `rider+horse` gets both, because that door's paperwork is both sets
+     (`sign_path_document_requirements`) and its buyer is both people.
+     An unknown or empty path falls back to `rider`, which is what it has always
+     shown — a widening, never a narrowing. */
+  const catalogSegments = useMemo<Segment[]>(() => {
+    if (signPath === 'horse') return ['horse'];
+    if (signPath === 'rider+horse') return ['rider', 'horse'];
+    return ['rider'];
+  }, [signPath]);
+
   const asksMinor = !NON_MINOR_PATHS.has(signPath) || Boolean(state?.minor);
   const minorCopy = MINOR_QUESTION[signPath] ?? MINOR_QUESTION_FALLBACK;
   const isForChild = asksMinor && signingFor === 'child';
@@ -614,10 +636,10 @@ export default function Onboarding() {
     if (step !== 'shop' || shopOfferings.length > 0) return;
     fetchOfferings()
       .then((all) => setShopOfferings(all.filter(
-        (o) => o.segment === 'rider' && o.active
+        (o) => catalogSegments.includes(o.segment) && o.active
           && o.config_kind !== 'inquire' && o.price_amount != null)))
-      .catch(() => setShopError('We could not load the lesson options. You can browse them from the Shop.'));
-  }, [step, shopOfferings.length]);
+      .catch(() => setShopError('We could not load the options. You can browse them from the Shop.'));
+  }, [step, shopOfferings.length, catalogSegments]);
 
   /** Buy what they picked, then go to payment.
    *
@@ -2036,6 +2058,13 @@ export default function Onboarding() {
         const evaluationPicked = !!evaluation && shopPicked.includes(evaluation.id);
         // Nothing is locked when the catalog has no evaluation lesson to require.
         const locked = !!evaluation && !evaluationPicked;
+        /* ⚠️ THE EVALUATION GATES RIDING, AND ONLY RIDING. Owner, 2026-08-24:
+           *"the evaluation lesson … its the first thing they do FOR A LESSON."*
+           On the `rider+horse` door both catalogs are shown together, and without
+           this a horse owner would have had to buy a riding evaluation before they
+           could book their horse a clipping — the gate reaching across a segment it
+           was never about. A horse-care line is never locked by it. */
+        const gatedBy = (o: Offering) => locked && o.segment === 'rider';
         const toggle = (id: string) => setShopPicked((prev) =>
           prev.includes(id)
             // Dropping the evaluation drops everything: it is the prerequisite,
@@ -2049,7 +2078,10 @@ export default function Onboarding() {
         return (
           <section aria-labelledby="ob-shop-heading">
             <h2 id="ob-shop-heading" className="font-serif text-lg text-green-900 mb-1">
-              Your first lesson
+              {/* D25 — the offering is named at the level that service is named at.
+                  "Your first lesson" over a list of turnout and clipping services is
+                  the wrong word, and it is what a horse owner used to be shown. */}
+              {catalogSegments.includes('rider') ? 'Your first lesson' : 'What can we do for you?'}
             </h2>
             {/* ⚠️ TWO PROMISES, AND ONLY ONE IS TRUE PER DOOR. The old sentence —
                 "we'll be in touch to schedule your first lesson" — was written when
@@ -2080,7 +2112,7 @@ export default function Onboarding() {
                 .map((o) => {
                   const isEval = isEvaluationOffering(o);
                   const picked = shopPicked.includes(o.id);
-                  const disabled = locked && !isEval;
+                  const disabled = gatedBy(o) && !isEval;
                   return (
                     <button key={o.id} type="button" disabled={disabled}
                       onClick={() => toggle(o.id)}

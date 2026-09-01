@@ -156,6 +156,30 @@ export default function Confirmation() {
                   pendingText="Sending your copy…"
                 />
               </ul>
+              {/* ⚠️ THE ACTIVATION LINK — OWNER, 2026-09-01. *"You can inform them on
+                  the submission confirmation page that the account activation link
+                  will be in the email we send them and that activation is optional
+                  until their request is approved so they dont have to do it now if
+                  they prefer to wait."*
+
+                  ⚠️ SHOWN ONLY WHEN THERE WAS AN ORDER, because that is exactly the
+                  condition `/api/request-activation` sends on — a bare enquiry gets
+                  no invitation, so promising one here would be a lie. Same trigger,
+                  stated once in each place.
+
+                  ⚠️ AND IT PROMISES NOTHING ABOUT THE SEND ITSELF. The two lines
+                  above report what actually happened; this describes what the email
+                  CONTAINS, which is true whenever it arrives. */}
+              {receipt.items.length > 0 && (
+                <p className="text-sm text-green-900 mt-4">
+                  That email also carries a link to <strong>activate your account</strong>, where
+                  you can sign your paperwork and pick your times.{' '}
+                  <span className="text-muted">
+                    There is no rush — activation is optional until we approve your request, so
+                    you can wait until you hear from us if you would rather.
+                  </span>
+                </p>
+              )}
               {(receipt.sends.staff === false || receipt.sends.buyer === false) && (
                 <p className="text-sm text-green-900 mt-4">
                   If you would rather not wait, call us directly at{' '}

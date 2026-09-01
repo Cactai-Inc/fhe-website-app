@@ -241,6 +241,32 @@ ok((await heading()).includes('Your order'),
    '⚠️ signing lands them straight on their PENDING ORDER with a calendar — not on payment');
 ok(await page.locator('input[type="date"]').count() >= 1, 'and a day/time picker for the line');
 
+// ══ THE OTHER DOORS — the catalog follows the funnel ═══════════════════════
+// Owner, 2026-09-01: "the horse care, and rider + horse care … flows need to be
+// evaluated and aligned with the rider flow you just updated."
+console.log('── the catalog follows the door ──');
+for (const [path, want, notWant] of [
+  ['horse', 'Full Body Clip', 'Evaluation Lesson'],
+  ['rider+horse', 'Evaluation Lesson', null],
+]) {
+  await arrive(`?path=${encodeURIComponent(path)}`);
+  await page.locator('input[name="ob-signing-for"]').first().check().catch(() => {});
+  await page.locator('form button[type="submit"]').first().click();
+  await page.waitForSelector('#ob-typed-name', { timeout: 8000 });
+  await page.locator('section input[type="checkbox"]').first().check();
+  await page.locator('#ob-typed-name').fill('Robin Fields');
+  await page.locator('button.btn-sign').click();
+  await page.waitForFunction(() => document.body.innerText.includes('Choose')
+    || document.body.innerText.includes('first lesson')
+    || document.body.innerText.includes('What can we do'), null, { timeout: 8000 });
+  const shopText = await page.locator('section').first().innerText();
+  ok(shopText.includes(want), `/sign/${path} — the catalog offers "${want}"`);
+  if (notWant) {
+    ok(!shopText.includes(notWant),
+      `/sign/${path} — and NOT "${notWant}" (it used to show riding lessons to horse owners)`);
+  }
+}
+
 await browser.close();
 console.log(failures === 0 ? '\nALL PASS' : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);
