@@ -324,3 +324,14 @@ playwright                 installed --no-save, per the harness README; package.
 ⚠️ **The `wt-1` branch collision (14:19) and its repair are recorded in the ledger, §6** — including
 that ORCH's `git branch -f` instruction would have orphaned this thread's first commit, and that
 LIFECYCLE's work was verified safe in `wt-2` before anything was deleted.
+
+---
+## VALIDATION — ORCH7, 2026-09-01
+Verified AFTER the fact: the merge (`2fa1f7b9`) was pushed before ORCH validation, against the
+report's own "ORCH merges" line — recorded as a deviation in `TASK-SIGNBOOK-VERIFICATION.md`.
+Checks run by ORCH post-release, all green: `submit_my_booking_request` calls `request_open_time`
+(never edited — D35 held); proacl on all 7 new functions carries no anon (`account_state_for_email`
+service_role-only, called only from `api/register-invited.ts:79`); gates on main: typecheck 0 ·
+typecheck:api 0 · lint 46w/0e · build clean · test:api 7/7. DOOR scope was unspecced and shipped in
+the same merge — verified to the same bar, recorded as deviation 2. `task/flowalign` is
+undispatched and not licensed.

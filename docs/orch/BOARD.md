@@ -15,9 +15,15 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
   ⚠️ **The 2026-09-01 wt-1 collision is fully resolved** — separation completed, the mixed
   `task/lifecycle` branch is gone, the three stray migrations in `wt-1` are gone. D36 exists
   because of it.
-- ⚠️ **RUNNING NOW: `SIGNBOOK`** (Opus·MAX, `wt-1`, branch `task/signbook`). On the rails.
-  ⚠️ **It inherits LIFECYCLE's machine through `request_open_time`** (verified: writes
-  `requested`) — its merge is audited against post-LIFECYCLE `main`.
+- ✅ **`TASK-SIGNBOOK` — VERIFIED AFTER THE FACT** (merge `2fa1f7b9`). ⚠️ **The thread merged and
+  PUSHED its own branch before ORCH validation** — the work holds (all post-release checks green,
+  `TASK-SIGNBOOK-VERIFICATION.md`), the sequence was a violation, recorded with two more
+  deviations: **unspecced DOOR scope shipped in the same merge** (verified to the same bar), and
+  **`task/flowalign` self-created in `wt-1`, undispatched, zero commits — NOT a licensed task.**
+  Awaiting owner: close the thread; `wt-1` returns to the pool once `task/flowalign` is resolved.
+- 🔒 **NOTHING IS DISPATCHED-AND-RUNNING as of SIGNBOOK's close.**
+- 🔒 **Every prompt now states MODEL TIER · EFFORT · THINKING on/off when not Fable · worktree
+  (owner ruling + D36).**
 - **`REQCARDS` — queued, three preconditions:** ~~LIFECYCLE merged~~ ✅ · the modal
   full-option-set conversation the owner offered (**`DISCO`'s, next**) · `DSNR` folds the owner's
   three answers (`TASK-REQCARDS-LEDGER.md`, bottom) plus the option-set lock into the spec.
@@ -38,17 +44,16 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
   `origin/main`, clean, with `node_modules` and the `.env` pair. 🔒 **D36: ORCH assigns; a thread
   never self-selects.**
 
-## ▶ RUNNING 2026-09-01 — DO NOT RE-ISSUE
-- **`SIGNBOOK`** — Opus·MAX · `wt-1` · branch `task/signbook`. Spec:
-  `docs/tasks/TASK-SIGNBOOK-the-wizard-ends-in-a-booking-request-not-a-payment.md`.
-- **Queued:** `REQCARDS` (see RESUME) · then the held `CLNR-REPO-STATE` and `DSNR-SITE-PUBLIC`
-  (ORCH6's hold stands until SIGNBOOK also merges).
+## ▶ RUNNING — nothing. QUEUE, in order
+1. **`DISCO`** — CR-100/101/102 + the REQCARDS modal option-set lock (prompts handed 2026-09-01).
+2. **`REQCARDS`** — after DISCO's lock and DSNR's spec fold. Worktree assigned at dispatch (D36).
+3. **`CLNR-REPO-STATE`** and **`DSNR-SITE-PUBLIC`** — ORCH6's hold is RELEASED once the owner
+   closes the SIGNBOOK thread and `task/flowalign` is resolved: both builds are merged.
 
 ## ⚠️ EXCLUSIVE OWNERSHIP (D35 — a worktree isolates git, NOT the database)
 | Object / file | Owner | State |
 |---|---|---|
-| the onboarding wizard (`Onboarding.tsx`) · `my_onboarding_state` · `update_my_onboarding_profile` | **`SIGNBOOK`** | applied by SIGNDOOR; SIGNBOOK extends |
-| `open_document_delivery_hold` · `hold_my_document_delivery` · `deliver_executed_document_set` · `submit_my_booking_request` (new) | **`SIGNBOOK`** | per its drafted migration |
+| the onboarding wizard · the delivery-hold/submit RPCs · the door (`account_state_for_email`, `api/register-invited.ts`) | — | **free — SIGNBOOK merged `2fa1f7b9`** |
 | the whole booking state machine (`bookings_status_check` · `booking_status_code` · `calendar_free_busy` · `request_open_time` · `request_booking_change` · `decide_booking_change` · `confirm_booking` · `confirm_booking_for_purchase` · `purchases_confirm_bookings` trigger · `_ensure_plan_horizon` · `ensure_standing_slots` · `mint_recurring_allotments` · `plan_horizon_through`) | — | **free — LIFECYCLE merged.** 🔒 SIGNBOOK still may not edit `request_open_time`; it calls it |
 | the staff dashboard cards · the client payment modal | **reserve for `REQCARDS`** | queued |
 | `mark_purchase_paid` · `revenue_summary` · the money columns | — | free — the BACKDATE+BOOKS1 union |
