@@ -204,27 +204,36 @@ own rule is the one whose death costs the most, because it holds the sequencing 
 | **`CLNR`** | ⚠️ **NO THREAD.** Runs as the first act inside each `TASK` | — |
 
 
-## 🔒 PARK, DO NOT CLOSE-AND-REOPEN — the one correction to the GM's model
+## 🔒 CLOSE IS THE DEFAULT. PARK ONLY WITH SOMETHING IN HAND.
 
-**Owner, 2026-09-01:** *"you tell me when to close it … and you can tell me to reopen it later if we
-are going to benefit from the context it holds."*
+**Owner, 2026-09-01:** *"theres no reason to park unless you are handing me things actively, tabs take
+up a surprising amount of space. so i close all but the ORCH thread unless i have something to
+actively hand it."*
 
-⚠️ **THE FIRST HALF IS RIGHT. THE SECOND CANNOT WORK, AND THE DIFFERENCE MATTERS:**
-🔒 **CLOSING IS THE ACT THAT DISCARDS THE CONTEXT.** **A reopened thread is a NEW thread reading
-files — which is fine, and is exactly what the running record is for, but it is not the old thread's
-context returning.** ⚠️ **So "close it, we'll reopen it for its context later" buys nothing.**
+🔒 **THE OWNER CLOSES EVERYTHING BUT `ORCH`.** ⚠️ **PARK ONLY WHEN ORCH HAS THE NEXT THING FOR THAT
+THREAD RIGHT NOW** — not because a subject *might* come back.
 
-**THEREFORE ORCH GIVES ONE OF THREE INSTRUCTIONS, AND NEVER CONFUSES THEM:**
 | | Means | Use when |
 |---|---|---|
-| **PARK** | ⚠️ **leave it open and idle** | we are plausibly coming back to this subject. **Costs nothing but a tab** |
-| **CLOSE** | the context is spent and is not coming back | the subject is finished, or it has gone off-subject |
-| **OPEN** | a fresh thread, reading the files | always — including anything called a "reopen" |
+| **CLOSE** | ⚠️ **THE DEFAULT.** Context discarded | the thread has handed over. **Almost always** |
+| **PARK** | leave open, briefly | ORCH has the next chunk for it **in hand** |
+| **OPEN** | a fresh thread reading files | everything else, including any "reopen" |
 
-⚠️ **DEFAULT TO PARK WHEN THE SUBJECT MIGHT RETURN.** **Closing is cheap to say and irreversible in
-the only way that matters.**
-🔒 **AND NOTHING MAY DEPEND ON A PARKED THREAD.** **Its findings are in the files before it parks, or
-they do not exist** — `THE-RUNNING-RECORD`. **Parking is an optimisation, never a store.**
+⚠️ **CLOSING DISCARDS THE CONTEXT AND THAT IS ACCEPTED.** **The files are the store; the window never
+was.** 🔒 **So a thread writes its record BEFORE it hands over, every time** —
+`THE-RUNNING-RECORD`. **Nothing may be recoverable only from a window that is about to be shut.**
+
+## 🔒 NAMING IS RETRIEVAL — the identifier is the only handle a week later
+
+> *"its hard to find a thread once there are 100 in front of it or its a week old."*
+
+🔒 **`<ROLE>-<SUBJECT>` — a subject slug, never a serial number.** **`DISCO-CALENDAR`, `DSGN-BOOKS`,
+`TASK-BACKDATE`.** ⚠️ **`DISCO-1` is unfindable in a week — it says nothing about what is inside it.**
+- **The identifier is the FIRST LINE of the prompt, alone** — it is what becomes the tab title.
+- ⚠️ **THE FILES CARRY THE SAME SLUG:** `DISCO-CALENDAR-HANDOFF.md`, `TASK-BACKDATE-REPORT.md`,
+  `TASK-BACKDATE-VERIFICATION.md`. **Thread name → file name, in both directions, without a lookup.**
+- **Add a date suffix ONLY when the same subject genuinely recurs** — `DISCO-CALENDAR-0915`.
+- **Keep it short enough to read in a truncated tab.**
 
 ## 🔒 THE FRONT DOOR IS `DISCO`, AND IT IS THE ONLY ONE
 ⚠️ **EVERY new request, problem, idea or correction enters through `DISCO`.** **Not through ORCH.**
