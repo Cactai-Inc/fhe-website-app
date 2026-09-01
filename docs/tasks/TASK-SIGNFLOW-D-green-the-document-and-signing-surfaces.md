@@ -87,7 +87,11 @@ is a thing you fill in or a thing that needs you."* Measured:
 🔒 **Gold-vs-green IS the signal today.** Greening it removes a distinction, so the replacement must
 put that distinction back somewhere. **See §4 THE SHAPE. It is ruled; execute it.**
 
-## 4. 🔒 THE SHAPE — ruled by DSNR after the owner's review. Execute it; do not improve it.
+## 4. 🔒 THE SHAPE — ruled by DSNR. Execute it; do not improve it.
+⚠️ **`ORCH` has flagged this section for the owner's eyes** (`docs/reports/FHE-DSNR-SIGNFLOW-HANDOFF.md`
+§4). **It does not block you** — the owner's rule already says these elements are functional, so they
+go green either way. **What is open is whether the result still READS, and §8 item 6 is how that gets
+answered: with a screenshot and a verdict, not with an assumption.**
 
 ### 4a. THE MAPPING: SAME NUMERIC STEP, gold-N → green-N
 Both scales run dark→light in the same direction (`tailwind.config.js:64-76` and `:99-110`:

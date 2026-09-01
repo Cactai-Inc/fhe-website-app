@@ -1,8 +1,8 @@
 # TASK-SIGNFLOW-C — the decorative/functional rule, and the global gold classes
 
-**Spec by `FHE-DSNR-SIGNFLOW`, 2026-09-01. Change order: `CR-102`, chunk 1 of 3.**
+**Spec by `FHE-DSNR-SIGNFLOW`, 2026-09-01. Change order: `CR-102`, chunk 1 of 4.**
 **Thread name: `FHE-TASK-SIGNFLOW-C`.**
-🔒 **`TASK-SIGNFLOW-D` and `-E` BOTH DEPEND ON THIS FILE'S §3 TABLE. You are writing the rule they
+🔒 **`TASK-SIGNFLOW-D`, `-E` AND `-F` ALL DEPEND ON THIS FILE'S §3 TABLE. You are writing the rule they
 execute. Getting the table right matters more than the diff.**
 
 > ## READ THESE, BY PATH — nothing else is handed to you
@@ -67,6 +67,10 @@ re-introduce it. The axis is what the element DOES, not where it sits.**
 | `selectable-card` | 1 | 4 |
 | `text-gold-accent` | **0** | **0** |
 
+**And the split of the 568 across the four chunks, so you can see where your 34 sit:**
+`C` (this task, `index.css` + `app-header.css`) **34** · `D` (18 document/contract files) **210** ·
+`E` (4 app-shell/keeper files) **47** · `F` (the remaining 70 files) **277**. ⚠️ **34 + 210 + 47 + 277 = 568.**
+
 ## 3. 🔒 THE CLASSIFICATION TABLE — the deliverable, and `D`/`E` execute it
 
 **Every gold site in `src/index.css` and `src/components/app/app-header.css`, classified.**
@@ -90,7 +94,7 @@ silently (`docs/method/TASK-ROLE.md` §1).**
 | 13 | `index.css:167` `.eyebrow-on-dark` → `text-gold-400` | light gold **on dark**. The decorative case the owner blessed. | 🟡 **KEEP** | no change |
 | 14 | `index.css:193-195` `.rule-gold` → `border-gold-600/30` | a **decorative divider hairline**, light gold at 30%, same family as the nav hairline the owner named a keeper. 3 files. | 🟡 **KEEP** | no change. ⚠️ **This is the one row the owner may reverse — see §7 SHAPE** |
 
-### 🔒 3a. THE MAPPING `D` AND `E` WILL APPLY — write it down where they can read it
+### 🔒 3a. THE MAPPING `D`, `E` AND `F` WILL APPLY — write it down where they can read it
 
 **Add this as a comment block at the top of `src/index.css`'s component layer, and reproduce it
 verbatim in your report.** It is the artefact, not the diff.
@@ -110,7 +114,7 @@ THE OPTICAL TELL that agrees with the rule: dark gold (800/900) at TEXT weight o
   Classify by FUNCTION; the optics confirm the call.
 ```
 
-### 3b. THE NAMED KEEPERS — verified by DSNR, and `D`/`E` must not touch them
+### 3b. THE NAMED KEEPERS — verified by DSNR. **They all live in `E`'s four files;** `D` and `F` must never reach them
 - `src/components/app/RosterCard.tsx:83` `ring-gold-600`. ⚠️ **It is SEMANTIC, not decorative:**
   `:76-78` proves gold = client, green = account, grey = guest. **Greening it destroys a distinction.**
 - `src/components/layout/Header.tsx:151` nav underline `bg-gold-300` / `bg-gold-700`.
@@ -157,9 +161,10 @@ THE OPTICAL TELL that agrees with the rule: dark gold (800/900) at TEXT weight o
 
 ## 5. OUT OF SCOPE — do not touch
 - 🔒 **ANY `.tsx` FILE.** ⚠️ **You edit exactly two files: `src/index.css` and
-  `src/components/app/app-header.css`.** Inline `gold-*` refs in components belong to `D` (the
-  signing/contract surfaces) and `E` (everything else). **`D` and `E` run against your table; if you
-  also start editing components you will collide with both.**
+  `src/components/app/app-header.css`.** Inline `gold-*` refs in components belong to **`D`** (the 18
+  document/contract/signing files), **`E`** (the 4 app-shell files that hold every keeper) and **`F`**
+  (the remaining 70). **All three run against your table; if you also start editing components you
+  will collide with all three.**
 - `tailwind.config.js`. **The gold scale stays.** It is still used by every keeper. **Adding or
   removing a colour is not part of this task.**
 - The named keepers in §3b.
@@ -219,8 +224,8 @@ Both are one-line reversals if he rules otherwise; neither blocks `A`, `B`, `D` 
    green, revert and report — it means a keeper was reached through a global class.**
 7. **The public pages** (`/`, `/about`): outline buttons are green, eyebrow labels are green, the
    divider hairlines are still gold.
-8. **The §3a mapping block is in `src/index.css` and verbatim in your report.** `D` and `E` read it
-   from your report; **if it is not there, they cannot run.**
+8. **The §3a mapping block is in `src/index.css` and verbatim in your report.** `D`, `E` and `F` read
+   it from your report; **if it is not there, none of them can run.**
 9. **The blast radius per row from §2's adopter table is in your report.**
 
 ## 9. WHERE THE REPORT GOES
