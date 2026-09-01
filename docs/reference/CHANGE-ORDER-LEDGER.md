@@ -3960,3 +3960,86 @@ thread.**
 thread has been a build thread, with ORCH's spec standing in for the design deliverable.**
 **Either a `DSGN` role exists, or step 4 is formally ORCH's spec and the method says so.**
 **ASK-OWNER — this is the one question this ruling leaves open.**
+
+---
+
+## CR-97 · G3 · captured — the booking lifecycle is six states, and today it is effectively two
+
+**SAID (owner, 2026-09-01):**
+> *"I noticed the booking system is failing in a weird way, the stages/status dont function, a block is
+> either booked or open. it should have at least, requested, approved, pending, scheduled, moved,
+> cancelled.*
+>
+> *Requested is the status when an order is created with a booking time and date selected, or when a
+> user moves an item to a new date and time or when a user with credits selects a date and time.
+> Approved is the status when company staff mark the requested booking as approved (this triggers the
+> payment request for unpaid orders), its skipped if its a new order that is paid, or the user has
+> credits, or its a rescheduled paid order. pending is the status when an unpaid order is marked paid
+> by the user declaring a payment method from the payment screen or modal, like approved its skipped if
+> the order is paid already. scheduled is the status of a paid order thats been approved for the date
+> and time shown. moved is the status of a rescheduled booking (shown only to company and user who it
+> belongs to), for anyone else it shows as empty and available. cancelled is the status for an order
+> that was cancelled by staff or client, it shows as cancelled to both parties and open and available
+> to everyone else."*
+
+### THE MACHINE, AS HE SPECIFIED IT
+| State | Entered when | Skipped when |
+|---|---|---|
+| **requested** | an order is created with a date/time chosen · a user MOVES an item to a new date/time · a credit-holder picks a date/time | — |
+| **approved** | staff mark a requested booking approved. ⚠️ **This TRIGGERS the payment request on an unpaid order** | ⚠️ the order is already paid · the user has credits · it is a rescheduled paid order |
+| **pending** | the client declares a payment method from the payment screen/modal on an unpaid order | ⚠️ the order is already paid |
+| **scheduled** | a PAID order, approved, at the date and time shown | — |
+| **moved** | a booking was rescheduled | — |
+| **cancelled** | staff or client cancelled | — |
+
+### ⚠️ VISIBILITY IS PART OF THE STATE, NOT A SEPARATE FEATURE
+- **`moved`** — ⚠️ **shown only to the company and the person it belongs to. To everyone else the slot
+  reads EMPTY AND AVAILABLE.**
+- **`cancelled`** — ⚠️ **shown as cancelled to both parties; OPEN AND AVAILABLE to everyone else.**
+
+🔒 **So the rendered status depends on WHO IS LOOKING.** **A single `status` column cannot answer it —
+the read must be viewer-scoped.** ⚠️ **This is the part most likely to be built as a UI filter and
+leak through a second reader** (D18): **decide it ONCE, on the read.**
+
+### ⚠️ MEASURED 2026-09-01 BY ORCH6 — HE IS RIGHT, AND THE VOCABULARY IS NOT THE PROBLEM
+**`bookings_status_check` already permits TWELVE states:** `draft · available · unavailable · pending ·
+pending_slot · pending_payment · confirmed · cancelled · expired · completed · scheduled · no_show`.
+
+**What is ever WRITTEN — the whole table:**
+| status | rows |
+|---|---|
+| `available` | **594** |
+| `scheduled` | **117** |
+| `cancelled` | 6 |
+| `completed` | 1 |
+
+⚠️ **Four of twelve, and two of those are 99% of the table — exactly his "a block is either booked or
+open."** **`pending_slot` is the column DEFAULT and has never been written. `request_selections` holds
+8 rows, all `received`.**
+
+### THE GAP, PRECISELY
+| His state | Today |
+|---|---|
+| **requested** | ⚠️ **nothing means this.** `pending_slot` is the default and is never used |
+| **approved** | ⚠️ **NOT IN THE CHECK AT ALL** — new state |
+| **pending** | in the CHECK, **never written** *(and `pending_payment` duplicates the idea)* |
+| **scheduled** | ✅ exists, used |
+| **moved** | ⚠️ **NOT IN THE CHECK AT ALL** — new state, and it carries the viewer-scoped rule |
+| **cancelled** | ✅ exists, used — ⚠️ but the viewer-scoped rule is not built |
+
+⚠️ **So this is not "add six statuses."** **It is: two new states, one duplicate to resolve
+(`pending` vs `pending_payment` vs `pending_slot`), the TRANSITIONS and who may fire them, the
+payment-request trigger hanging off `approved`, and a viewer-scoped read.**
+
+### DEPENDENCIES
+- 🔒 **This IS `CR-90`'s "pending until payment is confirmed."** ⚠️ **Same machine. They are ONE task,
+  not two** — the rolling 30-day schedule is this lifecycle applied a month at a time.
+- **`CR-89`'s payment disposition decides what "paid" means**, and `TASK-BACKDATE` decides what date
+  it happened on. **Both land first.**
+- ⚠️ **`TASK-BACKDATE` is live and touches settlement. Do not run this beside it.**
+
+### ASK-OWNER
+1. ⚠️ **`moved` — does the OLD slot free up immediately, or hold until the new one is approved?**
+   *(His rule says others see it available; the question is when.)*
+2. **Is `completed` / `no_show` still wanted after the fact?** They exist and are written once.
+   **They are not in his six — confirm they stay rather than assuming.**
