@@ -12,6 +12,8 @@ DONE            Complete. Nothing in flight. Full census, §2b resumability test
                 references repaired and verified (zero stale refs outside docs/archive/), worktree
                 pool recycled from 6 non-main worktrees down to the 3-cap (wt-signstrip tagged
                 archive/signstrip-2026-09-01 before deletion), teardown/process census clean.
+                Committed as cb60d466, on top of 8b57f8c8 (the concurrent owner commit — see
+                SURPRISE below). NOT pushed — CLNR-ROLE.md §6: "Nothing pushed without ORCH."
                 Full detail: docs/reports/CLNR-1-REPORT.md.
 IN FLIGHT       nothing
 NEXT            ORCH triage of the 10 drift items in CLNR-1-REPORT.md — top priority is item 1
