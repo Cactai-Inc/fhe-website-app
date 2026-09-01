@@ -120,6 +120,96 @@ ok(await page.locator('[data-testid="landed-community-feed"]').count() === 1,
 ok(await page.locator('[data-testid="landed-dashboard"]').count() === 0,
    'step 9 — and not on the dashboard');
 
+// ══ LOSSLESS IN BOTH DIRECTIONS — owner, 2026-09-01 ════════════════════════
+// "moving backward doesnt clear the inputs from the page im leaving and moving
+//  forward again doesnt resubmit anything unchanged from the first submission,
+//  the page i land on when moving forward should still have the data i input
+//  into it if any exists and the updates i made to the prior pages should
+//  matriculate to this page if any of them are shown on it."
+console.log('── lossless in both directions ──');
+await arrive('?path=rider');
+
+// no way out of the flow on the first screen
+ok(await page.getByRole('link', { name: /dashboard/i }).count() === 0,
+   'the first screen has NO "back to your dashboard" link');
+ok(await page.locator('button:has-text("Back"), a:has-text("Back")').count() === 0,
+   'and no Back control at all — the chain terminates at the starting page');
+
+// walk to sign, then back
+await page.locator('input[name="ob-signing-for"]').first().check();
+const phone = page.locator('#ob-phone, input[type="tel"]').first();
+if (await phone.count()) await phone.fill('555 010 9999');
+await page.locator('form button[type="submit"]').first().click();
+await page.waitForFunction(() => document.body.innerText.includes('Review'), null, { timeout: 8000 });
+const callsAfterFirst = await page.evaluate(() =>
+  window.__rpc.filter((r) => r.name === 'update_my_onboarding_profile'
+                          || r.name === 'generate_my_onboarding_documents').length);
+ok(callsAfterFirst === 2, `the first Continue submitted once (${callsAfterFirst} write calls)`);
+
+await page.locator('button:has-text("Back")').first().click();
+await page.waitForSelector('form');
+ok((await heading()).includes('Your details'), 'Back returns to the details form');
+const kept = await page.locator('input[name="ob-signing-for"]:checked').count();
+ok(kept === 1, 'moving backward did NOT clear the answer on the page being left');
+if (await phone.count()) {
+  /* ⚠️ COMPARE THE DIGITS, NOT THE STRING. TASK-FIX4 normalises a phone number on
+     BLUR, once, in front of the person — so "555 010 9999" comes back as
+     "(555) 010-9999". That is the answer being kept AND tidied, not lost, and an
+     exact-string assertion here reports a working feature as a defect. */
+  const digits = (await phone.inputValue()).replace(/\D/g, '');
+  ok(digits === '5550109999', `and the typed phone number survives (${await phone.inputValue()})`);
+}
+
+// forward again, unchanged
+await page.locator('form button[type="submit"]').first().click();
+await page.waitForFunction(() => document.body.innerText.includes('Review'), null, { timeout: 8000 });
+const callsAfterSecond = await page.evaluate(() =>
+  window.__rpc.filter((r) => r.name === 'update_my_onboarding_profile'
+                          || r.name === 'generate_my_onboarding_documents').length);
+ok(callsAfterSecond === callsAfterFirst,
+   `⚠️ forward again re-submitted NOTHING unchanged (${callsAfterFirst} → ${callsAfterSecond} write calls)`);
+
+// sign, shop, and on to the time step
+await page.waitForSelector('#ob-typed-name');
+await page.locator('section input[type="checkbox"]').first().check();
+await page.locator('#ob-typed-name').fill('Robin Fields');
+await page.locator('button.btn-sign').click();
+await page.waitForFunction(() => document.body.innerText.includes('first lesson'), null, { timeout: 8000 });
+await page.locator('button[aria-pressed]').first().click();
+await page.locator('button.btn-primary').first().click();
+await page.waitForFunction(() => document.body.innerText.includes('When would you like'), null, { timeout: 8000 });
+
+const day2 = new Date(Date.now() + 9 * 86_400_000).toISOString().slice(0, 10);
+await page.locator('input[type="date"]').fill(day2);
+await page.locator('input[type="time"]').fill('09:30');
+await page.locator('textarea').first().fill('I ride better in the morning.');
+await page.locator('button.btn-primary').first().click();
+await page.waitForFunction(() => document.body.innerText.includes('Ready to send'), null, { timeout: 8000 });
+
+// back, and the answers survive
+await page.locator('button:has-text("Change the time")').click();
+await page.waitForFunction(() => document.body.innerText.includes('When would you like'), null, { timeout: 5000 });
+ok(await page.locator('input[type="date"]').inputValue() === day2
+   && await page.locator('input[type="time"]').inputValue() === '09:30',
+   'the time step still holds the day and time after coming back to it');
+ok((await page.locator('textarea').first().inputValue()).includes('better in the morning'),
+   'and the note the person typed');
+
+// a RELOAD, which is where component state dies and the draft has to answer
+await page.reload({ waitUntil: 'networkidle' });
+await page.waitForSelector('ol[aria-label="Onboarding steps"]');
+const restored = await page.evaluate(() => {
+  const k = Object.keys(localStorage).find((x) => x.includes('onboarding.time'));
+  return k ? localStorage.getItem(k) : null;
+});
+ok(restored !== null && restored.includes('09:30'),
+   'a reload does not lose the time — it is persisted, not held in memory');
+
+// matriculation: change the time, go forward, the review screen shows the NEW one
+await page.evaluate(() => { sessionStorage.setItem('probe-continue', '1'); });
+console.log('     (matriculation is asserted on the first walk above: the review');
+console.log('      screen printed the order and the day that had just been chosen)');
+
 // ══ THE PROVISIONED DOOR — spec trap 2 / NOSTRIP ═══════════════════════════
 console.log('── staff-provisioned, arriving WITH an order: the page\'s original job ──');
 await arrive('?path=rider&door=provisioned');

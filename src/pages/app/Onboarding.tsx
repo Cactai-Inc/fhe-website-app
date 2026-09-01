@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Check, Circle, FileText } from 'lucide-react';
 import {
@@ -431,6 +431,10 @@ export default function Onboarding() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [requestSent, setRequestSent] = useState(false);
+  /* What the details form last SUCCESSFULLY sent, so pressing Continue on an
+     untouched form is a navigation and not a write. A ref, not state: nothing
+     renders from it, and it must not cause a re-render when it changes. */
+  const lastSavedRef = useRef<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   // Name: email-only invites arrive nameless — collect it here. Prefilled from
@@ -654,6 +658,25 @@ export default function Onboarding() {
     }
   }
 
+  /* ⚠️ LOSSLESS IN BOTH DIRECTIONS, ON THIS STEP TOO — owner, 2026-09-01:
+     *"moving backward doesnt clear the inputs from the page im leaving … the page
+     i land on when moving forward should still have the data i input into it if
+     any exists."* Going back and forward inside one mount already keeps these,
+     because they are component state and the wizard never unmounts — but a RELOAD
+     destroys them, and the owner has said twice that he does not distinguish a
+     reload from a refresh from a back-navigation (TASK-FIX4 §6). Same store, same
+     idiom, same per-user namespace as the details step. */
+  const timeDraft = useFormDraft(
+    'onboarding.time',
+    { timeDate, timeClock, timeMinutes, timeNote },
+    (d) => {
+      if (typeof d.timeDate === 'string') setTimeDate(d.timeDate);
+      if (typeof d.timeClock === 'string') setTimeClock(d.timeClock);
+      if (typeof d.timeMinutes === 'string') setTimeMinutes(d.timeMinutes);
+      if (typeof d.timeNote === 'string') setTimeNote(d.timeNote);
+    },
+  );
+
   /** The instant they asked for, built from the two inputs the way
    *  `CalendarPage`'s "Request this time" builds its own — local wall clock in,
    *  `toISOString()` out. One idiom, so a time requested here and a time
@@ -692,6 +715,9 @@ export default function Onboarding() {
         note: timeNote,
       });
       setRequestSent(true);
+      // D34: the draft existed to protect an UNSENT answer. It is sent now, and a
+      // restored draft on a later visit would re-offer a time already requested.
+      timeDraft.clear();
       // The set was held since the sign step and has just been released, so the
       // delivery rows are being written now — re-read rather than assume.
       setEmailed(null);
@@ -975,9 +1001,23 @@ export default function Onboarding() {
         // and it is a different act from never having answered.
         payload.has_minor = false;
       }
+      /* ⚠️ FORWARD AGAIN MUST NOT RE-SUBMIT — owner, 2026-09-01: *"moving forward
+         again doesnt resubmit anything unchanged from the first submission."*
+         This is not only about a wasted round trip. `generateMyOnboardingDocuments`
+         REGENERATES the unsigned set, so a person who stepped back to re-read
+         their own details and pressed Continue again was rebuilding documents that
+         had nothing to rebuild — the exact shape of churn `TASK-SENDGUARD` exists
+         to stop. The comparison is on the payload actually sent, so a field the
+         RPC ignores can never make two identical submissions look different. */
+      const fingerprint = JSON.stringify(payload);
+      if (fingerprint === lastSavedRef.current) {
+        setStep(state?.horse_needed ? 'horse' : 'sign');
+        return;
+      }
       await updateMyOnboardingProfile(payload);
       // Regenerate the unsigned docs so the fresh details merge into the text.
       await generateMyOnboardingDocuments();
+      lastSavedRef.current = fingerprint;
       const [next, freshProfile] = await Promise.all([
         myOnboardingState(),
         getMyProfile().catch(() => profile),
@@ -1291,11 +1331,22 @@ export default function Onboarding() {
           the flow rather than disappearing — a control that is sometimes absent
           is a control people stop looking for. Nothing is lost either way: the
           details form is persisted (§6). */}
-      <div className="mb-3">
-        {backTarget
-          ? <BackControl label="Back" onClick={() => setStep(backTarget)} />
-          : <BackControl to="/app/dashboard" label="Back to your dashboard" />}
-      </div>
+      {/* ⚠️ OWNER, 2026-09-01: *"no back to dashboard ui link only a back link to
+          return to the prior page which terminates at the starting page."* So the
+          control is RENDERED ONLY WHEN THERE IS A PRIOR STEP, and the first screen
+          has none — the chain terminates there rather than offering a way out of a
+          flow they are meant to finish. The nav went with it (`App.tsx`).
+          ⚠️ This reverses TASK-FIX4 §7's *"on the first step it leaves the flow
+          rather than disappearing"*, and knowingly: FIX4's reason was that a
+          control which is sometimes absent is one people stop looking for, which is
+          true of a control that MOVES and false of one that simply does not exist
+          yet. Nothing is lost by its absence — the details form is persisted (§6)
+          and every step below is now equally persisted. */}
+      {backTarget && (
+        <div className="mb-3">
+          <BackControl label="Back" onClick={() => setStep(backTarget)} />
+        </div>
+      )}
       <p className="eyebrow mb-2">Welcome aboard</p>
       <h1 className="heading-section text-green-800 mb-6">Let's get you set up.</h1>
       {contractBanner}
