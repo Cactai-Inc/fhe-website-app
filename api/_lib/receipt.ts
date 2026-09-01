@@ -33,7 +33,7 @@ export async function sendOrderReceipt(
     if (maySend === false) return { sent: false, reason: 'already sent' };
     const { data: order } = await db
       .from('purchases')
-      .select('id, buyer_user_id, org_id, amount')
+      .select('id, buyer_user_id, org_id, amount, amount_paid, payment_disposition, write_down_amount')
       .eq('id', orderId)
       .maybeSingle();
     if (!order) return { sent: false, reason: 'purchase not found' };
@@ -49,11 +49,24 @@ export async function sendOrderReceipt(
     // Payment is inline on the purchase row now — the amount is authoritative there.
     const amount = Number(order.amount);
 
+    /* TASK-BOOKS1 (R4): on a discounted or comped order the customer's copy
+     * shows the FULL price, the reduction, and that $0 is owed — the give-away
+     * is visible, never hidden behind a zero-priced line. The template's
+     * {{#if TXN.WRITE_DOWN}} branch selects that wording; on an ordinary paid
+     * order all three tokens are empty and the receipt reads as it always has. */
+    const writeDown = Number(order.write_down_amount ?? 0);
+    const reduced = order.payment_disposition === 'discounted' || order.payment_disposition === 'comped';
+    const collected = Number(order.amount_paid ?? 0);
+
     const identity = await resolveTenantEmailIdentity(db, order.org_id as string);
     const rendered = await renderEmailTemplate(db, 'ORDER_RECEIPT', {
       'ORG.BRAND_NAME': identity.fromName,
       'ORG.FOOTER': identity.footer,
       'TXN.AMOUNT': `$${amount.toFixed(2)}`,
+      'TXN.WRITE_DOWN': reduced ? `$${writeDown.toFixed(2)}` : null,
+      'TXN.COLLECTED': reduced && collected > 0 ? `$${collected.toFixed(2)}` : null,
+      'TXN.REDUCTION_LABEL': order.payment_disposition === 'comped' ? 'Complimentary'
+        : order.payment_disposition === 'discounted' ? 'Discount' : null,
     });
     // A receipt is provable and single: a missing template is a logged failed
     // attempt (below), never a silent nothing and never a blank email.

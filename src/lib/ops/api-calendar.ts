@@ -209,6 +209,14 @@ export interface CalendarRevenue {
   prior_count: number;
   delta: number;
   delta_pct: number | null;
+  /** BOOKS1 (CR-89): what was given away in the window — discounts + comps,
+   *  written down against collected revenue. `total` is what was COLLECTED.
+   *  Optional in the TYPE only so narrower readers (OwnerDashboard's
+   *  RevenueWindow cast) keep compiling; the RPC always returns all four. */
+  write_down_total?: number;
+  write_down_count?: number;
+  prior_write_down_total?: number;
+  prior_write_down_count?: number;
 }
 export async function fetchRevenue(fromISO: string, toISO: string): Promise<CalendarRevenue> {
   const { data, error } = await supabase.rpc('revenue_summary', { p_from: fromISO, p_to: toISO });

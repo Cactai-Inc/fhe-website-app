@@ -130,6 +130,20 @@ export function OrdersContent() {
                   <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
                     <dt className="text-muted">Total</dt>
                     <dd className="text-green-900">{usd(o.amount)}</dd>
+                    {/* BOOKS1 (R4, the owner's own sentence): on a discounted or
+                        comped order the customer sees the FULL price, the
+                        reduction, and that they owe $0 — the give-away is
+                        visible, never hidden behind a zero-priced line. */}
+                    {o.payment_status === 'paid' && o.payment_disposition !== 'paid' && (
+                      <>
+                        <dt className="text-muted">
+                          {o.payment_disposition === 'comped' ? 'Complimentary' : 'Discount'}
+                        </dt>
+                        <dd className="text-green-900">−{usd(o.write_down_amount)}</dd>
+                        <dt className="text-muted">Amount owed</dt>
+                        <dd className="text-green-900">$0.00</dd>
+                      </>
+                    )}
                     <dt className="text-muted">Payment</dt>
                     <dd className="text-green-900">
                       {o.payment_status === 'paid' ? 'Settled'

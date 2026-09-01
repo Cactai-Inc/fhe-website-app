@@ -621,8 +621,9 @@ export function ProvisionClientForm({
               <p className="text-sm text-muted mb-2.5">
                 What they're purchasing — their first order. <strong>This is what decides
                 their paperwork</strong>: each service carries its own documents, and the
-                list below fills in from whatever you pick here. A comped, zero-priced
-                offering counts the same as a paid one.
+                list below fills in from whatever you pick here. To comp or discount,
+                build the order at full price and settle it from Payment review — the
+                paperwork is the same either way.
               </p>
               {visibleOfferings.length === 0 ? (
                 <p className="text-sm text-muted">

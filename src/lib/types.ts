@@ -198,6 +198,12 @@ export interface Order {
    *  this one; they share only a name.) */
   payment_status: 'unpaid' | 'pending' | 'paid';
   amount: number;
+  /** What was actually collected. BOOKS1 (CR-89): on a discounted or comped
+   *  order this is less than `amount` — the difference is the write-down, and
+   *  R4 says the customer SEES all three figures, never a rewritten price. */
+  amount_paid: number;
+  payment_disposition: 'paid' | 'discounted' | 'comped';
+  write_down_amount: number;
   payment_reference: string | null;
   unique_amount: number | null;
   paid_at: string | null;
