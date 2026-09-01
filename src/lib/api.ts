@@ -335,6 +335,19 @@ export interface OnboardingState {
   /** Live contracts they are a party to and have not signed. Optional so a
    *  cached payload from before this field still type-checks. */
   contracts_waiting?: WaitingContract[];
+  /**
+   * SIGNDOOR — the /sign/* door this person came in by: 'guest' | 'rider' |
+   * 'horse' | 'rider+horse' | 'deal', or '' when we cannot tell.
+   *
+   * ⚠️ IT IS NOT `my_standing_categories()`, and that is the whole point. Groups
+   * are DERIVED from executed documents, purchases and horses, so a brand-new
+   * self-service signup has NONE — proven on production 2026-09-01. The path is
+   * read back off the invitation that brought them here (20260901T1120), which
+   * is the only place it was ever written down.
+   *
+   * Optional so a payload cached from before that migration still type-checks.
+   */
+  sign_path?: string;
 }
 
 /** Attach a created horse to the caller's purchase (own-horse services). */

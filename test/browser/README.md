@@ -35,7 +35,24 @@ VITE_SUPABASE_URL=https://example.supabase.co VITE_SUPABASE_ANON_KEY=anon \
 # 2. in another shell
 node test/browser/probe-field-roundtrip.mjs      # every input_kind saves — 18/18
 node test/browser/probe-horse-confirmation.mjs   # the horse control renders and fires
+node test/browser/probe-sign-minor.mjs           # the sign door, and the page after auth — 30/30
 ```
+
+### The entries, and what each one mounts
+
+| harness entry | mounts | fixtures from |
+|---|---|---|
+| `contract-page.tsx` | the real `ContractPage` | `test/ui/fixtures/contractsend-rpc-payloads.json` (PGlite capture) |
+| `documents-content.tsx` | the real `DocumentsContent` | `window.__tables` / `window.__rpcFixtures`, set before render |
+| `sign-start.tsx` | the real `SignStart`, path from `?path=` | none — the page is pre-auth and fetches almost nothing |
+| `onboarding-details.tsx` | the real `Onboarding`, `sign_path` from `?path=` | `window.__rpcFixtures.my_onboarding_state` |
+
+`probe-sign-minor.mjs` drives the last two together, because TASK-SIGNDOOR is one
+move across two pages: the door stops asking, and the first page after auth starts.
+⚠️ It clears `localStorage` between arrivals. `useFormDraft` persists these forms
+(TASK-FIX4 §6) and a restored draft legitimately PRE-ANSWERS the minor question —
+that is the person's own earlier answer, not a default — so without the clear the
+probe would be testing the draft rather than the no-default rule.
 
 Chromium comes from `/opt/pw-browsers`; `playwright` is a dev-time dependency of the probes
 only (`npm i -D playwright --no-save`), deliberately not added to `package.json` so a normal
