@@ -60,6 +60,21 @@ else.**
 
 ---
 
+# 0c. 🔒 ORCH IS STANDING BUT REPLACEABLE — and `docs/orch/BOARD.md` is what makes that true
+
+**ORCH stays open across a wave of work, because RIGHT OF WAY is live state: what is moving, who owns
+which database object, what merges in which order.** ⚠️ **But standing must never mean irreplaceable.**
+
+🔒 **THEREFORE THE BOARD IS A FILE, NOT A MEMORY — `docs/orch/BOARD.md`.** **Updated on every dispatch
+and every merge.** ⚠️ **A fresh ORCH reads it and takes the junction without asking anyone what is
+moving.** **If the board disagrees with `git worktree list`, the board is wrong and is corrected.**
+
+⚠️ **ORCH6 AUTHORED `THE-RUNNING-RECORD` AS BINDING ON ALL FIVE ROLES AND KEPT NO RECORD ITSELF FOR
+MOST OF A SESSION.** **The board exists because of that gap.** **A role that exempts itself from its
+own rule is the one whose death costs the most, because it holds the sequencing nobody else has.**
+
+---
+
 # 0b. 🔒 THREAD LIFECYCLE — who stays open, who is thrown away, and where a request enters
 
 | Role | Lifecycle | Opened by |
