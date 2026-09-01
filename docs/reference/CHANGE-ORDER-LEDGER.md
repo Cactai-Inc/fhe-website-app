@@ -4051,8 +4051,15 @@ payment-request trigger hanging off `approved`, and a viewer-scoped read.**
    nobody is told a move is pending.**
 
 ### 🔒 THE READ RULE, GENERALISED FROM HIS THREE ANSWERS — build this ONCE
-⚠️ **An outsider never learns WHY a slot is occupied — with ONE deliberate exception.** **They see
-open, occupied, or `Pending reschedule`.**
+⚠️ **THERE IS NO "AVAILABLE" TO RENDER. Owner, 2026-09-01:** *"the calendar is only going to show
+unavailble timeslots with something in them all other calendar space is just empty which means its
+available."*
+🔒 **AVAILABILITY IS THE ABSENCE OF A BLOCK.** **An outsider sees either something in the slot, or
+empty space. `cancelled` and a released `moved` therefore render as NOTHING — not as a chip saying
+cancelled, not as a green "available" state.** ⚠️ **Do not build an available-state renderer; today's
+594 `available` rows are the schema's business, not the calendar's.**
+
+⚠️ **And an outsider never learns WHY a slot is occupied — with ONE deliberate exception.**
 ✅ **The exception, owner 2026-09-01:** *"to everyone else it can show as pending reschedule, to
 indicate its likely to open up."* ⚠️ **A held slot is still NOT bookable — the label is a signal, not
 an invitation. Do not let it become a bookable state.**
@@ -4060,11 +4067,11 @@ an invitation. Do not let it become a bookable state.**
 
 | State | The parties see | ⚠️ Everyone else sees |
 |---|---|---|
-| `requested` · `approved` · `pending` · `scheduled` | the real state | **occupied** |
-| `completed` · `no_show` | the real state | **occupied** |
-| `cancelled` | **cancelled** | **open and available** |
+| `requested` · `approved` · `pending` · `scheduled` | the real state | **a block — `Booked` / `Unavailable`** |
+| `completed` · `no_show` | the real state | **a block — `Booked` / `Unavailable`** |
+| `cancelled` | **cancelled** | ⚠️ **nothing — the slot renders empty** |
 | `moved`, while the new time is unapproved | **moved** | ⚠️ **`Pending reschedule`** — occupied, but signalling it is likely to open up |
-| `moved`, once the new time is approved | **moved** | **open and available** — the hold releases |
+| `moved`, once the new time is approved | **moved** | ⚠️ **nothing — the hold releases and the slot renders empty** |
 
 🔒 **THIS IS ONE VIEWER-SCOPED READ, NOT SIX SPECIAL CASES**, and it must be decided on the READ so a
 second reader cannot leak a state a UI filter forgot to hide (D18).
