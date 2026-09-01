@@ -1,9 +1,25 @@
 /* POST /api/sign-start — public self-onboarding entry for the /sign/* pages
- * (TASK C, rewired by TASK ONBOARD §2/§3).
+ * (TASK C, rewired by TASK ONBOARD §2/§3, slimmed by TASK-SIGNDOOR).
  *
- * Body: { path: 'guest'|'rider'|'horse'|'rider+horse'|'deal', firstName, lastName,
- *         phone, email, confirmEmail,
- *         addressLine1, addressLine2, city, state, postalCode }
+ * ⚠️ SIGNDOOR — THE FOUR FUNNEL DOORS TAKE AN EMAIL ADDRESS AND NOTHING ELSE.
+ * Owner, 2026-09-01: *"the purpose of this page is purely to capture the initial
+ * information for the setup of an account, it was supposed to only ask for their
+ * email address."* Everything this endpoint used to accept from a funnel — name,
+ * phone, address, the FIX1 minor block — is now asked on the FIRST PAGE AFTER
+ * AUTH (src/pages/app/Onboarding.tsx, the `details` step), where the account is
+ * provably the guardian's because the address has been verified by clicking the
+ * emailed link. Nothing was invented to move it: that form and its RPC spine
+ * (update_my_onboarding_profile -> attach_minor_to_guardian) were already there.
+ *
+ * ⚠️ `deal` IS DELIBERATELY UNCHANGED (SIGNDOOR §5.4). It is not a funnel: it
+ * claims a contract that already exists, the address prints on that contract
+ * (D22), and its field set serves a different purpose. Every line of its branch
+ * below — fill_claimant_details, correct_claimant_name_from_signup,
+ * invite_contract_counterparty — is exactly what it was.
+ *
+ * Body, funnels: { path: 'guest'|'rider'|'horse'|'rider+horse', email, confirmEmail }
+ * Body, deal:    { path: 'deal', email, confirmEmail, firstName, lastName, phone,
+ *                  addressLine1, addressLine2, city, state, postalCode }
  * -> 200 { ok, status, attemptId } — `status` is the REAL send outcome
  *    ('sent' | 'send_failed' | 'rate_limited' | 'unavailable'), because the owner
  *    asked for "a screen that renders the actual email sending state with outcome"
@@ -33,46 +49,25 @@
  *     /api/signup-help escalates from, and it is why "created but never emailed"
  *     is now a queryable fact instead of a lost 200.
  *
- * PARTYEMAIL §2 — THE ADDRESS, AND IT IS ASKED PER PATH. D22 §0 (owner, revised
- * 2026-08-20): "full name and email and phone number are the minimum required set,
- * if they have a contract they need to give us an address."
+ * PARTYEMAIL §2 / D22 §0 — THE ADDRESS, ON THE PATH THAT PRINTS ONE. Owner,
+ * revised 2026-08-20: "full name and email and phone number are the minimum
+ * required set, if they have a contract they need to give us an address."
+ * `.ADDRESS` is one of the five party tokens a contract prints, so `deal` still
+ * REQUIRES a complete address here — enforced server-side, because the browser is
+ * not the authority on what a request must contain. The funnels no longer supply
+ * one at all; the post-auth details form collects it before any document merges.
  *
- * So the address is REQUIRED on `deal` and optional on the other four. `.ADDRESS`
- * is one of the five party tokens a contract prints and nothing else populated it
- * for a self-service signer — but only the deal path has a contract behind it, and
- * a lessons signup is not made to produce a street address before we will talk.
+ * FIX1 §A/§B, AND WHERE THEY LIVE NOW. The minor question and the
+ * self-correcting-name rule were both put HERE because the door was where the
+ * name was captured. The name is no longer captured here on a funnel, so neither
+ * is: `attach_minor_to_guardian()` is called from update_my_onboarding_profile
+ * (the same RPC, the same single engine — 20260831T0910, D18), and the
+ * "correction" case disappears with the field, because a person who mistypes
+ * nothing cannot mistype their name. ⚠️ `correct_claimant_name_from_signup()` is
+ * NOT retired: the `deal` branch still calls it, unchanged (20260831T0920).
  *
- * The rule is enforced HERE as well as in the form: the browser is not the
- * authority on what a request must contain.
- *
- * Whatever is supplied is written through the SAME helper, fill_claimant_details —
- * blanks only, so a public form never overwrites what staff hold. The deal branch
- * already called it; the provisioning branch now calls it too, using the contact_id
- * provision_client_invitation returns. One writer, whichever door they came in.
- *
- * FIX1 §A — THE MINOR ARRIVES WITH THE NAME. AR7 F1: this door captured one name
- * and every word around it said it was the rider's, so a parent enrolling a child
- * created an account in the child's name. Body now carries isForMinor +
- * minorFirstName/minorLastName/minorDob on the three paths where a rider may be a
- * minor. The rule is re-decided HERE from MINOR_PATHS — the browser is not the
- * authority on which paths may carry a child, exactly as it is not the authority
- * on which paths require an address.
- *
- * The minor is attached through attach_minor_to_guardian(), which IS the block
- * lifted out of update_my_onboarding_profile (20260831T0910) — guardian is the
- * account holder, minor is the non-signing PARTICIPANT, linked by
- * contacts.guardian_contact_id. There is no second minor concept at the door.
- *
- * FIX1 §B — A RESUBMISSION MAY CORRECT ITS OWN NAME. AR7 F2: fill_claimant_details
- * writes blanks only, so a visitor who spotted their own mistake and resubmitted
- * 109 seconds later was told the send succeeded while the correction was thrown
- * away. That rule is untouched — it is what stops a public form overwriting staff
- * data. correct_claimant_name_from_signup() runs BESIDE it and applies the name
- * only when it can prove the same requester is correcting their own prior
- * submission, nothing has been signed, and no human has set the name in-app
- * (20260831T0920). The response carries `nameApplied` so the send-state screen
- * can say so — echoing the visitor's OWN input, which discloses nothing about
- * whether we already knew the address.
+ * `nameApplied` stays in the response and is simply always false for a funnel.
+ * The response shape must not vary — see the anti-enumeration note above.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHash } from 'node:crypto';
@@ -97,21 +92,12 @@ const PATH_CATEGORIES: Record<string, string[]> = {
  *  account and lands them on their document in one flow. */
 const DEAL_PATH = 'deal';
 
-/** FIX1 §A — which paths may carry a minor. Owner ruling 2026-08-31: a rider may
- *  be a minor, a horse owner may not ("both require a person to be 18+ to be
- *  horse owner"). `rider+horse` is a rider path, so it asks; `horse` and `deal`
- *  are the horse owner and do not. Mirrors PATH_ALLOWS_MINOR in SignStart.tsx —
- *  and is the authoritative copy, because the browser does not decide this. */
-const MINOR_PATHS = new Set(['guest', 'rider', 'rider+horse']);
-
-/** Under 18 today. The same test sign_release applies to a kiosk minor release:
- *  an "18-year-old minor" is a data error, and recording one would put an adult
- *  in the non-signing PARTICIPANT slot where nobody would ever ask them to sign
- *  for themselves. */
-function isUnder18(dob: Date): boolean {
-  const eighteenth = new Date(dob.getFullYear() + 18, dob.getMonth(), dob.getDate());
-  return eighteenth > new Date();
-}
+/** FIX1 §A — WHICH DOORS MAY CARRY A MINOR IS STILL RE-DECIDED SERVER-SIDE, and
+ *  it still is not the browser's call. It simply is not decided HERE any more:
+ *  the question moved to the post-auth details form, so the authoritative copy is
+ *  `_sign_path_allows_minor(text)` in the database (20260901T1120), which
+ *  `update_my_onboarding_profile` consults before it attaches anybody's child.
+ *  Named here so the next reader of this file finds where the rule went. */
 
 function sha256(s: string): string {
   return createHash('sha256').update(s).digest('hex');
@@ -152,45 +138,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'invalid email' });
 
-  const firstName = ((body.firstName as string) || '').trim();
-  const lastName = ((body.lastName as string) || '').trim();
-  const phone = ((body.phone as string) || '').trim();
-  // §2: the owner overrode the old email-only capture. All four are required by
-  // the form; the server enforces the three it can check cheaply.
-  if (!firstName || !lastName) return res.status(400).json({ error: 'name required' });
-  if (!phone) return res.status(400).json({ error: 'phone required' });
+  /* ⚠️ SIGNDOOR — EVERY FIELD BELOW THIS LINE IS READ ONLY ON `deal`. A funnel
+     body is { path, email, confirmEmail } and nothing more; if a stale client (a
+     cached bundle mid-deploy, say) still POSTs a name, it is read into these
+     constants and then never used, which is the quiet, correct outcome — the old
+     door's data is not honoured by a slim endpoint, and it is not rejected
+     either, because refusing would turn a deploy into an outage for anyone
+     holding the page. */
+  const firstName = isDeal ? ((body.firstName as string) || '').trim() : '';
+  const lastName = isDeal ? ((body.lastName as string) || '').trim() : '';
+  const phone = isDeal ? ((body.phone as string) || '').trim() : '';
+  // D22 §0 — the deal path prints a party block, so it still demands the set.
+  if (isDeal) {
+    if (!firstName || !lastName) return res.status(400).json({ error: 'name required' });
+    if (!phone) return res.status(400).json({ error: 'phone required' });
+  }
 
-  // PARTYEMAIL §2 — the fourth value. Apt/suite is genuinely optional everywhere;
-  // the other four components are what compose_address needs to produce a usable
-  // address, which is why a PARTIAL address is refused on every path. "Optional"
+  // PARTYEMAIL §2 — the fourth value, on the one path that prints it. Apt/suite is
+  // genuinely optional; the other four components are what compose_address needs to
+  // produce a usable address, which is why a PARTIAL address is refused. "Optional"
   // means leave it blank, not "a street with no city will do" — a fragment would be
   // composed into the contract exactly as typed.
-  const addressLine1 = ((body.addressLine1 as string) || '').trim();
-  const addressLine2 = ((body.addressLine2 as string) || '').trim();
-  const city = ((body.city as string) || '').trim();
-  const stateV = ((body.state as string) || '').trim();
-  const postalCode = ((body.postalCode as string) || '').trim();
-  // FIX1 §A — the minor, on the paths that may have one. `isForMinor` is only
-  // ever honoured where MINOR_PATHS says it can be; a request that asserts it on
-  // /sign/horse or /sign/deal is not an error, it is simply not a minor path and
-  // the flag is dropped.
-  const minorFirstName = ((body.minorFirstName as string) || '').trim();
-  const minorLastName = ((body.minorLastName as string) || '').trim();
-  const minorDobRaw = ((body.minorDob as string) || '').trim();
-  const isForMinor = Boolean(body.isForMinor) && MINOR_PATHS.has(path);
-  let minorDob: Date | null = null;
-  if (isForMinor) {
-    if (!minorFirstName || !minorLastName) {
-      return res.status(400).json({ error: "the rider's name is required" });
-    }
-    minorDob = minorDobRaw ? new Date(`${minorDobRaw}T00:00:00Z`) : null;
-    if (!minorDob || Number.isNaN(minorDob.getTime())) {
-      return res.status(400).json({ error: "the rider's date of birth is required" });
-    }
-    if (!isUnder18(minorDob)) {
-      return res.status(400).json({ error: 'the named rider is 18 or older; they sign up in their own name' });
-    }
-  }
+  const addressLine1 = isDeal ? ((body.addressLine1 as string) || '').trim() : '';
+  const addressLine2 = isDeal ? ((body.addressLine2 as string) || '').trim() : '';
+  const city = isDeal ? ((body.city as string) || '').trim() : '';
+  const stateV = isDeal ? ((body.state as string) || '').trim() : '';
+  const postalCode = isDeal ? ((body.postalCode as string) || '').trim() : '';
 
   const addressComplete = Boolean(addressLine1 && city && stateV && postalCode);
   // addressLine2 counts as "started" though it is never required: verified on prod,
@@ -207,7 +180,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   /** The one write path for what the visitor typed: blanks only, never an
    *  overwrite of the record staff maintain. contacts.address_composed is a
-   *  GENERATED column and is never among these — it recomputes from the parts. */
+   *  GENERATED column and is never among these — it recomputes from the parts.
+   *  ⚠️ `deal` only now: a funnel supplies nothing to fill. */
   const claimantDetails = {
     p_first_name: firstName || null,
     p_last_name: lastName || null,
@@ -342,11 +316,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sendError = 'no claimable contract matched this address — nothing was sent';
       }
     } else if (allowed && orgId) {
+      /* ⚠️ SIGNDOOR — PROVISIONED NAMELESS, ON PURPOSE. `provision_client_invitation`
+         has always accepted a null name (`v_fn := nullif(trim(coalesce(p_first_name,
+         '')), '')`), and `_ensure_client_account` inserts the contact with
+         first_name NULL rather than a placeholder — verified on production. That
+         NULL is load-bearing twice over: the invitation email carries no name token
+         at all (the INVITATION template merges ORG.BRAND_NAME, MSG.LINK,
+         MSG.EXPIRES_ON and nothing personal), and `needsName` on the post-auth
+         details form is exactly "the contact has no name", so leaving it blank is
+         what MAKES the first page after auth ask for it. */
       const { data, error: rpcErr } = await db.rpc('provision_client_invitation', {
         p_email: email,
-        p_first_name: firstName || null,
-        p_last_name: lastName || null,
-        p_phone: phone || null,
+        p_first_name: null,
+        p_last_name: null,
+        p_phone: null,
         p_categories: categories,
         p_offering_ids: [],
         p_template_keys: null,
@@ -366,41 +349,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // caller. The same helper the deal branch uses writes it onto the contact it
       // just returned, so the address lands whichever path was taken.
       if (out.contact_id) {
-        await db.rpc('fill_claimant_details', {
-          p_contact_id: out.contact_id, ...claimantDetails,
-        });
-
-        /* FIX1 §B — THE CORRECTION LANDS. fill_claimant_details above is
-           unchanged and still blanks-only; this runs beside it and applies the
-           name only when the database can prove all four guards (same
-           requester_hash, nothing signed, no human has set the name in-app, and
-           it actually differs). Everything else keeps today's absolute
-           protection. AR7 F2 is the whole reason this line exists. */
-        const { data: fixed, error: fixErr } = await db.rpc('correct_claimant_name_from_signup', {
-          p_contact_id: out.contact_id,
-          p_first_name: firstName,
-          p_last_name: lastName,
-          p_requester_hash: requesterHash,
-        });
-        if (fixErr) console.error('sign-start: name correction failed', fixErr);
-        nameApplied = Boolean(fixed);
-
-        /* FIX1 §A — THE MINOR, ATTACHED AT THE DOOR. Same spine Onboarding.tsx
-           uses: guardian_contact_id on the child's contact. my_onboarding_state()
-           reads it straight back, so the guardian reaches the corridor with the
-           question already answered, and generate_my_onboarding_documents() puts
-           the child in the PARTICIPANT slot and the guardian in CLIENT.
-           Never blocks the invitation — but never silent either, for the same
-           reason apply_sign_path_documents below is not. */
-        if (isForMinor) {
-          const { error: minorErr } = await db.rpc('attach_minor_to_guardian', {
-            p_guardian_contact_id: out.contact_id,
-            p_first_name: minorFirstName,
-            p_last_name: minorLastName,
-            p_dob: minorDobRaw || null,
-          });
-          if (minorErr) console.error('sign-start: minor not attached', path, minorErr);
-        }
+        /* ⚠️ SIGNDOOR — fill_claimant_details, correct_claimant_name_from_signup
+           and attach_minor_to_guardian ALL STOOD HERE, and all three are now
+           reached from the post-auth details form instead, because that is where
+           the values they write are now typed. None of the three RPCs changed and
+           none was retired — `deal` above still calls the first two, and
+           update_my_onboarding_profile still calls the third. This is a call site
+           moving, not an engine being replaced (D18). */
         /* ⚠️ OFFERINGDOCS 2026-08-24 — THE DOOR ASSIGNS THE PAPERWORK NOW.
            `p_categories` above is still sent and still recorded, but a category
            no longer writes a single document: `_ensure_client_account` stopped
@@ -440,6 +395,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { data: rec } = await db.rpc('record_signup_attempt', {
         p_org: orgId,
         p_email: email,
+        // Null on a funnel: the row records what was actually submitted, and a
+        // blank here is the truth rather than a gap. Staff reading the signup
+        // trail see the email and the door, which is now all a funnel carries.
         p_first_name: firstName || null,
         p_last_name: lastName || null,
         p_phone: phone || null,
@@ -462,7 +420,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     /* FIX1 §B — `nameApplied` is safe to return. It is true only when the name
        the visitor JUST TYPED was written, so the screen echoes their own input
        back; it never reveals what we held before, and it never reveals whether
-       the address was already known to us. Anti-enumeration is intact. */
+       the address was already known to us. Anti-enumeration is intact.
+       ⚠️ SIGNDOOR: on a funnel it is now ALWAYS false, and the key stays in the
+       payload regardless. A response whose SHAPE varied would be exactly the
+       oracle the header above spends twelve lines refusing to be. */
     return res.status(200).json({ ok: true, status, attemptId, nameApplied });
   } catch (err) {
     console.error('sign-start error', err);
