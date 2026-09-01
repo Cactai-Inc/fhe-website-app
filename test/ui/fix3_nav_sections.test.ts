@@ -43,13 +43,21 @@ describe('FIX3 — the section names', () => {
     expect(labelOf('community')).toBe('Admin');
   });
 
-  it('"People" is a rendered section again, because it has rows again', () => {
-    expect(labelOf('accounts')).toBe('People');
-    expect(pathsIn('accounts')).toEqual(['/app/records', '/app/records/horses']);
+  /* ⚠️ SUPERSEDED BY TASK-CR85 (owner, same day): *"we could move people into
+     community and then remove that as a standalone section, now we have
+     community, management, admin."* FIX3's "People" section lasted one task.
+     The assertion is kept, inverted, so nothing quietly puts it back — the two
+     rows themselves are proven in cr85_three_nav_sections.test.ts. */
+  it('⚠️ "People" is NOT a section any more — CR-85 dissolved it into Community', () => {
+    expect(adminGroups().find((g) => g.key === 'accounts')).toBeUndefined();
+    expect(adminGroups().map((g) => g.label)).not.toContain('People');
   });
 
-  it('"App pages" is labelled Community, and the label is written once', () => {
-    expect(APP_LAYOUT).toContain("key: 'app-pages', label: 'Community'");
+  it('"App pages" is labelled Community', () => {
+    // CR-85 promoted the pseudo-group into a real one; the key is a named
+    // constant now (COMMUNITY_KEY) rather than a literal at the call site.
+    expect(labelOf('app-pages')).toBe('Community');
+    expect(APP_LAYOUT).toContain("const COMMUNITY_KEY = 'app-pages';");
     expect(APP_LAYOUT).not.toContain("'App pages'");
   });
 });
@@ -116,15 +124,17 @@ describe('FIX3 — ⚠️ Settings and Modules: in the data, out of every rail',
     expect(APP_LAYOUT).toContain('const railGroups = railNavGroups(navGroups);');
   });
 
-  it('the mobile drawer has a heading element for the App-pages block', () => {
-    // TASK-AR4 Finding 3: renaming the label was a desktop-only change, because
-    // the mobile drawer rendered no heading for this block at all.
-    const drawerAnchor = APP_LAYOUT.indexOf('<CommunityNav onNavigate={closeMobileNav} />');
-    expect(drawerAnchor, 'the mobile drawer block moved — re-anchor this test').toBeGreaterThan(0);
-    const justAbove = APP_LAYOUT.slice(Math.max(0, drawerAnchor - 900), drawerAnchor);
-    expect(justAbove, 'the drawer renders the block with no heading again').toContain('{APP_PAGES_GROUP.label}');
-    // Desktop renders it twice (the pinned button, and the collapsed strip's
-    // aria-label); mobile now renders it once. Three in total, not two.
-    expect(APP_LAYOUT.match(/\{APP_PAGES_GROUP\.label\}/g)?.length).toBe(3);
+  /* ⚠️ SUPERSEDED BY TASK-CR85. FIX3 gave the mobile drawer a heading element
+     of its own for the hand-written Community block, because AR4 Finding 3
+     found the block had none and the rename was therefore desktop-only. CR-85
+     removes the need: the block is a real group, so the heading every surface
+     already renders per group covers it, and `APP_PAGES_GROUP` is gone. The
+     assertion is kept, restated against what replaced it. */
+  it('the Community heading comes from the group loop now, on every surface', () => {
+    expect(APP_LAYOUT, 'the pseudo-group is back').not.toContain('APP_PAGES_GROUP:');
+    // Four uses, not three: the avatar drop-down, the desktop rail's heading
+    // button, the mobile drawer — plus the collapsed 56px strip's separator,
+    // which carries the same label as its aria-label instead of as text.
+    expect(APP_LAYOUT.match(/\{g\.label\}/g)?.length, 'a surface stopped heading its groups').toBe(4);
   });
 });
