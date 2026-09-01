@@ -16,10 +16,10 @@ platform    macOS. Every path above is absolute and real.
 ⚠️ **`cd` into the repo before anything.** A fresh session starts elsewhere.
 
 ## READ, IN THIS ORDER
-1. **`docs/handoff/RUN-QUEUE.md`** — ⚠️ **what to run, in order, with model settings.** Start there.
-2. **`docs/ORCHESTRATOR.md`** — the role. ⚠️ **A previous thread ran this role a whole session without
+1. **`docs/orch/RUN-QUEUE.md`** — ⚠️ **what to run, in order, with model settings.** Start there.
+2. **`docs/method/ORCHESTRATOR.md`** — the role. ⚠️ **A previous thread ran this role a whole session without
    reading it and the owner caught it.**
-3. **`docs/handoff/02-THE-SIX-STEP-METHOD.md`** — how he works, in his words.
+3. **`docs/method/02-THE-SIX-STEP-METHOD.md`** — how he works, in his words.
 4. **`CLAUDE.md`** — D1–D33, and ⚠️ **no subagent delegation in this repo.**
 
 ---
@@ -210,7 +210,7 @@ twice. ⚠️ **EXCEPT the comp designation and `revenue_summary` fix (§3), whi
   threads corrected ORCH5 on points of fact, and were right each time.**
 
 # 8. HOW THIS THREAD ENDS
-Everything committed and pushed · `docs/handoff/` updated *(the only live lineage)* · new settled
+Everything committed and pushed · `docs/method/` updated *(the only live lineage)* · new settled
 decisions into `CLAUDE.md` as D-rules · a memory entry for anything outliving this repo · and the
 ORCH7 handoff written as **instructions, not a status report**.
 ⚠️ **The test: nothing this thread knows exists only in this thread.**

@@ -113,7 +113,7 @@ adds the option to future documents and leaves the live one without it.**
 building the semantics and the reads; **Thread 3 builds the surface that reaches them.** So this
 thread ends with **no new route and no new button**, and its RPCs are provably callable but not yet
 clicked. ⚠️ **List them explicitly in your report as awaiting a caller**, or they join the eight
-entries in `docs/ORCHESTRATOR.md` §3b — correct code nothing reaches.
+entries in `docs/method/ORCHESTRATOR.md` §3b — correct code nothing reaches.
 
 ## 4. THE TELL
 

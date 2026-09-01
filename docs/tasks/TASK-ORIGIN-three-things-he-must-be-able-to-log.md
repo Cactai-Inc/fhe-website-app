@@ -48,9 +48,9 @@ and **not captured it never exists at all — no later schema can recover a fact
 
 1. **`CLAUDE.md`** — ⚠️ **no subagent delegation.** D13 (he changes it without a developer), D21,
    D22 §0, D31, D32.
-2. **`docs/ORCHESTRATOR.md` §3, §3b, §4** — the code-that-reports-success-and-does-nothing class, and
+2. **`docs/method/ORCHESTRATOR.md` §3, §3b, §4** — the code-that-reports-success-and-does-nothing class, and
    its sibling, the code-nothing-reaches class. **§5 below is an instance of the first.**
-3. **`docs/handoff/04-OPEN-QUESTIONS.md` §3** — why the metric list is **not yours to author**, and
+3. **`docs/method/04-OPEN-QUESTIONS.md` §3** — why the metric list is **not yours to author**, and
    why this task stops where §7 says it stops.
 
 ---

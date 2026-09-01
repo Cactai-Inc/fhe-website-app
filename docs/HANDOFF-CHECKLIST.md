@@ -1,6 +1,6 @@
 # Orchestrator handoff — requirements checklist
 
-**WRITTEN 2026-08-08 — `docs/ORCHESTRATOR-HANDOFF.md`.** Every required line below is validated present. This file exists to (a) preserve the owner's instruction
+**WRITTEN 2026-08-08 — `docs/archive/ORCHESTRATOR-HANDOFF.md`.** Every required line below is validated present. This file exists to (a) preserve the owner's instruction
 verbatim, (b) list every required element as a checkable line, and (c) hold suggested
 additions for the owner to approve or remove.
 

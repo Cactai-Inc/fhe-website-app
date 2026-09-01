@@ -13,7 +13,7 @@ refactor framing and needs re-checking against the new one before anyone acts on
 for the owner's exact words and what it changes.
 
 ⚠️ **APPENDED 2026-08-27 — THIS FOLDER IS THE ONE CANONICAL ENTRY POINT. A PARALLEL SESSION EXISTS
-UNDER `docs/HANDOFF-ORCH<n>.md` (a single-file convention this folder replaced) AND DID NOT KNOW THIS
+UNDER `docs/orch/HANDOFF-ORCH<n>.md` (a single-file convention this folder replaced) AND DID NOT KNOW THIS
 FOLDER EXISTED UNTIL PARTWAY THROUGH ITS SESSION.** That session — spawned from a stale
 `HANDOFF-ORCH4.md` written 2026-08-24, before this folder existed — audited and merged
 `wt-contractoptions` and `wt-surfaceeditor` without reading `03-REMAINING-WORK.md` first, and as a
@@ -26,7 +26,7 @@ handoff format to use going forward: use this folder. Retire the single-file con
 letting both continue to accumulate state independently.**
 
 ⚠️ **CLOSED OUT, 2026-08-27, ON THE OWNER'S INSTRUCTION — the single-file lineage above stood down
-here.** That session's own artifact, `docs/HANDOFF-ORCH5.md`, is retained for its audit-trail detail
+here.** That session's own artifact, `docs/orch/HANDOFF-ORCH5.md`, is retained for its audit-trail detail
 on PAMELA and SURFACEEDITOR (already folded into §1/§7 below) but marks itself superseded and should
 not be used to spawn anything. **This folder is now the only live lineage.** No further
 `HANDOFF-ORCH<n>.md` will be produced.
@@ -51,16 +51,16 @@ platform    macOS. Every path above is absolute and real.
 
 ## READ THESE, IN THIS ORDER
 
-1. **`docs/ORCHESTRATOR.md`** — ⚠️ **THE ROLE. READ IT FIRST AND ACTUALLY READ IT.** The outgoing
+1. **`docs/method/ORCHESTRATOR.md`** — ⚠️ **THE ROLE. READ IT FIRST AND ACTUALLY READ IT.** The outgoing
    thread performed this role for a full session **without having read this file**, and the owner
    caught it: *"you are still shooting from the hip rather than working from tested and verified
    instructions."* Four documented requirements were missing from work already handed out — the
    mandatory `cd` in a spawn prompt, THE REACH, THE TELL, and TEARDOWN. **Do not repeat that.**
-2. **`docs/handoff/02-THE-SIX-STEP-METHOD.md`** *(a copy of `docs/METHOD-change-orders.md`, which
+2. **`docs/method/02-THE-SIX-STEP-METHOD.md`** *(a copy of `docs/method/METHOD-change-orders.md`, which
    stays canonical)* — how the owner works, in his own words. **The capture rules are the ones most
    often broken.**
-3. **`docs/handoff/03-REMAINING-WORK.md`** — everything outstanding.
-4. **`docs/handoff/04-OPEN-QUESTIONS.md`** — what is waiting on HIM. **Do not re-derive these; he has
+3. **`docs/method/03-REMAINING-WORK.md`** — everything outstanding.
+4. **`docs/method/04-OPEN-QUESTIONS.md`** — what is waiting on HIM. **Do not re-derive these; he has
    been asked.**
 5. **`CLAUDE.md`** — the settled decisions D1–D33. **D33 is new today.**
 

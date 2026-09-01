@@ -12,7 +12,7 @@ the files it names. Nothing was said to you in the prompt.
 2. **`docs/tasks/TASK-ONEEDITOR-one-editor-and-a-version-lineage.md`** — the owner's model, verbatim,
    and the fact-find behind it. **§1 is the rules, §2 is what already exists, §4 is the rule you must
    not break.**
-3. **`docs/METHOD-change-orders.md`** — how the owner works, and what he wants in a report.
+3. **`docs/method/METHOD-change-orders.md`** — how the owner works, and what he wants in a report.
 
 ## 1. WHAT YOU ARE BUILDING
 

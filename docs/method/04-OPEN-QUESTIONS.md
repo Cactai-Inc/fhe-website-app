@@ -22,7 +22,7 @@ The outgoing thread asked whether messaging should survive, having measured **al
 
 ⚠️ **ZERO ROWS WAS NEVER EVIDENCE OF ANYTHING — NOBODY IS IN THE APP YET.** That correction applies to
 every "built and undriven" finding in this repo: **pre-launch emptiness is the expected state**, and
-`docs/ORCHESTRATOR.md` §4 already says so *("Empty is not a finding")*. The outgoing thread reported
+`docs/method/ORCHESTRATOR.md` §4 already says so *("Empty is not a finding")*. The outgoing thread reported
 it as a finding anyway.
 
 **THE REAL QUESTION, and it is A or B:**

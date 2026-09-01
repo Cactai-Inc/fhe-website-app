@@ -13,7 +13,7 @@
 **This is the STEP 1 artefact.** It is a ledger, not a narrative. Its only job is to hold every
 captured request in a shape that lets steps 2 and 3 run without failure.
 
-**Method:** `docs/METHOD-change-orders.md`. **Narrative + evidence so far:**
+**Method:** `docs/method/METHOD-change-orders.md`. **Narrative + evidence so far:**
 `docs/tasks/TASK-DAYSHEET-…md` (19 sections) — that document is the *working notes*; THIS is the
 ledger of record.
 
@@ -3070,7 +3070,7 @@ is.** ⚠️ **Confirm this against the live rail before building — the FIX3 r
 
 ### ⚠️ THE OPEN QUESTION THIS DEPENDS ON, AND IT IS STILL HIS
 **Messages is in the Community block, and the messaging A/B is UNANSWERED** —
-`docs/handoff/04-OPEN-QUESTIONS.md` §1: do the notes panels become the inbox (A), or is the collective
+`docs/method/04-OPEN-QUESTIONS.md` §1: do the notes panels become the inbox (A), or is the collective
 messages page retired (B)? ⚠️ **If B, Community loses a row and the section is Catalog alone.**
 **Settle the A/B before or with this build; do not let a nav change quietly decide a product question.**
 

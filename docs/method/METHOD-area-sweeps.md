@@ -6,7 +6,7 @@ correct and the defect was their union.** One of them had already been widened o
 earlier, in response to his own complaint — a thread was shown one broken state and fixed exactly
 that state.
 
-> **`docs/ORCHESTRATOR.md` §3b already named this:** *"every task specifies a write path and proves
+> **`docs/method/ORCHESTRATOR.md` §3b already named this:** *"every task specifies a write path and proves
 > that write path. No task has ever been 'make this area work.' So the seam between a correct
 > function and a human who can reach it belongs to nobody."*
 
@@ -155,7 +155,7 @@ is gated to explicitly authorised, read-only runs.**
 
 ### ⚠️ 6b. THE POLICY COLLISION — THIS NEEDS AN OWNER RULING BEFORE WAVE 0
 
-**`docs/ORCHESTRATOR.md` §4 states: *"No worktree gets a staff login. Threads report renders as NOT
+**`docs/method/ORCHESTRATOR.md` §4 states: *"No worktree gets a staff login. Threads report renders as NOT
 VERIFIED and never simulate one — they end with a numbered checklist the owner runs."***
 
 **Mode B already breaks that rule, in committed code.** `probe-owner-dashboard.mjs` signs in as the

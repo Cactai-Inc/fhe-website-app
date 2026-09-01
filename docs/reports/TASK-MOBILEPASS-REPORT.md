@@ -122,7 +122,7 @@ glass there is nothing to carve"*). Confirmed visually (see Verification below):
 a bug, a deliberate flat re-design of the mark.
 
 **I did not need to ask the owner about H3.** The record already has the answer, and re-asking
-a settled question is exactly the kind of thing `docs/ORCHESTRATOR-HANDOFF.md`'s 2026-08-11
+a settled question is exactly the kind of thing `docs/archive/ORCHESTRATOR-HANDOFF.md`'s 2026-08-11
 entry calls out ("re-raising sequencing the owner had already settled").
 
 ---

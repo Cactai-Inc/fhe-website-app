@@ -1,19 +1,19 @@
 # HANDOFF → ORCH5 [SUPERSEDED 2026-08-27 — SEE NOTICE BELOW]
 
-⚠️ **THIS FILE'S LINEAGE IS SUPERSEDED. `docs/handoff/00-START-HERE.md` IS THE ONE CANONICAL ENTRY
+⚠️ **THIS FILE'S LINEAGE IS SUPERSEDED. `docs/method/00-START-HERE.md` IS THE ONE CANONICAL ENTRY
 POINT.** A separate orchestrator session had already moved to a folder-based handoff
-(`docs/handoff/`) before this file was written, for reasons stated in that folder's own header (the
+(`docs/method/`) before this file was written, for reasons stated in that folder's own header (the
 owner caught the old single-file convention producing a thread that operated "shooting from the hip
 rather than working from tested and verified instructions"). This thread (the one that wrote this
 file) did not discover that folder until after merging two worktrees — and, not having read
-`docs/handoff/03-REMAINING-WORK.md` §4 first, **merged `b9bc9edc` to production by mistake** — the
+`docs/method/03-REMAINING-WORK.md` §4 first, **merged `b9bc9edc` to production by mistake** — the
 exact half-measure dashboard commit that folder already documented as deliberately rejected. Caught
 and reverted the same session (`e3c7da6e`); full incident note is in
-`docs/handoff/03-REMAINING-WORK.md` §4, and the useful, correct parts of this session's work
+`docs/method/03-REMAINING-WORK.md` §4, and the useful, correct parts of this session's work
 (PAMELA, SURFACEEDITOR, ONERAIL) are folded into that folder's §7. **This file is retained below as
 a detailed audit-trail record — the verification steps in §4.6/§4.7 are real and worth reading —
-but treat `docs/handoff/` as the source of truth for current state, not this file.** Do not spawn
-the next thread from this file; spawn it per `docs/handoff/00-START-HERE.md`'s own convention.
+but treat `docs/method/` as the source of truth for current state, not this file.** Do not spawn
+the next thread from this file; spawn it per `docs/method/00-START-HERE.md`'s own convention.
 
 ---
 
@@ -89,7 +89,7 @@ by `git log --grep` before assuming anything — don't infer from an empty diff 
 # 3. WHAT TO DO FIRST — the owner's own priorities, in his words, 2026-08-26/27
 
 He is running a **parallel `claude.ai` chat thread** doing design/architecture work (the six-step
-change process — `docs/METHOD-change-orders.md`, `docs/CHANGE-ORDER-LEDGER.md`, 65 change requests
+change process — `docs/method/METHOD-change-orders.md`, `docs/CHANGE-ORDER-LEDGER.md`, 65 change requests
 — and the DISCO/ORCH/TASK/TEST role-split design, see §5). **Two messages from this thread are
 sitting unanswered in that chat** as of this handoff: a request for the exact files ORCH4 is
 working from (answered, with a proposal to split ORCH into four roles), and a bundle of orchestrator
@@ -126,7 +126,7 @@ already specced — see §8a) comes before the globalization pass, not after.
 
 # 4. THE FULL ACCOUNTING — this session, in the order it happened
 
-Roughly 2026-08-26 evening into 2026-08-27. Picked up from `docs/HANDOFF-ORCH4.md` (ORCH3's
+Roughly 2026-08-26 evening into 2026-08-27. Picked up from `docs/orch/HANDOFF-ORCH4.md` (ORCH3's
 close). Everything below is merged to `main` and pushed unless stated otherwise.
 
 ## 4.1 TASK-PAMELA — audited and merged, two defects found in the audit itself
@@ -241,13 +241,13 @@ baseline, pushed. Worktree fully absorbed by content (confirmed via `git diff ma
 assumed), removed; branch deleted.
 
 ⚠️ **THIS WAS A MISTAKE, CAUGHT AND REVERTED THE SAME SESSION.** `b9bc9edc` was deliberately left
-unmerged by the actual acting orchestrator (the `docs/handoff/` lineage — this thread didn't know
+unmerged by the actual acting orchestrator (the `docs/method/` lineage — this thread didn't know
 it existed yet). Its own reasoning, discovered only afterward: the rows it adds *announce and then
 link away* — "Confirm $460" navigates to the payments page instead of confirming inline — which
 fails the half-measure rule the owner was "most emphatic about" (`TASK-DASHFEED` §3). Reverted
 (`e3c7da6e`, `git revert -m 1 1450a864`), re-verified typecheck/lint clean, re-pushed. `main` was
 correct before this section's merge, briefly wrong, and is correct again. Full incident note:
-`docs/handoff/03-REMAINING-WORK.md` §4. The `_waiting_items()` DB spine (the two RPC functions)
+`docs/method/03-REMAINING-WORK.md` §4. The `_waiting_items()` DB spine (the two RPC functions)
 remains live in production with zero callers — harmless, and worth finishing properly against the
 DASHFEED spec by whichever thread does that work, not by cherry-picking this commit again.
 
@@ -297,7 +297,7 @@ time, no content surprises) and its idle worktree removed. **Nothing outstanding
 
 Everything in ORCH3/ORCH4's prior handoffs about how the owner corrects, thinks out loud, wants
 verification not reassurance, and values small direct fixes over ceremony still holds — read
-`docs/HANDOFF-ORCH4.md` §5 if you haven't (it's long and worth it in full; not repeated here).
+`docs/orch/HANDOFF-ORCH4.md` §5 if you haven't (it's long and worth it in full; not repeated here).
 
 **New this session:** he is now running work in ways that don't route through you — direct merges
 of task branches, closing out worktrees himself — while parallel Claude Code sessions (you, a
@@ -312,7 +312,7 @@ haven't touched anything — check, every time, per §2's fourth absolute.
 
 # 6. HOW TO AUDIT WHAT COMES BACK — unchanged, one addition
 
-Steps 1–7 from `docs/ORCHESTRATOR.md` §6 and every prior handoff still apply exactly as written.
+Steps 1–7 from `docs/method/ORCHESTRATOR.md` §6 and every prior handoff still apply exactly as written.
 **Add, before step 1:** confirm the worktree is still live at all (`git worktree list`) — it may
 already be gone. Then, when computing the diff, diff **by content against current `main`**
 (`git diff main <branch> --stat`), not only by ancestor check — if the result looks smaller than
@@ -345,7 +345,7 @@ concluding the branch is stale or the report was wrong. See §2's fourth absolut
 
 ## 8b. The refactor bundle — genuinely unresolved, worse than ORCH3 left it
 
-**Everything ORCH3's original handoff (`docs/HANDOFF-ORCH3.md`, superseded but the content below
+**Everything ORCH3's original handoff (`docs/orch/HANDOFF-ORCH3.md`, superseded but the content below
 still applies) flagged as open in the refactor is still open, plus one new one:**
 
 1. **NEW, most urgent: the obligation-model inversion (§4.3) has not been reconciled against
@@ -386,7 +386,7 @@ last one is now fixed, see §4.7, remove it from any future copy of this list**)
 
 # 9. LOAD-BEARING RULES YOU MUST NOT REDISCOVER
 
-Everything in `docs/ORCHESTRATOR.md` §2 and `orchestration/rules/L3-PLAN.md` still applies without
+Everything in `docs/method/ORCHESTRATOR.md` §2 and `orchestration/rules/L3-PLAN.md` still applies without
 exception. Restated here only where this session found a new instance or a sharper phrasing:
 
 - **`git merge-base --is-ancestor` alone can lie about whether a branch is unmerged, when multiple
@@ -403,9 +403,9 @@ exception. Restated here only where this session found a new instance or a sharp
 
 # 10. READING LIST — in this order
 
-1. `docs/ORCHESTRATOR.md` — the role (unchanged).
+1. `docs/method/ORCHESTRATOR.md` — the role (unchanged).
 2. This file, in full — you're already here.
-3. `docs/HANDOFF-ORCH4.md` — still has real content this file didn't repeat: the PAMELA task spec
+3. `docs/orch/HANDOFF-ORCH4.md` — still has real content this file didn't repeat: the PAMELA task spec
    detail, the full owner-working-style notes, the D-rule-adjacent context around the surface-
    editor sequence's earlier threads (VERSIONSPINE). Worth the second read even though it's
    superseded as the entry point.
@@ -422,20 +422,20 @@ exception. Restated here only where this session found a new instance or a sharp
    decision — the ancestor-check lesson lives in `orchestration/lessons/LESSONS.md` instead,
    because it's a process finding, not an FHE product rule).
 
-**Do not read** `docs/HANDOFF-ORCH3.md` beyond what §10.3 above points you to specifically,
-`docs/ORCHESTRATOR-HANDOFF.md`, `docs/HANDOFF.md`, `docs/HANDOFF-CHECKLIST.md`, or
+**Do not read** `docs/orch/HANDOFF-ORCH3.md` beyond what §10.3 above points you to specifically,
+`docs/archive/ORCHESTRATOR-HANDOFF.md`, `docs/HANDOFF.md`, `docs/HANDOFF-CHECKLIST.md`, or
 `docs/SESSION_HANDOFF_2026-08-07.md` — superseded, history.
 
 ---
 
 # 11. THE PROMPT THAT SPAWNS THE NEXT ONE — SUPERSEDED, DO NOT USE
 
-⚠️ **Do not spawn the next thread from this file.** As of §0's notice above, `docs/handoff/` is the
-canonical lineage. Use its own convention instead — read `docs/handoff/00-START-HERE.md` for the
+⚠️ **Do not spawn the next thread from this file.** As of §0's notice above, `docs/method/` is the
+canonical lineage. Use its own convention instead — read `docs/method/00-START-HERE.md` for the
 current spawn prompt and reading order. This section is left here only as a record of what this
 thread's own (now-superseded) convention would have said.
 
-**Model and effort: your own call per §1 of `docs/ORCHESTRATOR.md`** — this thread ran on Sonnet 5
+**Model and effort: your own call per §1 of `docs/method/ORCHESTRATOR.md`** — this thread ran on Sonnet 5
 for the audit/merge work (mechanical breadth, traps already known from prior handoffs) and would
 recommend Opus for anything that touches the refactor re-grounding in §8b, which is judgment-heavy
 in the way §4.2's plan critique already flagged.

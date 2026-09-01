@@ -124,7 +124,7 @@ repo keeps producing. **A named gap is a result; a silent partial migration is a
 
 ⚠️ **THIS THREAD IS MOSTLY REACH, WHICH IS WHY IT IS LAST.** One admin entry page listing every
 editable surface by name, reached from the admin nav, with a row in `src/lib/pageRegistry.ts` and a
-route in `src/App.tsx`. ⚠️ **`docs/ORCHESTRATOR.md` §3b lists eight features that work and that
+route in `src/App.tsx`. ⚠️ **`docs/method/ORCHESTRATOR.md` §3b lists eight features that work and that
 nothing reaches** — the ops dashboard, the calendar, the whole credit engine. **Do not add a ninth.**
 
 ⚠️ **AND IT MUST BE THE ONLY WAY.** The three editors you replace keep their routes (D32) but

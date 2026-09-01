@@ -6,7 +6,7 @@
 FHE-ORCH-NEXT
 
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
-Read docs/handoff/00-START-HERE.md, then docs/ORCHESTRATOR.md, and take over.
+Read docs/method/00-START-HERE.md, then docs/method/ORCHESTRATOR.md, and take over.
 ```
 
 ⚠️ **The handoff comes first and the role second, deliberately** — the role is stable, the state is

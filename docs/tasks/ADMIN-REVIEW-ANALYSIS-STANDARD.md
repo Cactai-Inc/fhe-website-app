@@ -124,7 +124,7 @@ misconfigurations · outdated items.** The owner's list, each answered explicitl
   grep. `docs/` goes stale within days — this has cost this project real work twice (D20).
 - ⚠️ **`instanceof Error` is false for Supabase errors** — a branch guarded by it is dead code.
 - ⚠️ **Prove the row, the class, the emitted CSS — never the absence of an error.**
-  `docs/ORCHESTRATOR.md` §3 is a table of changes that reported success and did nothing.
+  `docs/method/ORCHESTRATOR.md` §3 is a table of changes that reported success and did nothing.
 - ⚠️ **`UPDATE OF <col>` triggers fire on the columns the STATEMENT names**, not on what changed.
 - ⚠️ **`GROUP_LABEL` in `pageRegistry.ts` is exported and read by NOTHING.** The nav's real labels are
   string literals in `AppLayout.tsx`. **Assume nothing is wired just because it is exported.**

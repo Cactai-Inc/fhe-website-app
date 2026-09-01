@@ -1,7 +1,7 @@
 # WORK INVENTORY — the single index that did not exist
 
 **Built 2026-08-08 by reconciling every source of recorded work against
-`docs/ORCHESTRATOR-HANDOFF.md`.** The handoff's own suggestion S7 says "there is no single
+`docs/archive/ORCHESTRATOR-HANDOFF.md`.** The handoff's own suggestion S7 says "there is no single
 index of workstreams." It was right, and then the handoff itself became a partial index that
 omits the two largest documents in the repo.
 
@@ -16,7 +16,7 @@ the insurance document set · the orchestrator's memory notes.
 
 # PART 1 — WHAT THE HANDOFF ALREADY CARRIES
 
-Not repeated here. `docs/ORCHESTRATOR-HANDOFF.md` PART 6 correctly covers: the just-shipped
+Not repeated here. `docs/archive/ORCHESTRATOR-HANDOFF.md` PART 6 correctly covers: the just-shipped
 header/nav/contract-reload work, `PARTYJOURNEY`, the undescribed contract issues, narrow page
 caps, subheader outlines, the A13 drawer width, the nine specced-and-ready tasks, five owner
 decisions, and `test:db`.

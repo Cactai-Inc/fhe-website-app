@@ -294,7 +294,7 @@ byte-identical.
 ⚠️ **This thread ships NO new route and NO new button.** Thread 3 builds the surface.
 
 **Awaiting a caller** — listed explicitly so they do not quietly join
-`docs/ORCHESTRATOR.md` §3b:
+`docs/method/ORCHESTRATOR.md` §3b:
 
 - `contract_menu_dependents(text,text,text)`
 - `contract_menu_set_active(text,text,text,boolean)`

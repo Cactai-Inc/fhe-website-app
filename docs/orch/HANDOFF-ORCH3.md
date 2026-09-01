@@ -34,7 +34,7 @@ answering in chat.
 
 # 1. WHAT YOU ARE
 
-**You orchestrate. You do not build.** Read `docs/ORCHESTRATOR.md` — that is the role, and it does
+**You orchestrate. You do not build.** Read `docs/method/ORCHESTRATOR.md` — that is the role, and it does
 not change. This file is what is true right now.
 
 **Three absolutes, restated because breaking any one of them has already cost real work:**
@@ -290,14 +290,14 @@ week.** Do not infer liveness from the directory listing; check `git merge-base`
 
 # 9. READING LIST — in this order, and nothing else is required
 
-1. `docs/ORCHESTRATOR.md` — the role.
+1. `docs/method/ORCHESTRATOR.md` — the role.
 2. **`docs/reports/OWNER-WALKTHROUGH-2026-08-18.md`** — what is actually wrong, with proof.
 3. `docs/OPEN-ITEMS-2026-08-18.md` — the full register.
 4. `CLAUDE.md` — the live spine and the settled D-decisions.
 5. `~/Downloads/claude-code-repo/orchestration/lessons/LESSONS.md` — the compounding failure table.
 6. `docs/tasks/TASK-CLOSEOUT-fix-everything-found-then-prove-it.md` — the one thing ready to run.
 
-**Do not read `docs/ORCHESTRATOR-HANDOFF.md`** (superseded 2026-08-12) or the older
+**Do not read `docs/archive/ORCHESTRATOR-HANDOFF.md`** (superseded 2026-08-12) or the older
 `SESSION-STATUS-*.md` files. They are history.
 
 ---
@@ -308,7 +308,7 @@ week.** Do not infer liveness from the directory listing; check `git merge-base`
 FHE-ORCH-3
 
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
-Read docs/HANDOFF-ORCH3.md, then docs/ORCHESTRATOR.md, and take over.
+Read docs/orch/HANDOFF-ORCH3.md, then docs/method/ORCHESTRATOR.md, and take over.
 ```
 
 **Opus 5 · thinking ON · effort HIGH.**

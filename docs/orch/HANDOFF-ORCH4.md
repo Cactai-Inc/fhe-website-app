@@ -25,7 +25,7 @@ are gitignored and do **not** propagate from the main checkout.
 ask the owner how to operate or what to do first, this file failed and you should fix it rather
 than answering in chat.
 
-**Read `docs/ORCHESTRATOR.md` first for the role** (it does not change). This file is what is
+**Read `docs/method/ORCHESTRATOR.md` first for the role** (it does not change). This file is what is
 true right now, and — per the owner's own request at the close of this thread — is written as a
 **full accounting**, not just a pointer list: everything worked on, everything decided, everything
 still open, and how the owner actually works. Long, deliberately. Nothing here should have to be
@@ -487,7 +487,7 @@ session found a new instance or a sharper phrasing:
 
 # 10. READING LIST — in this order
 
-1. `docs/ORCHESTRATOR.md` — the role.
+1. `docs/method/ORCHESTRATOR.md` — the role.
 2. This file, in full — you're already here.
 3. `docs/tasks/TASK-PAMELA-account-save-and-the-horse-fields-a-contract-actually-needs.md` and
    `docs/reports/TASK-PAMELA-REPORT.md` — your first real work.
@@ -498,7 +498,7 @@ session found a new instance or a sharper phrasing:
 6. `CLAUDE.md` — the live spine and every settled D-rule. D32 (retention) and D26 (dashboards) are
    the two this session leaned on most.
 
-**Do not read** `docs/HANDOFF-ORCH3.md`, `docs/ORCHESTRATOR-HANDOFF.md`, `docs/HANDOFF.md`,
+**Do not read** `docs/orch/HANDOFF-ORCH3.md`, `docs/archive/ORCHESTRATOR-HANDOFF.md`, `docs/HANDOFF.md`,
 `docs/HANDOFF-CHECKLIST.md`, or `docs/SESSION_HANDOFF_2026-08-07.md` — all superseded, all
 history. If any load-bearing fact from them still mattered, it is repeated in this file.
 
@@ -510,7 +510,7 @@ history. If any load-bearing fact from them still mattered, it is repeated in th
 FHE-ORCH-4
 
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
-Read docs/HANDOFF-ORCH4.md, then docs/ORCHESTRATOR.md, and take over.
+Read docs/orch/HANDOFF-ORCH4.md, then docs/method/ORCHESTRATOR.md, and take over.
 ```
 
 **Opus 5 · thinking ON · effort HIGH.**

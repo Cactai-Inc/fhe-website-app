@@ -52,7 +52,7 @@ on-screen rather than implying it was missed. Ordered path to done is in
 
 **`docs/CHANGE-ORDER-LEDGER.md` holds 80 change requests. THREE are locked.**
 
-The six-step method is `docs/handoff/02-THE-SIX-STEP-METHOD.md`. **Step 3 (Discussion & Lock) is where
+The six-step method is `docs/method/02-THE-SIX-STEP-METHOD.md`. **Step 3 (Discussion & Lock) is where
 it stalled**, and it stalled because live defects kept pre-empting it — which is the owner's call, not
 a failure.
 

@@ -126,7 +126,7 @@ generalises: the DATA is what ports; the columns are only the vessel.** He is ab
 hand. Captured now it survives into whatever the platform's person model becomes; not captured, it
 never exists at all and no later schema can recover it.
 
-### Two questions this framing ADDS to `docs/handoff/04-OPEN-QUESTIONS.md`
+### Two questions this framing ADDS to `docs/method/04-OPEN-QUESTIONS.md`
 1. ⚠️ **What does "contributing to the community" mean?** The owner's sentence ends on it and it has
    no precedent in the current app. **Genuinely open — ask, do not infer.** It decides whether the
    community layer is a tenant feature or the platform's reason to exist.

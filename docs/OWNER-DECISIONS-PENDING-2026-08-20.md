@@ -118,7 +118,7 @@ same rollback story a template does.
 
 # STILL OUTSTANDING — the owner's own list
 
-**Step 3 of the owner's three-step plan** (`docs/HANDOFF-ORCH3.md` §3) is reviewing the items on
+**Step 3 of the owner's three-step plan** (`docs/orch/HANDOFF-ORCH3.md` §3) is reviewing the items on
 his own list. **He has not supplied it, and it is the only input that cannot be derived from the
 code.** It is not written down anywhere in this repo.
 

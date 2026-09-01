@@ -32,9 +32,9 @@ files it names. Nothing was said to you in the prompt.
 
 1. **`CLAUDE.md`** — ⚠️ **no subagent delegation.** D13 (the owner changes it without a developer),
    D21, D22 §0, D31, D32.
-2. **`docs/handoff/04-OPEN-QUESTIONS.md` §3 and §3b** — this task IS §3b. §3 is the reason it is
+2. **`docs/method/04-OPEN-QUESTIONS.md` §3 and §3b** — this task IS §3b. §3 is the reason it is
    urgent and the reason its scope stops where it does.
-3. **`docs/ORCHESTRATOR.md` §3, §3b, §4** — the silent-no-op class and the nothing-reaches-it class.
+3. **`docs/method/ORCHESTRATOR.md` §3, §3b, §4** — the silent-no-op class and the nothing-reaches-it class.
 
 ---
 

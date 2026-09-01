@@ -82,7 +82,7 @@ HORSEDOCS · ROSTER DB layer.
   LEASEFIX and NOGUARD3 Phase B both sat built and unapplied. Threads apply their proven work.
 - **Migration traps:** no self-contained `COMMIT;`; **never reuse another migration's temp
   table name** (two used `_lf` and could not run together).
-- **One focus, however many threads.** `docs/ORCHESTRATOR-HANDOFF.md`, with the day's three
+- **One focus, however many threads.** `docs/archive/ORCHESTRATOR-HANDOFF.md`, with the day's three
   concrete failures cited.
 
 ---

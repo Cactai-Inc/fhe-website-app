@@ -1,7 +1,7 @@
 # CLNR — the hygiene role
 
 **Authored 2026-08-31 by ORCH6, per `CR-92` and `CR-95`.** ⚠️ **This is a ROLE FILE, like
-`docs/ORCHESTRATOR.md`. It does not change day to day and it holds no state.** A `CLNR` thread reads
+`docs/method/ORCHESTRATOR.md`. It does not change day to day and it holds no state.** A `CLNR` thread reads
 this file and the current repo; it needs nothing else to operate.
 
 **Thread naming: `ORCH` · `TASK` · `CLNR`.** Four letters, and the identifier alone is the first line
@@ -68,7 +68,7 @@ own instructions and its own state without being handed a path.**
    live version of the same thing.**
 
 ⚠️ **TWO LIVE LINEAGES IS THE FAILURE THIS TEST EXISTS TO CATCH.** It has already happened once here:
-`docs/HANDOFF-ORCH<n>.md` and `docs/handoff/` accumulated state independently, a session spawned from
+`docs/orch/HANDOFF-ORCH<n>.md` and `docs/method/` accumulated state independently, a session spawned from
 the stale one, and it merged to production a commit that had been deliberately rejected.
 
 ## 2c. STRICT LOGS AND DATA RECORDS
