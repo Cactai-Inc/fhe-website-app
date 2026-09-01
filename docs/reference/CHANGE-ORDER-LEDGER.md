@@ -4052,5 +4052,22 @@ payment-request trigger hanging off `approved`, and a viewer-scoped read.**
    rule working), and the hold is real rather than cosmetic.** **The alternative — release immediately
    and accept that a refused move loses its old time — is coherent too, but it is a different product
    decision and he ruled the other way.**
-2. **Is `completed` / `no_show` still wanted after the fact?** They exist and are written once.
-   **They are not in his six — confirm they stay rather than assuming.**
+2. ✅ **ANSWERED 2026-09-01: *"they stay. and both only show to the parties to the scheduled booking,
+   and to everyone else they show as taken, booked, busy, whatever we are using."*** 🔒 **`completed`
+   and `no_show` STAY, as after-the-fact outcomes, and they are PARTY-ONLY.**
+
+### 🔒 THE READ RULE, GENERALISED FROM HIS THREE ANSWERS — build this ONCE
+⚠️ **An outsider never learns WHY a slot is in the state it is in. They see a BINARY: open, or
+occupied.** **The state decides which side of it they land on, and nothing else leaks.**
+
+| State | The parties see | ⚠️ Everyone else sees |
+|---|---|---|
+| `requested` · `approved` · `pending` · `scheduled` | the real state | **occupied** |
+| `completed` · `no_show` | the real state | **occupied** |
+| `cancelled` | **cancelled** | **open and available** |
+| `moved` | **moved** | **open** *(⚠️ subject to the hold collision above — ORCH6 recommends occupied-with-no-reason)* |
+
+🔒 **THIS IS ONE VIEWER-SCOPED READ, NOT SIX SPECIAL CASES**, and it must be decided on the READ so a
+second reader cannot leak a state a UI filter forgot to hide (D18).
+**The occupied label already exists — `CalendarPage.tsx:121` renders `Booked`, and `Unavailable` at
+:124. Use what is there; do not introduce a fourth word.**
