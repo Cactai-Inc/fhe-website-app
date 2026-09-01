@@ -87,7 +87,7 @@ export const REQUEST_CATEGORY_LABEL: Record<RequestCategory, string> = {
   general: 'General question',
   lessons: 'Riding lessons',
   horse_care: 'Horse care',
-  acquisition: 'Buying or selling a horse',
+  acquisition: 'Buying or leasing a horse',
   media: 'Media / press',
   partnership: 'Partnership / sponsorship',
   gift: 'Gift enquiry',

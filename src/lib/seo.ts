@@ -108,6 +108,15 @@ export const ROUTE_SEO: RouteSeo[] = [
     priority: 0.7,
   },
   {
+    path: '/visit',
+    title: 'Visit Us — French Heritage Equestrian | Coastal San Diego',
+    description:
+      'Come and see French Heritage Equestrian at Carmel Creek Ranch. Pick a day and a window that suits you and we will be in touch to arrange it.',
+    // Same posture as /contact: a form page, not a landing page to rank.
+    indexable: false,
+    priority: 0.3,
+  },
+  {
     path: '/contact',
     title: 'Contact — French Heritage Equestrian | Coastal San Diego',
     description:

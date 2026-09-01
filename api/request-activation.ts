@@ -40,6 +40,7 @@ interface RequestRow {
   contact_first_name: string | null;
   contact_last_name: string | null;
   contact_phone: string | null;
+  entry_location: string | null;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -60,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { data } = await db
       .from('requests')
-      .select('id, org_id, contact_email, contact_first_name, contact_last_name, contact_phone')
+      .select('id, org_id, contact_email, contact_first_name, contact_last_name, contact_phone, entry_location')
       .eq('id', requestId)
       .maybeSingle();
     const r = data as RequestRow | null;
@@ -68,13 +69,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ok: true, emailed: false, reason: 'request not found' });
     }
 
-    // The trigger: an ORDER was created for this submission. `submit_public_request`
-    // writes it as draft/unpaid with buyer_user_id NULL — "which is precisely what
-    // 'lead' means" — and links it by request_id.
+    /* TWO TRIGGERS, AND THE SECOND ONE IS THE GUEST VISIT.
+       · an ORDER was created for this submission — `submit_public_request` writes
+         it as draft/unpaid with buyer_user_id NULL, "which is precisely what
+         'lead' means", and links it by request_id;
+       · or it is a VISIT REQUEST (`/visit`, `entry_location = 'guest_visit'`).
+         Owner, 2026-09-01: *"After submitting the guest visit request form they
+         get the email showing what they submitted and telling them we will be in
+         touch to discuss scheduling a visit and provide the account activation
+         link."* A visit carries no order and still earns the link, because a
+         visitor signs a release before they set foot on the property.
+       ⚠️ A BARE ENQUIRY STILL GETS NOTHING. It is a conversation, not an account
+       waiting to be claimed, and `/api/inquiry-confirmation` already answers it. */
+    const isVisit = r.entry_location === 'guest_visit';
     const { data: order } = await db
       .from('purchases').select('id').eq('request_id', r.id).is('deleted_at', null).limit(1).maybeSingle();
-    if (!order?.id) {
-      return res.status(200).json({ ok: true, emailed: false, reason: 'no order on this request' });
+    if (!order?.id && !isVisit) {
+      return res.status(200).json({ ok: true, emailed: false, reason: 'no order and not a visit request' });
     }
 
     const facts = await accountStateForEmail(db, r.contact_email);
