@@ -1,0 +1,101 @@
+
+######## T7/T9 · THE HOLD — a reschedule ask makes the slot `moved` ########
+SET
+ booking_now | still_at_the_old_time  
+-------------+------------------------
+ moved       | 2026-09-08 16:30:00-07
+(1 row)
+
+
+-- the same slot, read by THREE identities, through calendar_free_busy --
+-- PARTY:
+                       jsonb_pretty                        
+-----------------------------------------------------------
+ {                                                        +
+     "id": "d8ecc859-43f0-4cdf-bdff-4f49ed90e5bf",        +
+     "kind": "lesson",                                    +
+     "notes": null,                                       +
+     "status": "moved",                                   +
+     "address": null,                                     +
+     "all_day": false,                                    +
+     "ends_at": "2026-09-08T17:30:00-07:00",              +
+     "is_mine": true,                                     +
+     "horse_id": null,                                    +
+     "mine_role": "client",                               +
+     "series_id": "af687bd0-f04f-457b-89ba-1d5db1d42154", +
+     "starts_at": "2026-09-08T16:30:00-07:00",            +
+     "is_flexible": false,                                +
+     "location_id": null,                                 +
+     "offering_id": "a7968835-b46e-4911-9484-894b375ae4a8"+
+ }
+(1 row)
+
+-- OUTSIDER:
+SET
+                   jsonb_pretty                    
+---------------------------------------------------
+ {                                                +
+     "id": "d8ecc859-43f0-4cdf-bdff-4f49ed90e5bf",+
+     "status": "pending_reschedule",              +
+     "all_day": false,                            +
+     "ends_at": "2026-09-08T17:30:00-07:00",      +
+     "is_mine": false,                            +
+     "starts_at": "2026-09-08T16:30:00-07:00"     +
+ }
+(1 row)
+
+-- STAFF:
+SET
+ staff_sees |              client_id               
+------------+--------------------------------------
+ moved      | 4255090d-a787-4d1f-bf57-57dc53de0506
+(1 row)
+
+
+######## T9 · AN OUTSIDER CANNOT BOOK THE HELD SLOT ########
+SET
+SET
+psql:TASK-LIFECYCLE-walk2.sql:61: NOTICE:  T9 refusal: that time is no longer open
+DO
+
+######## T10 · ON APPROVAL THE HOLD RELEASES — the row moves, the old slot empties ########
+SET
+ decision 
+----------
+ approved
+(1 row)
+
+ booking_now |        moved_to        
+-------------+------------------------
+ scheduled   | 2026-09-08 18:30:00-07
+(1 row)
+
+-- the OLD time, read by the outsider: nothing there --
+SET
+ items_at_the_old_time 
+-----------------------
+                     0
+(1 row)
+
+
+######## T8 · A CANCELLED BOOKING IS VISIBLE TO ITS PARTIES, ABSENT FOR EVERYONE ELSE ########
+UPDATE 1
+SET
+ party_sees 
+------------
+ cancelled
+(1 row)
+
+SET
+ staff_sees 
+------------
+ cancelled
+(1 row)
+
+SET
+ outsider_sees 
+---------------
+ (absent)
+(1 row)
+
+ROLLBACK

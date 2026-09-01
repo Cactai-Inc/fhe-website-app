@@ -1,0 +1,131 @@
+CREATE TABLE
+
+######## T12a · A CLIENT ASKS FOR A TIME — the state is `requested` ########
+SET
+ is_staff |                  me                  
+----------+--------------------------------------
+ f        | 4255090d-a787-4d1f-bf57-57dc53de0506
+(1 row)
+
+ status_returned 
+-----------------
+ requested
+(1 row)
+
+INSERT 0 1
+ status_in_the_row |       starts_at        
+-------------------+------------------------
+ requested         | 2026-09-04 14:00:00-07
+(1 row)
+
+
+-- the status_events row the trigger wrote for `requested` (Trap 2: not the ELSE) --
+ code_written | entity_type 
+--------------+-------------
+ pending      | offering
+(1 row)
+
+
+######## T12b · STAFF APPROVE AN UNPAID ORDER → `approved`, and the ask goes out ########
+UPDATE 1
+SET
+ payment_status | amount | amount_paid 
+----------------+--------+-------------
+ unpaid         | 170.00 |           0
+(1 row)
+
+                                         decide_says                                         
+---------------------------------------------------------------------------------------------
+ {"kind": "new", "status": "approved_payment_due", "affected": 1, "payment_requested": true}
+(1 row)
+
+ booking_now 
+-------------
+ approved
+(1 row)
+
+-- the TELL: request_purchase_payment wrote the order timeline, and the buyer was notified --
+       event       |            detail            
+-------------------+------------------------------
+ payment_requested | Payment of $170.00 requested
+ submitted         | 
+(2 rows)
+
+      kind       |              title              
+-----------------+---------------------------------
+ purchase_unpaid | Evaluation Lesson — payment due
+ purchase_unpaid | 1x Weekly Lesson — payment due
+(2 rows)
+
+
+######## T3-cash · THE CLIENT DECLARES A METHOD → `pending` ########
+SET
+ recorded 
+----------
+ true
+(1 row)
+
+ booking_now 
+-------------
+ pending
+(1 row)
+
+
+######## T6 · A `pending` BOOKING DOES NOT BLOCK BOOKING (D23/D24) ########
+ second_request_status 
+-----------------------
+ requested
+(1 row)
+
+
+######## T3/T5 · STAFF CONFIRM THE MONEY → the month flips to `scheduled` ########
+SET
+ claim_confirmed 
+-----------------
+ true
+(1 row)
+
+ booking_now |             purchase_id              
+-------------+--------------------------------------
+ scheduled   | ee332402-189f-4edd-b624-e59fd7b3e58b
+(1 row)
+
+-- and it touched no other order's bookings --
+ other_orders_bookings_moved 
+-----------------------------
+                           0
+(1 row)
+
+
+######## T12c · APPROVING A *PAID* ORDER DOES NOT ASK FOR MONEY ########
+SET
+INSERT 0 1
+UPDATE 1
+SET
+ payment_requested 
+-------------------
+ false
+(1 row)
+
+ booking_now 
+-------------
+ scheduled
+(1 row)
+
+
+######## T12d · THE BUTTON STAFF ACTUALLY PRESS — confirm_booking, not decide ########
+-- CalendarPage.tsx:1320 confirmNew() and CalendarItemPanel.tsx:426 both call this one. --
+SET
+UPDATE 1
+SET
+               confirm_booking_says                
+---------------------------------------------------
+ {"status": "approved", "payment_requested": true}
+(1 row)
+
+ booking_now 
+-------------
+ approved
+(1 row)
+
+ROLLBACK
