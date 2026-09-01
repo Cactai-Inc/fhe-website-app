@@ -1178,8 +1178,21 @@ export default function Onboarding() {
   // her to it before this renders; this condition is the guarantee, so no path
   // into this component can produce that sentence for someone with a contract open.
   const contractsWaiting = state?.contracts_waiting ?? [];
+  /* ⚠️ SIGNBOOK — THE SECOND BLOCKER, AND THE PROBE IS WHAT FOUND IT.
+     This short-circuit asks four questions about ARRIVAL — no documents, no
+     order, no standing slot, no contract — and a self-serve visitor answers all
+     four that way THE MOMENT THEY SIGN, because their order does not exist yet
+     and never will until the shop step. So signing replaced the wizard with
+     "Nothing to do here", one render before the offering step could paint. The
+     first blocker (§4 of the ledger) sent them to `done`; fixing that alone
+     would have landed them here instead, which is worse — it says the flow is
+     over while they are standing in the middle of it.
+     ⚠️ `done` is deliberately NOT in this list: a member who arrives with
+     nothing outstanding is routed to `done` at mount, and for THEM this
+     sentence is the right one. `requestSent` distinguishes the two. */
+  const midFlow = step === 'shop' || step === 'time' || step === 'submit' || requestSent;
   if (state && !state.needed && !state.purchase && standing.length === 0
-      && contractsWaiting.length === 0) {
+      && contractsWaiting.length === 0 && !midFlow) {
     return (
       <div className="max-w-3xl">
         <p className="eyebrow mb-2">Onboarding</p>
@@ -1231,11 +1244,16 @@ export default function Onboarding() {
      this person is skipped going backwards too — a rider with no horse never
      lands on the horse step by pressing Back. */
   const showHorseStep = step === 'horse' || (state?.horse_needed ?? false);
-  const showShopStep = selfServe && (shopOfferings.length > 0 || step === 'shop');
+  /* ⚠️ A STEP LIST THAT GROWS AS YOU WALK IT IS NOT A STEP LIST. These used to be
+     derived from whether the catalog had loaded and whether an order existed yet,
+     so the self-serve header opened saying "details · sign · done" and quietly
+     grew two more steps later — which is both a worse thing to read and a false
+     statement of what is ahead of them. On the self-serve door every one of
+     CR-98's steps is certain from the first render, so it is stated from the
+     first render. */
+  const showShopStep = selfServe || step === 'shop';
   const showSlotsStep = step === 'slots' || standing.length > 0;
-  /* CR-98 step 6 belongs to the self-serve door only, and it appears once there
-     is an order to hang it on — which on that door means once they have chosen. */
-  const showTimeStep = selfServe && (step === 'time' || step === 'submit' || Boolean(order));
+  const showTimeStep = selfServe;
   // ⚠️ ONE list, shared with the header (see `wizardSteps`). A step this person
   // never sees going forward is never landed on going backwards either.
   const visibleSteps: Step[] = wizardSteps({
@@ -1934,10 +1952,25 @@ export default function Onboarding() {
             <h2 id="ob-shop-heading" className="font-serif text-lg text-green-900 mb-1">
               Your first lesson
             </h2>
+            {/* ⚠️ TWO PROMISES, AND ONLY ONE IS TRUE PER DOOR. The old sentence —
+                "we'll be in touch to schedule your first lesson" — was written when
+                this step led to payment and staff booked the first pass for them
+                (owner, 2026-08-24). On the self-serve door they choose their own
+                time on the very next screen, so saying we will do it for them is
+                now false, and the kind of false that produces two lessons. */}
             <p className="text-sm text-muted mb-5">
-              Your paperwork is signed. Choose what you&apos;d like to book — we&apos;ll be in
-              touch to schedule your first lesson, and after that you can pick your own
-              times on the Calendar.
+              {selfServe ? (
+                <>
+                  Your paperwork is signed. Choose what you&apos;d like, and you&apos;ll
+                  pick a day and time on the next screen.
+                </>
+              ) : (
+                <>
+                  Your paperwork is signed. Choose what you&apos;d like to book — we&apos;ll be
+                  in touch to schedule your first lesson, and after that you can pick your own
+                  times on the Calendar.
+                </>
+              )}
             </p>
             {shopError && <p role="alert" className="form-error mb-4">{shopError}</p>}
 
@@ -1992,7 +2025,7 @@ export default function Onboarding() {
             <div className="flex flex-wrap items-center gap-3">
               <button type="button" className="btn-primary text-sm"
                 disabled={shopPicked.length === 0 || shopBusy} onClick={() => void buyPicked()}>
-                {shopBusy ? 'Setting up…' : 'Continue to payment'}
+                {shopBusy ? 'Setting up…' : selfServe ? 'Continue' : 'Continue to payment'}
               </button>
               {/* "they can also just exit the shopping and we can provision for
                   them" — leaving is a real answer, not an escape hatch. */}

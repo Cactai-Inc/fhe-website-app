@@ -36,6 +36,7 @@ VITE_SUPABASE_URL=https://example.supabase.co VITE_SUPABASE_ANON_KEY=anon \
 node test/browser/probe-field-roundtrip.mjs      # every input_kind saves — 18/18
 node test/browser/probe-horse-confirmation.mjs   # the horse control renders and fires
 node test/browser/probe-sign-minor.mjs           # the sign door, and the page after auth — 30/30
+node test/browser/probe-signbook.mjs            # the whole self-serve wizard, both doors — 22/22
 ```
 
 ### The entries, and what each one mounts
@@ -46,6 +47,7 @@ node test/browser/probe-sign-minor.mjs           # the sign door, and the page a
 | `documents-content.tsx` | the real `DocumentsContent` | `window.__tables` / `window.__rpcFixtures`, set before render |
 | `sign-start.tsx` | the real `SignStart`, path from `?path=` | none — the page is pre-auth and fetches almost nothing |
 | `onboarding-details.tsx` | the real `Onboarding`, `sign_path` from `?path=` | `window.__rpcFixtures.my_onboarding_state` |
+| `onboarding-flow.tsx` | the real `Onboarding`, WALKED end to end; `?door=provisioned` for the staff entry | its own fixtures, some of them FUNCTIONS |
 
 `probe-sign-minor.mjs` drives the last two together, because TASK-SIGNDOOR is one
 move across two pages: the door stops asking, and the first page after auth starts.
@@ -53,6 +55,19 @@ move across two pages: the door stops asking, and the first page after auth star
 (TASK-FIX4 §6) and a restored draft legitimately PRE-ANSWERS the minor question —
 that is the person's own earlier answer, not a default — so without the clear the
 probe would be testing the draft rather than the no-default rule.
+
+`probe-signbook.mjs` walks TASK-SIGNBOOK's re-ordered wizard, because CR-98's
+criterion is an ORDER OF STEPS and that is precisely what source-reading gets wrong — the
+SIGNBOOK spec read the `Step` type union and reported that signing came after shopping,
+which was never true at runtime. ⚠️ **It also found a defect nothing else would have:** the
+"Nothing to do here" short-circuit fired the instant a self-serve visitor signed, because
+their order does not exist yet, so the offering step was replaced by an end-of-flow message
+one render before it could paint.
+
+⚠️ A fixture in `window.__rpcFixtures` may now be a FUNCTION. A step machine cannot be probed
+with constants — `my_onboarding_state` has to answer "MISSING" before the signature and
+"EXECUTED" after it — so a function fixture receives the call's arguments and answers for the
+state the harness is in. Object fixtures are unchanged, so the older probes are untouched.
 
 Chromium comes from `/opt/pw-browsers`; `playwright` is a dev-time dependency of the probes
 only (`npm i -D playwright --no-save`), deliberately not added to `package.json` so a normal
