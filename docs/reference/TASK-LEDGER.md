@@ -17,3 +17,6 @@ with a change ORCH made or reversed, named in the report · `REVERTED` · `OPEN`
 | `TASK-REAPER` | 2026-09-01 | the hold reaper stops calling a function dropped seven weeks ago | **MERGED** — runs clean in production. ⚠️ `anon` EXECUTE on it is ROUTED, not fixed | `d476376f` |
 | `TASK-BOOKS1` | 2026-09-01 | comp/discount as a payment disposition at settlement; `nullif` removed from `revenue_summary`; list price on the line; period export | **MERGED** — returned once for rebase (D35 collision, ORCH's fault), unioned with BACKDATE, re-verified in production | `merge task/books1` |
 | `TASK-SIGNSTRIP` | 2026-09-01 | the unauthorised catalog block off every `/sign/*` funnel, with its fetch and imports | **MERGED** — grep-clean, gates pass; render not verified by ORCH | `merge task/signstrip` |
+| `TASK-SIGNDOOR` | 2026-09-01 | the four funnel doors ask for the email only; name/phone/address/minor move to the first page after auth; the path rides the invitation | **MERGED** — four functions verified live, no `anon`, path-not-in-categories confirmed. ⚠️ Spec trap 3 was wrong; routed to DSNR | `merge task/signdoor` |
+| `TASK-ANALYTICS` | 2026-09-01 | Vercel Web Analytics installed and mounted | **MERGED** — owner's snippet used the `/next` entry point; this is Vite+React, so `/react` was used | `merge task/analytics` |
+
