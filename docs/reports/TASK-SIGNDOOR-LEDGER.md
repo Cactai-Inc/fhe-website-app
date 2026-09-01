@@ -1,17 +1,26 @@
 # TASK-SIGNDOOR — running ledger
 
-## RESUME
+## RESUME — FINAL. Complete, nothing in flight.
 Role / thread   TASK-SIGNDOOR · wt-1 · branch task/signdoor
-Merge-base      911aa440 (== origin/main at checkout; TASK-SIGNSTRIP merged, prerequisite met)
-DONE            CLNR pass (deferred — see below); spec read-back; premise verification (§ Facts)
-IN FLIGHT       nothing yet — about to edit
-NEXT            migration: my_onboarding_state returns sign_path; then SignStart slim, api slim,
-                Onboarding radio, tests
-DECIDED         see § Decisions
+Merge-base      911aa440. ⚠️ origin/main HAS MOVED since (now b315f488 — CLNR-1's sweep +
+                two ORCH commits). Zero file overlap with my change set; merge is clean.
+DONE            migration APPLIED TO PROD (ACLs verified) · door slimmed · post-auth question
+                rebuilt as a no-default radio · probe rewritten, 30/30 · report written
+IN FLIGHT       nothing
+NEXT            ORCH verifies and merges. Nothing is waiting on me.
+DECIDED         see § Decisions below — five, all stated in the report
 BLOCKED         nothing
-DO NOT          Do NOT gate the post-auth minor question on my_standing_categories() /
-                fetchMyCategories(). PROVEN EMPTY for a door signup (§ Facts F3). The spec's
-                trap 3 points there; it is wrong. The path lives on invitations.categories.
+DO NOT          1. Do NOT gate the post-auth minor question on my_standing_categories() /
+                   fetchMyCategories(). PROVEN EMPTY for a door signup (§ Facts F3). The spec's
+                   trap 3 points there; it is wrong. The path lives on invitations.categories.
+                2. Do NOT use invitations.kind to spot the `deal` door — every row on prod is
+                   'COMMUNITY' (22 of 22). invitations.document_id is the discriminator.
+                3. Do NOT test the no-default radio without clearing localStorage first.
+                   useFormDraft restores a prior answer and the assertion fails for a reason
+                   that is not a defect. Cost 20 minutes.
+                4. Do NOT try to exercise update_my_onboarding_profile from psql — it raises
+                   without auth.uid() and no worktree has a login.
+
 
 ---
 
