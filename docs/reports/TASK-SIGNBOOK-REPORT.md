@@ -237,6 +237,30 @@ approve"*. The gate needs a third case: *has an order, but has not yet asked for
 **Not built here — it is a spec change, not a build decision** (§7 puts the door and payment out of
 scope, and `api/sign-start.ts` is SIGNDOOR's file, merged three hours ago). → `DSNR`.
 
+## ⚠️ BUILT AFTER THE REPORT WAS FIRST WRITTEN — two owner directions
+Both are recorded in full elsewhere; this is the index so nothing is missed at merge.
+
+**1 · The door now knows who is knocking** —
+`docs/reports/SIGNBOOK-FINDING-the-door-does-not-know-who-is-knocking.md`.
+Migration `20260901T1700` (applied): `account_state_for_email` (service_role only, `anon` and
+`authenticated` revoked) + the `SIGN_IN_EXISTING` template. `api/_lib/accountDoor.ts` holds the one
+branch both doors use. `api/sign-start.ts` sends "click here to sign in" to an address that already
+has a working sign-in and provisions nothing. `api/register-invited.ts`'s 409 — **the one that
+rejected the owner's own password** — is fixed at its cause: it was reading `auth.users` through
+PostgREST, which `service_role` has no SELECT on. `api/request-activation.ts` is new and gives a
+website order submission the same activation email and the same link destination, dispatched from
+`submitRequest` alongside the two incumbent sends.
+
+**2 · The wizard runs outside the app chrome, and every step is lossless** — his option B.
+`/app/onboarding` is declared in `App.tsx` **outside `AppLayout`** — same URL, same
+`requireMember` guard, no nav and no header beside a flow somebody is meant to finish. The
+"back to your dashboard" fallback is gone, so the back chain **terminates at the first screen**.
+The time step gained a `useFormDraft` so a reload cannot cost the answer. And an **unchanged**
+details form no longer re-writes the profile or **re-generates the documents** — pressing Continue
+on a form nobody touched is now a navigation, not a write.
+⚠️ **This knowingly reverses `TASK-FIX4` §7** (*"on the first step it leaves the flow rather than
+disappearing"*), on the owner's instruction.
+
 ## FLAGGED, NOT FIXED — one line each
 - A booking's `status_events` row is written with `entity_type = 'offering'`, not `'booking'`.
 - `request_open_time` still writes a `booking_change_requests` row AND now a `requests` row; REQCARDS
@@ -260,7 +284,7 @@ live and that file is not mine to take.
 | `build` | **clean** (prerender + sitemap written) |
 | `test:api` | **7/7** |
 | `test:db` | not run — red at baseline, proves nothing (TASK-ROLE §3) |
-| `probe-signbook.mjs` | **25/25** |
+| `probe-signbook.mjs` | **35/35** |
 | `probe-sign-minor.mjs` | **30/30** — SIGNDOOR's probe, re-run, no regression |
 
 ## ⚠️ THE OWNER'S CHECKLIST — renders are NOT verified by me
@@ -278,6 +302,16 @@ Please run these. **Item 1 is the whole task; item 3 is the only thing no test h
    still show **Your order → Your details → Review & sign → Payment**.
 6. On the last screen press **Continue** — the app-overview modal should open — then close it. You
    should land on the **community feed**, not the dashboard.
+7. ⚠️ **The chrome, which no test here can check.** Through the whole wizard there must be **no
+   nav, no header and no "back to your dashboard"** — only a **Back** link, and none of it on the
+   very first screen.
+8. ⚠️ **Re-run your own failing case.** Put an address that **already has an account**
+   (`cjzigs@icloud.com`) into a `/sign/*` door. You should get *"Sign in to your account"* with a
+   link to the **login page** — and never reach a password screen. Then use an address we hold as a
+   **lead only** and confirm you get the normal activation email.
+9. ⚠️ **Submit an order on the website with a fresh address.** You should now get the **activation
+   email** — that link has never been sent before today. ⚠️ **You will also get the "here is what
+   you sent us" confirmation; that is two emails for one act and it is flagged for your call.**
 
 ## TEARDOWN
 ```
