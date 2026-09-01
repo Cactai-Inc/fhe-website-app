@@ -600,10 +600,20 @@ const COMMUNITY_PAGES_GROUP: NavItem[] = [
  * BUSINESS_GROUP returns when there is more in it than a single link. */
 /* ADMIN — was COMMUNITY_GROUP until TASK-FIX3 (owner, 2026-08-31, item: rename
  * the Community section to Admin). The GROUP KEY stays `community`: it is never
- * rendered (see manageNavGroups below), but it IS the `group` field on six
+ * rendered (see manageNavGroups below), but it IS the `group` field on
  * pageRegistry.ts rows whose stored `page_key`s begin `community.` and are
  * CHECK-constrained to that grammar. Renaming the key would either orphan those
- * keys or force a data migration to buy nothing. The LABEL is the thing the
+ * keys or force a data migration to buy nothing.
+ *
+ * ⚠️ THIS COMMENT SAID "SIX ROWS" AND IT WAS ALREADY WRONG WHEN WRITTEN
+ * (corrected TASK-CR85, counted 2026-08-31). Six was the count BEFORE FIX3's own
+ * changes landed in the same commit: it retired `community.activity` and
+ * `community.oversight` and moved `community.evaluations` to Management. The
+ * measured state is THREE rows carrying `group: 'community'` — moderation,
+ * lookups, content — and FOUR keys beginning `community.`, evaluations being the
+ * fourth under a different group (a key never follows its page). The argument is
+ * unchanged and is why CR-85 did NOT reuse this key for the new Community
+ * section: those keys are stored, and one of them proves keys outlive groups. The LABEL is the thing the
  * owner sees, and the label moved — in both places it is written, here and in
  * GROUP_LABEL (pageRegistry.ts), which TASK-AR4 proved is NOT dead code: it
  * renders the section headings on /app/ops/admin/pages.
