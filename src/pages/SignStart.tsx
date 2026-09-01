@@ -26,7 +26,7 @@
  * street address before we will talk to them.
  *
  * The difference is `PATH_REQUIRES_ADDRESS` below — a constant map, the same idiom
- * PATH_SEGMENTS / PATH_CATEGORIES / WELCOME_COPY already use to vary this page by
+ * PATH_CATEGORIES / WELCOME_COPY already use to vary this page by
  * path. It is deliberately NOT configuration: owner-ruled 2026-08-20, recorded in
  * D22 §0. `form_definitions` + the Editor (/app/ops/admin/editor) exists and could back this, and
  * the answer was no — do not propose it again.
@@ -61,7 +61,7 @@
  * ⚠️ NOT A D22 §0 VIOLATION. The recorded refusal — "i did not intend to invite
  * this type of question and answer set into my life" — is about backing this
  * page's per-path field set with `form_definitions` and the forms editor. This
- * adds ONE constant map beside PATH_REQUIRES_ADDRESS, PATH_SEGMENTS,
+ * adds ONE constant map beside PATH_REQUIRES_ADDRESS,
  * PATH_CATEGORIES and WELCOME_COPY, which is the exact idiom D22 §0 protects.
  *
  * Ticking it produces guardian-as-account-holder and minor-as-participant
@@ -79,8 +79,6 @@ import { useFieldNormalizer, useFormDraft } from '../lib/formState';
 import { AutoSaveIndicator } from '../components/ops/kit/AutoSaveIndicator';
 import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, Clock, LifeBuoy } from 'lucide-react';
-import { fetchPublicCatalog } from '../lib/publicCatalog';
-import type { Offering, Segment } from '../lib/types';
 import { useBrand } from '../contexts/BrandProvider';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -117,16 +115,6 @@ const WELCOME_COPY: Record<SignPath, string> = {
   horse: "Welcome to French Heritage Equestrian — let's get you and your horse set up for care services.",
   'rider+horse': "Welcome to French Heritage Equestrian — let's get you and your horse set up for riding lessons.",
   deal: "Let's get you to your contract.",
-};
-
-/** Which catalog segments this path shows offerings from. `deal` shows none — the
- *  person is not shopping, they are here for a document that already exists. */
-const PATH_SEGMENTS: Record<SignPath, Segment[]> = {
-  guest: ['rider', 'horse'],
-  rider: ['rider'],
-  horse: ['horse'],
-  'rider+horse': ['rider', 'horse'],
-  deal: [],
 };
 
 /**
@@ -437,23 +425,6 @@ export default function SignStart() {
   const path = normalizePath(rawPath);
   const brand = useBrand();
 
-  const [offerings, setOfferings] = useState<Offering[]>([]);
-  const [catalogState, setCatalogState] = useState<'loading' | 'error' | 'ready'>('loading');
-
-  useEffect(() => {
-    if (!path) return;
-    setCatalogState('loading');
-    Promise.all(PATH_SEGMENTS[path].map((s) => fetchPublicCatalog(s)))
-      .then((groups) => {
-        setOfferings(groups.flat().flatMap((g) => g.offerings));
-        setCatalogState('ready');
-      })
-      .catch(() => {
-        setOfferings([]);
-        setCatalogState('error');
-      });
-  }, [path]);
-
   /* FIX1 §A — WHO IS THIS FOR. `null` is "not answered yet" and is deliberately
      distinct from 'self': on a path that asks, the person must actually choose,
      because a silent default to "me" is precisely the assumption that caused the
@@ -657,10 +628,6 @@ export default function SignStart() {
     );
   }
 
-  const catalogHeading = path === 'guest'
-    ? "Services we offer once you're onboarded"
-    : "What you'll be able to purchase";
-
   return (
     <>
       <section className="bg-cream pt-32 pb-10">
@@ -676,38 +643,6 @@ export default function SignStart() {
           )}
         </div>
       </section>
-
-      {!outcome && path !== 'deal' && (
-        <section className="bg-cream-50 py-10">
-          <div className="container-site max-w-2xl">
-            <h2 className="heading-card text-green-800 mb-4">{catalogHeading}</h2>
-            {catalogState === 'loading' && (
-              <p className="body-text text-sm text-muted">Loading…</p>
-            )}
-            {catalogState === 'error' && (
-              <p className="body-text text-sm text-muted">
-                Give us a call and we&apos;ll walk you through what we offer.
-              </p>
-            )}
-            {catalogState === 'ready' && (
-              offerings.length === 0 ? (
-                <p className="body-text text-sm text-muted">Reach out and we&apos;ll get you set up.</p>
-              ) : (
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {offerings.map((o) => (
-                    <li
-                      key={o.id}
-                      className="text-sm text-green-900 border border-green-800/10 bg-white px-4 py-2.5"
-                    >
-                      {o.name}
-                    </li>
-                  ))}
-                </ul>
-              )
-            )}
-          </div>
-        </section>
-      )}
 
       <section className="bg-cream-50 pb-10">
         <div className="container-site max-w-md">
