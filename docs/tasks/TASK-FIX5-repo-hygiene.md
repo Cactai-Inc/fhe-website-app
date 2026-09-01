@@ -184,3 +184,41 @@ the `orchestration/` repo's own contents *(a product artifact — see `docs/ORCH
 10. ⚠️ **`git log --follow` works on three moved files.** **Proof that history survived.**
 11. **Nothing was deleted except the byte-identical `TASK-ONERAIL` duplicate.** ⚠️ **State that
     plainly** (D32).
+
+---
+
+# ⚠️ STATE UPDATE — 2026-08-31, ORCH6. READ THIS BEFORE §5 AND §2.
+
+**1 · THE NINE MERGED WORKTREES ARE GONE.** ⚠️ **§5's worktree section is STALE.** All ten
+(`wt-ar1`–`wt-ar7`, `wt-fix1`, `wt-fix2`, `wt-fix4`) were verified merged and clean, tagged
+`archive/<name>-2026-08-31`, and removed by ORCH6. **`git worktree list` now shows the canonical
+checkout only** — plus whatever the currently-running threads have created. ⚠️ **Re-run the census
+yourself; do not act on either list without looking.**
+
+**2 · `TASK-FIX4` HAS MERGED** (`a9ffcdcd`). Its report is at `docs/reports/TASK-FIX4-REPORT.md` and
+moves with the rest.
+
+**3 · FOUR NEW TASK DOCS EXIST AND MUST MOVE WITH EVERYTHING ELSE:**
+`TASK-CR85-three-nav-sections.md` · `TASK-BOOKS1-what-a-sale-was-worth.md` ·
+`TASK-MODAL2-the-close-rule-and-the-save-state.md` — plus their reports when they land.
+⚠️ **`docs/handoff/RUN-QUEUE.md` cites every one of them by path, and so does the ledger.**
+**The reference repair must catch prose citations, not only imports.**
+
+**4 · ⚠️ YOUR TARGET LAYOUT IS NOW A REQUIREMENT, NOT A PROPOSAL — see `CR-92`.** The owner:
+> *"the ORCH and TASK thread instructions for 6 steps, handoff, and operating requirements need a
+> home and need to be kept to strict adherence to these approaches. I should be able to close any
+> thread and open a new one and tell it which ORCH or with TASK thread it is and it an pick up where
+> the last thread stopped without context loss, memory loss, or any degradation or risk of
+> duplication/repetition."*
+
+⚠️ **THEREFORE `docs/orch/` AND `docs/method/` ARE THE LOAD-BEARING PART OF THIS TASK**, not the tidy
+part. **After you finish, a fresh thread told only *"you are ORCH7"* or *"you are TASK-X"* must be
+able to find its own instructions and its own state without being told a path.** ⚠️ **State in your
+report whether that is true, and name what is still missing if it is not.**
+
+**5 · ⚠️ WHAT IS *NOT* YOURS: the ROLE and the STANDARD.** `CR-92` also asks for a dedicated
+**SWEEP / BROOM / CLEANUP** thread role that owns hygiene permanently, strict in-repo logs, and
+mutual enforcement between thread types *(an incoming ORCH auditing the outgoing one against the role
+docs)*. ⚠️ **That is a separate task. You move the files and repair the references; the role that
+keeps them that way is authored separately.** **Do not invent it here — but do not lay the files out
+in a way that makes it harder, either.**
