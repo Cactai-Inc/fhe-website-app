@@ -2954,7 +2954,16 @@ auto-save-after-input is the part still to build.**
 ### THE SCOPE, RESTATED
 1. **A global solution** — ⚠️ *"implement a global solution rather than updating each modal with the
    fix directly."* **17 hand-rolled input modals converge on the shared `ops/kit/Modal`**, which
-   already has `disableBackdropClose` and no adopters.
+   already has `disableBackdropClose`.
+   ⚠️ **CORRECTED 2026-08-31 BY THE `TASK-FIX4` THREAD, AND IT WAS RIGHT: "no adopters" WAS WRONG.**
+   **SEVEN files already rendered the shared `Modal`** — four of them import it through the
+   `lib/ops` **barrel** (`import { Modal } from '../../lib/ops'`), ⚠️ **which a grep for
+   `ops/kit/Modal` does not find.** The thread's own first measurement made the same mistake and
+   reported 4. **What was true is narrower: ZERO of the input-bearing, backdrop-closing dialogs used
+   it.** *(Re-measured by ORCH6 on both branches at merge time: **26 hand-rolled input-bearing
+   overlays → 1**, shared-`Modal` files **7 → 37**.)*
+   ⚠️ **THE LESSON, AND IT IS GENERAL: a barrel re-export defeats a path grep.** Count by the
+   rendered element (`<Modal`), not by the import path.
 2. **Every form page AND modal gets:** clear-form · auto-save · the indicator · on-blur normalisation
    · reload/browser-back persistence.
 3. ⚠️ **A back button on anything that is a FLOW** — *"onboarding, orders, etc"*. **Not every page: a
