@@ -104,11 +104,21 @@ ok(done.includes('Your request is with us'), '§THE TELL — the last screen say
 ok(!/paid|booked and confirmed/i.test(done.split('Nothing is confirmed')[0]),
    '§THE TELL — it does not claim anything is paid or booked');
 
-// step 9 — the overview modal
+// step 9 — the overview modal, and WHAT IS BEHIND IT when it closes
 await page.locator('button.btn-primary').first().click();
 await page.waitForTimeout(400);
 ok(await page.locator('[role="dialog"], .fixed').count() > 0,
    'step 9 — Continue opens the app-overview modal');
+// Owner, 2026-09-01: "they need to see the community feed as the first thing
+// after closing the modal." This asserts the DESTINATION, not the call.
+const closer = page.locator('[role="dialog"] button, .fixed button').last();
+await closer.click();
+await page.waitForSelector('[data-testid="landed-community-feed"], [data-testid="landed-dashboard"]',
+  { timeout: 8000 });
+ok(await page.locator('[data-testid="landed-community-feed"]').count() === 1,
+   'step 9 — closing the modal lands on the COMMUNITY FEED (reverses ONBOARD §5)');
+ok(await page.locator('[data-testid="landed-dashboard"]').count() === 0,
+   'step 9 — and not on the dashboard');
 
 // ══ THE PROVISIONED DOOR — spec trap 2 / NOSTRIP ═══════════════════════════
 console.log('── staff-provisioned, arriving WITH an order: the page\'s original job ──');

@@ -145,13 +145,23 @@ window.__rpcFixtures = {
     return { booking_id: '00000000-0000-4000-8000-0000000000b1', request_id: null, status: 'pending' };
   },
   my_executed_delivery_state: { total: 1, delivered: 1 },
+  mark_tour_seen: null,
 };
 
 createRoot(document.getElementById('root')!).render(
   <HelmetProvider>
     <MemoryRouter initialEntries={['/app/onboarding']}>
       <AuthProvider><BrandProvider>
-        <Routes><Route path="/app/onboarding" element={<Onboarding />} /></Routes>
+        <Routes>
+        <Route path="/app/onboarding" element={<Onboarding />} />
+        {/* CR-98 step 9 — the two candidate landings, as MARKERS. The probe asserts
+            WHICH ONE the wizard navigates to on closing the overview modal, because
+            a `navigate()` argument read off the source is exactly the kind of claim
+            D17 exists to distrust. `/app` index IS the community feed in the real
+            router (`App.tsx:253`). */}
+        <Route path="/app" element={<div data-testid="landed-community-feed">COMMUNITY FEED</div>} />
+        <Route path="/app/dashboard" element={<div data-testid="landed-dashboard">DASHBOARD</div>} />
+      </Routes>
       </BrandProvider></AuthProvider>
     </MemoryRouter>
   </HelmetProvider>,

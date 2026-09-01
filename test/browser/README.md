@@ -36,7 +36,7 @@ VITE_SUPABASE_URL=https://example.supabase.co VITE_SUPABASE_ANON_KEY=anon \
 node test/browser/probe-field-roundtrip.mjs      # every input_kind saves — 18/18
 node test/browser/probe-horse-confirmation.mjs   # the horse control renders and fires
 node test/browser/probe-sign-minor.mjs           # the sign door, and the page after auth — 30/30
-node test/browser/probe-signbook.mjs            # the whole self-serve wizard, both doors — 22/22
+node test/browser/probe-signbook.mjs            # the whole self-serve wizard, both doors — 25/25
 ```
 
 ### The entries, and what each one mounts

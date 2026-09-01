@@ -89,3 +89,14 @@ between them. **Reclaimed, with one correction to the instruction I was given:**
 commits, 0 behind `origin/main`. Migration `20260901T1420` applied to production and re-verified
 AFTER LIFECYCLE's migrations landed (D35). Not pushed.
 **One ASK-OWNER open:** CR-98 step 9 (feed) vs TASK-ONBOARD §5 (dashboard) behind the overview modal.
+
+### 7 · The ASK-OWNER came back — step 9 lands on the community feed
+Owner, 2026-09-01, answering which surface sits behind the overview modal: the dashboard route
+exists to surface notifications, but on this first login every notification would be about the item
+they just booked, or about missing payment/documents — *"this flow handles all of that in one
+sweeping set of steps so there cant be anything missing… they need to see the community feed as the
+first thing after closing the modal."* **Verbatim in the report, criterion 3.**
+🔒 `TASK-ONBOARD` §5 is reversed; `Onboarding.tsx:911` → `/app`. Proven in the browser (probe now
+25/25) by asserting the DESTINATION, not the `navigate()` argument.
+⚠️ **ORCH owes this a `CR-98 · A4` entry in `docs/reference/CHANGE-ORDER-LEDGER.md`** — not filed
+here because `LIFECYCLE` is live and that file is not this thread's.

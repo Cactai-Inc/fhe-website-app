@@ -900,15 +900,28 @@ export default function Onboarding() {
       navigate(wallReturnTo, { replace: true });
       return;
     }
-    // ONBOARD §5. Owner: "the user is taken to a page where they see their
-    // account. they see their dashboard the onboarding modal and they have a
-    // notice to complete their profile … then they can go to the community feed."
-    // The dashboard is the landing, unconditionally — it is where the profile
-    // notice and the checklist live. This used to route a member with zero unread
-    // notifications straight past it to the community feed, which is precisely
-    // the member who has just finished signing and still owes us their details.
-    // The feed is one nav click away from here.
-    navigate('/app/dashboard', { replace: true });
+    /* ⚠️ CR-98 step 9 — THE COMMUNITY FEED, AND THIS REVERSES `TASK-ONBOARD` §5.
+       Owner, 2026-09-01, asked directly which surface sits behind the modal:
+
+         *"the dashboard route is there to ensure they see notifications, but
+         since this is their first login and any notifications they might see are
+         related to a scheduled item they just booked we dont need to show it. the
+         other notifications that could change this ruling would be for missing
+         payment, missing documents that need to be signed, etc... but this flow
+         handles all of that in one sweeping set of steps so there cant be
+         anything missing when they enter the app after exiting the flow, they
+         need to see the community feed as the first thing after closing the
+         modal."*
+
+       ⚠️ SO THE OLD REASONING IS NOT WRONG — IT IS SPENT. ONBOARD §5 routed here
+       so the member who "still owes us their details" would meet the notice. This
+       flow now collects the details, the signatures, the order and the time
+       before it ever ends, so by the time this line runs there is nothing for the
+       dashboard to tell them that they did not just do.
+       ⚠️ `/app` index IS the community feed (`App.tsx:253`), not a redirect to it.
+       ⚠️ The wall-return above still wins: someone sent here from a page they were
+       walled off goes back to that page, which is a different question entirely. */
+    navigate('/app', { replace: true });
   }
 
   const upd = (key: keyof ProfileFormFields) =>

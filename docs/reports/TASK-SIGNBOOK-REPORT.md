@@ -11,8 +11,9 @@ The self-serve wizard now runs **details → sign → offering → time → send
 stopping a new visitor before any of that** — signing sent a purchase-less rider to *"You're all
 set"*, and the *"Nothing to do here"* short-circuit fired the instant they signed — so the offering
 step was **unreachable by two independent routes** for exactly the person it was built for. Both are
-fixed and both are proven by walking the real page in a real Chromium, **22/22**. The
-staff-provisioned pay-first door is unchanged and proven in the same run.
+fixed and both are proven by walking the real page in a real Chromium, **25/25**. The
+staff-provisioned pay-first door is unchanged and proven in the same run. The exit lands on the
+community feed, per the owner's 2026-09-01 ruling, which **reverses `TASK-ONBOARD` §5**.
 
 **CLNR: clean.**
 
@@ -72,14 +73,35 @@ L · the client may flush their own set | {"sent": true, "documents": 1, "reques
 ⚠️ **What I did NOT do: watch an email arrive.** No worktree can send one. **This is the owner's
 checklist item 3.**
 
-### 3 · Exit lands on the overview modal ✅ / ⚠️ over the DASHBOARD, not the feed
+### 3 · Exit lands on the overview modal, over the community feed ✅
 ```
 PASS  step 9 — Continue opens the app-overview modal
+PASS  step 9 — closing the modal lands on the COMMUNITY FEED (reverses ONBOARD §5)
+PASS  step 9 — and not on the dashboard
 ```
-`AppOverviewModal` was already built and is unchanged. ⚠️ **But closing it navigates to
-`/app/dashboard`** (`Onboarding.tsx:911`), which `TASK-ONBOARD` §5 made unconditional and
-deliberate, quoting the owner. CR-98 step 9 says *"over the community feed."* **Two owner statements
-disagree; I did not pick between them** (TASK-ROLE §1). → ASK-OWNER below.
+`AppOverviewModal` was already built and is unchanged. **What changed is what sits behind it.**
+This was raised as an ASK-OWNER — CR-98 step 9 says *"over the community feed"* while `TASK-ONBOARD`
+§5 had made `/app/dashboard` the landing unconditionally — and **the owner ruled on 2026-09-01,
+verbatim:**
+
+> *"the dashboard route is there to ensure they see notifications, but since this is their first
+> login and any notifications they might see are related to a scheduled item they just booked we
+> dont need to show it. the other notifications that could change this ruling would be for missing
+> payment, missing documents that need to be signed, etc... but this flow handles all of that in one
+> sweeping set of steps so there cant be anything missing when they enter the app after exiting the
+> flow, they need to see the community feed as the first thing after closing the modal."*
+
+🔒 **`TASK-ONBOARD` §5 IS REVERSED, AND FOR ITS OWN REASON.** §5 routed to the dashboard so the
+member who *"still owes us their details"* would meet the notice. This flow now collects the
+details, the signatures, the order and the time before it ends — **so the condition §5 was written
+for cannot exist at this line any more.** `Onboarding.tsx:911` navigates to `/app`, which **is** the
+community feed (`App.tsx:253` — the index route, not a redirect). The wall-return check above it is
+untouched and still wins.
+⚠️ **The one case his premise does not cover, flagged not carved out:** on the **provisioned** door
+the payment step ships an *"I'll pay later — finish"* button, so that client can exit with an unpaid
+order — something genuinely outstanding. His ruling names *"missing payment"* as the kind of thing
+that would change it. I applied the ruling as stated rather than inventing an exception; the
+notification is still one click away, badged, on the Dashboard nav row (`AppLayout.tsx:418`).
 
 ### 4 · Staff get the notification AND the email with order + date/time ✅
 Both ride incumbents, and **`/api/request-received` needed no change at all** — it already renders
@@ -187,10 +209,11 @@ is `new` — staff decline, or the client says drop it. Nothing money-shaped has
 - `flush_held_executed_document_emails` runs at 30 minutes, so a wizard left open longer gets the
   documents email early and the order/booking blocks separately.
 
-## ⚠️ ASK-OWNER — one, and it is small
-**CR-98 step 9 says the exit lands on the overview modal *"over the community feed"*; `TASK-ONBOARD`
-§5 quotes him making the dashboard the landing unconditionally, and that is what ships today.**
-The modal opens either way. Which surface should be behind it?
+## ASK-OWNER — none open
+The one this thread raised (step 9's landing surface) **was answered and is built** — see criterion
+3. ⚠️ **ORCH: his answer is quoted verbatim there and belongs in
+`docs/reference/CHANGE-ORDER-LEDGER.md` as `CR-98 · A4`.** I did not file it myself: `LIFECYCLE` is
+live and that file is not mine to take.
 
 ## GATES
 | | |
@@ -201,7 +224,7 @@ The modal opens either way. Which surface should be behind it?
 | `build` | **clean** (prerender + sitemap written) |
 | `test:api` | **7/7** |
 | `test:db` | not run — red at baseline, proves nothing (TASK-ROLE §3) |
-| `probe-signbook.mjs` | **22/22** |
+| `probe-signbook.mjs` | **25/25** |
 | `probe-sign-minor.mjs` | **30/30** — SIGNDOOR's probe, re-run, no regression |
 
 ## ⚠️ THE OWNER'S CHECKLIST — renders are NOT verified by me
@@ -217,8 +240,8 @@ Please run these. **Item 1 is the whole task; item 3 is the only thing no test h
    the order code, the price and the requested time.
 5. **The other door:** provision a client the way you normally do and open their onboarding. It must
    still show **Your order → Your details → Review & sign → Payment**.
-6. On the last screen press **Continue** — the app-overview modal should open. **Then answer the
-   ASK-OWNER above about what sits behind it.**
+6. On the last screen press **Continue** — the app-overview modal should open — then close it. You
+   should land on the **community feed**, not the dashboard.
 
 ## TEARDOWN
 ```
