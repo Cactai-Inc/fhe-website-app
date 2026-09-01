@@ -4051,18 +4051,23 @@ payment-request trigger hanging off `approved`, and a viewer-scoped read.**
    nobody is told a move is pending.**
 
 ### 🔒 THE READ RULE, GENERALISED FROM HIS THREE ANSWERS — build this ONCE
-⚠️ **An outsider never learns WHY a slot is in the state it is in. They see a BINARY: open, or
-occupied.** **The state decides which side of it they land on, and nothing else leaks.**
+⚠️ **An outsider never learns WHY a slot is occupied — with ONE deliberate exception.** **They see
+open, occupied, or `Pending reschedule`.**
+✅ **The exception, owner 2026-09-01:** *"to everyone else it can show as pending reschedule, to
+indicate its likely to open up."* ⚠️ **A held slot is still NOT bookable — the label is a signal, not
+an invitation. Do not let it become a bookable state.**
+**Nothing else leaks: no client name, no reason, no new time.**
 
 | State | The parties see | ⚠️ Everyone else sees |
 |---|---|---|
 | `requested` · `approved` · `pending` · `scheduled` | the real state | **occupied** |
 | `completed` · `no_show` | the real state | **occupied** |
 | `cancelled` | **cancelled** | **open and available** |
-| `moved`, while the new time is unapproved | **moved** | ⚠️ **occupied** — the hold is real |
+| `moved`, while the new time is unapproved | **moved** | ⚠️ **`Pending reschedule`** — occupied, but signalling it is likely to open up |
 | `moved`, once the new time is approved | **moved** | **open and available** — the hold releases |
 
 🔒 **THIS IS ONE VIEWER-SCOPED READ, NOT SIX SPECIAL CASES**, and it must be decided on the READ so a
 second reader cannot leak a state a UI filter forgot to hide (D18).
-**The occupied label already exists — `CalendarPage.tsx:121` renders `Booked`, and `Unavailable` at
-:124. Use what is there; do not introduce a fourth word.**
+**The occupied labels already exist — `CalendarPage.tsx:121` renders `Booked`, `Unavailable` at :124.
+Reuse them. ⚠️ `Pending reschedule` is the ONE new label this CR adds — and it needs a legend entry
+beside the other two, or it is a colour nobody can read.**
