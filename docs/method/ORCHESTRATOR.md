@@ -210,8 +210,10 @@ own rule is the one whose death costs the most, because it holds the sequencing 
 up a surprising amount of space. so i close all but the ORCH thread unless i have something to
 actively hand it."*
 
-🔒 **THE OWNER CLOSES EVERYTHING BUT `ORCH`.** ⚠️ **PARK ONLY WHEN ORCH HAS THE NEXT THING FOR THAT
-THREAD RIGHT NOW** — not because a subject *might* come back.
+🔒 **THE CALL IS ORCH's, AND THE DEFAULT IS CLOSE.** ⚠️ **Close it unless it is being used right now,
+and ALWAYS close it when opening a fresh thread for that role** — two live threads of one role is two
+places the same subject can be worked. **PARK ONLY WHEN ORCH HAS THE NEXT CHUNK FOR THAT THREAD IN
+HAND** — never because a subject *might* come back.
 
 | | Means | Use when |
 |---|---|---|
