@@ -46,7 +46,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 DROP FUNCTION IF EXISTS public._notify_purchase_paid(uuid);
 
-CREATE FUNCTION public._notify_purchase_paid(p_purchase_id uuid, p_announce boolean DEFAULT true)
+CREATE OR REPLACE FUNCTION public._notify_purchase_paid(p_purchase_id uuid, p_announce boolean DEFAULT true)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -107,7 +107,7 @@ GRANT EXECUTE ON FUNCTION public._notify_purchase_paid(uuid, boolean) TO service
 -- ─────────────────────────────────────────────────────────────────────────────
 DROP FUNCTION IF EXISTS public._provision_purchase_for_offerings(uuid,uuid,uuid,uuid[],boolean,text,text,numeric);
 
-CREATE FUNCTION public._provision_purchase_for_offerings(
+CREATE OR REPLACE FUNCTION public._provision_purchase_for_offerings(
   p_org_id uuid, p_contact_id uuid, p_client_id uuid, p_offering_ids uuid[],
   p_mark_paid boolean DEFAULT false, p_payment_method text DEFAULT NULL::text,
   p_notes text DEFAULT NULL::text, p_partial_amount numeric DEFAULT 0,
@@ -202,7 +202,7 @@ GRANT EXECUTE ON FUNCTION public._provision_purchase_for_offerings(uuid,uuid,uui
 -- ─────────────────────────────────────────────────────────────────────────────
 DROP FUNCTION IF EXISTS public.attach_offerings_to_client(uuid,uuid[],boolean,text,text,numeric,uuid);
 
-CREATE FUNCTION public.attach_offerings_to_client(
+CREATE OR REPLACE FUNCTION public.attach_offerings_to_client(
   p_contact_id uuid, p_offering_ids uuid[], p_mark_paid boolean DEFAULT false,
   p_payment_method text DEFAULT NULL::text, p_notes text DEFAULT NULL::text,
   p_partial_amount numeric DEFAULT 0, p_org_id uuid DEFAULT NULL::uuid,
@@ -285,102 +285,103 @@ REVOKE ALL ON FUNCTION public.attach_offerings_to_client(uuid,uuid[],boolean,tex
 GRANT EXECUTE ON FUNCTION public.attach_offerings_to_client(uuid,uuid[],boolean,text,text,numeric,uuid,timestamptz) TO authenticated, service_role;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 4. `mark_purchase_paid` — R2's other half. Signature UNCHANGED (`p_paid_at`
---    has been there since TASK-ORIGIN §4.3); what is added is the future-date
---    refusal and the silence.
--- ─────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION public.mark_purchase_paid(
-  p_purchase_id uuid, p_amount numeric, p_reference text DEFAULT NULL::text,
-  p_method text DEFAULT 'zelle'::text, p_paid_at timestamptz DEFAULT NULL)
-RETURNS text
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $function$
+-- 4. `mark_purchase_paid` — R2's other half, AS AN IN-PLACE PATCH, NOT A REWRITE.
+--
+-- ⚠️ THIS SECTION WAS A FULL `CREATE OR REPLACE` AND IT WAS WRONG. It was applied
+-- at 01:20 and by 01:35 it had been silently overwritten in production by
+-- `TASK-BOOKS1`, which was replacing the same function to add
+-- `p_disposition` / `p_write_down_reason` (comped and discounted orders). Two
+-- threads, one function, last write wins — and the losing half fails SILENTLY,
+-- because the function still exists, still compiles and still returns 'paid'.
+-- It was caught by re-running the future-date test, which had passed an hour
+-- earlier and now returned 'paid' for tomorrow's date.
+--
+-- ⚠️ `mark_purchase_paid` IS BOOKS1's FILE, not this task's — this task's spec
+-- says "the RPC already takes `p_paid_at`; do not rebuild the spine". So this is
+-- now the repo's established read-modify-rewrite pattern (CLAUDE.md, ~31
+-- migrations): it reads whatever body is live and PATCHES it, so BOOKS1's
+-- disposition logic survives whichever order the two are applied in, and this can
+-- be re-run after BOOKS1 re-applies theirs. It is idempotent and it RAISES rather
+-- than no-ops if an anchor is missing — a silent no-op here is exactly the
+-- failure mode being repaired.
+--
+-- WHAT IT ADDS, and nothing else:
+--   (a) the future-date refusal — the real server-side boundary, because this
+--       function is EXECUTE-able by `authenticated` straight over PostgREST and
+--       an API-route check therefore is not one;
+--   (b) the silence — a settlement dated before today does not tell the buyer
+--       "We received your payment. Thank you." for money that arrived in March,
+--       and records on the order's own timeline that it did not.
+-- `p_paid_at` itself is untouched: BOOKS1 already writes it in all four
+-- settlement paths, which was verified against the live body before patching.
+DO $mig$
 DECLARE
-  v_pur       purchases%ROWTYPE;
-  v_this      numeric;
-  v_settled   numeric;
-  v_covers    boolean;
-  v_backdated boolean := false;
-BEGIN
-  IF NOT (coalesce(auth.role(), '') = 'service_role' OR has_staff_access()) THEN
+  v_src text;
+  v_new text;
+  v_anchor_auth constant text :=
+$a$  IF NOT (coalesce(auth.role(), '') = 'service_role' OR has_staff_access()) THEN
     RAISE EXCEPTION 'operator access required';
+  END IF;$a$;
+  v_guard constant text :=
+$a$
+
+  -- TASK-BACKDATE: A FUTURE DATE IS NOT A BACKFILL. Refused here, because this
+  -- function is reachable by `authenticated` directly over PostgREST.
+  IF p_paid_at IS NOT NULL
+     AND (p_paid_at AT TIME ZONE 'America/Los_Angeles')::date
+       > (now()     AT TIME ZONE 'America/Los_Angeles')::date THEN
+    RAISE EXCEPTION 'a payment cannot be dated in the future (%)',
+      to_char(p_paid_at AT TIME ZONE 'America/Los_Angeles', 'YYYY-MM-DD');
+  END IF;$a$;
+  v_anchor_call constant text := $a$PERFORM _notify_purchase_paid(p_purchase_id);$a$;
+  v_replacement constant text :=
+$a$-- TASK-BACKDATE: a settlement dated before today RESOLVES the standing
+    -- "payment due" notices (or a backfilled order owes money for ever) but
+    -- ANNOUNCES nothing. The receipt email is suppressed one layer up, in
+    -- api/orders-mark-paid.ts, which is the only thing that sends one.
+    PERFORM _notify_purchase_paid(p_purchase_id,
+      NOT (p_paid_at IS NOT NULL
+           AND (p_paid_at AT TIME ZONE 'America/Los_Angeles')::date
+             < (now()     AT TIME ZONE 'America/Los_Angeles')::date));
+    IF p_paid_at IS NOT NULL
+       AND (p_paid_at AT TIME ZONE 'America/Los_Angeles')::date
+         < (now()     AT TIME ZONE 'America/Los_Angeles')::date THEN
+      PERFORM log_status_event('order', p_purchase_id, 'paid',
+        'Backdated settlement — recorded as of '
+          || to_char(p_paid_at AT TIME ZONE 'America/Los_Angeles', 'FMMonth FMDD, YYYY')
+          || '. No receipt or notice was sent.', v_pur.org_id);
+    END IF;$a$;
+BEGIN
+  SELECT pg_get_functiondef(p.oid) INTO v_src
+    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public' AND p.proname = 'mark_purchase_paid';
+
+  IF v_src IS NULL THEN
+    RAISE EXCEPTION 'TASK-BACKDATE: mark_purchase_paid does not exist — refusing to guess';
   END IF;
 
-  -- TASK-BACKDATE: A FUTURE DATE IS NOT A BACKFILL, refused server-side.
-  IF p_paid_at IS NOT NULL THEN
-    IF (p_paid_at AT TIME ZONE 'America/Los_Angeles')::date
-     > (now()     AT TIME ZONE 'America/Los_Angeles')::date THEN
-      RAISE EXCEPTION 'a payment cannot be dated in the future (%)',
-        to_char(p_paid_at AT TIME ZONE 'America/Los_Angeles', 'YYYY-MM-DD');
-    END IF;
-    v_backdated := (p_paid_at AT TIME ZONE 'America/Los_Angeles')::date
-                 < (now()     AT TIME ZONE 'America/Los_Angeles')::date;
+  -- Already patched (this migration re-run, or run after BOOKS1 re-applied and
+  -- someone patched in between): leave it exactly as it is.
+  IF position('a payment cannot be dated in the future' in v_src) > 0 THEN
+    RAISE NOTICE 'TASK-BACKDATE: mark_purchase_paid already carries the date guard — nothing to do';
+    RETURN;
   END IF;
 
-  SELECT * INTO v_pur FROM purchases WHERE id = p_purchase_id AND deleted_at IS NULL;
-  IF NOT FOUND THEN RAISE EXCEPTION 'unknown purchase: %', p_purchase_id; END IF;
-  IF v_pur.payment_status = 'paid' THEN RETURN 'already_paid'; END IF;
-
-  -- What was already settled BEFORE this act, from the payment records.
-  SELECT coalesce(sum(amount), 0) INTO v_settled
-    FROM payments
-   WHERE purchase_id = p_purchase_id AND status = 'paid' AND deleted_at IS NULL;
-
-  -- NULL amount keeps the old meaning: "settle whatever is left".
-  v_this := coalesce(p_amount, greatest(coalesce(v_pur.amount, 0) - v_settled, 0));
-  IF v_this <= 0 THEN RAISE EXCEPTION 'a payment amount must be greater than zero'; END IF;
-  IF v_settled + v_this > coalesce(v_pur.amount, 0) + 0.005 THEN
-    RAISE EXCEPTION 'that would settle %, more than the order total of %',
-      v_settled + v_this, v_pur.amount;
+  IF position(v_anchor_auth in v_src) = 0 THEN
+    RAISE EXCEPTION 'TASK-BACKDATE: the operator-access guard in mark_purchase_paid has moved — patch by hand, do not no-op';
+  END IF;
+  IF position(v_anchor_call in v_src) = 0 THEN
+    RAISE EXCEPTION 'TASK-BACKDATE: mark_purchase_paid no longer calls _notify_purchase_paid(p_purchase_id) — patch by hand, do not no-op';
   END IF;
 
-  -- the entry that says WHEN this money was marked paid, by WHOM, and HOW
-  PERFORM _payment_settle(p_purchase_id, coalesce(p_method,'zelle'), p_reference, v_this, p_paid_at);
+  v_new := replace(v_src, v_anchor_auth, v_anchor_auth || v_guard);
+  v_new := replace(v_new, v_anchor_call, v_replacement);
+  EXECUTE v_new;
 
-  v_covers := (v_settled + v_this) >= coalesce(v_pur.amount, 0) - 0.005;
-
-  -- ⚠️ ONE STATEMENT, DELIBERATELY. `status_purchases` is declared
-  -- `UPDATE OF status, payment_status, …`, and an `UPDATE OF` fires on the
-  -- columns the STATEMENT NAMES. Writing `paid_at` in a second UPDATE would
-  -- leave a correct row with no status event behind it.
-  UPDATE purchases p
-     SET amount_paid       = v_settled + v_this,
-         payment_method    = lower(btrim(coalesce(p_method, 'zelle'))),
-         payment_reference = COALESCE(p.payment_reference, p_reference),
-         -- ⚠️ ONLY when the money is all in. A part-paid order is still open, and
-         -- its entitlements are still gated on payment exactly as before.
-         -- TASK-ORIGIN §4.3: the date a monthly report reads (revenue_summary
-         -- filters on paid_at) — a backfilled sale states when it really
-         -- happened, or this stays today's default exactly as before.
-         payment_status    = CASE WHEN v_covers THEN 'paid' ELSE p.payment_status END,
-         status            = CASE WHEN v_covers THEN 'paid' ELSE p.status END,
-         paid_at           = CASE WHEN v_covers THEN coalesce(p_paid_at, now()) ELSE p.paid_at END
-   WHERE p.id = p_purchase_id;
-
-  IF NOT v_covers THEN
-    PERFORM log_status_event('order', p_purchase_id, 'partial_payment',
-      'Part payment of ' || to_char(v_this, 'FM999999990.00')
-        || ' by ' || lower(btrim(coalesce(p_method,'zelle')))
-        || ' — ' || to_char(coalesce(v_pur.amount,0) - (v_settled + v_this), 'FM999999990.00')
-        || ' still outstanding', v_pur.org_id);
-    RETURN 'part_paid';
-  END IF;
-
-  -- TASK-BACKDATE: a settlement dated before today resolves the standing
-  -- "payment due" notices but announces nothing to the buyer. The order's own
-  -- timeline still records the act, and says which date it was recorded against.
-  PERFORM _notify_purchase_paid(p_purchase_id, NOT v_backdated);
-  IF v_backdated THEN
-    PERFORM log_status_event('order', p_purchase_id, 'paid',
-      'Backdated settlement — recorded as of '
-        || to_char(p_paid_at AT TIME ZONE 'America/Los_Angeles', 'FMMonth FMDD, YYYY')
-        || '. No receipt or notice was sent.', v_pur.org_id);
-  END IF;
-  RETURN 'paid';
-END;
-$function$;
+  RAISE NOTICE 'TASK-BACKDATE: mark_purchase_paid patched — % announcement site(s) made backdate-aware',
+    (length(v_src) - length(replace(v_src, v_anchor_call, ''))) / length(v_anchor_call);
+END
+$mig$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 5. `confirm_payment_claim` — the claim-aware wrapper around the SAME spine.
@@ -390,7 +391,7 @@ $function$;
 -- ─────────────────────────────────────────────────────────────────────────────
 DROP FUNCTION IF EXISTS public.confirm_payment_claim(uuid);
 
-CREATE FUNCTION public.confirm_payment_claim(p_purchase_id uuid, p_paid_at timestamptz DEFAULT NULL)
+CREATE OR REPLACE FUNCTION public.confirm_payment_claim(p_purchase_id uuid, p_paid_at timestamptz DEFAULT NULL)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
