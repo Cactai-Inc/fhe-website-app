@@ -19,6 +19,12 @@
  * `markOrderPaid` is the one staff-manual-confirm entry point — it calls
  * `/api/orders-mark-paid`, which reuses `mark_purchase_paid` + the receipt
  * trail (`api/_lib/receipt.ts`), never a second write path.
+ *
+ * TASK-BACKDATE additions: `markOrderPaid` takes the DATE the money arrived, and
+ * `listOutstandingOrders` stopped hiding `draft`. Both exist for the owner's
+ * backfill of a year of trading. ⚠️ `markOrderPaid` is still the ONE seam — the
+ * staff client record (`ContactDossierModal`'s Orders tab) settles through this
+ * exact function and this exact endpoint, not a second write path beside it.
  */
 import { supabase } from '../supabase';
 
@@ -287,13 +293,30 @@ function toOrderRow(r: RawOrderRow): OrderRow {
   return { ...rest, buyerName, items };
 }
 
-/** Orders that owe money — awaiting_payment/sent, unpaid or partially paid.
- *  Excludes draft (not a real commitment yet) and void. */
+/** Orders that owe money — draft/awaiting_payment/sent, unpaid or partially paid.
+ *  Excludes void.
+ *
+ *  ⚠️ TASK-BACKDATE R4 — `draft` USED TO BE FILTERED OUT HERE, on the reasoning
+ *  that it is "not a real commitment yet". Measured in production 2026-09-01:
+ *  12 awaiting_payment/unpaid, 4 paid, and ONE draft/unpaid — `PUR-000302`,
+ *  $880, created 2026-08-22 — that NO surface in the app could settle. It was
+ *  not deferred, it was invisible.
+ *
+ *  **THE CHOICE WAS: LIST IT, OR PROMOTE IT ON SETTLEMENT. Listing it wins**,
+ *  for one reason — promotion cannot happen to an order nobody can find, so it
+ *  answers a question that only arises after this one is answered. And the
+ *  promotion happens anyway as a consequence, not as a separate mechanism:
+ *  `mark_purchase_paid` already sets `status = 'paid'` when the money is all in,
+ *  so settling a draft moves it off draft by the same write that settles it.
+ *
+ *  The list is the "who owes money" list, and a draft that owes $880 owes $880.
+ *  `orderStatusLabel` already renders it honestly as "In progress", so the row
+ *  never claims to be something it is not. */
 export async function listOutstandingOrders(): Promise<OrderRow[]> {
   const { data, error } = await supabase
     .from('purchases')
     .select(ORDER_COLS)
-    .in('status', ['awaiting_payment', 'sent'])
+    .in('status', ['draft', 'awaiting_payment', 'sent'])
     .in('payment_status', ['unpaid', 'pending'])
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -316,7 +339,13 @@ export interface MarkOrderPaidResult {
   /** `part_paid` = the money was recorded but the order is not settled yet — a
    *  split, with a balance still outstanding. No receipt is sent for a part. */
   status: 'paid' | 'part_paid' | 'already_paid';
+  /** `reason: 'backdated'` = the settlement was recorded against an earlier day,
+   *  so no receipt was sent on purpose. Say so on screen — an unexplained
+   *  "receipt NOT sent" reads as a failure. */
   receipt: { sent: boolean; reason?: string };
+  /** The date the settlement was recorded against (`YYYY-MM-DD`), or null for a
+   *  same-day settlement, which is recorded at `now()` exactly as before. */
+  recordedAt: string | null;
   /** True when this settled a pending CASHCONFIRM claim (via
    *  confirm_payment_claim) rather than a fresh mark_purchase_paid call —
    *  the method/reference passed in were not what actually got used. */
@@ -329,12 +358,22 @@ export interface MarkOrderPaidResult {
  *  second write path). */
 /** `amount` settles only that much and leaves the order open — the split between
  *  cash and Zelle. Omit it to settle the remainder, which is the old behaviour and
- *  what every existing caller does. */
+ *  what every existing caller does.
+ *
+ *  ⚠️ TASK-BACKDATE — `paidAt` is a bare `YYYY-MM-DD` at the barn and is the date
+ *  the money actually arrived. It lands on `purchases.paid_at`, which is what
+ *  `revenue_summary` recognises revenue at, so this is the argument that decides
+ *  which MONTH a backfilled payment counts in. **Pass it only when it is in the
+ *  past** (`asRecordedDate` in `src/lib/recordedDate.ts` enforces that) — omitted
+ *  keeps `now()` and keeps the receipt, which is the unchanged same-day path.
+ *  A past date suppresses the receipt email server-side and comes back as
+ *  `receipt.reason === 'backdated'`. A future one is refused with a 400. */
 export async function markOrderPaid(
   purchaseId: string,
   method: 'zelle' | 'cash',
   reference?: string,
   amount?: number,
+  paidAt?: string,
 ): Promise<MarkOrderPaidResult> {
   const { data: sess } = await supabase.auth.getSession();
   const bearer = sess?.session?.access_token;
@@ -342,7 +381,7 @@ export async function markOrderPaid(
   const res = await fetch('/api/orders-mark-paid', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
-    body: JSON.stringify({ purchaseId, method, reference, amount }),
+    body: JSON.stringify({ purchaseId, method, reference, amount, paidAt }),
   });
   const json = (await res.json().catch(() => ({}))) as Partial<MarkOrderPaidResult> & { error?: string };
   if (!res.ok) throw new Error(json.error || 'Could not mark this order paid.');
@@ -350,5 +389,6 @@ export async function markOrderPaid(
     status: (json.status as MarkOrderPaidResult['status']) ?? 'paid',
     receipt: json.receipt ?? { sent: false },
     claimConfirmed: json.claimConfirmed ?? false,
+    recordedAt: json.recordedAt ?? null,
   };
 }

@@ -22,6 +22,10 @@ import { AutoSaveIndicator } from '../ops/kit/AutoSaveIndicator';
 import { StaffStandingSlotSection } from './StandingSlotPicker';
 import { ClientInvitationSection } from './ClientInvitationSection';
 import { fetchClientStandingSlots } from '../../lib/ops/api-calendar';
+import { markOrderPaid } from '../../lib/ops/api-payments';
+import { asRecordedDate, barnToday } from '../../lib/recordedDate';
+import { RecordedDateField } from './RecordedDateField';
+import { orderStatusLabel } from '../../lib/orderStatus';
 
 /**
  * THE CONTACT RECORD — every person, one surface, at every stage of their life.
@@ -305,6 +309,9 @@ export function ContactDossierModal({
   /** Bumped after an attach so the standing-slot section re-reads and the newly
    *  sold weekly plan appears with its question already open (TASK-FIX2 §2). */
   const [ordersKey, setOrdersKey] = useState(0);
+  /** What the last settlement on the Orders tab did — including, deliberately,
+   *  whether a receipt went out. TASK-BACKDATE R6. */
+  const [orderNote, setOrderNote] = useState<string | null>(null);
 
   /* Which of this person's recurring purchase items already have a day and time.
      Read from `client_standing_slots` — the same staff-gated read the picker below
@@ -590,13 +597,26 @@ export function ContactDossierModal({
                       THEM — so the shape of the section reads in the order the work
                       happens. */}
                   <Section title="Orders">
+                    {orderNote && (
+                      <p role="status" className="text-[11.5px] text-green-900 border border-green-800/15 bg-green-50/50 px-2.5 py-1.5">
+                        {orderNote}
+                      </p>
+                    )}
                     {d.orders.length === 0 ? <Empty>None.</Empty>
                       : d.orders.map((o) => (
                         <div key={o.purchase_id} className="flex flex-col gap-1.5">
                           <Row
                             main={`$${Number(o.amount ?? 0).toFixed(2)}${o.code ? ` · ${o.code}` : ''}`}
-                            sub={new Date(o.created_at).toLocaleDateString()}
-                            badge={o.payment_status ?? o.status} />
+                            /* ⚠️ TASK-BACKDATE R6 — THE DATE, AFTERWARDS. The row
+                               showed only when the order was raised. `paid_at` is
+                               the date the money is recognised on, and after a
+                               backfill it is routinely a different month from
+                               `created_at` — so showing one and not the other is
+                               how a settled order looks unsettled. */
+                            sub={o.paid_at
+                              ? `Ordered ${new Date(o.created_at).toLocaleDateString()} · paid ${new Date(o.paid_at).toLocaleDateString()}`
+                              : `Ordered ${new Date(o.created_at).toLocaleDateString()}`}
+                            badge={orderStatusLabel({ status: o.status, current_status: o.current_status })} />
                           {(o.items ?? []).map((it) => (
                             <div key={it.item_id}
                               className={`flex items-baseline gap-2 pl-4 text-sm ${it.voided_at ? 'text-muted line-through' : 'text-green-900'}`}>
@@ -621,6 +641,17 @@ export function ContactDossierModal({
                               </span>
                             </div>
                           ))}
+                          {/* ⚠️ TASK-BACKDATE R3 — THE DOOR. Every order that
+                              still owes money can be settled from right here,
+                              through the same `markOrderPaid` seam Payment
+                              review uses. `draft` is INCLUDED: production held
+                              one ($880, PUR-000302) that no surface in the app
+                              could settle. A void order is not money owed. */}
+                          {!archived && o.payment_status !== 'paid' && o.status !== 'void' && (
+                            <SettleOrderControl order={o} onSettled={(m) => {
+                              setOrderNote(m); load(); setOrdersKey((k) => k + 1);
+                            }} />
+                          )}
                         </div>
                       ))}
                     {!archived && (
@@ -981,6 +1012,87 @@ function AccountDangerZone({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * ⚠️ TASK-BACKDATE R3 — SETTLING AN ORDER FROM THE PERSON'S OWN RECORD.
+ *
+ * WHAT WAS TRUE. `markOrderPaid` had exactly ONE call site in the entire app —
+ * `PaymentReviewPage.tsx:153`. Marking an order paid worked once, AT
+ * PROVISIONING, because `p_mark_paid` is an argument of CREATING the order, and
+ * never again from the screen staff actually have open. Staff looking at a
+ * client's record could see the $880 they owed and could not take the money.
+ * It was never a permission problem — `mark_purchase_paid` allows
+ * `has_staff_access()` and the nav row exists. It was a REACH problem.
+ *
+ * ⚠️ AND IT IS NOT A SECOND WRITE PATH (D18). This calls `markOrderPaid`, the
+ * same exported function Payment review calls, which posts to the same
+ * `/api/orders-mark-paid`, which calls the same `mark_purchase_paid` (or
+ * `confirm_payment_claim` when a claim is open). If it did not go through that
+ * seam it would not ship. There is one settlement spine and this is a second
+ * DOOR onto it, not a second engine.
+ *
+ * ⚠️ D19 — IT STATES ITSELF BEFORE IT ACTS. The date it will be recorded
+ * against is on screen before either button, and what that date costs (no
+ * receipt for a backdated payment) is on screen with it.
+ */
+function SettleOrderControl({ order, onSettled }: {
+  order: ContactDossier['orders'][number];
+  onSettled: (message: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [paidOn, setPaidOn] = useState(barnToday());
+  const [working, setWorking] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const claimPending = order.client_claim_status === 'pending';
+
+  async function settle(method: 'zelle' | 'cash') {
+    setWorking(true); setErr(null);
+    try {
+      const r = await markOrderPaid(order.purchase_id, method, undefined, undefined,
+        asRecordedDate(paidOn));
+      const asOf = r.recordedAt ? ` Recorded as of ${r.recordedAt}.` : '';
+      onSettled(
+        r.status === 'already_paid' ? 'That order was already marked paid.'
+          : r.receipt.sent ? `Marked paid (${method}) — receipt sent.${asOf}`
+          : r.receipt.reason === 'backdated'
+            ? `Marked paid (${method}).${asOf} No receipt was sent — this money arrived before today.`
+            : `Marked paid (${method}) — receipt NOT sent (${r.receipt.reason ?? 'unknown reason'}).${asOf}`,
+      );
+      setOpen(false); setPaidOn(barnToday());
+    } catch (e) {
+      setErr(toErrorMessage(e, 'Could not mark this order paid.'));
+    } finally { setWorking(false); }
+  }
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)}
+        className="self-start border border-green-800/40 text-green-900 text-[11.5px] font-medium px-2 py-0.5 hover:bg-green-50 focus-ring">
+        Mark paid
+      </button>
+    );
+  }
+  return (
+    <div className="border border-green-800/15 bg-cream-100/40 p-3 flex flex-col gap-2">
+      <RecordedDateField value={paidOn} onChange={setPaidOn} kind="payment" />
+      {claimPending && (
+        <p className="text-[11.5px] text-gold-900">
+          {order.client_reported_method === 'cash' ? 'Cash' : 'Zelle'} — the client has
+          already reported this payment. Settling here CONFIRMS their claim, as they
+          reported it; the method chosen below is not the one recorded.
+        </p>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" disabled={working} onClick={() => void settle('zelle')}
+          className="btn-secondary text-xs py-1 px-3">{working ? 'Marking…' : 'Zelle'}</button>
+        <button type="button" disabled={working} onClick={() => void settle('cash')}
+          className="btn-secondary text-xs py-1 px-3">{working ? 'Marking…' : 'Cash'}</button>
+        <button type="button" onClick={() => setOpen(false)} className="text-xs text-muted px-2">Cancel</button>
+      </div>
+      {err && <p role="alert" className="form-error text-xs">{err}</p>}
     </div>
   );
 }
