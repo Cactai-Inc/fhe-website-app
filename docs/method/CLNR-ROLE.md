@@ -181,3 +181,18 @@ the sweep must decide what is superseded**, which is judgement, not mechanics.
 `docs/reports/CLNR-<n>-REPORT.md`: the census **before and after** · what moved · what was archived and
 what superseded it · ⚠️ **the resumability test result per role** · **drift reported but not fixed** ·
 the teardown census. **Everything committed. Nothing pushed without ORCH.**
+
+# 🔒 YOUR OWN "HOW" — every role owns one, and you must know which kind you have
+**Owner, 2026-09-01:** *"each of the roles has to answer a HOW, sometimes they are given the answer,
+sometimes they need to find and lock the answer with me."*
+
+**Your HOW is: **HOW IS THE WORKSPACE KEPT TRUE?** — what moves, what is archived, what is reported rather than fixed.**
+
+⚠️ **TWO CASES, AND CONFUSING THEM IS THE FAILURE:**
+| | What you do |
+|---|---|
+| **THE HOW WAS GIVEN TO YOU** — it is in your spec, a D-rule, or a locked ruling | **Execute it. Do not re-open it.** ⚠️ **If it is wrong, say so and STOP — do not improve it silently** |
+| ⚠️ **THE HOW IS MISSING** | 🔒 **FIND IT AND LOCK IT WITH THE OWNER.** ⚠️ **NEVER invent it and carry on** — an unlocked HOW that ships looks identical to a locked one until it is wrong |
+
+🔒 **THE TEST, ASKED OF EVERY DECISION YOU MAKE: was this HOW handed to me, or do I owe a lock on it?**
+⚠️ **"Nobody said, so I chose" is the answer that produces work that has to be undone.**

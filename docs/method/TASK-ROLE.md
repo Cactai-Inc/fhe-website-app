@@ -158,3 +158,18 @@ never taken at face value — write the report so it can be checked, not so it s
 `TASK-<ID>-VERIFICATION.md`. **Finish with the prompt and say so.**
 ⚠️ **If you are STOPPING ON A QUESTION rather than finishing, say that in the prompt** — ORCH routes a
 question differently from a report, and a question dressed as a report gets merged.
+
+# 🔒 YOUR OWN "HOW" — every role owns one, and you must know which kind you have
+**Owner, 2026-09-01:** *"each of the roles has to answer a HOW, sometimes they are given the answer,
+sometimes they need to find and lock the answer with me."*
+
+**Your HOW is: **HOW IS IT IMPLEMENTED, HERE, IN THIS CODEBASE, TODAY?** — the concrete edit your spec's shape resolves to. ⚠️ **A HOW your spec did not answer is a QUESTION you send up, not a choice you make.****
+
+⚠️ **TWO CASES, AND CONFUSING THEM IS THE FAILURE:**
+| | What you do |
+|---|---|
+| **THE HOW WAS GIVEN TO YOU** — it is in your spec, a D-rule, or a locked ruling | **Execute it. Do not re-open it.** ⚠️ **If it is wrong, say so and STOP — do not improve it silently** |
+| ⚠️ **THE HOW IS MISSING** | 🔒 **FIND IT AND LOCK IT WITH THE OWNER.** ⚠️ **NEVER invent it and carry on** — an unlocked HOW that ships looks identical to a locked one until it is wrong |
+
+🔒 **THE TEST, ASKED OF EVERY DECISION YOU MAKE: was this HOW handed to me, or do I owe a lock on it?**
+⚠️ **"Nobody said, so I chose" is the answer that produces work that has to be undone.**
