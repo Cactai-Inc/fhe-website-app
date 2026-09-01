@@ -100,6 +100,13 @@ export interface PublicIntakeFormProps {
    *  that block asks "when are you generally free" for a lesson, and a visit is
    *  one date, once. Two pickers on one form is two answers to one question. */
   visit?: boolean;
+  /** ⚠️ OFFER IT, rather than being it. Owner, 2026-09-01: the visit request
+   *  *"should be an option from the contact page form."* So the contact form
+   *  carries a tick-box that turns the date-and-window picker on in place, and
+   *  the submission becomes a visit request — the same row, the same
+   *  `entry_location`, the same activation email — without a second form or a
+   *  second page. A page that IS the visit form passes `visit` instead. */
+  offerVisit?: boolean;
   submitLabel?: string;
   onSubmitted?: (requestId: string) => void;
 }
@@ -112,6 +119,7 @@ export function PublicIntakeForm({
   selections,
   children,
   visit = false,
+  offerVisit = false,
   submitLabel = 'Send it our way',
   onSubmitted,
 }: PublicIntakeFormProps) {
@@ -137,6 +145,10 @@ export function PublicIntakeForm({
   /** Visit mode: ONE date and ONE of the three windows the barn actually keeps. */
   const [visitDate, setVisitDate] = useState('');
   const [visitWindow, setVisitWindow] = useState('');
+  /** Ticked on the contact form: this submission is a visit request. */
+  const [wantsVisit, setWantsVisit] = useState(false);
+  /** Visit mode is either what this page IS, or what they just asked for. */
+  const asVisit = visit || (offerVisit && wantsVisit);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -162,7 +174,7 @@ export function PublicIntakeForm({
     /* One entry, already in words. `/api/request-received` renders `label` as the
        availability line and the buyer's copy repeats it, so what the barn reads
        and what the visitor was shown are the same string. */
-    if (visit) {
+    if (asVisit) {
       if (visitDate) {
         const when = new Date(`${visitDate}T12:00:00`).toLocaleDateString(undefined, {
           weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
@@ -256,7 +268,12 @@ export function PublicIntakeForm({
           notes: message.trim() || undefined,
           category,
           channel,
-          entry_location: source || entryLocation,
+          /* ⚠️ `guest_visit` IS THE ROW FACT `/api/request-activation` READS to
+             send the activation link on a submission with no order. Ticking the
+             box on the contact form has to write it, or the visit they just asked
+             for would silently be an ordinary enquiry. It wins over the
+             "how did you hear" preset, which is analytics, not routing. */
+          entry_location: asVisit ? 'guest_visit' : (source || entryLocation),
           intent: intentFor(category, isCart),
           details: Object.keys(cleanDetails).length ? cleanDetails : undefined,
         },
@@ -285,7 +302,7 @@ export function PublicIntakeForm({
               {/* Owner, 2026-09-01: on the visit form the question is what they are
                   INTERESTED IN — they are not asking for help, they are telling us
                   which side of the barn to walk them round. */}
-              {visit ? 'What are you interested in?' : 'What can we help with?'}
+              {asVisit ? 'What are you interested in?' : 'What can we help with?'}
             </label>
             <select
               id="pi-category"
@@ -486,11 +503,31 @@ export function PublicIntakeForm({
           </p>
         </div>
 
+        {/* The offer itself — only on a form that is not already a visit form. */}
+        {offerVisit && !visit && (
+          <div className="sm:col-span-2">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={wantsVisit}
+                onChange={(e) => setWantsVisit(e.target.checked)}
+              />
+              <span className="text-sm text-green-900">
+                I&apos;d like to come and visit
+                <span className="block text-[12.5px] text-muted">
+                  Pick a day and a window below and we&apos;ll be in touch to arrange it.
+                </span>
+              </span>
+            </label>
+          </div>
+        )}
+
         {/* ── VISIT MODE: one date, one window ─────────────────────────────
             Owner, 2026-09-01. The three windows are the barn's, not a generic
             morning/afternoon/evening — they are the hours somebody can actually
             be shown around. */}
-        {visit ? (
+        {asVisit ? (
           <div className="sm:col-span-2">
             <span className="form-label">When would you like to visit?</span>
             <div className="grid gap-3 sm:grid-cols-2 mt-1">

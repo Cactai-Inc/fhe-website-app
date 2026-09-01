@@ -509,6 +509,39 @@ export default function Onboarding() {
     return ['rider'];
   }, [signPath]);
 
+  /* ⚠️ AND WITHIN THE RIDER CATALOG, WHOSE HORSE. Owner, 2026-09-01:
+     *"rider+horse should show the evaluation lesson with the gating on the other
+     lesson options and it should show both lesson types, company horse and with
+     their own horse. rider only should only show lessons with company horse."*
+
+     `offerings.horse_included` already carries exactly this and nothing else was
+     reading it here: `true` = ride ours, `false` = bring your own, `null` = not a
+     lesson at all (the horsemanship classes). So the `/sign/rider` door drops the
+     `false` rows — somebody who told us at the door that they have no horse must
+     not be offered three lessons that require one — and keeps `null`, because the
+     classes are not a lesson-with-a-horse-question and hiding them would remove
+     two sellable items for a reason that is not about them. */
+  const showsOwnHorseLessons = signPath === 'rider+horse';
+  const offeredHere = useCallback((o: Offering) => (
+    catalogSegments.includes(o.segment) && o.active
+      && o.config_kind !== 'inquire' && o.price_amount != null
+      && (showsOwnHorseLessons || o.horse_included !== false)
+  ), [catalogSegments, showsOwnHorseLessons]);
+
+  /* ⚠️ THREE SECTIONS, NOT ONE LIST. The `rider+horse` door legitimately shows
+     three different things at once, and a flat list of nine priced rows with a
+     gate over some of them is unreadable. The headings are the owner's own words
+     for them. A door that only has one section renders no heading at all. */
+  const catalogSections = useMemo(() => {
+    const of = (pred: (o: Offering) => boolean) => shopOfferings.filter(pred);
+    const sections = [
+      { key: 'ours', title: 'Lessons on our horses', items: of((o) => o.segment === 'rider' && o.horse_included !== false) },
+      { key: 'yours', title: 'Lessons with your horse', items: of((o) => o.segment === 'rider' && o.horse_included === false) },
+      { key: 'care', title: 'For your horse', items: of((o) => o.segment === 'horse') },
+    ].filter((sec) => sec.items.length > 0);
+    return sections;
+  }, [shopOfferings]);
+
   const asksMinor = !NON_MINOR_PATHS.has(signPath) || Boolean(state?.minor);
   const minorCopy = MINOR_QUESTION[signPath] ?? MINOR_QUESTION_FALLBACK;
   const isForChild = asksMinor && signingFor === 'child';
@@ -635,11 +668,9 @@ export default function Onboarding() {
   useEffect(() => {
     if (step !== 'shop' || shopOfferings.length > 0) return;
     fetchOfferings()
-      .then((all) => setShopOfferings(all.filter(
-        (o) => catalogSegments.includes(o.segment) && o.active
-          && o.config_kind !== 'inquire' && o.price_amount != null)))
+      .then((all) => setShopOfferings(all.filter(offeredHere)))
       .catch(() => setShopError('We could not load the options. You can browse them from the Shop.'));
-  }, [step, shopOfferings.length, catalogSegments]);
+  }, [step, shopOfferings.length, offeredHere]);
 
   /** Buy what they picked, then go to payment.
    *
@@ -2105,53 +2136,60 @@ export default function Onboarding() {
             </p>
             {shopError && <p role="alert" className="form-error mb-4">{shopError}</p>}
 
-            <div className="flex flex-col gap-3 mb-6">
-              {[...shopOfferings]
-                .sort((a, b) => (isEvaluationOffering(b) ? 1 : 0) - (isEvaluationOffering(a) ? 1 : 0)
-                  || (a.price_amount ?? 0) - (b.price_amount ?? 0))
-                .map((o) => {
-                  const isEval = isEvaluationOffering(o);
-                  const picked = shopPicked.includes(o.id);
-                  const disabled = gatedBy(o) && !isEval;
-                  return (
-                    <button key={o.id} type="button" disabled={disabled}
-                      onClick={() => toggle(o.id)}
-                      aria-pressed={picked}
-                      className={`text-left rounded-lg border p-4 transition-all focus-ring ${
-                        picked ? 'border-green-700 bg-green-50'
-                        : isEval ? 'border-2 border-gold-600 bg-gold-50/40 hover:bg-gold-50'
-                        : disabled ? 'border-green-800/15 bg-white opacity-60 cursor-not-allowed'
-                        : 'border-green-800/15 bg-white hover:border-green-800/40'}`}>
-                      <span className="flex items-start justify-between gap-3">
-                        <span className="min-w-0">
-                          <span className="block text-[15px] text-green-900 font-medium">
-                            {o.name}
-                            {isEval && (
-                              <span className="ml-2 align-middle text-[10px] uppercase tracking-wide
-                                               text-gold-900 bg-gold-200 rounded-full px-2 py-0.5">
-                                Start here
+            {catalogSections.map((section) => (
+              <div key={section.key} className="mb-6">
+                {catalogSections.length > 1 && (
+                  <h3 className="eyebrow mb-2">{section.title}</h3>
+                )}
+                <div className="flex flex-col gap-3">
+                  {[...section.items]
+                    .sort((a2, b2) => (isEvaluationOffering(b2) ? 1 : 0) - (isEvaluationOffering(a2) ? 1 : 0)
+                      || (a2.price_amount ?? 0) - (b2.price_amount ?? 0))
+                    .map((o) => {
+                      const isEval = isEvaluationOffering(o);
+                      const picked = shopPicked.includes(o.id);
+                      const disabled = gatedBy(o) && !isEval;
+                      return (
+                        <button key={o.id} type="button" disabled={disabled}
+                          onClick={() => toggle(o.id)}
+                          aria-pressed={picked}
+                          className={`text-left rounded-lg border p-4 transition-all focus-ring ${
+                            picked ? 'border-green-700 bg-green-50'
+                            : isEval ? 'border-2 border-gold-600 bg-gold-50/40 hover:bg-gold-50'
+                            : disabled ? 'border-green-800/15 bg-white opacity-60 cursor-not-allowed'
+                            : 'border-green-800/15 bg-white hover:border-green-800/40'}`}>
+                          <span className="flex items-start justify-between gap-3">
+                            <span className="min-w-0">
+                              <span className="block text-[15px] text-green-900 font-medium">
+                                {o.name}
+                                {isEval && (
+                                  <span className="ml-2 align-middle text-[10px] uppercase tracking-wide
+                                                   text-gold-900 bg-gold-200 rounded-full px-2 py-0.5">
+                                    Start here
+                                  </span>
+                                )}
                               </span>
-                            )}
+                              {isEval ? (
+                                <span className="block text-[12.5px] text-gold-900 mt-1">
+                                  Everyone&apos;s first lesson is an evaluation — it&apos;s how we get
+                                  to know your riding. Book this first; everything else opens up once
+                                  you do. Allow an extra 30 minutes: arrive 15 minutes early, and the
+                                  lesson runs 15 minutes longer than usual.
+                                </span>
+                              ) : (
+                                <span className="block text-[12.5px] text-muted mt-1">
+                                  {o.tagline || (disabled ? 'Available once your evaluation lesson is added' : '')}
+                                </span>
+                              )}
+                            </span>
+                            <span className="text-green-900 whitespace-nowrap">{money(o.price_amount)}</span>
                           </span>
-                          {isEval ? (
-                            <span className="block text-[12.5px] text-gold-900 mt-1">
-                              Everyone&apos;s first lesson is an evaluation — it&apos;s how we get
-                              to know your riding. Book this first; everything else opens up once
-                              you do. Allow an extra 30 minutes: arrive 15 minutes early, and the
-                              lesson runs 15 minutes longer than usual.
-                            </span>
-                          ) : (
-                            <span className="block text-[12.5px] text-muted mt-1">
-                              {o.tagline || (disabled ? 'Available once your evaluation lesson is added' : '')}
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-green-900 whitespace-nowrap">{money(o.price_amount)}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-            </div>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            ))}
 
             <div className="flex flex-wrap items-center gap-3">
               <button type="button" className="btn-primary text-sm"
