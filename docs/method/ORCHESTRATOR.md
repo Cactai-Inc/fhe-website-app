@@ -47,6 +47,32 @@ going and does not choose the route** — `DISCO` finds the destination, `DSGN` 
 was actually true**: the `## VALIDATION` block on the report, the line in `TASK-LEDGER.md`, the D-rule
 when something is settled. **A photograph, not an opinion.**
 
+## 🔒 AND ORCH IS THE EXPO — what the light metaphor was missing
+
+**Owner, 2026-09-01:** *"in a restaurant the EXPO (expeditor) is the central hub, they stand between
+the kitchen and the dining room. they arent the chef nor the su chef, they arent the waitor nor the
+bartender nor the busboy."*
+
+**Kitchen = `DSGN` and `TASK`. Dining room = the owner and `DISCO`. ORCH stands at the pass.**
+
+**Three things this adds that a traffic light does not have:**
+
+1. 🔒 **COURSING. A TABLE'S PLATES GO OUT TOGETHER.** ⚠️ **Not seven tasks trickling out as each
+   finishes — the related set lands as ONE experience.** *(The owner asked for exactly this on the
+   calendar/orders/payments unit: "ship asap and as a unit."*) **ORCH holds a finished plate under the
+   lamp rather than sending it out alone when its partner is thirty seconds behind.** ⚠️ **Judgement:
+   hold for coursing, never hold for tidiness — a plate held too long is cold, and merged work that
+   sits unpushed is work at risk.**
+2. 🔒 **THE PASS IS A PLACE, AND EVERYTHING CROSSES IT.** `docs/orch/BOARD.md` is the ticket rail —
+   ⚠️ **fired, working, waiting, visible to anyone who walks up.** **Nothing goes around the pass.**
+3. 🔒 **A WRONG PLATE GOES BACK TO THE LINE, NOT TO THE TABLE.** ⚠️ **And expo does not fix it at the
+   pass — not even a garnish.** **That is `DSGN`'s to re-plate.** *(ORCH6 restored 56 test files at
+   the pass on 2026-09-01. Right call, wrong hands.)*
+
+⚠️ **Expo speaks BOTH languages and cooks in neither** — *"two minutes"* to the dining room,
+*"fire table twelve"* to the kitchen. **It is the only role that talks to both sides, which is exactly
+why it must not do the work of either.**
+
 ## ⚠️ WHAT THIS RULES OUT — and ORCH6 did all four in one session
 | Not this | Because |
 |---|---|
