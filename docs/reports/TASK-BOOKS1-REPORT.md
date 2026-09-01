@@ -155,3 +155,18 @@ States the dollars before acting (panel preview + button label) · records who (
 - Worktree `wt-books1` retained (it is the deliverable branch). No scratch worktrees created.
 - Production DB: migration `20260901T1000_what_a_sale_was_worth.sql` applied + committed; every behavioral test ran inside `BEGIN…ROLLBACK` — **zero test rows persisted** (paid orders count still 4, total still $1,935.00, re-verified after all batteries).
 - `ps` census at close: no `node`/`vite`/`psql` processes owned by this session remain.
+
+---
+
+## 11. ADDENDUM — rebased onto merged TASK-BACKDATE (2026-09-01, post-D35)
+
+**Rebased on `origin/main` @ `9ea8f59b` (BACKDATE, CR85, MODAL2, reaper all merged). Three files conflicted — `api/orders-mark-paid.ts`, `src/lib/ops/api-payments.ts`, `PaymentReviewPage.tsx` — all resolved by UNION: `paidAt` and `disposition` both survive, and they compose.**
+
+- **The union, concretely:** `markOrderPaid(purchaseId, method, reference?, amount?, paidAt?, disposition?, writeDownReason?)` — `paidAt` keeps BACKDATE's published position 5 so `ContactDossierModal`'s merged call sites are untouched. The endpoint validates and forwards both; `mark_purchase_paid` receives `p_paid_at` + `p_disposition` + `p_write_down_reason` in one call. PaymentReviewPage's table-level "Date paid" control now applies to a discount/comp too — a backfilled give-away lands in the month it really happened, and BACKDATE's no-receipt-on-backdate rule governs it unchanged (the receipt suppression sits above the disposition in the endpoint).
+- **Production body re-verified AFTER the rebase (D35: a green check from an hour ago is not evidence).** The live `mark_purchase_paid` is ORCH/BACKDATE's reconciled union — my two disposition branches intact, BACKDATE's future-date guard at the top (covering every disposition), and their backdate-aware notify/status-event patched inside each branch. Nothing of mine was lost in their in-place patch; nothing of theirs is lost in my branch.
+- **§4 re-run against production** (rolled-back battery): comp → `880 / 0 / comped / 880` ✅ · discount at 792 **backdated to 2026-06-15** → `paid_at 2026-06-15`, June's `revenue_summary` books `total 792, write_down_total 88` ✅ (the composition case, proven) · part payment still `part_paid`/open ✅.
+- **Future-date guard proven on ALL THREE dispositions**: `2027-01-15` refused with `a payment cannot be dated in the future (2027-01-15)` for paid, comped and discounted alike.
+- **Regression re-run:** post-rollback production still `4 paid orders / $1,935.00`.
+- **Numbers after rebase:** typecheck 0 · typecheck:api 0 · lint 46 warnings = baseline · build passes · vitest 10/10 — my 3 receipt-shape tests AND BACKDATE's 7 `orders-mark-paid-backdate` API tests pass against the union endpoint.
+- **On my own migration file:** left exactly as applied. Replay order is already correct — `20260901T1000` (mine, creates the 7-arg body) precedes `20260901T1200` (BACKDATE's idempotent in-place patch, which adds the guard and no-ops if already patched) — so a fresh replay produces the union without edits.
+- **§6's BACKDATE note is now RESOLVED**: the dossier Orders-tab control settles through the union `markOrderPaid`; giving that control a discount/comp affordance remains the one open reach item (one additive edit in `ContactDossierModal`, no longer contested by any running thread).
