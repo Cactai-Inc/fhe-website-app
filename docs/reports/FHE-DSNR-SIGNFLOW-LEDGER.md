@@ -4,11 +4,15 @@
 **Subject: CR-100 (address normalize), CR-101 (SIG token readers), CR-102 (brown→green).**
 
 ## RESUME
-- **State:** ALL THREE verified. Chunked into 5 tasks A-E. Writing specs now.
-- **Written so far:** this ledger's three verification sections.
-- **Next step:** `docs/tasks/TASK-SIGNFLOW-{A..E}-*.md`, then `docs/reports/FHE-DSNR-SIGNFLOW-HANDOFF.md`.
-- **Chunks:** A=CR-101 readers · B=CR-100 address · C=CR-102 global classes · D=CR-102 signing surfaces
-  · E=CR-102 rest of app. A‖B‖C are file-disjoint; D needs A+B+C merged; E needs C.
+- **State:** 🔒 **DONE.** All three CRs verified, chunked into 6 specs, handed to ORCH. **This thread
+  is finished; a new handoff gets a new thread** (`docs/method/DSNR-ROLE.md` LIFECYCLE).
+- **Written:** this ledger · `docs/tasks/TASK-SIGNFLOW-{A,B,C,D,E,F}-*.md` ·
+  `docs/reports/FHE-DSNR-SIGNFLOW-HANDOFF.md`. All committed, none pushed.
+- **Chunks:** A=CR-101 five readers · B=CR-100 address kinds · C=CR-102 global classes (34 refs) ·
+  D=CR-102 document/contract surfaces (18 files, 210) · E=CR-102 app shell + every keeper (4 files, 47)
+  · F=CR-102 the sweep (70 files, 277). **A‖B‖C file-disjoint; D needs A+B+C; E and F need C.**
+- **Next station:** `FHE-ORCH-SIGNFLOW`. Nothing waits on the owner; 4 calls flagged for his eyes in
+  handoff §4, none blocking.
 
 ## LOG
 - 2026-09-01 — thread opened. Handoff has no open owner questions; all three CRs locked.
