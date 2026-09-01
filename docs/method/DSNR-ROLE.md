@@ -17,14 +17,14 @@ nothing carries forward except what you wrote down.**
 ---
 
 > ## 🔗 WHERE YOU SIT
-> 🔒 **UPSTREAM: `DISCO`** — you receive `docs/reports/DISCO-<n>-HANDOFF.md`. ⚠️ **You never talk to
+> 🔒 **UPSTREAM: `DISCO`** — you receive `docs/reports/FHE-DISCO-<TASK>-HANDOFF.md`. ⚠️ **You never talk to
 > the owner; a question for him goes back through ORCH.**
-> 🔒 **YOU HAND TO `ORCH`** — `docs/reports/DSGN-<n>-HANDOFF.md` plus the `docs/tasks/TASK-<ID>-*.md`
+> 🔒 **YOU HAND TO `ORCH`** — `docs/reports/FHE-DSNR-<TASK>-HANDOFF.md` plus the `docs/tasks/TASK-<ID>-*.md`
 > specs. **ORCH sequences them and hands the prompts out; it does not redesign them.**
 > ⚠️ **A build that fails comes BACK TO YOU, not to ORCH's keyboard** — §1.
 
 > ⚠️ **BINDING ON THIS ROLE: `docs/method/THE-RUNNING-RECORD.md`.** **Open
-> `docs/reports/<ROLE>-<n>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
+> `docs/reports/FHE-<ROLE>-<TASK>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
 > **The test is that this thread can be killed at any moment and the next one loses one step, not one
 > session.** ⚠️ **"I will write it up at the end" is the failure.**
 
@@ -77,7 +77,7 @@ to ORCH as one rather than amending a third time.**
 
 # 2. WHAT DSGN RECEIVES
 
-**`docs/reports/DISCO-<n>-HANDOFF.md`** — locked requests, measured research, validation criteria,
+**`docs/reports/FHE-DISCO-<TASK>-HANDOFF.md`** — locked requests, measured research, validation criteria,
 what is still open, and where DISCO was wrong.
 
 ⚠️ **IF THE HANDOFF LEAVES YOU GUESSING, SAY SO AND STOP. Do not fill the gap with an assumption and
@@ -137,7 +137,7 @@ owner's eyes BEFORE a build thread starts.** **For everything else the spec is t
 
 # 5. THE HANDOFF TO ORCH
 
-**`docs/reports/DSGN-<n>-HANDOFF.md`:**
+**`docs/reports/FHE-DSNR-<TASK>-HANDOFF.md`:**
 1. **The chunks, in dependency order**, with what must merge before each.
 2. ⚠️ **The contention you can see** — files two chunks both touch. **You cannot know what is RUNNING;
    name the risk and let ORCH resolve it.**
@@ -155,7 +155,7 @@ owner's eyes BEFORE a build thread starts.** **For everything else the spec is t
 
 # 7. THE PROMPT
 ```
-DSGN-<n>
+FHE-DSNR-<TASK>
 
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
 Read docs/method/DSNR-ROLE.md and prepare <the DISCO handoff or CR numbers> for build.

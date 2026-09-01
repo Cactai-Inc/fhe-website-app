@@ -42,11 +42,11 @@ spent a month fixing: two nav tables, two revenue functions, two live handoff li
 **The spokes, and what each writes into the hub:**
 | Role | Writes | Reads |
 |---|---|---|
-| `DISCO` | the ledger · `DISCO-<n>-HANDOFF.md` | the repo, the database, `TASK-*-REPORT` + `-VERIFICATION` |
-| `DSNR` | `docs/tasks/TASK-<ID>-*.md` · `DSGN-<n>-HANDOFF.md` | `DISCO-<n>-HANDOFF.md`, the ledger |
-| `ORCH` | `TASK-<ID>-VERIFICATION.md` · `TASK-LEDGER.md` · `BOARD.md` · D-rules | `DSGN-<n>-HANDOFF.md`, task reports |
+| `DISCO` | the ledger · `FHE-DISCO-<TASK>-HANDOFF.md` | the repo, the database, `TASK-*-REPORT` + `-VERIFICATION` |
+| `DSNR` | `docs/tasks/TASK-<ID>-*.md` · `FHE-DSNR-<TASK>-HANDOFF.md` | `FHE-DISCO-<TASK>-HANDOFF.md`, the ledger |
+| `ORCH` | `TASK-<ID>-VERIFICATION.md` · `TASK-LEDGER.md` · `BOARD.md` · D-rules | `FHE-DSNR-<TASK>-HANDOFF.md`, task reports |
 | `TASK` | `TASK-<ID>-REPORT.md` · the code | its spec, `TASK-ROLE.md`, the hub |
-| `CLNR` | `CLNR-<n>-REPORT.md` | everything |
+| `CLNR` | `FHE-CLNR-<TASK>-REPORT.md` | everything |
 
 ⚠️ **THEREFORE A DEAD THREAD BREAKS NOTHING.** **Nothing is in flight between two threads; it is
 either written to the hub or it does not exist.**
@@ -62,10 +62,38 @@ The loss is one step, not one session.**
 report has lost 80% of its value — the commits survive and the REASONING does not, and the reasoning
 is the expensive half.
 
-# 2. THE ARTIFACT — `docs/reports/<ROLE>-<n>-LEDGER.md`
+# 1a. 🔒 THREAD NAMES — `FHE-<ROLE>-<TASK>` (owner, 2026-09-01, to FHE-DISCO-SIGNFLOW)
 
-**Opened with your FIRST action, not your last.** *(`DISCO-1-LEDGER.md` is the worked example: every
-number with the query that produced it.)*
+🔒 **THE SHORTEST POSSIBLE UNIQUE NAME.** *"the shortest possible unique name is the requirement
+because it populates the sidebar and the tab space and it needs to be unique so its retrievable
+from search or visual lookup."*
+
+- **The repo prefix comes first, always:** `FHE-<ROLE>-<TASK>` — *"the repo name is always at the
+  start."*
+- **`<TASK>` names WHAT THE THREAD WORKS ON, never a sequence number.** `DISCO-2` is a bad name;
+  `FHE-DISCO-SIGNFLOW` is its corrected name. CR numbers also work for a change-order lineage
+  (contiguous ranges compressed: `CR100-102`).
+- 🔒 **A thread born from another thread's handoff KEEPS THE TASK NAME AND SWAPS ONLY THE ROLE:**
+  `FHE-DISCO-SIGNFLOW` → `FHE-DSNR-SIGNFLOW` → `FHE-ORCH-SIGNFLOW` → `FHE-TASK-SIGNFLOW`.
+  The lineage of one piece of work reads across stations.
+- ⚠️ **A subject name is ONE-USE — burnt once used.** Future work on the same area revisits the
+  original threads only if the context they carry is still accurate; otherwise a fresh thread
+  becomes `signflow-2`. CR numbers sidestep the burn.
+- **Ledger and handoff files carry the thread's name** (`FHE-<ROLE>-<TASK>-LEDGER.md` etc.), so a
+  thread is findable from its files and vice versa.
+
+# 1b. 🔒 EVERY HANDED PROMPT CARRIES ITS LAUNCH SETTINGS (owner, 2026-09-01)
+
+**Every prompt handed to the owner — to start a thread or to run in an existing one — states:**
+**MODEL TIER · EFFORT LEVEL · and THINKING on/off unless the model is Fable** (Fable's thinking is
+always on; effort is its only depth control — `docs/reference/MODEL-CHOICE-NOTES-2026-09-01.md`).
+⚠️ **`ORCH` prompts are the one exemption.** He launches each thread by hand; a prompt without its
+settings makes him guess. ⚠️ **Do not carry an effort setting across a model change — re-sweep it.**
+
+# 2. THE ARTIFACT — `docs/reports/FHE-<ROLE>-<TASK>-LEDGER.md`
+
+**Opened with your FIRST action, not your last.** *(`DISCO-1-LEDGER.md` is the worked example of
+ledger CONTENT — every number with the query that produced it; its name predates §1a.)*
 
 **It opens with a RESUME BLOCK, and that block is rewritten every time you update the file:**
 

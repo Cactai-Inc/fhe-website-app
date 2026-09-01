@@ -4298,7 +4298,7 @@ strikethrough · checkmarks · text · borders · highlights · buttons, in the 
 Trap to carry into any spec: T1 — arbitrary Tailwind values have silently emitted nothing here
 twice; the built CSS must be grepped for the emitted value.
 
-**🔒 SCOPE RULING (owner, 2026-09-01, to FHE-DISCO-CR100-102, verbatim):**
+**🔒 SCOPE RULING (owner, 2026-09-01, to FHE-DISCO-SIGNFLOW, verbatim):**
 > *"yea the gold used on the onboarding flow looks like shit brown so switch that gold, in those
 > locations and any other places its used, company green. the nav im seeing on admin ui uses gold
 > and it looks good, so i dont know why it looks so bad on the onboarding flow. also the contacts
@@ -4311,5 +4311,5 @@ twice; the built CSS must be grepped for the emitted value.
 
 **So CR-102 is NOT signing-flow-only: the rule is DECORATIVE vs FUNCTIONAL, applied app-wide.**
 Decorative accents (avatar rings, nav selected state, notification count) keep gold; functional
-action elements, icons and text go green. See `docs/reports/FHE-DISCO-CR100-102-HANDOFF.md` for the inventory
+action elements, icons and text go green. See `docs/reports/FHE-DISCO-SIGNFLOW-HANDOFF.md` for the inventory
 and the mechanism behind "shows up properly" vs "shit brown."

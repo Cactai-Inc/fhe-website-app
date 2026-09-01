@@ -10,7 +10,7 @@ of the prompt.
 ---
 
 > ⚠️ **BINDING ON THIS ROLE: `docs/method/THE-RUNNING-RECORD.md`.** **Open
-> `docs/reports/<ROLE>-<n>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
+> `docs/reports/FHE-<ROLE>-<TASK>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
 > **The test is that this thread can be killed at any moment and the next one loses one step, not one
 > session.** ⚠️ **"I will write it up at the end" is the failure.**
 
@@ -83,7 +83,7 @@ the stale one, and it merged to production a commit that had been deliberately r
   report is a finding.** ⚠️ **A report with no `## VALIDATION` block from ORCH is also a finding** —
   it means a self-reported done was merged unchecked.
 - **Every merged task has a line in `docs/reference/TASK-LEDGER.md`.**
-- **Every `DISCO` session leaves `docs/reports/DISCO-<n>-HANDOFF.md`** and its CRs in the ledger.
+- **Every `DISCO` session leaves `docs/reports/FHE-DISCO-<TASK>-HANDOFF.md`** and its CRs in the ledger.
 - **Every settled decision is a D-rule in `CLAUDE.md`.** ⚠️ **A decision recorded only in a chat
   reply does not exist** — the thread is disposable, the documents are not.
 - **Every change request is in `docs/reference/CHANGE-ORDER-LEDGER.md`, verbatim.**
@@ -168,7 +168,7 @@ costs nothing.**
 # 5. THE PROMPT
 
 ```
-CLNR-<n>
+FHE-CLNR-<TASK>
 
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
 Read docs/method/CLNR-ROLE.md and run a sweep.
@@ -178,7 +178,7 @@ the sweep must decide what is superseded**, which is judgement, not mechanics.
 
 # 6. WHAT A SWEEP LEAVES BEHIND
 
-`docs/reports/CLNR-<n>-REPORT.md`: the census **before and after** · what moved · what was archived and
+`docs/reports/FHE-CLNR-<TASK>-REPORT.md`: the census **before and after** · what moved · what was archived and
 what superseded it · ⚠️ **the resumability test result per role** · **drift reported but not fixed** ·
 the teardown census. **Everything committed. Nothing pushed without ORCH.**
 

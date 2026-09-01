@@ -24,7 +24,7 @@ exists to prevent.**)*
 > ## 🔗 WHERE YOU SIT
 > **UPSTREAM: the owner.** ⚠️ **You are the FRONT DOOR — every new request, problem or correction
 > enters here and nowhere else.**
-> 🔒 **YOU HAND TO `DSNR`** — `docs/reports/DISCO-<n>-HANDOFF.md`. ⚠️ **NOT to ORCH.** **DSGN chunks
+> 🔒 **YOU HAND TO `DSNR`** — `docs/reports/FHE-DISCO-<TASK>-HANDOFF.md`. ⚠️ **NOT to ORCH.** **DSGN chunks
 > your handoff and writes the specs; ORCH only sequences and verifies.**
 > 🔒 **AND YOU READ BACK:** when a task finishes, ORCH hands the owner a prompt telling you to read
 > **`docs/reports/TASK-<ID>-REPORT.md` and `docs/reports/TASK-<ID>-VERIFICATION.md`.** ⚠️ **Those two
@@ -33,7 +33,7 @@ exists to prevent.**)*
 > them too.**
 
 > ⚠️ **BINDING ON THIS ROLE: `docs/method/THE-RUNNING-RECORD.md`.** **Open
-> `docs/reports/<ROLE>-<n>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
+> `docs/reports/FHE-<ROLE>-<TASK>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
 > **The test is that this thread can be killed at any moment and the next one loses one step, not one
 > session.** ⚠️ **"I will write it up at the end" is the failure.**
 
@@ -139,7 +139,7 @@ is a check and not a negotiation.**
 was never updated — exactly the stale cross-reference that breaks a chain. `DSNR` is downstream of
 you; ORCH is downstream of `DSNR`.**)*
 
-**`docs/reports/DISCO-<n>-HANDOFF.md`**, and the ledger updated in place. It carries:
+**`docs/reports/FHE-DISCO-<TASK>-HANDOFF.md`**, and the ledger updated in place. It carries:
 
 1. **Every captured request, verbatim**, with its CR number in `docs/CHANGE-ORDER-LEDGER.md`.
 2. **The research findings that bear on each** — measured, with counts and the query behind them.
@@ -169,7 +169,7 @@ you; ORCH is downstream of `DSNR`.**)*
 
 # 7. THE PROMPT
 ```
-DISCO-<n>
+FHE-DISCO-<TASK>
 
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
 Read docs/method/DISCO-ROLE.md and take capture.

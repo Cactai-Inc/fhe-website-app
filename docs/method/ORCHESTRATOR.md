@@ -30,7 +30,7 @@ Read this, then the status doc, then start. You should need nothing else to oper
 ---
 
 > ⚠️ **BINDING ON THIS ROLE: `docs/method/THE-RUNNING-RECORD.md`.** **Open
-> `docs/reports/<ROLE>-<n>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
+> `docs/reports/FHE-<ROLE>-<TASK>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
 > **The test is that this thread can be killed at any moment and the next one loses one step, not one
 > session.** ⚠️ **"I will write it up at the end" is the failure.**
 
@@ -349,7 +349,7 @@ the last orchestrator's context window.**
   ORCH says so and sends it back — it does not fill the gap silently and pretend the research happened.**
 
 ## WHAT ORCH DOES, IN ORDER — the loop
-1. ⚠️ **Receive `docs/reports/DSGN-<n>-HANDOFF.md` and its specs** — NOT the DISCO handoff. **DISCO
+1. ⚠️ **Receive `docs/reports/FHE-DSNR-<TASK>-HANDOFF.md` and its specs** — NOT the DISCO handoff. **DISCO
    hands to `DSNR`; `DSNR` hands to you.**
 2. ⚠️ **Sequence the chunks `DSNR` produced and hand the owner a prompt per TASK thread. ORCH does
    not author specs** (owner, 2026-09-01) — **if no DSGN handoff exists yet, the prompt ORCH hands out

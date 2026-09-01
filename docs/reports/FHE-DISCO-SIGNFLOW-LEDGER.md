@@ -1,14 +1,14 @@
-# FHE-DISCO-CR100-102 — LEDGER (thread renamed from DISCO-2, owner naming ruling 2026-09-01)
+# FHE-DISCO-SIGNFLOW — LEDGER
 
 Subject: the doc-signing flow — CR-100 (address normalize/validate), CR-101 (date/signature tokens
 still visible), CR-102 (brown → company green). Opened 2026-09-01 on the owner's prompt: read
 CHANGE-ORDER-LEDGER §CR-100–102 and run them.
 
 ## RESUME
-Role / thread   FHE-DISCO-CR100-102 · canonical checkout (docs only; no code, no writes)
+Role / thread   FHE-DISCO-SIGNFLOW · canonical checkout (docs only; no code, no writes)
 Merge-base      n/a — docs-only thread on main (main == origin/main at open, 2fa1f7b9)
 DONE            steps 1-3 COMPLETE on all three CRs. All locks in. Handoff written:
-                docs/reports/FHE-DISCO-CR100-102-HANDOFF.md. Owner's CR-102 ruling appended verbatim to
+                docs/reports/FHE-DISCO-SIGNFLOW-HANDOFF.md. Owner's CR-102 ruling appended verbatim to
                 CHANGE-ORDER-LEDGER.md §CR-102.
 IN FLIGHT       nothing — complete, nothing in flight
 NEXT            owner carries the ticket to DSNR (prompt handed). This thread stays open for
@@ -21,33 +21,13 @@ DECIDED         🔒 CR-100 NORMALIZE-ONLY (owner, mid-run: "just normalize the 
                 🔒 Validation criteria for all three agreed as proposed ("agree").
 CORRECTED       DISCO framed CR-102 as "flow only vs app-wide gold→green" — both wrong; the owner's
                 rule is by FUNCTION, not by surface. Recorded in the handoff §Item 3.
-                ALSO (owner, 2026-09-01) — THREAD NAMING RULING, verbatim: "im not sure what the
-                thread name is supposed to mean but that is not the appropriate naming convention
-                for threads and if a thread from you is a handoff born from a thread prompt you
-                received you need to use the same name and replace DISCO with the new thread role
-                name. so this thread is named DISCO-2, its a bad name, it should have a name that
-                references what the thread is working on and that name would then be changed to
-                DSNR-[this threads name]". REFINED by the owner same day: the full convention is
-                FHE-[ROLE]-[task name] — repo prefix always first, and this lineage's task name is
-                the CR numbers. So this thread is FHE-DISCO-CR100-102 (briefly renamed
-                DISCO-SIGNFLOW in between — that subject guess was overridden); downstream is
-                FHE-DSNR-CR100-102, then FHE-ORCH-CR100-102, then
-                FHE-TASK-CR100-102. Files git-mv'd twice, references updated.
-                Naming requirement (owner, same day): THE SHORTEST POSSIBLE UNIQUE NAME — it
-                populates the sidebar and tab space and must be retrievable by search or visual
-                lookup. Applied: CR-100-101-102 shortened to the contiguous range CR100-102, so
-                this thread is FHE-DISCO-CR100-102, downstream FHE-DSNR-CR100-102, etc.
-                Naming nuance (owner, same day): subject names like SIGNFLOW are fine but ONE-USE —
-                burnt once used; future work on the area revisits the original threads only if
-                their context is still accurate, else starts fresh as signflow-2. CR numbers
-                sidestep the burn.
-                ⚠️ FOR ORCH: the role files still template ROLE-<n> (and DSNR-ROLE.md §7 still says
-                "DSGN-<n>" — a stale pre-rename label); both need codifying to the new convention.
-                ALSO (owner, 2026-09-01): every prompt handed to him must state model tier + effort
-                level, plus thinking on/off unless the model is Fable (Fable's thinking is always
-                on — MODEL-CHOICE-NOTES-2026-09-01.md). ORCH prompts exempt. The DSNR prompt below
-                was re-handed with the header. Candidate for ORCH to codify in the role files'
-                §END BY HANDING THE OWNER A PROMPT sections.
+                Also: two process rulings landed in this thread (thread naming FHE-<ROLE>-<TASK>,
+                and the launch-settings header on every handed prompt). Per the owner they live in
+                the CONTROL FILES, not here — codified 2026-09-01 in
+                docs/method/THE-RUNNING-RECORD.md §1a/§1b, with the role files' prompt templates
+                updated to match. This thread was DISCO-2, then briefly DISCO-SIGNFLOW and
+                FHE-DISCO-CR100-102 while the convention settled; the settled name is
+                FHE-DISCO-SIGNFLOW, downstream FHE-DSNR-SIGNFLOW.
 DO NOT          do not treat CR-101 as a regression — the 8-24 fix never reverted; it merged and
                 still sits in ContractBody. The defect is UNREACHED PATHS (D17), see §CR-101.
 
