@@ -16,9 +16,17 @@
 --
 -- ⚠️ TRAP 8: THIS CHANGES WHAT IS GENERATED FROM NOW ON. It does not
 -- retro-withdraw the sessions already scheduled beyond the window (D32, and
--- DSGN's explicit ruling). The `created_at >= v_mark` guard below is what makes
--- that true: only rows THIS CALL created are marked pending. A month that was
--- already materialised is left exactly as it is.
+-- DSGN's explicit ruling). The BEFORE/AFTER id snapshot below is what makes that
+-- true: only rows THIS CALL created are marked pending. A month that was already
+-- materialised is left exactly as it is.
+--
+-- ⚠️ IT IS A SNAPSHOT AND NOT A TIMESTAMP FOR A REASON. The first cut of this
+-- fenced on `created_at >= clock_timestamp()-taken-before-the-call`, and it
+-- silently matched NOTHING: `bookings.created_at` defaults to `now()`, which is
+-- the TRANSACTION timestamp and is therefore always EARLIER than a
+-- `clock_timestamp()` read inside that same transaction. The rehearsal caught
+-- it — the generator reported `"created": 9` and `"pending": 0`. This is TASK-ROLE
+-- §2a exactly: code that reports success while doing nothing.
 
 -- ── 1 · one definition of the horizon ───────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.plan_horizon_through()
@@ -55,7 +63,7 @@ DECLARE
   v_last    date;
   v_has_time boolean;
   v_gen     jsonb;
-  v_mark    timestamptz;
+  v_before  uuid[];
   v_months  int := 0;
   v_created int := 0;
   v_pended  int := 0;
@@ -87,7 +95,11 @@ BEGIN
     v_minted := v_minted + coalesce(_mint_credits_for_purchase_item(p_purchase_item_id, NULL, v_month), 0);
 
     -- the fence between "what I am about to make" and "what was already there"
-    v_mark := clock_timestamp();
+    SELECT coalesce(array_agg(b.id), '{}'::uuid[]) INTO v_before
+      FROM bookings b
+     WHERE b.purchase_id = v_pu.id
+       AND b.starts_at >= v_month
+       AND b.starts_at <  (v_month + interval '1 month');
     v_gen := _generate_plan_month(
                p_purchase_item_id,
                NULL,                                                  -- per-day times decide
@@ -107,8 +119,9 @@ BEGIN
       UPDATE bookings
          SET status = 'pending', updated_at = now()
        WHERE purchase_id = v_pu.id
-         AND series_id = nullif(v_gen->>'series_id','')::uuid
-         AND created_at >= v_mark
+         AND starts_at >= v_month
+         AND starts_at <  (v_month + interval '1 month')
+         AND NOT (id = ANY (v_before))
          AND status = 'scheduled';
       GET DIAGNOSTICS v_pended = ROW_COUNT;
     END IF;
