@@ -4195,3 +4195,43 @@ payment stage automatically; every advance of payment status is a BUTTON one sid
 pressed.**
 ⚠️ **THIS IS `CR-97`'s STATE MACHINE SEEN FROM THE STAFF SIDE** — `requested → approved → pending →
 scheduled`. **Same machine. Do not let it become a second one** (D18).
+
+---
+
+## CR-98 · A1 — ✅ ANSWERED 2026-09-01. TWO DOORS, NOT A CONTRADICTION.
+
+**SAID (owner):**
+> *"there are two ways the documents get initiated, the /sign/* pathway always activates the account
+> and assigns the required file set, this is a hands off pathway that is user initiated and born from
+> a discussion about a purchase without the user having selected the purchase from the website catalog
+> and submitted the request, we send them to this link. If the person submitted an order from the
+> website catalog the documents are assigned based on the selected offerings. Im not sure where things
+> stand today if the website submission routes the person to the activation flow by sending them the
+> link via email the same way the /sign/* does, but that is the goal, with the only difference being
+> they have already created an order in the system. If they are setup manually by staff we can decide
+> if they should sign documents now or not. if we dont assign the documents to them now then the
+> system recognizes this when they make their first purchase (either initiated by them from the
+> catalog in the app or by us manually creating an order for them) and the documents are assigned
+> based on whats in the order."*
+
+### 🔒 THE RULING — the 2026-08-24 "docs come from the offering" ruling STANDS and is not contradicted
+**It governs the ORDER door. The path-set governs the NO-ORDER door.** ⚠️ **Which door decides which
+source. There was never a conflict — only an unstated second case.**
+
+| Door | Documents come from | Notes |
+|---|---|---|
+| **`/sign/*`** — hands-off, user-initiated, **no catalog selection**, link sent after a conversation | 🔒 **the PATH's required file set** | **always activates the account and assigns** |
+| **catalog order submitted on the website** | 🔒 **the SELECTED OFFERINGS** | ⚠️ **GOAL: this routes into the SAME activation flow, same emailed link — the only difference is an order already exists.** **Establish where this stands today** |
+| **staff sets someone up manually** | ⚠️ **STAFF CHOICE — assign now, or defer** | |
+
+### ⚠️ THE DEFERRED CASE IS A SYSTEM REQUIREMENT, NOT A GAP
+🔒 **A person may exist with NO documents assigned.** **The system must RECOGNISE this at their FIRST
+PURCHASE — whether the client raises it from the catalog in the app, or staff create the order — and
+assign from THE ORDER'S CONTENTS at that moment.**
+⚠️ **So assignment has TWO trigger points and they are not alternatives: activation-by-path, and
+first-purchase-if-none-yet.** **A build that wires only the first leaves manually-created clients
+permanently paperless.**
+
+⚠️ **AND IT ANSWERS THE WIZARD LOOP-BACK QUESTION:** an offering chosen at wizard step 5 that carries a
+document the path-set did not include **must assign at that moment under the same first-purchase
+rule** — the wizard does not need a special case, it needs the general one.
