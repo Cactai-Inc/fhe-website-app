@@ -83,3 +83,9 @@ between them. **Reclaimed, with one correction to the instruction I was given:**
 - ⚠️ **`request_open_time` is LIFECYCLE's under D35 and this thread does not edit it.** SIGNBOOK
   CALLS it and inherits whatever status it writes — which is the whole reason the end-cap was
   built as a call rather than as a second insert.
+
+## RESUME — FINAL
+**DONE.** Report at `docs/reports/TASK-SIGNBOOK-REPORT.md`. Branch `task/signbook` in `wt-1`, five
+commits, 0 behind `origin/main`. Migration `20260901T1420` applied to production and re-verified
+AFTER LIFECYCLE's migrations landed (D35). Not pushed.
+**One ASK-OWNER open:** CR-98 step 9 (feed) vs TASK-ONBOARD §5 (dashboard) behind the overview modal.
