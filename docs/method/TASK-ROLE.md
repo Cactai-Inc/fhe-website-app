@@ -79,8 +79,23 @@ no reproduction, no measurement, no third paragraph. ⚠️ **The exception is a
 own task wrong or unsafe — that one you chase.**
 
 # 5. MECHANICS
-- **Worktree `~/Downloads/claude-code-repo/wt-<id>`, branch `task/<id>`, from `origin/main`.**
-  ⚠️ **Copy `.env.db` AND `.env` in** — both gitignored; `npm run build` dies without `.env`.
+- ⚠️ **USE A POOL WORKTREE — `~/Downloads/claude-code-repo/wt-1`, `wt-2`, `wt-3` — NOT a new one.**
+  **Measured 2026-09-01: `git worktree add` is 1.0s and `npm ci` 5.2s, but `node_modules` is 449 MB
+  per tree and is NOT hardlinked.** ⚠️ **What reuse really saves is the `.env` / `.env.db` copy** —
+  both gitignored, neither propagates, `npm run build` dies without `.env`, and forgetting them is a
+  recurring trap. **A pool worktree already has them.**
+  **Take one that is idle** *(detached HEAD, `git status --porcelain` empty)*, then:
+  ```
+  git fetch origin && git checkout -b task/<id> origin/main
+  git clean -xdf -e node_modules -e .env -e .env.db
+  ```
+  ⚠️ **THE CLEAN IS NOT OPTIONAL.** Inherited `dist/`, coverage output and un-tracked installs *(FIX4
+  installed Playwright with `--no-save`)* make a build pass or fail for reasons that have nothing to
+  do with your branch.
+  ⚠️ **NEVER take a worktree whose branch is unmerged or whose tree is dirty — that is someone's work.**
+  **Branch from `origin/main` every time**, so ORCH's audit diff against the merge-base stays readable.
+  **If every pool worktree is busy, create `wt-<id>` and say so in your report** — and copy `.env`
+  and `.env.db` in.
 - ⚠️ **NEVER `~/Desktop`.** **Delete nothing** — retire behind a flag (D32). **Templates are never
   deleted, hard or soft.**
 - **Migrations:** `BEGIN; … ROLLBACK;` → apply → verify → commit. `YYYYMMDDTHHMM_sentence_name.sql`.

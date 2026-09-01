@@ -127,7 +127,13 @@ violates the TASK requirements says so in its report rather than quietly working
 - **A new folder appears that is not in §2a.**
 - ⚠️ **Two files claim to be the live version of the same thing.**
 - **A merged task left no report**, or a report names a task doc that no longer exists.
-- **A worktree is merged and clean and still on disk** *(tag `archive/<name>-<date>`, remove it)*.
+- ⚠️ **A worktree is merged and clean and still on disk.** **Tag `archive/<name>-<date>`, then
+  RECYCLE it into the pool rather than deleting it** — `git worktree move` to the next free
+  `wt-<n>`, `git checkout --detach origin/main`,
+  `git clean -xdf -e node_modules -e .env -e .env.db`, delete the merged branch.
+  ⚠️ **Keep three. Delete the surplus.** **`node_modules` is 449 MB per tree and is not shared, so ten
+  idle worktrees is ~5.9 GB — but rebuilding one costs 6 seconds, and the thing worth keeping is the
+  `.env` pair, which is gitignored and does not propagate.**
 - ⚠️ **The §2b resumability test fails for any role.**
 - **A handoff cites a path that has moved.**
 - **Nothing has swept in ~2 weeks of active work.**
