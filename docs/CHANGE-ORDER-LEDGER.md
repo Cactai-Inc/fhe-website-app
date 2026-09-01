@@ -3584,6 +3584,18 @@ name what does not. **They are not blocked; these are.**
 
 ## CR-89 · G5 · 🔒 RULED — a comp is a PAYMENT DISPOSITION on a normal order, not a special grant
 
+⚠️ **AMENDED 2026-08-31 — `grant_lesson_credit` IS ELIMINATED, NOT NARROWED.**
+> *"The grant lesson credit was supposed to be eliminated. i dont see a use case for it, we just
+> process an order and use the comp to make the user cost $0 and it works for all purchases not just
+> lessons."*
+
+🔒 **THE WHOLE RPC GOES, INCLUDING `handwrite` AND `bill`** — the ordinary order path plus the payment
+disposition covers every case, **for every kind of purchase, not just lessons.** ⚠️ **Retire behind
+the repo's pattern; do not hard-delete** (D32). **0 rows have ever used any of its modes.**
+⚠️ **BEFORE IT IS RETIRED, ITS REPLACEMENT MUST BE REACHABLE** — staff must be able to build an
+ordinary order for a client and settle it. **See CR-94: Claire cannot mark an order paid from a
+client record today.**
+
 **SAID (owner, 2026-08-31), correcting ORCH6's reading of `TASK-BOOKS1`:**
 > *"that is not the mechanism i asked for and i said we need to construct the order like any other,
 > then we mark it paid by using an option that comps the purchase. This shows the customer the price
@@ -3673,6 +3685,16 @@ invoice and the month-end reminder are already due and neither can have been sen
 
 ## CR-91 · G5/G9 · 🔒 RULED — categories are typed once and remembered, and they exist to be charted
 
+⚠️ **AMENDED 2026-08-31 — EVERY GENERATED MENU MUST APPEAR IN THE ADMIN MENU EDITOR.**
+> *"we have a menu editor surface in the admin section of the app and we need to make sure any new
+> categories that generate menus for selection from in the future are populated in this surface for
+> editing the menu options."*
+
+🔒 **A NEW VOCABULARY THAT DOES NOT SHOW UP IN THE EDITOR IS NOT DONE** (D13, D21). ⚠️ **The editor is
+`/app/ops/admin/editor` over `lookup_options`, and its Add is ALLOWLISTED — a new key is only
+half-editable until the three allowlists are widened.** **Widening them is part of shipping the
+category, not a follow-up.**
+
 **SAID (owner, 2026-08-31), answering the CR-88 budget question:**
 > *"no it doesnt need a budget for a campaign, as a hard requirement, but there should be a place to
 > record expenses and see the total spend and then record revenue attributable to the campaign and
@@ -3741,6 +3763,31 @@ serve.** **Sequence: FIX5 moves the files; the BROOM role owns keeping them that
 
 ## CR-93 · G9 · 🔒 RULED — the close rule, refined, and the save state sits next to the close icon
 
+⚠️ **AMENDED 2026-08-31, LATER THE SAME DAY — THE RULE IS NOW SIMPLER AND HARDER. THIS SUPERSEDES THE
+USER-TRIGGERED / SYSTEM-TRIGGERED SPLIT BELOW.**
+> *"here is an example of a system modal, the overview modal on first login that tells the user about
+> the app. here is an example of a user opened modal, the scheduling and shopping modals. just make
+> all modals only close on click of button or link, dont let them close on click-out since you cant
+> determine which ones the user can reopen and which ones they cant."*
+
+🔒 **EVERY modal closes ONLY by clicking a control — a button or a link. NO modal closes on click-out.
+No Escape. No trigger-source distinction to implement, because the distinction turned out to be
+undecidable from inside the component, which is the owner's own reasoning.**
+
+🔒 **AND THE SIDE DRAWER IS ELIMINATED — *"center modal is the only version to use."*** ⚠️ **`TASK-FIX4`
+shipped THREE variants; two of them are now retired.** **Measured: `variant="drawer"` at 4 call sites
+(3 in `CalendarPage`, plus `TeamPage`, `CalendarSettingsPanel`, `CalendarItemPanel`) and
+`variant="sheet"` at 8.** **All become centre modals.**
+
+🔒 **THE BACK CONTROL IS NOT AN ONBOARDING FEATURE** — *"the back control should apply to saving state
+on all things any user inputs, not just the onboarding flow steps."* ⚠️ **`TASK-FIX4` built the
+component and explicitly did NOT sweep the ~18 remaining hand-rolled affordances. That sweep is now
+required.**
+
+🔒 **RESTATED, AND IT IS THE WHOLE ENTRY MODEL:** *"the auto save and normalize functions are supposed
+to run when the user clicks out of the field they entered the input into. a save or submit or confirm
+button is the only way something is entered as an entry, closing doesnt submit."*
+
 **SAID (owner, 2026-08-31), on `TASK-FIX4`'s shipped behaviour:**
 > *"The request is that a modal cannot be accidentally closed by clicking ouside of it when there is
 > content inside of it that the user input or selected. the close button/icon is the only way to close
@@ -3772,3 +3819,77 @@ serve.** **Sequence: FIX5 moves the files; the BROOM role owns keeping them that
 **ORCH6 reported "Escape still closes — keeping it" as a settled decision. It was a DEVIATION from
 his instruction and should have been presented as a delta, with the current state and the difference
 named.** ⚠️ **A ruling of the owner's is not an input to the orchestrator's judgement.**
+
+
+---
+
+## CR-94 · G3/G5 · 🔒 RULED — the calendar, orders, payments, discounts, revenue and scheduling are ONE pass, run as targeted fixes
+
+**SAID (owner, 2026-08-31):**
+> *"there is no way for claire to mark orders paid, this might be a latent bug related to the
+> transition from old records page and new records page? bundle the research and remediation in with
+> the calendar overhaul since an order, a payment, and a scheduled offering are all linked."*
+
+> *"its all part of the same pass over calendar, orders, payments, discounts, revenue, losses,
+> scheduling, etc... these updates need to ship asap and as a unit either consecutively or in one
+> update pass, targeted fixes are faster to run and more likely to thorough and accurate and easier to
+> validate. the only issue is i dont want to waste tokens and time on the threads reporting all the
+> tangential issues we already know about. we should always review the current state first, then
+> author the targeted fix and we should do this for the full set of issues and changes in one series
+> of passes targeting each issue individually and remediating them the same way."*
+
+> *"all of our clients are largely not in the system fully, their orders, payments, revenue, and
+> scheduled bookings need to be backfilled and we need the surfaces to function properly to be able to
+> do this."*
+
+### 🔒 THE METHOD, AND IT IS A STANDING RULE FOR THIS UNIT
+1. ⚠️ **REVIEW THE CURRENT STATE FIRST, THEN AUTHOR THE TARGETED FIX.** Per issue. Not a survey.
+2. ⚠️ **ONE ISSUE PER PASS, remediated the same way it was researched.**
+3. ⚠️ **DO NOT REPORT TANGENTIAL KNOWN ISSUES.** *"i dont want to waste tokens and time on the threads
+   reporting all the tangential issues we already know about."* **A finding outside the pass's own
+   issue goes in ONE line under "flagged, not fixed" — no analysis, no reproduction, no measurement.**
+4. **The unit ships consecutively or together; it does not trickle.**
+
+### ⚠️ MEASURED 2026-08-31 — THE MARK-PAID GAP IS REAL AND IT IS A REACH DEFECT, NOT A PERMISSION ONE
+| | |
+|---|---|
+| `mark_purchase_paid` | ✅ **allows staff** — `has_staff_access()`, widened by BOOKLINK |
+| `/app/ops/payments/review` | ✅ **`requireStaff`**, and it has a nav row in BOTH `pageRegistry.ts:177` and `AppLayout.tsx:528` |
+| ⚠️ **`markOrderPaid` call sites** | ⚠️ **ONE — `PaymentReviewPage`, and nowhere else** |
+| ⚠️ **the client record's Orders tab** | ⚠️ **shows status and "Manage payment"; it CANNOT settle an order** |
+
+⚠️ **So the capability exists and the surface a person actually works from does not offer it.** **This
+is §3b of `ORCHESTRATOR.md` — correct code nothing reaches — and it blocks the backfill, because the
+backfill is done FROM the client record.**
+
+### THE PASSES — each its own targeted task, in this order
+1. **The money spine** — the payment disposition, list price on the line, the write-down, the
+   `revenue_summary` fix, and the export. *(`TASK-BOOKS1`, specced.)*
+2. **Settling an order from where the work happens** — `markOrderPaid` reachable from the client
+   record's Orders tab; ⚠️ **and `grant_lesson_credit` retired only once this is true** (CR-89).
+3. **The rolling schedule** — 30 days confirmed + 30 pending, the `current_date + 90` default
+   replaced, `pending` visible on the calendar, in the ledger and to the client. *(`CR-90`.)*
+4. **The month-end cycle** — invoice 3 days before the last day, reminder on the last day, payment
+   confirmation flips the pending month. ⚠️ **Establish first whether ANY scheduled job runs in
+   production.** *(`CR-90`.)*
+5. **The backfill surfaces** — what has to work for the owner to load historical orders, payments,
+   revenue and bookings **with their real dates**. ⚠️ **This is the pass that decides whether the data
+   pass is possible at all.**
+6. **The calendar items from `CR-TRIAGE`** — CR-02 (the 12AM/12PM slip), CR-07 (the picker), CR-04,
+   and the rest of the DO list, ⚠️ **which the owner has since widened beyond the original 14.**
+
+---
+
+## CR-95 · G9 · 🔒 RULED — `CLNR`, the hygiene role, and the orchestrator triggers it
+
+**SAID (owner, 2026-08-31):**
+> *"Did you author the Hygiene role the way ORCH and TASK are authored roles with spec and instruction
+> files? its an action that needs to run periodically by you, not me, you insert it into a task thread
+> or suggest i run it as its own thread, i dont monitor the repo state and tell you to give me a
+> CLEANUP thread to run, and lets name it CLNR keeping the 4 letter naming convention going."*
+
+🔒 **`CLNR` is a ROLE, authored like `ORCH` and `TASK`, with its own instruction file.**
+🔒 ⚠️ **THE ORCHESTRATOR DECIDES WHEN IT RUNS. The owner never has to notice repo drift and ask for
+it.** **ORCH either folds the sweep into a task thread or hands the owner a `CLNR` prompt unprompted.**
+🔒 **Four-letter thread naming stands: `ORCH` · `TASK` · `CLNR`.**
+**Its role file is `docs/method/CLNR-ROLE.md`.**
