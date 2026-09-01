@@ -2198,7 +2198,7 @@ export async function createProductPrice(input: ProductPriceInput): Promise<Prod
 // Minimal typed seam over the multi-party contract-workflow RPCs. BACKEND-FIRST:
 // these are thin, typed wrappers a later UI thread binds to — no components ship
 // here. The RPCs (SECURITY DEFINER) enforce ownership/RLS server-side; these just
-// carry the shapes. See supabase/migrations/20260705010000_contract_workflow_engine.sql.
+// carry the shapes. See supabase/migrations-archive/20260705010000_contract_workflow_engine.sql.
 
 // NOTE (2026-07-20 cleanup, audit M-1): a duplicate copy of the contract types
 // and 7 RPC wrappers (setContractField, shareDocument, setRecipientEditing,

@@ -1,7 +1,7 @@
 /* Lane-5 data wrappers — Lessons module (mod.lessons).
  *
  * Thin, typed seams over supabase for the two mod.lessons tables
- * (supabase/migrations/20260630070000_mod_lessons.sql):
+ * (supabase/migrations-archive/20260630070000_mod_lessons.sql):
  *   lesson_packages — purchasable packs: (package_key, name, price_value_key,
  *                     credits, active). price_value_key is a config_value()
  *                     registry key (ns 'PRICING'), NEVER a literal price.

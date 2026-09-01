@@ -8,7 +8,7 @@
  * Writes: NONE directly. Provisioning goes through the single blessed path,
  * POST /api/admin-provision-tenant (bearer token of a SUPER_ADMIN), which
  * find-or-creates the admin auth user then calls the atomic provision_tenant()
- * RPC (supabase/migrations/20260630050000_provision_tenant.sql, §9).
+ * RPC (supabase/migrations-archive/20260630050000_provision_tenant.sql, §9).
  */
 import { supabase } from '../supabase';
 

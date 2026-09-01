@@ -1,7 +1,7 @@
 /**
  * INT-API-BOARDING — data wrappers for mod.boarding (U10).
  *
- * Tables (supabase/migrations/20260630090000_mod_boarding.sql):
+ * Tables (supabase/migrations-archive/20260630090000_mod_boarding.sql):
  *   facilities / stalls / board_agreements / board_charges
  * plus the billable_lines emission (source_kind='board',
  * 20260630040000_products_billing.sql §7.2/§7.11): a board charge is

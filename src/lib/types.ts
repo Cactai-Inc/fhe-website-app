@@ -1,5 +1,5 @@
 /* Platform domain types mirroring the Supabase data model
- * (supabase/migrations/20260623010000_platform_data_model.sql).
+ * (supabase/migrations-archive/20260623010000_platform_data_model.sql).
  */
 
 export type Segment = 'rider' | 'horse' | 'acquisition';
