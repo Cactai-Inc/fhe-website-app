@@ -137,9 +137,19 @@ function CategoryModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-green-950/50 p-0 sm:p-4" onClick={onClose}>
+    /* ⚠️ TASK-MODAL2 D1 — THE BACKDROP NO LONGER CLOSES THIS. It carried
+       `onClick={onClose}` and was missed by TASK-FIX4's convergence, which swept
+       the app's 26 in-app overlays and not the public catalog. A person picks
+       offerings from inside this box — `onAdd` builds their selection — so a
+       stray click beside it was the CR-68a shape on the site's busiest surface.
+       Owner: *"just make all modals only close on click of button or link."*
+       ⚠️ It keeps its own shell rather than converging on `ops/kit/Modal`: the
+       full-bleed cover image is the header, which the shared dialog's titled
+       header bar does not describe. It obeys the RULE — the X above the cover,
+       at `:151`, is the only way out. Converging the markup is a separate job. */
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-green-950/50 p-0 sm:p-4">
       {/* ~50% larger than before (was max-w-2xl / 672px → 5xl / 1024px). */}
-      <div className="bg-cream w-full sm:max-w-5xl sm:rounded-2xl flex flex-col max-h-[100dvh] sm:max-h-[92dvh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-cream w-full sm:max-w-5xl sm:rounded-2xl flex flex-col max-h-[100dvh] sm:max-h-[92dvh] overflow-hidden">
         {/* Header: cover + name + description. Taller cover so more of the photo shows. */}
         <div className="relative shrink-0">
           <div className="relative h-72 sm:h-[26rem] overflow-hidden">

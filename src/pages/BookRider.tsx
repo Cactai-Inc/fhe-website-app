@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
 import { formatPrice } from '../lib/pricing';
 import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import { useCart } from '../contexts/CartContext';
@@ -10,6 +10,7 @@ import QualifierGroup from '../components/QualifierGroup';
 import Seo from '../components/Seo';
 import SelectionBar from '../components/SelectionBar';
 import { seoForPath } from '../lib/seo';
+import { BackControl } from '../components/app/BackControl';
 
 // Service_type codes this funnel keys its cross-sell logic on (was the hardcoded
 // Service.id constants). Horsemanship is the within-pillar add-on.
@@ -270,14 +271,12 @@ export default function BookRider() {
 
         {/* ── Navigation ── */}
         <div className="flex items-center justify-between mt-12 pt-8 border-t border-green-800/10">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors focus-ring"
-          >
-            <ArrowLeft size={16} />
-            {step === 0 ? 'Back to Services' : 'Previous'}
-          </button>
+          {/* ⚠️ TASK-MODAL2 D5 — the shared back control. Owner: *"the back control
+              should apply to saving state on all things any user inputs, not just
+              the onboarding flow steps."* `handleBack` only moves the step; the
+              selection lives in the funnel's context, so going back revises rather
+              than discards. */}
+          <BackControl onClick={handleBack} label={step === 0 ? 'Back to Services' : 'Previous'} />
 
           {/* Owner, 2026-08-17: "we can remove the continue button on the product
               pages because we added the one to the footer popup zone."

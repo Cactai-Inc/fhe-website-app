@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Download, Mail, Share2, FileText } from 'lucide-react';
+import { Download, Mail, Share2, FileText } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { Modal } from '../../components/ops/kit/Modal';
@@ -8,6 +7,7 @@ import {
   fetchMyEvaluationReports, downloadEvaluationReport, emailMyEvaluationReport,
   shareEvaluationReport, logReportViewed, type MyEvaluationReport,
 } from '../../lib/acquisition';
+import { BackControl } from '../../components/app/BackControl';
 
 /*
  * MY EVALUATIONS — the client's delivered horse-evaluation reports. Read in-app,
@@ -51,9 +51,8 @@ export default function EvaluationsPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <Link to="/app" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
-        <ArrowLeft size={14} /> Dashboard
-      </Link>
+      {/* ⚠️ TASK-MODAL2 D5 — the share row takes an email address. */}
+      <BackControl to="/app" label="Dashboard" className="mb-4" />
       <h1 className="font-serif text-2xl text-green-900 mb-1">Your evaluations</h1>
       <p className="text-sm text-green-800/70 mb-6">
         Your horse evaluation reports — read here, download a copy, or share them.

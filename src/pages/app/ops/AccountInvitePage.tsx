@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { ProvisionClientForm } from '../../../components/app/ProvisionClientForm';
 import { AgreedLessonSection, type AgreedLesson } from '../../../components/app/AgreedLessonPanel';
+import { BackControl } from '../../../components/app/BackControl';
 
 /**
  * NEW CLIENT (/app/ops/accounts/new) — a launch point for the shared
@@ -21,10 +20,8 @@ export default function AccountInvitePage() {
   const [agreed, setAgreed] = useState<AgreedLesson | null>(null);
   return (
     <div className="max-w-5xl">
-      <Link to="/app/admin"
-        className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
-        <ArrowLeft size={14} /> Clients
-      </Link>
+      {/* ⚠️ TASK-MODAL2 D5 — `ProvisionClientForm` below is all input. */}
+      <BackControl to="/app/admin" label="Clients" className="mb-4" />
       <h1 className="font-serif text-2xl text-green-900 mb-1">New client</h1>
       <p className="text-sm text-green-800/70 mb-6">
         Configure the account and send the invitation. We only need their email —

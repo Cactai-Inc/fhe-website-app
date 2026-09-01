@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Lock } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { fetchThread, replyToThread } from '../../lib/community';
 import { useDocumentTitle } from '../../lib/hooks';
 import type { Thread, ThreadPost } from '../../lib/community-types';
+import { BackControl } from '../../components/app/BackControl';
 
 function name(a?: { display_name: string | null; first_name: string | null }): string {
   return a?.display_name || a?.first_name || 'Member';
@@ -50,9 +51,8 @@ export default function ThreadDetail() {
 
   return (
     <div className="max-w-2xl">
-      <Link to="/app?filter=discussions" className="inline-flex items-center gap-2 text-sm text-secondary hover:text-green-800 mb-6 focus-ring">
-        <ArrowLeft size={16} /> Back to discussions
-      </Link>
+      {/* ⚠️ TASK-MODAL2 D5 — the reply box is an input surface. */}
+      <BackControl to="/app?filter=discussions" label="Back to discussions" className="mb-6" />
 
       <h1 className="heading-section text-green-800 mb-2">{thread.title}</h1>
       <p className="text-xs text-muted mb-6">

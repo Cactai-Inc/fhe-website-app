@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Building2, Puzzle, Users } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { Building2, Puzzle, Users } from 'lucide-react';
 import { useDocumentTitle } from '../../../../lib/hooks';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { supabase } from '../../../../lib/supabase';
 import { toErrorMessage } from '../../../../lib/ops/errors';
+import { BackControl } from '../../../../components/app/BackControl';
 
 /**
  * TENANT MANAGEMENT (platform, /app/ops/superadmin/organizations/:id) — the one
@@ -95,10 +96,8 @@ export default function TenantDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
-      <Link to="/app/ops/superadmin/organizations"
-        className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
-        <ArrowLeft size={14} /> Organizations
-      </Link>
+      {/* ⚠️ TASK-MODAL2 D5 — the module toggles below are inputs. */}
+      <BackControl to="/app/ops/superadmin/organizations" label="Organizations" className="mb-4" />
 
       {error && <p role="alert" className="form-error mb-4">{error}</p>}
       {!detail && !error && <p className="text-sm text-green-800/70">Loading tenant…</p>}

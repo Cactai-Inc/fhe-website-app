@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { CheckCircle2 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { toErrorMessage } from '../../lib/ops/errors';
 import {
   fetchAcquisitionIntakeState, submitAcquisitionIntake, fieldsForKind,
   type PendingAcquisitionIntake,
 } from '../../lib/acquisition';
+import { BackControl } from '../../components/app/BackControl';
 
 /*
  * ACQUISITION INTAKE — the form a Find-a-Horse / Horse-Evaluation purchase
@@ -59,9 +60,8 @@ export default function AcquisitionIntakePage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
-      <Link to="/app" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
-        <ArrowLeft size={14} /> Dashboard
-      </Link>
+      {/* ⚠️ TASK-MODAL2 D5 — an intake form. */}
+      <BackControl to="/app" label="Dashboard" className="mb-4" />
 
       {done ? (
         <div className="bg-green-50 border border-green-200 rounded-lg p-5 text-sm text-green-900 flex flex-col gap-3">
