@@ -229,8 +229,13 @@ was.** 🔒 **So a thread writes its record BEFORE it hands over, every time** �
 
 > *"its hard to find a thread once there are 100 in front of it or its a week old."*
 
-🔒 **`<ROLE>-<SUBJECT>` — a subject slug, never a serial number.** **`DISCO-CALENDAR`, `DSGN-BOOKS`,
-`TASK-BACKDATE`.** ⚠️ **`DISCO-1` is unfindable in a week — it says nothing about what is inside it.**
+🔒 **THREE SEGMENTS: `<ROLE>-<AREA>-<ITEM>`.** **`DISCO-CAL-FIX4` · `DSGN-BOOKS-COMP` ·
+`TASK-CAL-BACKDATE`.**
+⚠️ **NO SPACES — a space breaks the identifier as a searchable token.** `DISCO-CAL-BOOKING FIX` is
+worse than `DISCO-CAL-FIX4`.
+⚠️ **ABBREVIATE THE AREA** — `CAL`, `BOOKS`, `NAV`, `DOCS`. **The area is the coarse filter you scan
+for; the item is what tells them apart.**
+⚠️ **`DISCO-1` is unfindable in a week — a serial says nothing about what is inside it.**
 - **The identifier is the FIRST LINE of the prompt, alone** — it is what becomes the tab title.
 - ⚠️ **THE FILES CARRY THE SAME SLUG:** `DISCO-CALENDAR-HANDOFF.md`, `TASK-BACKDATE-REPORT.md`,
   `TASK-BACKDATE-VERIFICATION.md`. **Thread name → file name, in both directions, without a lookup.**
