@@ -1,3 +1,37 @@
+# TASK-SIGNBOOK — running ledger
+
+**Thread:** `TASK-SIGNBOOK` · opened 2026-09-01 · worktree `wt-1`, branch `task/signbook` from
+`origin/main` @ `6ffbd0df`.
+**Spec:** `docs/tasks/TASK-SIGNBOOK-the-wizard-ends-in-a-booking-request-not-a-payment.md`
+(+ ORCH6's required-reading addendum).
+
+## RESUME — read this first
+- **State:** orientation. CLNR pass run. Worktree cut. Premises being re-measured.
+- **Next:** verify the step machine, the `requested` status question, then the blocker walk.
+
+## LOG
+### 1 · CLNR pass (zeroth act)
+- `docs/` root: 0 loose files. Folders: the eight of §2a plus `contract-content`, `contract-exports`,
+  `proposed`, `staged`, `ui-orders` — all pre-existing and left in place by `CLNR-1` today.
+- Resumability §2b: `docs/method/` carries `ORCHESTRATOR.md`, `DISCO-ROLE.md`, `TASK-ROLE.md`,
+  `CLNR-ROLE.md` (+ `DSNR-ROLE.md`, `RNR-ROLE.md`). PASS for every role. `docs/orch/BOARD.md` +
+  `ORCH6-BRIEF.md` answer "what is the state?". `docs/tasks/TASK-SIGNBOOK-*.md` findable from the
+  identifier alone. PASS.
+- Merged-today tasks all carry a report and a `-VERIFICATION.md`: `SIGNSTRIP`, `SIGNDOOR`,
+  `ANALYTICS` (ledger line present for each).
+- Worktree pool: `wt-1`/`wt-2` at `6ffbd0df` clean, `wt-3` at `14140564` clean and an ancestor of
+  `main`. No unmerged branch on disk. Nothing moved.
+- **CLNR: clean.**
+
+### 2 · Premise re-measurement (in progress)
+- ⚠️ `bookings_status_check` in production permits twelve values and **`requested` is NOT one of
+  them**:
+  `draft available unavailable pending pending_slot pending_payment confirmed cancelled expired
+  completed scheduled no_show`.
+  **TASK-LIFECYCLE §2b says only `approved` and `moved` are missing — that is wrong; `requested` is
+  missing too.**
+- `TASK-LIFECYCLE` is **specced, not dispatched, not merged** (`docs/orch/BOARD.md` RESUME), and is
+  itself blocked on two owner answers plus a §6 shape review.
 
 ### 3 · THE DESIGN, LOCKED — every piece converges on a named incumbent
 | The owner's step | Incumbent found | What I do |
@@ -31,3 +65,21 @@ visitor"*, and the re-order fixes it as a side effect.
 3. Trap 4 (loop back to sign an offering's extra document) — **superseded by CR-98 A1**, which
    ORCH6's addendum states as *"no special case"*. `trg_documents_when_order_opens` is the general
    rule and it already exists.
+
+### 6 · ⚠️ THE wt-1 BRANCH COLLISION — 2026-09-01 ~14:19, and what it cost
+Another thread switched `wt-1` onto `task/lifecycle` while this thread was working in it. Three
+SIGNBOOK commits therefore landed on LIFECYCLE's branch, and LIFECYCLE's ledger commit landed
+between them. **Reclaimed, with one correction to the instruction I was given:**
+- `git branch -f task/signbook HEAD` **alone would have orphaned `4701208e`** — this thread's
+  FIRST commit (the CLNR result and the `requested`-is-not-a-legal-status measurement). It is not
+  an ancestor of the collided HEAD, because `git checkout task/lifecycle` had reverted the tracked
+  ledger file off disk; the later `>>` append then rebuilt it starting at section 3.
+  **Sections 1 and 2 above are restored from that commit.**
+- LIFECYCLE's own work was verified safe BEFORE anything was deleted: `wt-2` holds
+  `task/lifecycle-b` with the identical ledger commit (`69afcd2a`) and its three migrations
+  committed at `5df1422b`. The three untracked copies sitting in `wt-1` were byte-compared against
+  `wt-2`'s and moved out of this worktree rather than deleted.
+- `654e1ed5` (LIFECYCLE's ledger) is dropped from this branch by rebase, not by force-move.
+- ⚠️ **`request_open_time` is LIFECYCLE's under D35 and this thread does not edit it.** SIGNBOOK
+  CALLS it and inherits whatever status it writes — which is the whole reason the end-cap was
+  built as a call rather than as a second insert.

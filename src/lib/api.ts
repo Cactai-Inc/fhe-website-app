@@ -648,6 +648,23 @@ export interface DraftOrderInput {
  *  money-bearing column instead: the order opens as an unpaid DRAFT and each line
  *  is priced from the catalog. `anon`'s standing INSERT grant stays inert because
  *  no policy changed and the function is granted to `authenticated` alone. */
+/** CR-98 step 8 — HOLD THIS PERSON'S SIGNING RUN.
+ *
+ *  The wizard's remaining steps (the offering, the time, the request) all happen
+ *  AFTER the last signature, and the executed-document email leaves the moment
+ *  that signature lands. Declaring the run keeps the set together so ONE email
+ *  can carry the documents, the order and the booking request — the owner's step
+ *  8, in one message rather than two.
+ *
+ *  ⚠️ Best-effort by design, and safe when it fails: an un-held run just mails
+ *  the documents on their own, exactly as it does today. An un-RELEASED run is
+ *  flushed by `flush_held_executed_document_emails` on the hourly sweep, so
+ *  nothing can be held forever by somebody who walks away mid-wizard. */
+export async function holdMyDocumentDelivery(): Promise<void> {
+  const { error } = await supabase.rpc('hold_my_document_delivery');
+  if (error) throw error;
+}
+
 export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderId: string }> {
   const { data, error } = await supabase.rpc('create_my_purchase', {
     p_items: input.items.map((i) => ({

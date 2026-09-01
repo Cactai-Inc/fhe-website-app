@@ -19,6 +19,7 @@ import {
   pollDeliveryConfirmed,
   fetchOfferings,
   createDraftOrder,
+  holdMyDocumentDelivery,
   type OnboardingProfileInput,
   type OnboardingPurchase,
   type OnboardingState,
@@ -31,6 +32,7 @@ import type { Order, OrderItem, Payment } from '../../lib/types';
 import { signMyDocument } from '../../lib/ops/api-client';
 import {
   fetchMyStandingSlots,
+  submitMyBookingRequest,
   type StandingSlot,
 } from '../../lib/ops/api-calendar';
 import { standingSlotSentence, serviceLabel } from '../../lib/standingSlots';
@@ -87,7 +89,26 @@ import { consumeWallReturnDestination } from '../../lib/wallReturn';
 // time(s) for each at the time they onboard." It is skipped entirely — exactly as
 // §C10a skips the horse step — for an order with no `recurring` line, because a
 // punch-card buyer has no standing time to choose.
-type Step = 'order' | 'details' | 'horse' | 'shop' | 'sign' | 'payment' | 'slots' | 'done';
+/* ⚠️ SIGNBOOK — TWO DOORS THROUGH ONE STEP MACHINE, AND THE DIFFERENCE IS ONE
+   FACT: did they arrive with an order?
+
+     STAFF-PROVISIONED (an order already exists at mount) — this page's original
+     job, unchanged: order → details → horse → sign → PAYMENT → slots → done.
+     They were sold something offline and are here to sign and pay for it.
+
+     SELF-SERVE (`/sign/*`, no order) — CR-98 steps 3–7:
+     details → horse → sign → shop → time → submit → done, and ⚠️ NO PAYMENT
+     STEP AT ALL. Owner: *"then select the offering. then pick a day and time
+     from the calendar. then submit the booking request."* Money happens after
+     staff approve the request (TASK-REQCARDS), not here.
+
+   ⚠️ `payment` IS NOT REMOVED (NOSTRIP). It is unreachable on the self-serve
+   door and identical on the provisioned one. `OrderPayment` is the component
+   TASK-REQCARDS gives a modal home; deleting it here would have to un-delete it
+   there. */
+type Step =
+  | 'order' | 'details' | 'horse' | 'sign' | 'shop' | 'payment'
+  | 'time' | 'slots' | 'submit' | 'done';
 
 /* ⚠️ THE EVALUATION LESSON IS THE FIRST PURCHASE (owner, 2026-08-24).
    "the evaluation lesson should be highlighted with a gold outline so they know
@@ -284,26 +305,50 @@ function StandingSlotStep({ slots, onReload, onFinished }: {
   );
 }
 
-/** Step header: which of the three steps we're on. */
-function Steps({ current, showHorse, showOrder, showSlots }: {
-  current: Step; showHorse: boolean; showOrder: boolean; showSlots: boolean;
-}) {
-  const steps: { id: Step; label: string }[] = [
+/** THE ORDER OF THE STEPS, IN ONE PLACE.
+ *
+ *  ⚠️ SIGNBOOK — this list and `visibleSteps` below it are the SAME order, and
+ *  they have to be: this one is what the person reads, that one is what Back
+ *  walks. They disagreed before this task — the header said sign-then-payment
+ *  while the machine ran sign-then-shop — which is how the spec came to believe
+ *  the wizard signed AFTER shopping. It never did; only the labels said so. */
+function wizardSteps(opts: {
+  showHorse: boolean; showOrder: boolean; showSlots: boolean;
+  showShop: boolean; showTime: boolean; selfServe: boolean;
+}): { id: Step; label: string }[] {
+  return [
     // §C9 — only when there IS an order to show; a member re-invited with no
     // purchase must not be walked past an empty screen.
-    ...(showOrder ? [{ id: 'order' as Step, label: 'Your order' }] : []),
-    { id: 'details', label: 'Your details' },
+    ...(opts.showOrder ? [{ id: 'order' as Step, label: 'Your order' }] : []),
+    { id: 'details' as Step, label: 'Your details' },
     // §C10a — the horse step is skipped ENTIRELY for a client whose order
     // carries no horse-related purchase. An unanswerable form tells them we
     // were not listening.
-    ...(showHorse ? [{ id: 'horse' as Step, label: 'Your horse' }] : []),
-    { id: 'sign', label: 'Review & sign' },
-    { id: 'payment', label: 'Payment' },
+    ...(opts.showHorse ? [{ id: 'horse' as Step, label: 'Your horse' }] : []),
+    { id: 'sign' as Step, label: 'Review & sign' },
+    // CR-98 step 5 — the offering comes AFTER the paperwork, and only on the
+    // self-serve door: a staff-provisioned client was already sold something.
+    ...(opts.showShop ? [{ id: 'shop' as Step, label: 'Choose your lesson' }] : []),
+    // ⚠️ PAYMENT IS THE PROVISIONED DOOR'S STEP ONLY (CR-98: the self-serve
+    // visitor pays after staff approve, not inside the wizard).
+    ...(opts.selfServe ? [] : [{ id: 'payment' as Step, label: 'Payment' }]),
+    // CR-98 step 6 — "then pick a day and time from the calendar".
+    ...(opts.showTime ? [{ id: 'time' as Step, label: 'Pick a time' }] : []),
     // §C10a's rule, applied to the weekly membership: a step nobody can answer is a
     // step that tells them we were not listening.
-    ...(showSlots ? [{ id: 'slots' as Step, label: 'Your weekly time' }] : []),
-    { id: 'done', label: "You're all set" },
+    ...(opts.showSlots ? [{ id: 'slots' as Step, label: 'Your weekly time' }] : []),
+    // CR-98 step 7 — "then submit the booking request".
+    ...(opts.showTime ? [{ id: 'submit' as Step, label: 'Send your request' }] : []),
+    { id: 'done' as Step, label: opts.selfServe ? 'Request sent' : "You're all set" },
   ];
+}
+
+/** Step header: which step we're on, out of the ones this person actually has. */
+function Steps({ current, showHorse, showOrder, showSlots, showShop, showTime, selfServe }: {
+  current: Step; showHorse: boolean; showOrder: boolean; showSlots: boolean;
+  showShop: boolean; showTime: boolean; selfServe: boolean;
+}) {
+  const steps = wizardSteps({ showHorse, showOrder, showSlots, showShop, showTime, selfServe });
   const idx = steps.findIndex((s) => s.id === current);
   return (
     <ol className="flex flex-wrap gap-x-6 gap-y-1 mb-8 text-xs font-sans" aria-label="Onboarding steps">
@@ -344,6 +389,14 @@ export default function Onboarding() {
   const [presence, setPresence] = useState<NavPresence>({
     orders: false, payments: false, documents: false, stable: false, posts: false, saved: false,
   });
+  /* ⚠️ SIGNBOOK — WHICH DOOR THIS PERSON CAME IN BY, DECIDED ONCE AT MOUNT.
+     `null` until the first read lands. It must be captured from the FIRST
+     `my_onboarding_state()` and never recomputed: the self-serve visitor
+     acquires an order at the shop step, and re-deriving it would flip them onto
+     the staff-provisioned door — and into its payment step — halfway through
+     their own flow. */
+  const [arrivedWithOrder, setArrivedWithOrder] = useState<boolean | null>(null);
+  const selfServe = arrivedWithOrder === false;
   const [state, setState] = useState<OnboardingState | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [categories, setCategories] = useState<StandingCategory[]>([]);
@@ -365,6 +418,19 @@ export default function Onboarding() {
   const [shopError, setShopError] = useState<string | null>(null);
   /** They bought through the shop step just now, so WE book the first lesson. */
   const [weBookThisOne, setWeBookThisOne] = useState(false);
+  /* ── CR-98 step 6/7 — the day and time they are asking for, and what came back.
+     `timeDate`/`timeClock` are LOCAL WALL-CLOCK strings straight out of the two
+     inputs; they become an instant exactly the way `CalendarPage`'s "Request this
+     time" does it, because there is one right answer to that and it already
+     exists. ⚠️ There is no tenant timezone in this system (LESSONREQUEST), so
+     both surfaces read the browser's — the same browser, the same answer. */
+  const [timeDate, setTimeDate] = useState('');
+  const [timeClock, setTimeClock] = useState('');
+  const [timeMinutes, setTimeMinutes] = useState('60');
+  const [timeNote, setTimeNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [requestSent, setRequestSent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   // Name: email-only invites arrive nameless — collect it here. Prefilled from
@@ -482,6 +548,19 @@ export default function Onboarding() {
   const [signing, setSigning] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
 
+  /* CR-98 step 8 — DECLARE THE RUN BEFORE THE FIRST SIGNATURE.
+     The one email the owner asked for carries the documents AND the order AND
+     the booking request, and the last two do not exist until three steps after
+     the last signature. Holding the set is what lets one email say all of it.
+     ⚠️ Self-serve only: the provisioned door still ends at payment and has
+     nothing to add to the email, so its delivery is left exactly as it is.
+     ⚠️ Best-effort — a failure here just means the documents mail on their own,
+     which is today's behaviour, so it must never block signing. */
+  useEffect(() => {
+    if (step !== 'sign' || !selfServe) return;
+    void holdMyDocumentDelivery().catch(() => { /* mail on its own; nothing lost */ });
+  }, [step, selfServe]);
+
   // Step 3 — payment (sign-before-pay). The client pays their spine purchase
   // (surfaced by my_onboarding_state) directly — no engagement bridge.
   const [order, setOrder] = useState<(Order & { items: OrderItem[] }) | null>(null);
@@ -563,11 +642,65 @@ export default function Onboarding() {
       const [o, p] = await Promise.all([getOrder(orderId), getOrderPayment(orderId)]);
       setOrder(o); setPayment(p);
       setWeBookThisOne(true);
-      setStep('payment');
+      /* CR-98 steps 5 → 6. The self-serve visitor has just built their draft
+         order; the next thing they owe us is a time, not money. The provisioned
+         door cannot reach this function (it arrives with an order), but it is
+         gated rather than assumed. */
+      setStep(selfServe ? 'time' : 'payment');
     } catch (err) {
       setShopError(toErrorMessage(err, 'Could not start your order. Staff can set it up for you.'));
     } finally {
       setShopBusy(false);
+    }
+  }
+
+  /** The instant they asked for, built from the two inputs the way
+   *  `CalendarPage`'s "Request this time" builds its own — local wall clock in,
+   *  `toISOString()` out. One idiom, so a time requested here and a time
+   *  requested there cannot mean different moments. */
+  const requestedStart = (() => {
+    if (!timeDate || !timeClock) return null;
+    const d = new Date(`${timeDate}T${timeClock}`);
+    return Number.isNaN(d.getTime()) ? null : d;
+  })();
+  const requestedEnd = requestedStart
+    ? new Date(requestedStart.getTime() + Math.max(Number(timeMinutes) || 60, 15) * 60_000)
+    : null;
+  const requestedLabel = requestedStart
+    ? requestedStart.toLocaleString(undefined, {
+        weekday: 'long', month: 'long', day: 'numeric',
+        hour: 'numeric', minute: '2-digit',
+      })
+    : '';
+
+  /** CR-98 step 7 — *"then submit the booking request"*, and it is ONE act.
+   *
+   *  ⚠️ D19: nothing here is money-shaped and the screen before it says so. The
+   *  order stays a draft, no credit is minted, and the undo is that staff
+   *  decline the request or the client withdraws it. What the one RPC does —
+   *  the booking, the staff decision row, the staff alert, the one email — is
+   *  documented on `submit_my_booking_request` itself; this is its only caller. */
+  async function sendBookingRequest() {
+    if (submitting || !order || !requestedStart || !requestedEnd) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      await submitMyBookingRequest({
+        purchaseId: order.id,
+        startISO: requestedStart.toISOString(),
+        endISO: requestedEnd.toISOString(),
+        note: timeNote,
+      });
+      setRequestSent(true);
+      // The set was held since the sign step and has just been released, so the
+      // delivery rows are being written now — re-read rather than assume.
+      setEmailed(null);
+      void pollDeliveryConfirmed().then(setEmailed);
+      setStep('done');
+    } catch (err) {
+      setSubmitError(toErrorMessage(err, 'Could not send your request. Nothing was lost — try again.'));
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -600,6 +733,9 @@ export default function Onboarding() {
         if (!active) return;
         setState(s);
         setProfile(p);
+        // ⚠️ ONCE. See the declaration — re-deriving this after the shop step
+        // would move a self-serve visitor onto the provisioned door mid-flow.
+        setArrivedWithOrder((prev) => prev ?? Boolean(s.purchase?.purchase_id));
         // Prefill the minor toggle from the attached PARTICIPANT (if any).
         if (s.minor) {
           setSigningFor('child');
@@ -981,7 +1117,17 @@ export default function Onboarding() {
         setEmailed(null);
         void pollDeliveryConfirmed().then(setEmailed);
 
-        if (next.purchase && !next.purchase.paid) {
+        /* ⚠️ THE BLOCKER SIGNBOOK WAS SENT TO FIND (owner: *"what is blocking a
+           new visitor from signing up"*). A self-serve `/sign/rider` visitor has
+           NO purchase, so this fell to the else branch, found no standing slot
+           and landed them on "You're all set" — with nothing bought, and the
+           shop step reachable only from `?step=shop` or from `enterPayment()`,
+           which is never called when there is no purchase. **The offering step
+           was unreachable for exactly the person it was built for.**
+           CR-98 step 5 is what belongs here: paperwork, then the offering. */
+        if (selfServe) {
+          setStep('shop');
+        } else if (next.purchase && !next.purchase.paid) {
           await enterPayment();
         } else {
           // SLOTREACH §1 — the OTHER paperwork short-circuit. A member whose order
@@ -1084,17 +1230,26 @@ export default function Onboarding() {
      The order is the SAME list `Steps` renders, so a step that is skipped for
      this person is skipped going backwards too — a rider with no horse never
      lands on the horse step by pressing Back. */
-  const visibleSteps: Step[] = [
-    ...(state?.purchase?.purchase_id ? ['order' as Step] : []),
-    'details',
-    ...((step === 'horse' || (state?.horse_needed ?? false)) ? ['horse' as Step] : []),
-    ...(shopOfferings.length > 0 || step === 'shop' ? ['shop' as Step] : []),
-    'sign',
-    'payment',
-    ...((step === 'slots' || standing.length > 0) ? ['slots' as Step] : []),
-    'done',
-  ];
+  const showHorseStep = step === 'horse' || (state?.horse_needed ?? false);
+  const showShopStep = selfServe && (shopOfferings.length > 0 || step === 'shop');
+  const showSlotsStep = step === 'slots' || standing.length > 0;
+  /* CR-98 step 6 belongs to the self-serve door only, and it appears once there
+     is an order to hang it on — which on that door means once they have chosen. */
+  const showTimeStep = selfServe && (step === 'time' || step === 'submit' || Boolean(order));
+  // ⚠️ ONE list, shared with the header (see `wizardSteps`). A step this person
+  // never sees going forward is never landed on going backwards either.
+  const visibleSteps: Step[] = wizardSteps({
+    showHorse: showHorseStep,
+    showOrder: Boolean(state?.purchase?.purchase_id) && !selfServe,
+    showSlots: showSlotsStep,
+    showShop: showShopStep,
+    showTime: showTimeStep,
+    selfServe,
+  }).map((x) => x.id);
   const backTarget = (() => {
+    // ⚠️ THE REQUEST IS SENT. Going back would offer to send a second one, and
+    // `submit_my_booking_request` refuses that — a Back button onto a refusal.
+    if (step === 'done' && requestSent) return null;
     const i = visibleSteps.indexOf(step);
     return i > 0 ? visibleSteps[i - 1] : null;
   })();
@@ -1115,9 +1270,12 @@ export default function Onboarding() {
       {contractBanner}
       <Steps
         current={step}
-        showHorse={step === 'horse' || (state?.horse_needed ?? false)}
-        showOrder={Boolean(state?.purchase?.purchase_id)}
-        showSlots={step === 'slots' || standing.length > 0}
+        showHorse={showHorseStep}
+        showOrder={Boolean(state?.purchase?.purchase_id) && !selfServe}
+        showSlots={showSlotsStep}
+        showShop={showShopStep}
+        showTime={showTimeStep}
+        selfServe={selfServe}
       />
 
       {/* ── §C9: Your order ─────────────────────────────────────────────── */}
@@ -1895,6 +2053,125 @@ export default function Onboarding() {
         </section>
       )}
 
+      {/* ── CR-98 step 6: pick a day and a time ──────────────────────────
+          Owner: *"then pick a day and time from the calendar."* ⚠️ D25 — the
+          word "booking" never appears; a rider is told about their Riding
+          Lesson. The full month grid is `CalendarPage`'s job and stays there;
+          what this step owes is the two answers that make a request. */}
+      {step === 'time' && (
+        <section aria-labelledby="ob-time-heading">
+          <h2 id="ob-time-heading" className="font-serif text-lg text-green-900 mb-1">
+            When would you like to come?
+          </h2>
+          <p className="text-sm text-muted mb-5">
+            Pick the day and time that suit you. We&apos;ll confirm it with you — if it
+            doesn&apos;t work we&apos;ll suggest another, and you can always change it later
+            from your <Link to="/app/calendar" className="text-green-800 underline">Calendar</Link>.
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2 mb-5">
+            <label className="block">
+              <span className="form-label">Day</span>
+              <input type="date" className="form-input" value={timeDate}
+                min={new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)}
+                onChange={(e) => setTimeDate(e.target.value)} />
+            </label>
+            <label className="block">
+              <span className="form-label">Time</span>
+              <input type="time" className="form-input" step={900} value={timeClock}
+                onChange={(e) => setTimeClock(e.target.value)} />
+            </label>
+          </div>
+
+          <label className="block mb-5">
+            <span className="form-label">How long</span>
+            <select className="form-input" value={timeMinutes}
+              onChange={(e) => setTimeMinutes(e.target.value)}>
+              <option value="60">1 hour</option>
+              <option value="90">1 hour 30 minutes</option>
+              <option value="120">2 hours</option>
+            </select>
+          </label>
+
+          <label className="block mb-6">
+            <span className="form-label">Anything we should know? (optional)</span>
+            <textarea className="form-input" rows={3} value={timeNote}
+              onChange={(e) => setTimeNote(e.target.value)}
+              placeholder="Other times that work for you, questions, anything at all." />
+          </label>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" className="btn-primary text-sm"
+              disabled={!requestedStart}
+              onClick={() => setStep('submit')}>
+              Continue <ArrowRight size={16} />
+            </button>
+            {/* Never a trap (the same rule the slot step follows): staff will
+                reach out and set the time with them. */}
+            <button type="button" className="text-sm text-muted underline underline-offset-2"
+              onClick={() => setStep('done')}>
+              I&apos;d rather you picked — get in touch with me
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* ── CR-98 step 7: send the request ───────────────────────────────
+          ⚠️ D19 — it STATES ITSELF BEFORE IT ACTS. Everything the request will
+          contain is on screen, and the last line says plainly that no money
+          moves, because the whole point of this flow is that payment comes
+          after we say yes. D34: this button is the only thing that sends it. */}
+      {step === 'submit' && (
+        <section aria-labelledby="ob-submit-heading">
+          <h2 id="ob-submit-heading" className="font-serif text-lg text-green-900 mb-1">
+            Ready to send?
+          </h2>
+          <p className="text-sm text-muted mb-5">
+            Here is what we&apos;ll receive. Nothing is booked and nothing is charged until
+            we come back to you.
+          </p>
+          {submitError && <p role="alert" className="form-error mb-4">{submitError}</p>}
+
+          <div className="bg-white border border-green-800/10 p-6 mb-6">
+            <h3 className="text-[13px] uppercase tracking-wide text-muted mb-2">What you chose</h3>
+            <ul className="mb-5">
+              {(order?.items ?? []).map((it) => (
+                <li key={it.id} className="flex justify-between gap-4 text-[15px] text-green-900 py-1">
+                  {/* The shop step buys one of each, and `OrderItem` (the app's
+                      own read shape) carries no quantity — so there is none to
+                      render, and inventing one here would be a second answer to
+                      a question `purchase_items` already owns. */}
+                  <span>{it.label}</span>
+                  <span className="whitespace-nowrap">
+                    {it.price_amount == null ? '' : `$${Number(it.price_amount).toLocaleString('en-US')}`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <h3 className="text-[13px] uppercase tracking-wide text-muted mb-2">When you asked for</h3>
+            <p className="text-[15px] text-green-900">
+              {requestedLabel || 'No time chosen'}
+              {requestedStart && <> · {timeMinutes} minutes</>}
+            </p>
+            {timeNote.trim() && (
+              <p className="text-[13px] text-green-900/75 mt-3 whitespace-pre-line">{timeNote.trim()}</p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" className="btn-primary"
+              disabled={submitting || !requestedStart || !order}
+              onClick={() => void sendBookingRequest()}>
+              {submitting ? 'Sending…' : 'Send my request'} <ArrowRight size={16} />
+            </button>
+            <button type="button" className="text-sm text-muted underline underline-offset-2"
+              onClick={() => setStep('time')}>
+              Change the time
+            </button>
+          </div>
+        </section>
+      )}
+
       {step === 'slots' && (
         <StandingSlotStep
           slots={standing}
@@ -1910,16 +2187,34 @@ export default function Onboarding() {
       {step === 'done' && (
         <section aria-labelledby="ob-done-heading">
           <div className="bg-green-50 border border-green-200 p-6 mb-6">
+            {/* ⚠️ CR-98 §THE TELL — the last screen says the request was SENT.
+                It must not say anything is paid or booked, because neither is
+                true and both are what the person will remember. */}
             <h2 id="ob-done-heading" className="font-serif text-xl text-green-800 mb-1 inline-flex items-center gap-2">
-              <Check size={20} aria-hidden="true" /> You're all set.
+              <Check size={20} aria-hidden="true" />
+              {requestSent ? 'Your request is with us.' : "You're all set."}
             </h2>
+            {requestSent && (
+              <p className="body-text text-sm mb-2">
+                We have {requestedLabel ? <strong>{requestedLabel}</strong> : 'your request'} and
+                what you&apos;d like to book. <strong>Nothing is confirmed and nothing is
+                charged yet</strong> — we&apos;ll come back to you to agree the time, and payment
+                comes after that. Changed your mind? Tell us and we&apos;ll drop it.
+              </p>
+            )}
             {/* Only claim delivery when it actually succeeded. In every case the
                 signed documents are recorded and available — that part is true
                 unconditionally, so the fallback copy stays reassuring. */}
             <p className="body-text text-sm">
               {emailed === true ? (
-                <>Copies of everything you signed have been emailed to you, and they're always
-                  available on your Documents page.</>
+                <>
+                  {requestSent
+                    ? <>We&apos;ve emailed you one message with copies of everything you signed,
+                        your order and this request. They&apos;re always available on your
+                        Documents page too.</>
+                    : <>Copies of everything you signed have been emailed to you, and they&apos;re
+                        always available on your Documents page.</>}
+                </>
               ) : emailed === false ? (
                 <>Everything you signed is recorded and available on your Documents page.
                   We couldn't email your copies just now — nothing is lost, and you can

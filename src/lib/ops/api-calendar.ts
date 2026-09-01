@@ -532,6 +532,27 @@ export async function requestOpenTime(input: {
   return data as { booking_id: string; status: string };
 }
 
+/** CR-98 step 7 — *"then submit the booking request"*, as ONE act.
+ *
+ *  ⚠️ NOT A SECOND BOOKING WRITER. `submit_my_booking_request` CALLS
+ *  `request_open_time` above for the booking itself, then links the draft order
+ *  to it, opens the inbound-alert row staff hear about, and releases the signing
+ *  run held since the sign step so the person gets ONE email carrying their
+ *  documents, their order and this request. Nothing money-shaped happens: the
+ *  order stays a draft and no credit is minted until it is opened and paid. */
+export async function submitMyBookingRequest(input: {
+  purchaseId: string; startISO: string; endISO: string; note?: string;
+}): Promise<{ booking_id: string; request_id: string | null; status: string }> {
+  const { data, error } = await supabase.rpc('submit_my_booking_request', {
+    p_purchase_id: input.purchaseId,
+    p_starts_at: input.startISO,
+    p_ends_at: input.endISO,
+    p_note: input.note?.trim() || null,
+  });
+  if (error) throw error;
+  return data as { booking_id: string; request_id: string | null; status: string };
+}
+
 /** Staff confirm a pending booking (a requested time). */
 export async function confirmBooking(bookingId: string): Promise<void> {
   const { error } = await supabase.rpc('confirm_booking', { p_booking_id: bookingId });
