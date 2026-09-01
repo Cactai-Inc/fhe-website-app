@@ -140,7 +140,8 @@ function PaperViewer({ doc, onClose }: { doc: SeedDocument; onClose: () => void 
   const [page, setPage] = useState(0);
   const total = doc.pages.length;
   return (
-    /* ⚠️ TASK-FIX4 §3 — converged. A reader: no field, so click-out still closes. */
+    /* ⚠️ TASK-FIX4 §3 — converged. A reader, holding no field.
+       ⚠️ TASK-MODAL2 D1: click-out no longer closes it either. The X does. */
     <Modal open onClose={onClose} size="full" title={doc.title} subtitle={doc.signedOn}
       panelClassName="h-[92dvh]" bare
       footer={

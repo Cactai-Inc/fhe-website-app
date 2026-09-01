@@ -93,8 +93,10 @@ export function NotifyConfirmModal({
   const copy = summary ? notifyCopy(summary) : null;
 
   return (
-    /* ⚠️ TASK-FIX4 §3 — converged. A confirmation with nothing typed into it, so
-       the backdrop still closes it and `Notify` stays the only affirmative act. */
+    /* ⚠️ TASK-FIX4 §3 — converged. A confirmation with nothing typed into it.
+       ⚠️ TASK-MODAL2 D1: it used to close on click-out because it holds no field;
+       it no longer does, because *"you cant determine which ones the user can
+       reopen."* The X closes it and `Notify` stays the only affirmative act. */
     <Modal open onClose={onCancel} size="md" error={err}
       title={<span className="inline-flex items-center gap-2"><Send size={17} className="text-gold-ink" aria-hidden="true" /> Notify</span>}
       footer={

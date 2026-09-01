@@ -393,7 +393,7 @@ export function CreateModal({ onClose, initialStep = 'destination' }: { onClose:
     /* ⚠️ TASK-FIX4 §3/§7 — converged, and the step back is now `BackControl`,
        top-left, rather than a bare chevron. Once `step === 'form'` this dialog
        holds a post being written, and the backdrop no longer discards it. */
-    <Modal open onClose={onClose} variant="sheet" size={step === 'form' ? 'lg' : 'sm'}
+    <Modal open onClose={onClose} size={step === 'form' ? 'lg' : 'sm'}
       panelClassName="bg-cream" title={title}>
         {step !== 'destination' && (
           <div className="mb-3">

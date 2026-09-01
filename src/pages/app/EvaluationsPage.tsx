@@ -114,10 +114,11 @@ export default function EvaluationsPage() {
         </ul>
       )}
 
-      {/* ⚠️ TASK-FIX4 §3 — converged. A read-only report: no field, so click-out
-          still closes it, which is the information-modal half of the rule. */}
+      {/* ⚠️ TASK-FIX4 §3 — converged. A read-only report.
+          ⚠️ TASK-MODAL2 D1 retired the information-modal half of FIX4's rule:
+          click-out no longer closes this either. The X does. */}
       {open && (
-        <Modal open onClose={() => setOpen(null)} variant="sheet" size="lg"
+        <Modal open onClose={() => setOpen(null)} size="lg"
           panelClassName="bg-cream"
           title={open.horse_label ? `${open.title} — ${open.horse_label}` : open.title}
           footer={

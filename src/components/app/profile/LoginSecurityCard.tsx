@@ -18,9 +18,9 @@ import { TwoFactorSettings } from '../../auth/TwoFactorSettings';
  *
  *  ⚠️ TASK-FIX4 — converged, and this is the ONE dialog with no draft and no
  *  Clear form. A password must never be written to browser storage, so there is
- *  nothing to persist and nothing to clear; the backdrop guard still applies,
- *  because losing a half-typed password to a stray click is the same annoyance
- *  as losing anything else. */
+ *  nothing to persist and nothing to clear. ⚠️ TASK-MODAL2 D1 makes the guard
+ *  unconditional: nothing but the X closes this, which matters most here,
+ *  because a half-typed password is the one thing no draft can recover. */
 function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');

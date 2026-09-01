@@ -850,7 +850,7 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
   return (
     /* ⚠️ TASK-FIX4 §3 — converged on the shared dialog's `drawer` variant. The
        backdrop no longer closes over a half-filled reschedule or request. */
-    <Modal open onClose={onClose} variant="drawer" size="sm" panelClassName="bg-cream"
+    <Modal open onClose={onClose} size="sm" panelClassName="bg-cream"
       title={itemLabel(item)} error={error}>
         <dl className="space-y-3 text-sm mb-4">
           <div>
@@ -1152,7 +1152,7 @@ function RequestTimePanel({ start, onClose, onDone }: { start: Date; onClose: ()
   return (
     /* ⚠️ TASK-FIX4 §3 — converged on the shared dialog's `drawer` variant. The
        backdrop no longer closes over a half-filled reschedule or request. */
-    <Modal open onClose={onClose} variant="drawer" size="sm" panelClassName="bg-cream"
+    <Modal open onClose={onClose} size="sm" panelClassName="bg-cream"
       title="Request this time" onClear={clearForm} saveStatus={draft.status}>
         {done ? (
           <p className="bg-green-50 border border-green-200 text-green-800 text-sm p-3 rounded">
@@ -1232,7 +1232,7 @@ function PurchaseLessonsPanel({ onClose }: { onClose: () => void }) {
 
   return (
     /* ⚠️ TASK-FIX4 §3 — converged. A list of things to buy, nothing typed. */
-    <Modal open onClose={onClose} variant="drawer" size="sm" panelClassName="bg-cream"
+    <Modal open onClose={onClose} size="sm" panelClassName="bg-cream"
       title="Buy lessons" error={error}>
         {offerings === null ? (
           <p className="text-sm text-muted">Loading…</p>

@@ -73,8 +73,7 @@ export function VoidContractModal({
        backdrop click no longer discards it; pages 2 and 3 are past the point of
        return and were already undismissable. */
     <Modal open onClose={onClose} size="md"
-      title={page === 1 ? 'Void this document' : page === 2 ? 'Keep or remove' : 'Document voided'}
-      disableBackdropClose={!dismissable}>
+      title={page === 1 ? 'Void this document' : page === 2 ? 'Keep or remove' : 'Document voided'}>
         {/* ── PAGE 1 — confirm + note ────────────────────────────────────── */}
         {page === 1 && (
           <>

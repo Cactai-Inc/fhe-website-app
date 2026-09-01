@@ -132,7 +132,7 @@ export function EmailChangeModal({
     /* ⚠️ TASK-FIX4 §3 — converged. A typed-in new address no longer disappears on
        a backdrop click. ⚠️ NO DRAFT HERE, deliberately: two of the four fields are
        a password, and this dialog's own `omit` would be the whole form. */
-    <Modal open onClose={onClose} variant="sheet" size="sm" panelClassName="bg-cream"
+    <Modal open onClose={onClose} size="sm" panelClassName="bg-cream"
       title="Change your email" subtitle={`Signed in as ${currentEmail}`}
       bare>
         <div className="px-5 pt-4 pb-2 flex items-center gap-3">

@@ -348,7 +348,6 @@ export function BoardChargesPage() {
           open={generateOpen}
           onClose={() => setGenerateOpen(false)}
           title="Generate board charge"
-          disableBackdropClose={generate.isPending}
         >
           {generateOpen && (
             <ChargeForm

@@ -18,6 +18,20 @@
  * Owner: *"commits on continue/send/commit/done...etc... not a close button click,
  * no user would input data and click close and expect the form submitted."*
  * **Closing does neither of the first two. That is exactly why it is safe.**
+ *
+ * ══ ⚠️ D4 · LEAVING A FIELD IS ITSELF THE TRIGGER (TASK-MODAL2 · CR-93) ═════
+ *
+ * Owner, 2026-08-31: *"auto save along with each input field being clicked out of
+ * is the spec, for normalizing fields we auto save after the normalization and the
+ * normalization runs after the user clicks out of the input field."* — and, put
+ * again: *"the auto save and normalize functions are supposed to run when the user
+ * clicks out of the field they entered the input into."*
+ *
+ * ⚠️ **BOTH STORING HOOKS NOW FLUSH ON FIELD EXIT** (`useFlushOnFieldExit`, below).
+ * The debounce is NOT removed — it stays as mid-typing insurance for someone who
+ * types for a minute without ever leaving the box — but nobody waits out a timer
+ * to be told their work was kept. **The rule lives in these hooks, so no call
+ * site has to remember it and none can forget it.**
  */
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
@@ -28,6 +42,61 @@ import { normalizeOnBlur, type NormalizeKind } from './normalize';
 
 /** What the auto-save indicator renders. */
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
+/* ═══ 0 · the field-exit trigger, shared by both storing hooks ══════════════ */
+
+/**
+ * ⚠️ WHAT COUNTS AS "the field they entered the input into" — the same selector
+ * `ops/kit/Modal` used to make its close decision with. A focus loss from a
+ * button or a link is not a field exit and must not be mistaken for one.
+ */
+const FIELD_SELECTOR = 'input:not([type="hidden"]), textarea, select';
+
+/**
+ * Call `flush` when focus leaves a form field, anywhere in the document.
+ *
+ * ⚠️ **ONE MACROTASK LATER, AND THAT DELAY IS THE WHOLE POINT (D4).**
+ * `useFieldNormalizer` corrects the value in the field's OWN `onBlur`, by calling
+ * `apply(next)` — a React state update. Flushing synchronously inside the same
+ * event would therefore store the value **as it was typed**, not as it was
+ * normalised, which is the exact inversion the owner ruled against:
+ * *"we auto save after the normalization."* React flushes a discrete event's
+ * updates before the task queue drains, so by the time this timer runs, the
+ * hook's `valueRef` holds the normalised value.
+ *
+ * ⚠️ **AND IT IS DOCUMENT-LEVEL ON PURPOSE.** The alternative is an `onBlur` prop
+ * threaded through every form and every field — 9 surfaces today and every one
+ * added after. Both writers already no-op when nothing changed, so the widest
+ * possible listener costs nothing and cannot be forgotten by a call site. That is
+ * the same argument that put the close rule inside `Modal` rather than beside it.
+ *
+ * ⚠️ `blur` is listened for IN CAPTURE because, unlike `focusout`, it does not
+ * bubble; both are registered because which one a given environment delivers is
+ * not something to depend on. `queued` collapses the pair into one flush.
+ */
+function useFlushOnFieldExit(flush: () => void, enabled: boolean) {
+  const flushRef = useRef(flush);
+  flushRef.current = flush;
+  useEffect(() => {
+    if (!enabled) return;
+    let queued = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onExit = (e: Event) => {
+      const t = e.target as HTMLElement | null;
+      if (typeof t?.matches !== 'function' || !t.matches(FIELD_SELECTOR)) return;
+      if (queued) return;
+      queued = true;
+      timer = setTimeout(() => { queued = false; flushRef.current(); }, 0);
+    };
+    document.addEventListener('focusout', onExit);
+    document.addEventListener('blur', onExit, true);
+    return () => {
+      if (timer) clearTimeout(timer);
+      document.removeEventListener('focusout', onExit);
+      document.removeEventListener('blur', onExit, true);
+    };
+  }, [enabled]);
+}
 
 /* ═══ 1 · useFormDraft — reload and browser-back are lossless ═══════════════ */
 
@@ -140,6 +209,10 @@ export function useFormDraft<T extends Record<string, unknown>>(
     const t = setTimeout(write, delay);
     return () => clearTimeout(t);
   }, [encoded, write, delay, formKey, ns]);
+
+  /* ⚠️ D4 — LEAVING A FIELD PERSISTS THE DRAFT AT ONCE, ahead of the debounce.
+     *"auto save along with each input field being clicked out of is the spec."* */
+  useFlushOnFieldExit(write, Boolean(formKey));
 
   /* ⚠️ A RELOAD RIGHT AFTER A KEYSTROKE MUST NOT FALL INSIDE THE DEBOUNCE.
      `pagehide` fires on a reload, a real navigation and a browser-back; `hidden`
@@ -261,6 +334,11 @@ export function useAutoSave<T>(
     return () => clearTimeout(t);
   }, [encoded, enabled, delay, run]);
 
+  /* ⚠️ D4 — LEAVING A FIELD COMMITS AT ONCE, ahead of the debounce, and AFTER
+     normalisation has landed. The 700ms timer stays as mid-typing insurance;
+     it is no longer what a person has to wait out to see `Saved`. */
+  useFlushOnFieldExit(() => { void run(); }, enabled);
+
   return { status, error, flush: run };
 }
 
@@ -279,6 +357,12 @@ export function useAutoSave<T>(
  * in the box now would land back on that same value, the person edited our answer
  * on purpose — `La Buzetta` corrected to `La buzetta` — and it is left alone. See
  * `normalizeOnBlur`.
+ *
+ * ⚠️ **THE ORDER ON A FIELD EXIT IS: NORMALISE, THEN SAVE — never the reverse**
+ * (D4). This runs in the field's own `onBlur`; `useFlushOnFieldExit` saves one
+ * macrotask later, by which time `apply(next)` has been flushed by React. **Do
+ * not "optimise" that timer away** — synchronous flushing stores what was typed
+ * instead of what the person can see, which is the defect CR-83 named.
  */
 export function useFieldNormalizer() {
   const lastOutput = useRef(new Map<string, string>());

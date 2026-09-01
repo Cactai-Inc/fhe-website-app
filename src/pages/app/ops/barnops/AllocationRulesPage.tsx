@@ -512,7 +512,6 @@ export default function AllocationRulesPage() {
           open={modal.mode !== 'closed'}
           onClose={closeModal}
           title={modal.mode === 'edit' ? 'Edit rule' : 'New rule'}
-          disableBackdropClose={saving}
         >
           {modal.mode !== 'closed' && (
             <RuleForm

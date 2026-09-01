@@ -61,8 +61,8 @@ function DealRecordModal({ dealId, name, onClose }: {
   }
 
   return (
-    /* ⚠️ TASK-FIX4 §3 — converged. A generated record with nothing typed into it,
-       so click-out still closes it. */
+    /* ⚠️ TASK-FIX4 §3 — converged. A generated record with nothing typed into it.
+       ⚠️ TASK-MODAL2 D1: click-out no longer closes it. The X does. */
     <Modal open onClose={onClose} title="Deal record" size="lg" error={err}
       footer={
         <>

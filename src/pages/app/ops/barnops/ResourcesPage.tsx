@@ -507,7 +507,6 @@ export default function ResourcesPage() {
                 ? 'Add lot'
                 : 'New resource'
           }
-          disableBackdropClose={saving}
         >
           {(modal.mode === 'create' || modal.mode === 'edit') && (
             <ResourceForm

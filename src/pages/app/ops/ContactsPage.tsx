@@ -638,7 +638,6 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
         open={creating || editing !== null}
         onClose={() => { setCreating(false); setEditing(null); }}
         title={editing ? 'Edit contact' : 'New contact'}
-        disableBackdropClose={save.isPending}
       >
         {(creating || editing) && (
           <ContactForm

@@ -5,7 +5,7 @@ import type { SaveStatus } from '../../../lib/formState';
 import { AutoSaveIndicator } from './AutoSaveIndicator';
 
 /**
- * THE ONE DIALOG (TASK-FIX4 §3 · CR-84 §5).
+ * THE ONE DIALOG (TASK-FIX4 §3 · CR-84 §5 · ⚠️ TASK-MODAL2 · CR-93).
  *
  * ⚠️ **THE MEASUREMENT IS THE FINDING.** 33 modals in this repo closed on a
  * backdrop click or Escape; 17 of those carried an `<input>`, `<textarea>` or
@@ -21,7 +21,7 @@ import { AutoSaveIndicator } from './AutoSaveIndicator';
  * |----------------------------------|--------------------|--------------------|
  * | auto-save after input            | ✅ (`useFormDraft`)| ❌                 |
  * | Continue · Send · Save · Done    | ✅                 | ✅ **the ONLY one**|
- * | ⚠️ Close · X · Escape · backdrop | ✅ already         | ⚠️ **NEVER**       |
+ * | ⚠️ Close · X                     | ✅ already         | ⚠️ **NEVER**       |
  * | Clear form                       | deliberately drops | ❌                 |
  *
  * Owner: *"no user would input data and click close and expect the form
@@ -29,18 +29,45 @@ import { AutoSaveIndicator } from './AutoSaveIndicator';
  * site that saves inside its own `onClose` has reintroduced the defect
  * `TASK-FIX4` removed from `ContactDossierModal`.
  *
- * ⚠️ **BACKDROP CLOSE IS DECIDED FROM THE LIVE DOM, NOT A PROP.** At the moment of
- * the click the panel is asked whether it currently holds a field. If it does, the
- * click is ignored — *"the main issue is that closing the modal accidentally from
- * clicking outside of it cleared the input."* If it does not, it closes, because
- * *"an information modal or empty one can close on click out."* No call site can
- * get this wrong by forgetting a flag, and a dialog whose fields appear on step 2
- * is protected on step 2 without anyone remembering to say so.
+ * ══ ⚠️ D1 · A CONTROL IS THE ONLY WAY OUT. NO EXCEPTIONS ═══════════════════
  *
- * ⚠️ **ESCAPE STILL CLOSES, DELIBERATELY.** It is a keystroke nobody presses by
- * accident and it is the a11y contract for `role="dialog"`; the accident the owner
- * reported was the backdrop. With auto-save behind it, closing loses nothing
- * either way. (Flagged in the TASK-FIX4 report rather than decided silently.)
+ * ⚠️ **NO MODAL CLOSES ON A BACKDROP CLICK. NO MODAL CLOSES ON ESCAPE.** A button
+ * or a link is the only exit, whether the dialog holds a field or not.
+ *
+ * ⚠️ **THIS SUPERSEDES TASK-FIX4's LIVE-DOM FIELD TEST, WHICH THIS FILE CARRIED
+ * FOR ONE DAY.** FIX4 asked the panel at click time whether it held a field and
+ * let a field-less "information" dialog close on click-out. The owner ruled that
+ * out on 2026-08-31 and the reasoning is the spec, because it settles a question
+ * no component can answer from inside itself:
+ *
+ *   *"just make all modals only close on click of button or link, dont let them
+ *   close on click-out since you cant determine which ones the user can reopen and
+ *   which ones they cant."*
+ *
+ * A system-triggered notice is exactly as costly to dismiss by accident as a form
+ * is — more so, because there may be no way back to it. `allowBackdropClose` and
+ * `disableBackdropClose` are **gone**: with click-out removed there is nothing
+ * left for either of them to express, and a prop that can only hold one value is
+ * a prop a call site can only get wrong.
+ *
+ * 🔒 **THEREFORE THE HEADER, AND ITS CLOSE BUTTON, ALWAYS RENDER.** A modal with
+ * no visible control is now a trap with no exit. Do not make the header
+ * conditional on anything.
+ *
+ * ══ ⚠️ D2 · ONE SHAPE. THE DRAWER AND THE SHEET ARE ELIMINATED ═════════════
+ *
+ * **`variant` is gone.** It had three values — `center`, `sheet`, `drawer` — and
+ * 12 call sites between the latter two. Owner, 2026-08-31: *"the side drawer i
+ * specd as eliminated. center modal is the only version to use."* `size` still
+ * decides the width; nothing decides the shape.
+ *
+ * ══ ⚠️ D3 · THE SAVE STATE SITS IN THE HEADER, BESIDE CLOSE ════════════════
+ *
+ * Owner: *"save state is always shown up next to the close button/icon as a green
+ * checkmark with the word saved in green (light green)."* It used to render in
+ * the footer bar, which on a long dialog is off-screen at the moment a person
+ * wants the reassurance. It is now the header's right-hand cluster, so the
+ * indicator and the only way out are the same glance.
  *
  * ⚠️ **THERE IS NO SAVE BUTTON AND NONE IS TO BE ADDED** (owner: *"no save button,
  * only a close button and a clear form button are needed since it saves"*). Pass
@@ -49,13 +76,9 @@ import { AutoSaveIndicator } from './AutoSaveIndicator';
  * saved"*, and without the indicator auto-save is indistinguishable from data loss.
  */
 
-/** Which fields make a dialog "input-bearing", and so backdrop-proof. */
-const FIELDS = 'input:not([type="hidden"]), textarea, select';
-
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
-export type ModalVariant = 'center' | 'sheet' | 'drawer';
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
 export interface ModalProps {
@@ -67,24 +90,8 @@ export interface ModalProps {
   subtitle?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
-  /**
-   * Force backdrop-click close OFF even for a dialog with no fields — a
-   * destructive confirmation, or mid-submit.
-   */
-  disableBackdropClose?: boolean;
-  /**
-   * ⚠️ Force backdrop-click close ON for a dialog that DOES hold fields. Rare and
-   * deliberate: a read-only viewer whose only "field" is a search box, where
-   * click-out is the expected gesture and there is nothing to lose.
-   */
-  allowBackdropClose?: boolean;
-  /**
-   * `center` — the default box. `sheet` — bottom sheet on mobile, centred box
-   * above `sm`. `drawer` — a full-height panel against the right edge.
-   */
-  variant?: ModalVariant;
   size?: ModalSize;
-  /** Renders the auto-save indicator in the footer bar. */
+  /** ⚠️ Renders the auto-save indicator in the HEADER, beside Close (D3). */
   saveStatus?: SaveStatus;
   /**
    * ⚠️ Why the last save failed. Rendered above the body and the dialog STAYS
@@ -110,18 +117,6 @@ const SIZE: Record<ModalSize, string> = {
   full: 'sm:max-w-5xl',
 };
 
-const OVERLAY: Record<ModalVariant, string> = {
-  center: 'flex items-center justify-center p-4',
-  sheet: 'flex items-end sm:items-center justify-center p-0 sm:p-4',
-  drawer: 'flex justify-end',
-};
-
-const PANEL: Record<ModalVariant, string> = {
-  center: 'w-full rounded-xl max-h-[90dvh]',
-  sheet: 'w-full sm:rounded-2xl max-h-[92dvh]',
-  drawer: 'w-full h-full sm:h-full',
-};
-
 export function Modal({
   open,
   onClose,
@@ -129,9 +124,6 @@ export function Modal({
   subtitle,
   children,
   footer,
-  disableBackdropClose,
-  allowBackdropClose,
-  variant = 'center',
   size = 'lg',
   saveStatus,
   error,
@@ -142,41 +134,35 @@ export function Modal({
 }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
-  /** ⚠️ A drag that STARTS inside the panel and ends on the backdrop — selecting
-   *  text out of a field — must not read as a backdrop click. Tracked on mousedown
-   *  because that is the event the close decision is made on. */
-  const downOnBackdrop = useRef(false);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onClose();
-        return;
-      }
-      if (e.key !== 'Tab') return;
-      const root = dialogRef.current;
-      if (!root) return;
-      const focusable = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-        (el) => el.offsetParent !== null || el === document.activeElement,
-      );
-      if (focusable.length === 0) {
-        e.preventDefault();
-        return;
-      }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && active === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    },
-    [onClose],
-  );
+  /**
+   * ⚠️ TAB ONLY. Escape used to close here and no longer does (D1) — the focus
+   * trap is all this handler is for now. Keeping the trap matters more than
+   * before: with no click-out, focus leaving the panel would be a person stuck
+   * tabbing through a page they cannot see.
+   */
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== 'Tab') return;
+    const root = dialogRef.current;
+    if (!root) return;
+    const focusable = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+      (el) => el.offsetParent !== null || el === document.activeElement,
+    );
+    if (focusable.length === 0) {
+      e.preventDefault();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement as HTMLElement | null;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -189,60 +175,48 @@ export function Modal({
     };
   }, [open]);
 
-  /**
-   * ⚠️ THE RULE, ASKED OF THE LIVE DOM. A dialog that holds a field right now does
-   * not close on a backdrop click; an information or empty one does.
-   */
-  const backdropMayClose = useCallback(() => {
-    if (disableBackdropClose) return false;
-    if (allowBackdropClose) return true;
-    return !dialogRef.current?.querySelector(FIELDS);
-  }, [disableBackdropClose, allowBackdropClose]);
-
   if (!open) return null;
 
-  const showFooterBar = Boolean(onClear || saveStatus || footer);
+  const showFooterBar = Boolean(onClear || footer);
 
   return (
-    <div
-      className={`fixed inset-0 z-50 ${OVERLAY[variant]} bg-green-900/50`}
-      onMouseDown={(e) => {
-        downOnBackdrop.current = e.target === e.currentTarget;
-      }}
-      onClick={(e) => {
-        const fromBackdrop = e.target === e.currentTarget && downOnBackdrop.current;
-        downOnBackdrop.current = false;
-        if (fromBackdrop && backdropMayClose()) onClose();
-      }}
-    >
+    /* ⚠️ THE OVERLAY CARRIES NO CLICK HANDLER AT ALL (D1). It is not that the
+       handler decides not to close — there is no handler to get the decision
+       wrong, and no `mousedown` bookkeeping to keep a text-selection drag from
+       reading as a dismissal, because nothing on this element dismisses. */
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-green-900/50">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={typeof title === 'string' ? title : undefined}
         tabIndex={-1}
-        className={`bg-white shadow-xl focus:outline-none flex flex-col overflow-hidden ${
-          PANEL[variant]
-        } ${variant === 'drawer' ? SIZE[size === 'full' ? 'lg' : size] : SIZE[size]} ${panelClassName}`}
+        className={`bg-white shadow-xl focus:outline-none flex flex-col overflow-hidden w-full rounded-xl max-h-[90dvh] ${SIZE[size]} ${panelClassName}`}
         onKeyDown={handleKeyDown}
       >
         {/* ⚠️ THE HEADER ALWAYS RENDERS, because the CLOSE BUTTON is required on
             every modal — it used to appear only when a `title` was passed, so a
-            titleless dialog had no visible way out at all. */}
+            titleless dialog had no visible way out at all. ⚠️ Since D1 removed
+            click-out and Escape it is the ONLY way out, so this is now load
+            bearing rather than tidy. */}
         <div className="flex items-start justify-between gap-3 border-b border-green-800/10 px-5 sm:px-6 py-3.5 shrink-0">
           <div className="min-w-0">
             {title && <h2 className="font-serif text-lg sm:text-xl text-green-900 truncate">{title}</h2>}
             {subtitle && <p className="text-[11.5px] text-muted">{subtitle}</p>}
           </div>
-          <button
-            type="button"
-            aria-label="Close"
-            title="Close"
-            className="p-1.5 -mr-1.5 rounded-lg text-green-800/60 hover:text-green-900 hover:bg-green-800/5 focus-ring shrink-0"
-            onClick={onClose}
-          >
-            <X size={18} />
-          </button>
+          {/* ⚠️ D3 — the save state sits beside the close icon, not in the footer. */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            {saveStatus && <AutoSaveIndicator status={saveStatus} />}
+            <button
+              type="button"
+              aria-label="Close"
+              title="Close"
+              className="p-1.5 -mr-1.5 rounded-lg text-green-800/60 hover:text-green-900 hover:bg-green-800/5 focus-ring shrink-0"
+              onClick={onClose}
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* ⚠️ THE FAILURE STAYS ON SCREEN AND THE DIALOG STAYS OPEN. */}
@@ -267,7 +241,6 @@ export function Modal({
                 {clearLabel}
               </button>
             )}
-            {saveStatus && <AutoSaveIndicator status={saveStatus} />}
             <div className="flex justify-end gap-3 flex-1 min-w-0">{footer}</div>
           </div>
         )}

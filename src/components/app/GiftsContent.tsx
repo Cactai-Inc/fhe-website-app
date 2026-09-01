@@ -137,9 +137,10 @@ function GiftDetail({ gift, onClose, onChanged }: {
   }
 
   return (
-    /* ⚠️ TASK-FIX4 §3 — converged, and this one is the OTHER half of the rule:
-       *"an information modal or empty one can close on click out."* It holds no
-       field, so the shared dialog lets the backdrop close it, exactly as before. */
+    /* ⚠️ TASK-FIX4 §3 — converged. This WAS the other half of FIX4's rule —
+       *"an information modal or empty one can close on click out"* — and
+       ⚠️ TASK-MODAL2 D1 withdrew that half: a gift notice is precisely the kind
+       of thing a person may not be able to reopen. The X is the way out. */
     <Modal open onClose={onClose} size="sm"
       title={gift.item_label || 'Gift'} subtitle={STATUS[gift.status ?? ''] ?? gift.status}
       error={err}>

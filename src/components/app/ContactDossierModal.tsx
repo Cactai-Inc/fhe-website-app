@@ -52,9 +52,15 @@ import { fetchClientStandingSlots } from '../../lib/ops/api-calendar';
  *      `requestClose`, which called `commit()` and only then closed. It solved
  *      accidental-close by trading a data-loss bug for an unintended-write bug —
  *      ⚠️ **clicking the X SUBMITTED the form.**
- *   3. **TASK-FIX4** (this): ⚠️ **closing does NOTHING.** Owner, 2026-08-31:
+ *   3. **TASK-FIX4** (2026-08-31): ⚠️ **closing does NOTHING.** Owner:
  *      *"commits on continue/send/commit/done...etc... not a close button click,
  *      no user would input data and click close and expect the form submitted."*
+ *   4. **TASK-MODAL2** (this, same day, CR-93): ⚠️ **closing is now also HARDER
+ *      TO REACH BY ACCIDENT.** 3 left Escape as an exit; the owner withdrew it
+ *      along with click-out for every dialog in the app — *"you cant determine
+ *      which ones the user can reopen and which ones they cant."* ⚠️ **4 does
+ *      not change what closing DOES** (still nothing) — only what counts as a
+ *      close. The X and the footer `Close` button, and nothing else.
  *
  * **What makes 3 safe is that it is not a return to 1.** ⚠️ Persisting a draft and
  * committing a record are different acts. Edits now AUTO-SAVE to the record after
@@ -279,14 +285,14 @@ export function ContactDossierModal({
 
   const requestClose = () => { onClose(); };
 
-  /* Escape closes — a deliberate keystroke, and with auto-save behind it there is
-     nothing left to lose. ⚠️ It no longer commits: under TASK-FIX2 this listener
-     called `commit()` first, which made a keypress a submission. */
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  /* ⚠️ TASK-MODAL2 D1 — ESCAPE NO LONGER CLOSES THIS RECORD, AND THE LISTENER IS
+     GONE RATHER THAN NEUTERED. FIX4 kept Escape deliberately, on the reasoning
+     that it is a keystroke nobody presses by accident. The owner overruled the
+     whole category on 2026-08-31 — *"just make all modals only close on click of
+     button or link"* — because whether a dismissal is recoverable is not
+     something the surface can know. This file is the ONE deliberate non-adopter
+     of `ops/kit/Modal`, so it obeys the RULE by hand: the X in the header and the
+     `Close` button in the footer are the two ways out, and there are no others. */
 
   /* PROMOTION TO AN ACCOUNT, from the record itself. Someone without a login
      still has a full contact record — it simply holds less — and inviting them
@@ -359,8 +365,10 @@ export function ContactDossierModal({
        field-dense surface in the app; a stray click beside it was CR-68a. This
        one keeps its hand-rolled shell deliberately (see the note at the top of
        the file): it is a fixed-height, tab-railed record surface, not a box
-       around a form, and `ops/kit/Modal`'s variants do not describe it. What it
-       shares with every converged dialog is the RULES, not the markup. */
+       around a form. What it shares with every converged dialog is the RULES,
+       not the markup — and ⚠️ TASK-MODAL2 applies all of them here by hand: no
+       backdrop close, no Escape close (D1), and the save state in the header
+       beside Close, reading `Saved` (D3). */
     <div className="fixed inset-0 z-50 grid place-items-center bg-green-950/40 px-4 py-8"
       role="dialog" aria-modal="true" aria-label={`${name} record`}>
       {/* ⚠️ ONE SIZE, ALWAYS (owner, 2026-08-25): "keep it one size dont change it
@@ -387,8 +395,14 @@ export function ContactDossierModal({
           {/* ⚠️ THE INDICATOR IS NOT OPTIONAL. With no Save button and no
               commit-on-close, it is the only thing telling the person their
               typing was kept — *"we need to show auto-save so the user knows the
-              inputs are saved."* */}
-          <AutoSaveIndicator status={save.status} savedLabel="Saved to the record" />
+              inputs are saved."*
+              ⚠️ TASK-MODAL2 D3 — IT SITS HERE, BESIDE THE CLOSE ICON, and it
+              reads `Saved`. It used to pass `savedLabel="Saved to the record"`;
+              the owner named the word — *"a green checkmark with the word saved
+              in green (light green)"* — so the custom label is gone. This is the
+              same position `ops/kit/Modal` now renders it in, reached by hand
+              because this surface keeps its own shell. */}
+          <AutoSaveIndicator status={save.status} />
           <button type="button" onClick={requestClose} aria-label="Close"
             className="p-1.5 rounded-lg text-muted hover:bg-green-800/5 focus-ring shrink-0">
             <X size={18} />

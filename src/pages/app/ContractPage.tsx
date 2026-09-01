@@ -2433,8 +2433,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           The old free-text "notify someone else" field is gone (owner): a review
           request implies a standing in the agreement that a non-party does not
           have. Someone who merely needs to READ it gets the PDF option. */}
-      {/* ⚠️ TASK-FIX4 §3 — converged. A chooser with nothing typed into it, so it
-          keeps closing on click-out. */}
+      {/* ⚠️ TASK-FIX4 §3 — converged. A chooser with nothing typed into it.
+          ⚠️ TASK-MODAL2 D1: click-out no longer closes it. The X does. */}
       {sendOpen && (
         <Modal open onClose={() => setSendOpen(false)} size="sm" title="Send this contract">
             <p className="text-[13px] text-muted mb-4">

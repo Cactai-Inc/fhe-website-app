@@ -63,12 +63,13 @@ function NewMessageModal({ members, onPick, onClose }: {
   }, [members, q]);
 
   return (
-    /* ⚠️ TASK-FIX4 §3 — converged, with `allowBackdropClose` set DELIBERATELY. The
-       only field here is a search box over a member list: nothing is being
-       composed, nothing is lost, and click-out is the gesture a picker like this
-       is expected to answer. That is the escape hatch the shared dialog provides
-       for exactly this case, and it is the only place in the app that uses it. */
-    <Modal open onClose={onClose} title="New message" size="sm" allowBackdropClose bare>
+    /* ⚠️ TASK-FIX4 §3 — converged. This was the ONE `allowBackdropClose` call
+       site in the app: a search box over a member list, where nothing is being
+       composed and click-out is the gesture a picker is expected to answer.
+       ⚠️ TASK-MODAL2 D1 removed the hatch and the gesture — *"just make all
+       modals only close on click of button or link"* — so the X in the header
+       is now the way out of this picker too. */
+    <Modal open onClose={onClose} title="New message" size="sm" bare>
         <div className="px-4 py-3 border-b border-green-800/10">
           <div className="flex items-center gap-2 px-3 py-2 bg-cream-100 rounded-lg">
             <Search size={15} className="text-muted shrink-0" />
