@@ -3929,7 +3929,7 @@ it.** **ORCH either folds the sweep into a task thread or hands the owner a `CLN
 ### 🔒 THE FOUR ROLES
 | Role | Owns | Six-step |
 |---|---|---|
-| **`DISO`** | ⚠️ **the conversation with the owner** — capture · research · discussion & lock. **Disposable by design, because the conversation is what burns a context window** | **1 · 2 · 3** |
+| **`DISCO`** | ⚠️ **the conversation with the owner** — capture · research · discussion & lock. **Disposable by design, because the conversation is what burns a context window** | **1 · 2 · 3** |
 | **`ORCH`** | distillation · sequencing · validation · **the record** | **4 · 5 · 6 (review)** |
 | **`TASK`** | building one spec in one worktree | the deliverables |
 | **`CLNR`** | the workspace | — |
@@ -3945,13 +3945,13 @@ until `TASK-FIX5` renames it.)*
 3. **A D-rule in `CLAUDE.md`** when something was *settled*, not merely built.
 
 ### ⚠️ NAMING
-**The owner wrote both `DISO` and `DISCO`.** **`DISO` is used, to hold the four-letter convention
-(`ORCH` · `DISO` · `TASK` · `CLNR`).** **A rename is one word from him.**
+**The owner wrote both `DISCO` and `DISCO`.** **`DISCO` is used, to hold the four-letter convention
+(`ORCH` · `DISCO` · `TASK` · `CLNR`).** **A rename is one word from him.**
 
 ### ⚠️ WHAT THIS SESSION PROVES — ORCH6 ran as its own DISO and it cost the window
 **This thread captured requests, researched production, discussed and locked decisions, THEN authored
 specs and validated a merge. That is three roles.** ⚠️ **It is why the session is long, and it is the
-exact failure the owner is naming.** **From CR-96 forward, a discussion of this length opens a `DISO`
+exact failure the owner is naming.** **From CR-96 forward, a discussion of this length opens a `DISCO`
 thread.**
 
 ### ⚠️ THE GAP THIS RULING EXPOSES — STEPS 4 AND 5, AND IT IS UNANSWERED

@@ -18,9 +18,9 @@ and the rolling schedule measures *from the order*, and neither field can be set
 ⚠️ **ATTEMPTED TODAY, THE BACKFILL DOES NOT FAIL. IT SUCCEEDS AND LIES.** Every order and payment is
 stamped with the day it was typed, a year of trading collapses into one date, every prior month reads
 zero — **and the dashboard ribbon, the calendar money line and CR-86's P&L all report it
-confidently.** *(`DISO-1-HANDOFF.md` §2.)*
+confidently.** *(`DISCO-1-HANDOFF.md` §2.)*
 
-## 2. WHAT IS TRUE NOW — measured 2026-09-01, by DISO-1 and re-checked by ORCH6
+## 2. WHAT IS TRUE NOW — measured 2026-09-01, by DISCO-1 and re-checked by ORCH6
 
 | The act | Carries a real date? | Evidence |
 |---|---|---|

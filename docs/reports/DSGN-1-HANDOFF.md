@@ -2,7 +2,7 @@
 
 **Thread:** `DSGN-1` · **Closed** 2026-09-01 · **Role:** `docs/method/DSGN-ROLE.md`
 **Working record:** `docs/reports/DSGN-1-LEDGER.md`
-**Assignment:** prepare `CR-90` and `CR-97` for build from `docs/reports/DISO-1-HANDOFF.md`.
+**Assignment:** prepare `CR-90` and `CR-97` for build from `docs/reports/DISCO-1-HANDOFF.md`.
 
 **Delivered — two specs:**
 - `docs/tasks/TASK-LIFECYCLE-six-states-and-the-thirty-day-horizon.md`
@@ -10,14 +10,14 @@
 
 ---
 
-# 0 · ⚠️ WHY I DID NOT STOP, THOUGH DISO-1 TOLD YOU I SHOULD
+# 0 · ⚠️ WHY I DID NOT STOP, THOUGH DISCO-1 TOLD YOU I SHOULD
 
-**`DISO-1-HANDOFF.md` §0 says *"DO NOT AUTHOR PASS 1 OR PASS 3 SPECS FROM THIS DOCUMENT ALONE"* and
+**`DISCO-1-HANDOFF.md` §0 says *"DO NOT AUTHOR PASS 1 OR PASS 3 SPECS FROM THIS DOCUMENT ALONE"* and
 §8 says no validation criteria exist because step 3 never ran.** ⚠️ **`DSGN-ROLE.md` §2 says that if
 step 3 never ran I must name what is missing and hand it back.** **I am proceeding anyway, and this
 is the justification — check it before you accept the specs.**
 
-**Step 3 DID run, after DISO-1 closed.** Seven commits later the same day (`9b3fe0ab`, `98ecec05`,
+**Step 3 DID run, after DISCO-1 closed.** Seven commits later the same day (`9b3fe0ab`, `98ecec05`,
 `afa5cf94`, `95818364`, `7b5d37f8`, `8d79bd0c`, `5f1a0446`, plus `9def8e3c` for CR-90) wrote the
 owner's answers into `docs/reference/CHANGE-ORDER-LEDGER.md` as 🔒 RULED text — the hold behaviour,
 the display collision, the read rule, `Pending reschedule`, the waitlist signal.

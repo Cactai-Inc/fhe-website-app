@@ -4,7 +4,7 @@
 > *"its crucial that everything done is always recorded with full fidelity somewhere at all times. if a
 > thread dies a new one needs to be able to pick up and the loss is near 0 or 0."*
 
-⚠️ **THIS FILE IS BINDING ON `ORCH` · `DISO` · `DSGN` · `TASK` · `CLNR`.** Each role file points here
+⚠️ **THIS FILE IS BINDING ON `ORCH` · `DISCO` · `DSGN` · `TASK` · `CLNR`.** Each role file points here
 rather than repeating it, so there is one copy of the rule.
 
 ---
@@ -20,7 +20,7 @@ is the expensive half.
 
 # 2. THE ARTIFACT — `docs/reports/<ROLE>-<n>-LEDGER.md`
 
-**Opened with your FIRST action, not your last.** *(`DISO-1-LEDGER.md` is the worked example: every
+**Opened with your FIRST action, not your last.** *(`DISCO-1-LEDGER.md` is the worked example: every
 number with the query that produced it.)*
 
 **It opens with a RESUME BLOCK, and that block is rewritten every time you update the file:**

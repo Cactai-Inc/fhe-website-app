@@ -1,13 +1,13 @@
-# DISO-1 → ORCH · HANDOFF
+# DISCO-1 → ORCH · HANDOFF
 
-**Thread:** `DISO-1` · **Closed** 2026-09-01 · **Role:** `docs/method/DISO-ROLE.md`
-**Working record:** `docs/reports/DISO-1-LEDGER.md` — every number below has its query printed there.
+**Thread:** `DISCO-1` · **Closed** 2026-09-01 · **Role:** `docs/method/DISO-ROLE.md`
+**Working record:** `docs/reports/DISCO-1-LEDGER.md` — every number below has its query printed there.
 **Scope:** CR-94's six passes, and `docs/CR-TRIAGE-keep-kill-do-2026-08-27.md` reconciled against
 what has shipped in the five days since.
 
 ⚠️ **THIS IS A STEP-2 DELIVERABLE. STEP 3 HAS NOT RUN.** CR-94 was captured and 🔒 RULED on
 2026-08-31; the owner's assignment here was research. **There are no new locked decisions in this
-handoff, because DISO-1 never had the discussion that produces them.** §6 is what step 3 opens with.
+handoff, because DISCO-1 never had the discussion that produces them.** §6 is what step 3 opens with.
 
 ⚠️ **ORCH: DO NOT AUTHOR PASS 1 OR PASS 3 SPECS FROM THIS DOCUMENT ALONE.** §2 contains a finding
 that puts the ruled pass order in question, and that is the owner's to settle, not ORCH's.
@@ -182,7 +182,7 @@ silent row as "unchanged" — read it as "not measured on 2026-09-01".**
 # 5 · WHERE THE TRIAGE OR THE LEDGER WAS WRONG — four corrections
 
 ⚠️ **Per DISO-ROLE §5.6: an unwritten correction is how a wrong premise reaches a build thread.**
-**None of these came from the owner — DISO-1 had no conversation with him. All four are DISO
+**None of these came from the owner — DISCO-1 had no conversation with him. All four are DISO
 correcting an inherited document against production.**
 
 1. ⚠️ **CR-94's measured table names the wrong file.** *"The client record's Orders tab"* is
@@ -218,7 +218,7 @@ each was checked first.**
    rows is a one-row-at-a-time correction on live payment records; per the standing rule on live
    documents, it is his decision, not a thread's.**
 5. **Carried, unanswered, from CR-96:** ⚠️ **is there a `DSGN` role, or is step 4 formally ORCH's
-   spec?** Every TASK thread to date has been a build thread. **This is still open and DISO-1 did not
+   spec?** Every TASK thread to date has been a build thread. **This is still open and DISCO-1 did not
    touch it.**
 
 ---
@@ -237,7 +237,7 @@ each was checked first.**
 
 ---
 
-# 8 · DISO-1 SELF-ASSESSMENT — where this handoff leaves ORCH guessing
+# 8 · DISCO-1 SELF-ASSESSMENT — where this handoff leaves ORCH guessing
 
 ⚠️ **DISO-ROLE §5: *"If DISO's handoff leaves ORCH guessing, DISO failed — and ORCH says so rather
 than filling the gap silently."* Three places it does:**
@@ -250,7 +250,7 @@ than filling the gap silently."* Three places it does:**
    groups, or the owner rules that only the DO lane and CR-94's unit matter now.**
 3. **Pass 6's remaining scope is unbounded.** CR-94 says the calendar items are *"CR-02, CR-07,
    CR-04, and the rest of the DO list, ⚠️ which the owner has since widened beyond the original
-   14."* **What he widened it to was not captured, and DISO-1 could not find it written down.**
+   14."* **What he widened it to was not captured, and DISCO-1 could not find it written down.**
 
 ---
 
@@ -259,4 +259,4 @@ than filling the gap silently."* Three places it does:**
 **Processes started: none.** No dev server, no build, no test run, no background job. `psql` invoked
 12 times, each exiting on completion. **No worktree. No write to production. No migration. Nothing
 staged, nothing committed.** Two files written, both new:
-`docs/reports/DISO-1-LEDGER.md` · `docs/reports/DISO-1-HANDOFF.md`.
+`docs/reports/DISCO-1-LEDGER.md` · `docs/reports/DISCO-1-HANDOFF.md`.

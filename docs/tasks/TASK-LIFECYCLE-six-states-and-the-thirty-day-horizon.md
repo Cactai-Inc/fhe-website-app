@@ -1,7 +1,7 @@
 # TASK-LIFECYCLE — the booking is six states, and the schedule is 30 days plus 30 pending
 
 **Authored 2026-09-01 by `DSGN-1`** from `CR-97` + `CR-90` (`docs/reference/CHANGE-ORDER-LEDGER.md`
-:3642, :3966) and `docs/reports/DISO-1-HANDOFF.md` §3 pass 3.
+:3642, :3966) and `docs/reports/DISCO-1-HANDOFF.md` §3 pass 3.
 ⚠️ **Read `docs/method/TASK-ROLE.md` first — the standing requirements are there, not here.**
 
 🔒 **CR-90 AND CR-97 ARE ONE TASK, AND THAT IS AN ARCHITECTURE DECISION, NOT A SCHEDULING ONE.**
@@ -106,7 +106,7 @@ from bookings where status='scheduled' and starts_at > now();
 of view. ⚠️ **And `mint_recurring_allotments` is wired to the live `/api/mint-monthly-allotments`
 cron** (`.github/workflows/scheduled-jobs.yml`, `20 8 * * *`, running — proven), **so a fix that
 misses it is silently undone every single morning.** **All three sites, or none.**
-⚠️ **`docs/reports/DISO-1-HANDOFF.md` §7 states the opposite** — *"Is `current_date + 90` in more than
+⚠️ **`docs/reports/DISCO-1-HANDOFF.md` §7 states the opposite** — *"Is `current_date + 90` in more than
 one place? ✅ NO. One line."* **That answer is wrong and is corrected here.** Do not trust it.
 
 **2 · `booking_status_code` ends `ELSE 'pending'`.**

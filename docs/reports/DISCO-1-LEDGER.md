@@ -1,6 +1,6 @@
-# DISO-1 — the measured ledger
+# DISCO-1 — the measured ledger
 
-**Thread:** `DISO-1` · **Opened** 2026-09-01 · **Role:** `docs/method/DISO-ROLE.md`
+**Thread:** `DISCO-1` · **Opened** 2026-09-01 · **Role:** `docs/method/DISO-ROLE.md`
 **Assignment (owner, verbatim):**
 
 > *"Read docs/method/DISO-ROLE.md, then run discovery for CR-94 — the calendar, orders, payments,
@@ -9,7 +9,7 @@
 
 ⚠️ **THIS IS A STEP-2 SESSION ONLY.** CR-94 is already `🔒 RULED`, so step 1 (capture) was done on
 2026-08-31 and is in `docs/CHANGE-ORDER-LEDGER.md:3826`. **Step 3 (discussion & lock) has NOT
-happened** — it needs the owner. The `ASK-OWNER` list at the end of `DISO-1-HANDOFF.md` is what
+happened** — it needs the owner. The `ASK-OWNER` list at the end of `DISCO-1-HANDOFF.md` is what
 step 3 opens with.
 
 **Everything below was measured against production on 2026-09-01.** Every number has its query

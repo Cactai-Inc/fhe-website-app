@@ -50,7 +50,7 @@ docs/
   tests/       every test plan / checklist           TEST-<ID>-*.md
   reports/     every task and sweep report           TASK-<ID>-REPORT.md
   method/      how we work — the FOUR role files, the six-step method, this file
-               ⚠️ ORCH-ROLE.md · DISO-ROLE.md · TASK-ROLE.md · CLNR-ROLE.md
+               ⚠️ ORCH-ROLE.md · DISCO-ROLE.md · TASK-ROLE.md · CLNR-ROLE.md
   reference/   durable facts: schema, tokens, D-rules, flow maps
   design/      design system and IA
   archive/     everything superseded — kept, never deleted (D32)
@@ -67,7 +67,7 @@ and are obviously the same work. **One flat `ls` per type.**
 own instructions and its own state without being handed a path.**
 
 **CLNR proves this every sweep, and it is a real test, not a claim:**
-1. **`docs/method/` answers *"what is my role?"*** for **all four** — `ORCH`, `DISO`, `TASK`, `CLNR`.
+1. **`docs/method/` answers *"what is my role?"*** for **all four** — `ORCH`, `DISCO`, `TASK`, `CLNR`.
    ⚠️ **A role with no file is a role nobody can resume into.**
 2. **`docs/orch/` answers *"what is the state?"*** — the newest `ORCH<n>` file is findable by name.
 3. **`docs/tasks/TASK-<ID>-*.md` answers *"what is my job?"*** from the identifier alone.
@@ -83,7 +83,7 @@ the stale one, and it merged to production a commit that had been deliberately r
   report is a finding.** ⚠️ **A report with no `## VALIDATION` block from ORCH is also a finding** —
   it means a self-reported done was merged unchecked.
 - **Every merged task has a line in `docs/reference/TASK-LEDGER.md`.**
-- **Every `DISO` session leaves `docs/reports/DISO-<n>-HANDOFF.md`** and its CRs in the ledger.
+- **Every `DISCO` session leaves `docs/reports/DISCO-<n>-HANDOFF.md`** and its CRs in the ledger.
 - **Every settled decision is a D-rule in `CLAUDE.md`.** ⚠️ **A decision recorded only in a chat
   reply does not exist** — the thread is disposable, the documents are not.
 - **Every change request is in `docs/reference/CHANGE-ORDER-LEDGER.md`, verbatim.**
@@ -142,6 +142,28 @@ violates the TASK requirements says so in its report rather than quietly working
 - ⚠️ **The §2b resumability test fails for any role.**
 - **A handoff cites a path that has moved.**
 - **Nothing has swept in ~2 weeks of active work.**
+
+# 4b. 🔒 WHEN IT RUNS — DECIDED 2026-09-01. IT DOES NOT GET ITS OWN THREAD.
+
+**The owner offered two placements: after every task, triggered by ORCH; or as the first work inside
+the next task thread.** 🔒 **CHOSEN: THE FIRST WORK INSIDE THE NEXT `TASK` THREAD.**
+
+**Why:** ⚠️ **it spawns no extra thread** — a `TASK` thread is disposable and is the perfect host —
+**and it runs BEFORE new work lands, so the tree a task starts from is already true.** **Sweeping
+after the fact means every task begins on whatever the last one left.**
+
+🔒 **THEREFORE, EVERY `TASK` THREAD BEGINS WITH A CLNR PASS**, before it reads its own spec, and its
+report opens with the result. ⚠️ **A pass that finds nothing is one line: "CLNR: clean." It is not a
+section.**
+
+⚠️ **THE GAP THIS LEAVES, NAMED: the LAST task before a quiet period leaves its drift unswept.**
+**So `ORCH` also runs the §4 trigger check at every handoff**, and hands out a standalone `CLNR`
+prompt only if the check fires with no task queued behind it.
+
+⚠️ **THIS ROLE HAS NO STANDING THREAD OF ITS OWN, AND DOES NOT NEED ONE.** **Its rules are this file
+and its record is its log — which is exactly enough for any other thread to audit it.** **If a sweep
+is wrong, that is discoverable from the log by whoever comes next; the absence of a dedicated thread
+costs nothing.**
 
 # 5. THE PROMPT
 

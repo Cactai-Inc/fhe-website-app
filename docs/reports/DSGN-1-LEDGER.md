@@ -1,7 +1,7 @@
 # DSGN-1 · LEDGER
 
 **Opened 2026-09-01 · Role:** `docs/method/DSGN-ROLE.md` · **Assignment:** prepare CR-90 and CR-97
-for build from `docs/reports/DISO-1-HANDOFF.md`.
+for build from `docs/reports/DISCO-1-HANDOFF.md`.
 
 ---
 
@@ -24,7 +24,7 @@ to THE TEST, and tell ORCH in two lines what moved.
 
 ## 1 · WHERE THE STEP-3 CONVERSATION IS
 
-⚠️ **DISO-1-HANDOFF §2 warns "DO NOT AUTHOR PASS 1 OR PASS 3 SPECS FROM THIS DOCUMENT ALONE" and
+⚠️ **DISCO-1-HANDOFF §2 warns "DO NOT AUTHOR PASS 1 OR PASS 3 SPECS FROM THIS DOCUMENT ALONE" and
 §8 says no validation criteria exist.** **That warning is STALE and I am not blocked by it.**
 
 **Why:** the handoff closed before the owner's 2026-09-01 conversation. Seven commits after it
@@ -36,9 +36,9 @@ example of one chunk**, which is ORCH6 transmitting the same decision.
 
 **So: I proceed, and I say in the handoff that I am doing so and on what authority.**
 
-## 2 · ⚠️ CORRECTION TO DISO-1 — THE 90-DAY HORIZON IS IN **THREE** PLACES, NOT ONE
+## 2 · ⚠️ CORRECTION TO DISCO-1 — THE 90-DAY HORIZON IS IN **THREE** PLACES, NOT ONE
 
-**DISO-1-HANDOFF §7 answer table:** *"Is `current_date + 90` in more than one place? ✅ **NO.** One
+**DISCO-1-HANDOFF §7 answer table:** *"Is `current_date + 90` in more than one place? ✅ **NO.** One
 line in `_ensure_plan_horizon`."* ⚠️ **WRONG, and dangerously so.**
 
 **Query:**

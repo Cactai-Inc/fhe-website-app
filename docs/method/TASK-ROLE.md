@@ -4,7 +4,7 @@
 are not repeated in every spec.** A spec adds what is specific; this file is what is always true.
 **If a spec ever contradicts this file, the spec wins for that task — and you say so in your report.**
 
-**Thread naming: `ORCH` · `DISO` · `TASK` · `CLNR`.** Your prompt is two lines and your identifier is
+**Thread naming: `ORCH` · `DISCO` · `TASK` · `CLNR`.** Your prompt is two lines and your identifier is
 the first.
 
 ---
@@ -18,6 +18,13 @@ the first.
 **You build ONE task, from ONE spec, in ONE worktree, and you report what is true.**
 **You do not decide product.** A product question is reported, not answered.
 ⚠️ **You do not push. ORCH merges.**
+
+## ⚠️ ZEROTH ACT: RUN THE CLNR PASS
+🔒 **Before you read your own spec, run the sweep in `docs/method/CLNR-ROLE.md` §3.** **`CLNR` has no
+thread of its own — you are its host, because you are disposable and it runs BEFORE your work lands,
+so the tree you build on is already true.**
+⚠️ **Open your report with the result. If it found nothing, that is ONE LINE — "CLNR: clean" — not a
+section.** ⚠️ **NEVER move a file another live thread cites; ask ORCH.**
 
 ## ⚠️ FIRST ACT: READ THE SPEC BACK
 **Before writing a line, state in your own words what you understand the task to be, what you will
