@@ -236,3 +236,22 @@ LEAVE THEM UNDRIVEN (D32) and say so**, so a later thread does not "finish" them
 
 `docs/reports/TASK-BOOKS1-REPORT.md`. ⚠️ **Its most valuable section is "flagged, not fixed."**
 **A green function call is not a shipped feature — prove the reach.**
+
+---
+
+# ⚠️ CONCURRENCY — added 2026-09-01. FOUR THREADS ARE RUNNING AT ONCE.
+
+**`TASK-BACKDATE` is live and it edits `api/orders-mark-paid.ts` and `src/lib/ops/api-payments.ts`
+to pass `p_paid_at` through to `mark_purchase_paid`.** 🔒 **RULES:**
+1. ⚠️ **BACKDATE MERGES FIRST. Rebase on `origin/main` before you start, and again before you finish.**
+2. ⚠️ **NEVER REMOVE THE `p_paid_at` PASS-THROUGH.** If you widen `mark_purchase_paid` for the
+   disposition, **the date parameter survives** — and remember a new defaulted parameter OVERLOADS
+   rather than replaces, so drop the old signature explicitly and prove all call sites moved.
+3. **BACKDATE also adds a mark-paid control to `ContactDossierModal`'s Orders tab.** ⚠️ **Your
+   disposition must appear THERE too** — if a comp is only reachable from `PaymentReviewPage`, it is
+   the same reach defect this unit exists to fix.
+4. ⚠️ **A backdated settlement sends NO receipt email** (BACKDATE R5). **Your disposition must not
+   re-open that door.**
+
+**Also live:** `TASK-CR85` *(nav)* and `TASK-MODAL2` *(`ops/kit/Modal.tsx`, `ContactDossierModal`'s
+header and indicator — ⚠️ NOT its Orders tab, which is BACKDATE's)*.

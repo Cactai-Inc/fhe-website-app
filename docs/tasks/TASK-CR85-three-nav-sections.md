@@ -136,3 +136,11 @@ table and renders on one surface only is the defect this task is most likely to 
 ## 9. WHERE THE REPORT GOES
 
 `docs/reports/TASK-CR85-REPORT.md`. **Include "flagged, not fixed" — T3 and T4 both belong there.**
+
+---
+
+# ⚠️ CONCURRENCY — added 2026-09-01. FOUR THREADS ARE RUNNING AT ONCE.
+**You still own `AppLayout.tsx` and `pageRegistry.ts` ALONE — no other live thread may touch them.**
+**Also live:** `TASK-BACKDATE` *(orders/payments)* · `TASK-MODAL2` *(`ops/kit/Modal.tsx`)* ·
+`TASK-BOOKS1` *(money functions)*. ⚠️ **`git fetch` before you start; state your merge-base in the
+report.**

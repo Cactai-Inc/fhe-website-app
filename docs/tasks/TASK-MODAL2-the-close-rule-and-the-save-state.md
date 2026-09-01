@@ -154,3 +154,16 @@ turns up.
 ## 8. WHERE THE REPORT GOES
 
 `docs/reports/TASK-MODAL2-REPORT.md`. **Include "flagged, not fixed."**
+
+---
+
+# ⚠️ CONCURRENCY — added 2026-09-01. FOUR THREADS ARE RUNNING AT ONCE.
+
+**`TASK-BACKDATE` is live and it also edits `ContactDossierModal.tsx`.** 🔒 **THE SPLIT:**
+- **YOU own that file's HEADER, CLOSE CONTROL, SAVE INDICATOR and close/normalise behaviour.**
+- ⚠️ **`TASK-BACKDATE` owns its ORDERS TAB.** **Do not touch the Orders tab. Do not "tidy" it.**
+- **If you must change something inside the Orders tab, REPORT THE DIFF — ORCH applies it.**
+
+**Also live:** `TASK-CR85` *(`AppLayout.tsx`, `pageRegistry.ts`)* and `TASK-BOOKS1` *(money functions)*.
+⚠️ **`git fetch` and check whether `main` moved before you start, and say in your report what your
+merge-base was.**
