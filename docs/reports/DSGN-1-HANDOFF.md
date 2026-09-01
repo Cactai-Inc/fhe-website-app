@@ -26,7 +26,7 @@ the display collision, the read rule, `Pending reschedule`, the waitlist signal.
 **And `DSGN-ROLE.md` itself (`7b7b1316`, written after the handoff) names CR-90 + CR-97 as its worked
 example of one chunk**, which is ORCH6 transmitting the same decision.
 
-⚠️ **DISO's §0 warning is therefore STALE, not wrong when written.** **If you disagree that the
+⚠️ **DISCO's §0 warning is therefore STALE, not wrong when written.** **If you disagree that the
 ledger rulings are sufficient, stop me here** — that is your call, not mine.
 
 ---
@@ -153,27 +153,27 @@ task/modal2 · `wt-3` task/reaper · `wt-books1` · `wt-cr85`. ⚠️ **`RUN-QUE
    ⚠️ **`CLAUDE.md`'s D9 needs amending to say so, and a build thread must not do that.** **It is the
    second narrowing of D9; D24 was the first.**
 
-5. ⚠️ **NOT AN ASK — DISO's ASK-OWNER 1 IS RESOLVED BY EVENTS. Do not re-ask it.**
-   DISO asked whether **pass 5 (the backfill) moves ahead of passes 1–3**. **It already did:**
+5. ⚠️ **NOT AN ASK — DISCO's ASK-OWNER 1 IS RESOLVED BY EVENTS. Do not re-ask it.**
+   DISCO asked whether **pass 5 (the backfill) moves ahead of passes 1–3**. **It already did:**
    `TASK-BACKDATE` was specced (`61ec7f4b`) and built (`a8279916`) on 2026-09-01, ahead of both.
    **The question is answered by what was done.**
 
 ---
 
-# 5 · ⚠️ WHAT I DECIDED THAT DISO DID NOT — deciding silently is the failure
+# 5 · ⚠️ WHAT I DECIDED THAT DISCO DID NOT — deciding silently is the failure
 
 1. **Two chunks, not one** — §1. DSGN-ROLE's worked example calls CR-90+CR-97 one chunk; **I split
    off the month-end cadence** because it is a consumer of the machine, it is the only outward-facing
    half, and it carries the D9 override. ⚠️ **The STATES and the HORIZON stay together, which is the
    part the worked example was actually protecting.**
-2. ⚠️ **CORRECTION TO DISO — the 90-day horizon is in THREE functions, not one.** DISO §7 answers
+2. ⚠️ **CORRECTION TO DISCO — the 90-day horizon is in THREE functions, not one.** DISCO §7 answers
    *"✅ NO. One line in `_ensure_plan_horizon`."* **Measured: `_ensure_plan_horizon` (a default),
    `ensure_standing_slots` and `mint_recurring_allotments` (both pass it explicitly, overriding the
-   default).** 🔒 **A thread following DISO's answer would have changed a default nobody reads and
+   default).** 🔒 **A thread following DISCO's answer would have changed a default nobody reads and
    proved nothing — and `mint_recurring_allotments` is on a DAILY cron, so it would have undone the
    fix every morning.** **This is the single most valuable thing DSGN-1 found.**
 3. **CR-90's "invoice" is the EXISTING payment request, not a new object** — `request_purchase_payment`
-   + `sendPaymentRequest` + the `payment_request_sends` ledger. **DISO reported *"No invoice is
+   + `sendPaymentRequest` + the `payment_request_sends` ledger. **DISCO reported *"No invoice is
    generated anywhere"*, which is true and reads as greenfield.** ⚠️ **It is a convergence** (D18).
 4. **CR-97's viewer-scoped read has an incumbent** — `calendar_free_busy` is **already** a four-branch
    viewer-scoped `CASE`. **The build is two branches and moving one filter, not a new read.**
@@ -181,7 +181,7 @@ task/modal2 · `wt-3` task/reaper · `wt-books1` · `wt-cr85`. ⚠️ **`RUN-QUE
    a direction-aware approve/decline with `awaiting_client`. **Not a new mechanism.**
 6. **The waitlist is OUT** (§4.1) · **the `available` renderer is OUT** (§4.3) · **the 43 existing
    sessions are NOT retro-deleted** (§4.2).
-7. ⚠️ **I proceeded despite DISO's "do not author pass 3 specs from this document alone"** — §0.
+7. ⚠️ **I proceeded despite DISCO's "do not author pass 3 specs from this document alone"** — §0.
 
 ---
 

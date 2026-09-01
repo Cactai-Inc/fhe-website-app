@@ -41,7 +41,7 @@ would each have had to define what `pending` means, and they would have disagree
 
 ## 2 · WHAT WAS MEASURED — 2026-09-01, every number with its query
 
-**⚠️ Re-run these yourself. They are DSGN's, not DISO's, and they already caught one wrong answer.**
+**⚠️ Re-run these yourself. They are DSGN's, not DISCO's, and they already caught one wrong answer.**
 
 **a · What is ever written to `bookings.status`:**
 ```sql

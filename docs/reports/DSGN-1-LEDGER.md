@@ -54,7 +54,7 @@ from pg_proc where pronamespace='public'::regnamespace and prosrc ~ 'current_dat
 | `mint_recurring_allotments` | `v_target date := current_date + 90` → passes it as `p_through` | ⚠️ **overrides it, AND runs daily on cron** |
 
 🔒 **THE TRAP THIS CREATES:** both callers pass `p_through` **explicitly**, so changing only
-`_ensure_plan_horizon`'s default — which is exactly where DISO's answer points a build thread —
+`_ensure_plan_horizon`'s default — which is exactly where DISCO's answer points a build thread —
 **changes nothing at all.** And `mint_recurring_allotments` is wired to the live
 `/api/mint-monthly-allotments` cron (hourly workflow, `20 8 * * *`), **so it would re-materialise 90
 days every morning even if the other two were fixed.**
