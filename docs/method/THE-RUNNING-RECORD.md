@@ -79,6 +79,9 @@ from search or visual lookup."*
 - ⚠️ **A subject name is ONE-USE — burnt once used.** Future work on the same area revisits the
   original threads only if the context they carry is still accurate; otherwise a fresh thread
   becomes `signflow-2`. CR numbers sidestep the burn.
+- 🔒 **More than one TASK thread on a lineage uses LETTERS: `FHE-TASK-SIGNFLOW-A`, `-B`, `-C`…**
+  ⚠️ **Numbers are RESERVED for future generations of the subject** (`signflow-2`'s threads), so a
+  letter never collides with a revisit.
 - **Ledger and handoff files carry the thread's name** (`FHE-<ROLE>-<TASK>-LEDGER.md` etc.), so a
   thread is findable from its files and vice versa.
 
