@@ -11,18 +11,28 @@ unauthorised purchase block off every `/sign/*` page — **then chunk the rest.*
 
 ## RESUME
 
-**State:** STRIP spec emitted and committed. Now chunking the remainder of CR-98 + CR-99.
+**State:** ✅ **DSGN-2 IS COMPLETE.** Four specs + handoff written and committed.
 
-**Done so far:**
-- Read `DSGN-ROLE.md`, CR-98 (ledger 4123–4176), CR-99 (4177–4200).
-- Verified CR-98's numbers still true on `main` @ `475f1724` (see §1 below).
-- ✅ `docs/tasks/TASK-SIGNSTRIP-the-unauthorised-purchase-block-comes-off.md` — **hand to ORCH
-  immediately; it does not wait for the rest of this thread.**
+**Delivered:**
+- `docs/tasks/TASK-SIGNSTRIP-the-unauthorised-purchase-block-comes-off.md` *(URGENT, emitted first
+  and alone, committed separately at the top of this thread)*
+- `docs/tasks/TASK-SIGNDOOR-the-sign-page-asks-for-the-email-and-nothing-else.md`
+- `docs/tasks/TASK-SIGNBOOK-the-wizard-ends-in-a-booking-request-not-a-payment.md`
+- `docs/tasks/TASK-REQCARDS-the-request-card-is-an-action-surface-and-both-ends-press-buttons.md`
+- `docs/reports/DSGN-2-HANDOFF.md` — order, contention, model picks, A1–A3 ASK-OWNER, six decisions
 
-**Next:** measure the rest of the CR-98 flow (auth setup → onboarding → booking → payment) against
-what exists, chunk it, spec CR-99 with its SHAPE flagged for the owner, write `DSGN-2-HANDOFF.md`.
+**Open at close:** A1 (docs-by-path vs OFFERINGDOCS) blocks SIGNBOOK dispatch; A2 (REQCARDS §9
+shape) blocks REQCARDS build; both routed through ORCH. A returned build gap comes HERE
+(`DSGN-ROLE.md` §1): say spec-vs-build plainly, amend, add it to THE TEST, tell ORCH in two lines.
 
-**If killed here:** the strip is dispatchable as-is; everything else restarts from §2 notes.
+**Additional measurements past §1** (queries inline): step 2 auth gating is BUILT —
+`src/lib/emailAuthMethod.ts` (gmail→google, known non-google→password, else both; owner spec
+2026-07-25), consumed by `Register.tsx:82–92`. Wizard machine: `Onboarding.tsx:90` —
+`order|details|horse|shop|sign|payment|slots|done`, payment inside the wizard. Payment component:
+`src/components/order/OrderPayment.tsx` (cash/zelle, `reportMyPayment`). Staff card surface:
+`grep -rn "RequestCard" src/` → none; only `PaymentReviewPage.tsx` as prior art.
+`attach_minor_to_guardian` lifted out of `update_my_onboarding_profile` at `20260831T0910`
+(per `api/sign-start.ts` header).
 
 ---
 
