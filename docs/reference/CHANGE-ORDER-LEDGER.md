@@ -4297,3 +4297,19 @@ executed documents (D32, D33).
 strikethrough · checkmarks · text · borders · highlights · buttons, in the doc signing flow.
 Trap to carry into any spec: T1 — arbitrary Tailwind values have silently emitted nothing here
 twice; the built CSS must be grepped for the emitted value.
+
+**🔒 SCOPE RULING (owner, 2026-09-01, to DISCO-2, verbatim):**
+> *"yea the gold used on the onboarding flow looks like shit brown so switch that gold, in those
+> locations and any other places its used, company green. the nav im seeing on admin ui uses gold
+> and it looks good, so i dont know why it looks so bad on the onboarding flow. also the contacts
+> cards have gold rings around the avatars and they look good too. so i guess you need to discern
+> between the gold that shows up properly and gold that looks like shit brown when making the
+> change. as a general rule, things that are decorative like the accent around the avatar on a
+> contact card in the admin ui or the nav menu showing selected state or notification count are
+> the acceptable uses for the nice gold color. anything that is a functional action element or
+> something like an icon or text, green is the right choice."*
+
+**So CR-102 is NOT signing-flow-only: the rule is DECORATIVE vs FUNCTIONAL, applied app-wide.**
+Decorative accents (avatar rings, nav selected state, notification count) keep gold; functional
+action elements, icons and text go green. See `docs/reports/DISCO-2-HANDOFF.md` for the inventory
+and the mechanism behind "shows up properly" vs "shit brown."

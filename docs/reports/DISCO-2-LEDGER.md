@@ -7,14 +7,20 @@ CHANGE-ORDER-LEDGER §CR-100–102 and run them.
 ## RESUME
 Role / thread   DISCO-2 · canonical checkout (docs only; no code, no writes)
 Merge-base      n/a — docs-only thread on main (main == origin/main at open, 2fa1f7b9)
-DONE            capture read; step-2 research COMPLETE on all three CRs (findings below)
-IN FLIGHT       step 3 — findings presented to owner; awaiting locks on CR-102 scope +
-                validation criteria for all three
-NEXT            on owner's reply: mark locks 🔒 here, then write docs/reports/DISCO-2-HANDOFF.md
-                for DSNR
-DECIDED         (owner, mid-run 2026-09-01, verbatim): "just normalize the inputs dont want to
-                setup google api for paid lookup functionality" → 🔒 CR-100 is NORMALIZE-ONLY.
-                No external verification service, ever, for this CR.
+DONE            steps 1-3 COMPLETE on all three CRs. All locks in. Handoff written:
+                docs/reports/DISCO-2-HANDOFF.md. Owner's CR-102 ruling appended verbatim to
+                CHANGE-ORDER-LEDGER.md §CR-102.
+IN FLIGHT       nothing — complete, nothing in flight
+NEXT            owner carries the ticket to DSNR (prompt handed). This thread stays open for
+                follow-ups on the signing-flow subject.
+DECIDED         🔒 CR-100 NORMALIZE-ONLY (owner, mid-run: "just normalize the inputs dont want to
+                setup google api for paid lookup functionality"). 🔒 CR-102 scope = decorative vs
+                functional rule, APP-WIDE, not signing-flow-only (owner's verbatim in
+                CHANGE-ORDER-LEDGER §CR-102: decorative accents — avatar ring, nav selected state,
+                notification count — keep gold; functional action elements, icons, text → green).
+                🔒 Validation criteria for all three agreed as proposed ("agree").
+CORRECTED       DISCO framed CR-102 as "flow only vs app-wide gold→green" — both wrong; the owner's
+                rule is by FUNCTION, not by surface. Recorded in the handoff §Item 3.
 DO NOT          do not treat CR-101 as a regression — the 8-24 fix never reverted; it merged and
                 still sits in ContractBody. The defect is UNREACHED PATHS (D17), see §CR-101.
 
