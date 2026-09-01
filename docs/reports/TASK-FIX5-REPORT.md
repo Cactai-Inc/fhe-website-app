@@ -313,3 +313,66 @@ without being asked.
 
 Ten shared-workspace-root files removed outside the repo (nine after their content was committed
 here, one confirmed byte-identical duplicate) — not a repo commit, recorded here per §9.11.
+
+---
+
+# ⚠️ VALIDATION — ORCH6, 2026-09-01
+
+**Merged as `merge task/fix5: one type per folder, and the docs get a home`, with ONE step reversed.
+Checked independently; not taken from this report.**
+
+## ✅ VERIFIED
+| Claim | How ORCH6 checked it | Result |
+|---|---|---|
+| `docs/` root holds only folders | `ls docs/` | ✅ **13 folders, 0 files** |
+| the four role files sit together | `ls docs/method/*ROLE*` + the ORCH file | ✅ `CLNR` · `DISO` · `TASK` present; **`ORCHESTRATOR.md` moved to `docs/method/` but NOT renamed `ORCH-ROLE.md`** — its base predates that instruction. **Follow-up, trivial** |
+| the concurrent-edit collision | ORCH6 committed to `docs/ORCHESTRATOR.md` on `main` while this branch was moving it | ✅ **git followed the rename; the four-roles §0 survived at the new path.** Merged with **zero conflicts** |
+| migrations split | `ls` both trees | ✅ **409 live · 566 archived** |
+| nothing in CI applies migrations | grep over `.github/`, `scripts/`, `package.json`, `vercel.json` | ✅ only the five generator scripts, which this task verified |
+| behaviour untouched | `git diff --stat` over `src api supabase/functions` | ✅ **10 files, 12 insertions, 12 deletions — all path strings in comments** |
+| gates | run on the merge | ✅ typecheck **0** · typecheck:api **0** · lint **46** · build **exit 0** |
+
+## ⚠️ REVERSED — step 8, the `test/db` archival
+
+**Not a disagreement about the work; a disagreement about the trade.**
+
+**Measured by ORCH6, both sides, on this machine:**
+
+| | files | tests |
+|---|---|---|
+| the full suite *(restored)* | **56 failed · 22 passed** | **199 failed · 577 passed · 132 skipped** *(908)* |
+| the same suite an hour earlier, on `main` | **51 failed · 27 passed** | **191 failed · 610 passed · 107 skipped** *(908)* |
+| this task's green suite | 22 files | **277 tests** |
+
+⚠️ **Archiving the 56 red files removed roughly 300 PASSING assertions in order to hide 199 failures.**
+**And the coverage lost is `contract_bodies` · `documents_signatures_deliveries` · `esign_hardening` ·
+`entitlements` · `creditalign_recurring_entitlement_and_swap` · `creditfix_mint_from_unit_count` ·
+`audit_logs` · `e2e_provision` — which is precisely what `TASK-BOOKS1` is about to change.**
+
+⚠️ **AND THE TWO RUNS DISAGREE — 51 vs 56 red, 107 vs 132 skipped, on the same content.**
+**The suite is FLAKY, so no single count of it is citable — including this task's, and including
+ORCH6's.**
+
+🔒 **A green suite that dropped 72% of its files is a worse signal than a red one that is honestly
+documented**, because a green number gets cited as proof. **`ORCHESTRATOR.md` allows deleting a test
+only for a feature deliberately retired, and only when the deletion names the decision that retired
+it. That was not done per file, and cannot be — most of these test live spine.**
+
+**All 56 restored to `test/db/`, harness imports repaired back. The baseline stands at red, documented,
+proof of nothing.**
+
+**⚠️ WHAT WAS KEPT, BECAUSE IT IS GENUINELY VALUABLE:** the empirical finding that
+**`vitest run test/db` matches by SUBSTRING**, so a `test/db-archive/` sibling would have been swept
+back into every run — that is a real trap, found by experiment, and it is why any future triage must
+use a non-matching name. **The honest re-count is kept too.** **The per-file triage — fix it, or
+retire it and name the decision — is its own task.**
+
+## FLAGGED, CARRIED FORWARD
+1. **`docs/method/ORCHESTRATOR.md` → `ORCH-ROLE.md`** — rename with reference repair.
+2. **`03-REMAINING-WORK.md` and `04-OPEN-QUESTIONS.md` landed in `docs/method/` and are STATE, not
+   method.** This task flagged them rather than moving unilaterally. ⚠️ **Correct call.** They belong
+   in `docs/orch/`; ORCH6 will place them with the ORCH7 handoff.
+3. **`build-form-definitions-migration.mjs` was already broken before this task** *(confirmed by the
+   thread via `git ls-tree main`)*. **Pre-existing, unrelated, left alone. Correct.**
+4. **An untracked `docs/handoff/.DS_Store` survived the folder move** and kept the directory alive.
+   **Removed by ORCH6 at merge.**
