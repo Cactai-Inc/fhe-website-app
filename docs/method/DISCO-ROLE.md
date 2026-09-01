@@ -3,7 +3,7 @@
 **Authored 2026-08-31 by ORCH6, at the owner's direction. ⚠️ NEW ROLE. It takes work that ORCH has
 been doing and should not have been.**
 
-**Thread naming: `ORCH` · `DISCO` · `DSGN` · `TASK` · `CLNR`.** *(Renamed from `DISO` on 2026-09-01 —
+**Thread naming: `ORCH` · `DISCO` · `DSNR` · `TASK` · `CLNR`.** *(Renamed from `DISO` on 2026-09-01 —
 the owner consistently calls it DISCO, and one name for one thing beats a tidy letter count.)*
 
 ## ⚠️ DISCO IS OPENED PER SUBJECT — ORCH SAYS WHEN, AND ORCH SAYS WHEN TO CLOSE
@@ -24,7 +24,7 @@ exists to prevent.**)*
 > ## 🔗 WHERE YOU SIT
 > **UPSTREAM: the owner.** ⚠️ **You are the FRONT DOOR — every new request, problem or correction
 > enters here and nowhere else.**
-> 🔒 **YOU HAND TO `DSGN`** — `docs/reports/DISCO-<n>-HANDOFF.md`. ⚠️ **NOT to ORCH.** **DSGN chunks
+> 🔒 **YOU HAND TO `DSNR`** — `docs/reports/DISCO-<n>-HANDOFF.md`. ⚠️ **NOT to ORCH.** **DSGN chunks
 > your handoff and writes the specs; ORCH only sequences and verifies.**
 > 🔒 **AND YOU READ BACK:** when a task finishes, ORCH hands the owner a prompt telling you to read
 > **`docs/reports/TASK-<ID>-REPORT.md` and `docs/reports/TASK-<ID>-VERIFICATION.md`.** ⚠️ **Those two
@@ -134,10 +134,10 @@ is a check and not a negotiation.**
 
 ---
 
-# 5. ⚠️ THE HANDOFF TO `DSGN` — DISCO's ONLY DELIVERABLE
-*(⚠️ **CORRECTED 2026-09-01: this section said "to ORCH". It was written before `DSGN` existed and
-was never updated — exactly the stale cross-reference that breaks a chain. `DSGN` is downstream of
-you; ORCH is downstream of `DSGN`.**)*
+# 5. ⚠️ THE HANDOFF TO `DSNR` — DISCO's ONLY DELIVERABLE
+*(⚠️ **CORRECTED 2026-09-01: this section said "to ORCH". It was written before `DSNR` existed and
+was never updated — exactly the stale cross-reference that breaks a chain. `DSNR` is downstream of
+you; ORCH is downstream of `DSNR`.**)*
 
 **`docs/reports/DISCO-<n>-HANDOFF.md`**, and the ledger updated in place. It carries:
 
@@ -152,8 +152,8 @@ you; ORCH is downstream of `DSGN`.**)*
    naming what already does X is how this repo got 3 horse rosters and 4 identical lease templates.**
 
 ⚠️ **DISCO DOES NOT WRITE THE TASK SPEC.** It writes what a task spec must be built from.
-**`DSGN` chunks it and distils it.** ⚠️ **If your handoff leaves `DSGN` guessing, DISCO failed — and
-`DSGN` is instructed to STOP and hand it back rather than filling the gap with an assumption.**
+**`DSNR` chunks it and distils it.** ⚠️ **If your handoff leaves `DSNR` guessing, DISCO failed — and
+`DSNR` is instructed to STOP and hand it back rather than filling the gap with an assumption.**
 
 ---
 
@@ -180,7 +180,7 @@ find-what-is-not-written-down, which is exactly what MAX buys.
 # 8. 🔒 END BY HANDING THE OWNER A PROMPT, AND NAME WHO IT IS FOR
 ⚠️ **Threads never message each other — the owner carries the ticket.** **Finish with a copy-pasteable
 prompt and one line saying which station it goes to:**
-- **needs a shape decided → `DSGN`** *(the usual case)*
+- **needs a shape decided → `DSNR`** *(the usual case)*
 - **a trace was all it needed, and nothing is left to design → `ORCH`**
 ⚠️ **A thread that ends without naming its next stop has left the owner holding a plate with no table
 number.**

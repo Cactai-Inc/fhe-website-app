@@ -4,7 +4,7 @@
 > *"its crucial that everything done is always recorded with full fidelity somewhere at all times. if a
 > thread dies a new one needs to be able to pick up and the loss is near 0 or 0."*
 
-⚠️ **THIS FILE IS BINDING ON `ORCH` · `DISCO` · `DSGN` · `TASK` · `CLNR`.** Each role file points here
+⚠️ **THIS FILE IS BINDING ON `ORCH` · `DISCO` · `DSNR` · `TASK` · `CLNR`.** Each role file points here
 rather than repeating it, so there is one copy of the rule.
 
 ---
@@ -23,7 +23,7 @@ the hub; it is what the spokes write through, so nothing is ever in flight betwe
 | Spoke | Emits | ⚠️ If it is emitting anything else |
 |---|---|---|
 | **`DISCO`** | **discussion** — understanding, captured | it is deciding, or building. Stop it |
-| **`DSGN`** | **decisions** — chunks and specs | it is discussing with the owner. That is DISCO's |
+| **`DSNR`** | **decisions** — chunks and specs | it is discussing with the owner. That is DISCO's |
 | **`TASK`** | ⚠️ **a question, or a report. NOTHING ELSE** | it is designing. Send the question up |
 | **`ORCH`** + owner | **monitoring and routing** | ORCH is authoring, discovering, or fixing |
 
@@ -35,7 +35,7 @@ already looks — never a message passed between two live threads, because one o
 already closed.** ⚠️ **A blocked role does not wait to be told: it reads the hub and finds out.**
 
 🔒 **AUTHORITY IS LINEAR, AND MUST STAY THAT WAY.** **One owner per artifact: `DISCO` owns capture,
-`DSGN` owns specs, `ORCH` owns sequence and verification, `TASK` owns the build.** ⚠️ **Make
+`DSNR` owns specs, `ORCH` owns sequence and verification, `TASK` owns the build.** ⚠️ **Make
 AUTHORITY hub-and-spoke and you get two authors of one thing — which is every failure this repo has
 spent a month fixing: two nav tables, two revenue functions, two live handoff lineages.**
 
@@ -43,7 +43,7 @@ spent a month fixing: two nav tables, two revenue functions, two live handoff li
 | Role | Writes | Reads |
 |---|---|---|
 | `DISCO` | the ledger · `DISCO-<n>-HANDOFF.md` | the repo, the database, `TASK-*-REPORT` + `-VERIFICATION` |
-| `DSGN` | `docs/tasks/TASK-<ID>-*.md` · `DSGN-<n>-HANDOFF.md` | `DISCO-<n>-HANDOFF.md`, the ledger |
+| `DSNR` | `docs/tasks/TASK-<ID>-*.md` · `DSGN-<n>-HANDOFF.md` | `DISCO-<n>-HANDOFF.md`, the ledger |
 | `ORCH` | `TASK-<ID>-VERIFICATION.md` · `TASK-LEDGER.md` · `BOARD.md` · D-rules | `DSGN-<n>-HANDOFF.md`, task reports |
 | `TASK` | `TASK-<ID>-REPORT.md` · the code | its spec, `TASK-ROLE.md`, the hub |
 | `CLNR` | `CLNR-<n>-REPORT.md` | everything |

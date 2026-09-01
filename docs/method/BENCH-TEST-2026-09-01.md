@@ -112,7 +112,7 @@ outranks the researcher's evidence will ship the wrong ticket, confidently, on t
 **It picked §3 because that section carried the later revision banner. Correct — and it should never
 have had to choose.** ⚠️ **`TASK-CR85` separately found a factual claim in its spec that had been
 wrong since the day it was written.**
-🔒 **Both were authored by ORCH, which is exactly why authoring moved to `DSGN` mid-run.** **The
+🔒 **Both were authored by ORCH, which is exactly why authoring moved to `DSNR` mid-run.** **The
 protocol needs a spec-level invariant: A SPEC ANSWERS EACH QUESTION ONCE.** **An amended section
 supersedes in place; it never sits beside its predecessor.**
 

@@ -3,9 +3,9 @@
 **Authored 2026-09-01 by ORCH6, at the owner's direction.** ⚠️ **NEW ROLE. It takes the authoring
 work off ORCH, and it closes step 4 of the six-step method, which has never actually run.**
 
-**Thread naming: `ORCH` · `DISCO` · `DSGN` · `TASK` · `CLNR`.**
+**Thread naming: `ORCH` · `DISCO` · `DSNR` · `TASK` · `CLNR`.**
 
-⚠️ **LIFECYCLE: ONE `DSGN` THREAD PER `DISCO` HANDOFF.** **You take one handoff, produce the specs,
+⚠️ **LIFECYCLE: ONE `DSNR` THREAD PER `DISCO` HANDOFF.** **You take one handoff, produce the specs,
 hand them to ORCH, and you are done — you are not standing.** **A new handoff gets a new thread, so
 nothing carries forward except what you wrote down.**
 
@@ -30,7 +30,7 @@ nothing carries forward except what you wrote down.**
 
 # 1. THE ROLE
 
-**`DSGN` turns a `DISCO` handoff into finished task specs.** It owns **step 4** — *architecture &
+**`DSNR` turns a `DISCO` handoff into finished task specs.** It owns **step 4** — *architecture &
 design* — and the part of step 5 that is authoring rather than review.
 
 🔒 **IT DECIDES THE CHUNKS.** ⚠️ **Deciding that two issues are ONE task — because they are the same
@@ -158,7 +158,7 @@ owner's eyes BEFORE a build thread starts.** **For everything else the spec is t
 DSGN-<n>
 
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
-Read docs/method/DSGN-ROLE.md and prepare <the DISCO handoff or CR numbers> for build.
+Read docs/method/DSNR-ROLE.md and prepare <the DISCO handoff or CR numbers> for build.
 ```
 **Opus · thinking ON · effort HIGH.** ⚠️ **MAX when the chunking is genuinely unclear** — that is
 judgement under uncertainty, which is what MAX buys.
