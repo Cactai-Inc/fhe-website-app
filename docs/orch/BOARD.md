@@ -4,25 +4,30 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-01 · **ORCH6, at handoff**
+**Last updated:** 2026-09-01 · **ORCH7, on takeover — both running records checked, both threads ON
+the rails, ⚠️ one worktree collision found and separation orders issued (below)**
 
 ## RESUME
-**Last updated 2026-09-01 at the ORCH6→ORCH7 handoff. ⚠️ THE LINE ABOVE SAYING "NOTHING IS RUNNING"
-IS SUPERSEDED BY THIS BLOCK — two threads went out after it was written.**
-
-- ⚠️ **RUNNING NOW: `SIGNBOOK` (wt-1, Opus·MAX) and `REQCARDS` (wt-2, Opus·HIGH).**
-  **Both dispatched by the owner; neither has reported.**
-  ⚠️ **THE OWNER'S READ: both are slow, and `REQCARDS` asked a question, got his answer, and then
-  said it was recalculating. He suspects they are off the rails.**
-  🔒 **ORCH7's FIRST ACT: check each thread's RUNNING RECORD before concluding anything** —
-  `docs/reports/TASK-SIGNBOOK-LEDGER.md` and `docs/reports/TASK-REQCARDS-LEDGER.md`
-  *(`THE-RUNNING-RECORD.md` requires a RESUME block kept current)*. **A thread with a current
-  RESUME block naming its IN FLIGHT step is working. A thread with a stale one, or none, is the
-  finding — and its absence is itself a role violation worth reporting.**
-  ⚠️ **`MAX` effort means single turns of many minutes are NORMAL** —
-  `docs/reference/MODEL-CHOICE-NOTES-2026-09-01.md`. **Slow is not evidence of failure; a stale
-  record is.** **And a `TASK` thread asking ONE question and stopping is correct behaviour
-  (`TASK-ROLE.md`); asking repeatedly, or re-planning after each answer, is not.**
+- ⚠️ **RUNNING NOW — two threads, and BOTH ARE IN `wt-1`. That is the collision.**
+  1. **`SIGNBOOK`** (Opus·MAX) — ledger current at 14:20, migration drafted, three commits of real
+     work. **On the rails.** Its §4 blocker finding (the shop step is unreachable for a self-serve
+     visitor) is the task's own ground.
+  2. **`LIFECYCLE`** — ⚠️ **this is the thread dispatched as `REQCARDS`.** It measured, found
+     REQCARDS unbuildable (no `requested`/`approved`/`moved` in `bookings_status_check`, LIFECYCLE
+     unbuilt), asked ONE question, took the owner's ruling — **build LIFECYCLE first** — and stood
+     down onto `TASK-LIFECYCLE`. **That is correct TASK behaviour, not going off the rails.** Its
+     ledger is current; design locked; migrations are its next step.
+- 🔴 **THE COLLISION (reflog-proven):** at 14:19:39 the LIFECYCLE thread ran
+  `checkout task/lifecycle` **inside `wt-1`, under SIGNBOOK mid-flight.** SIGNBOOK's branch
+  `task/signbook` is stranded at its first commit; SIGNBOOK's later commits (`237d150f`,
+  `65803545`, `2685c05d`) and LIFECYCLE's ledger commit (`654e1ed5`) are interleaved on
+  `task/lifecycle`. **Separation ordered 2026-09-01 by ORCH7:** LIFECYCLE relocates to `wt-2` on
+  `task/lifecycle-b` (cherry-picks `654e1ed5`); SIGNBOOK stays in `wt-1` and takes
+  `git branch -f task/signbook HEAD && git checkout task/signbook`; the mixed `task/lifecycle`
+  branch is deleted once both confirm. **Safe in either order — each acts by SHA, not branch name.**
+- **`REQCARDS` returns to the queue:** blocked on LIFECYCLE's merge, on DSNR folding the owner's
+  three answers (in `TASK-REQCARDS-LEDGER.md`, bottom) into the spec, and on the modal
+  full-option-set conversation the owner offered — that conversation is `DISCO`'s, before re-spec.
 
 - 🔒 **HOLD, AND THIS IS ORCH6's RULING — do not release until BOTH builds merge:**
   **`CLNR-REPO-STATE`** and **`DSNR-SITE-PUBLIC`**, both queued and ready in the owner's input.
@@ -35,35 +40,27 @@ IS SUPERSEDED BY THIS BLOCK — two threads went out after it was written.**
   `REAPER` · `BOOKS1` · `SIGNSTRIP` · `SIGNDOOR` · `ANALYTICS`. **`main` pushed and clean.**
 - **Gates on `main`:** typecheck **0** · typecheck:api **0** · lint **46** · build **clean** ·
   `test:api` **7/7** · ⚠️ **`test:db` red at baseline and proof of nothing.**
-- **Worktree pool:** ⚠️ **`wt-1` and `wt-2` are IN USE.** `wt-3` is idle at `origin/main`, clean,
-  with `node_modules` and the `.env` pair.
+- **Worktree pool:** `wt-1` = SIGNBOOK · `wt-2` = LIFECYCLE (after relocation) · `wt-3` idle at
+  `origin/main`, clean, with `node_modules` and the `.env` pair.
 
-## ▶ DISPATCHED 2026-09-01 — ⚠️ BOTH ARE RUNNING; DO NOT RE-ISSUE
-```
-FHE-TASK-SIGNBOOK
-
-Read /Users/cactai/Downloads/claude-code-repo/fhe-website-app/docs/tasks/TASK-SIGNBOOK-the-wizard-ends-in-a-booking-request-not-a-payment.md and build it.
-```
-**Opus · thinking ON · effort MAX · `wt-1`** — carries the deferred-assignment trigger and inverts
-WALK1's pay-first gate.
-```
-FHE-TASK-REQCARDS
-
-Read /Users/cactai/Downloads/claude-code-repo/fhe-website-app/docs/tasks/TASK-REQCARDS-the-request-card-is-an-action-surface-and-both-ends-press-buttons.md and build it.
-```
-**Opus · thinking ON · effort HIGH · `wt-2`** — ⚠️ **its §9 is SUPERSEDED by CR-99 A2; the spec now
-says so at the bottom.**
-
-**Parallel-safe:** SIGNBOOK owns the wizard, REQCARDS owns the staff dashboard + payment modal.
+## ▶ RUNNING 2026-09-01 — DO NOT RE-ISSUE EITHER
+- **`SIGNBOOK`** — Opus·MAX · `wt-1` · branch `task/signbook` (after separation). Spec:
+  `docs/tasks/TASK-SIGNBOOK-the-wizard-ends-in-a-booking-request-not-a-payment.md`.
+- **`LIFECYCLE`** — the ex-REQCARDS thread (Opus·HIGH) · `wt-2` · branch `task/lifecycle-b`
+  (after separation). Spec: `docs/tasks/TASK-LIFECYCLE-six-states-and-the-thirty-day-horizon.md`.
+- **Queued behind LIFECYCLE:** `REQCARDS` (see RESUME) · then the held `CLNR-REPO-STATE` and
+  `DSNR-SITE-PUBLIC`.
 
 ## ⚠️ EXCLUSIVE OWNERSHIP (D35 — a worktree isolates git, NOT the database)
 | Object / file | Owner | State |
 |---|---|---|
-| the onboarding wizard · `my_onboarding_state` · `update_my_onboarding_profile` | ⚠️ **reserve for `SIGNBOOK`** | applied by SIGNDOOR; SIGNBOOK extends |
-| the staff dashboard cards · the client payment modal | ⚠️ **reserve for `REQCARDS`** | |
+| the onboarding wizard (`Onboarding.tsx`) · `my_onboarding_state` · `update_my_onboarding_profile` | **`SIGNBOOK`** | applied by SIGNDOOR; SIGNBOOK extends |
+| `open_document_delivery_hold` · `hold_my_document_delivery` · `deliver_executed_document_set` · `submit_my_booking_request` (new) | **`SIGNBOOK`** | per its drafted migration |
+| `bookings_status_check` · `bookings` default · `booking_status_code` · `calendar_free_busy` · `request_open_time` · `request_booking_change` · `decide_booking_change` · `confirm_booking_for_purchase` · the payment-confirmation trigger on `purchases` | ⚠️ **`LIFECYCLE`** | 🔒 **SIGNBOOK CALLS `request_open_time` and may not edit it** — its migration header already says so |
+| `_ensure_plan_horizon` · `ensure_standing_slots` · `mint_recurring_allotments` | **`LIFECYCLE`** | the three `current_date + 90` sites — was reserved for CR-90/97; LIFECYCLE is that build's first machine |
+| the staff dashboard cards · the client payment modal | **reserve for `REQCARDS`** | queued |
 | `mark_purchase_paid` · `revenue_summary` · the money columns | — | free — the BACKDATE+BOOKS1 union |
 | `AppLayout.tsx` · `pageRegistry.ts` · `ops/kit/Modal.tsx` | — | free |
-| `_ensure_plan_horizon` · `ensure_standing_slots` · `mint_recurring_allotments` | **reserve for the CR-90/CR-97 build** | ⚠️ **three functions carry `current_date + 90`, not one** |
 
 ## ⚠️ WAITING ON THE OWNER — four, and two block a dispatch
 1. ⚠️ **The reschedule waitlist shape (CR-97):** notify · first-refusal window · or auto-convert
