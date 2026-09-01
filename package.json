@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "typecheck:api": "tsc --noEmit -p tsconfig.api.json",
     "check:tokens": "node scripts/check-token-registry.mjs",
+    "test:api": "vitest run test/api",
     "test:db": "vitest run test/db"
   },
   "dependencies": {
