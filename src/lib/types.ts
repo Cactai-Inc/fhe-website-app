@@ -26,8 +26,12 @@ export type OrderStatus =
 export type PaymentMethod = 'zelle' | 'cash';
 export type PaymentStatus =
   | 'pending' | 'matched' | 'confirmed' | 'review' | 'failed' | 'refunded';
+/** ⚠️ TASK-LIFECYCLE — the owner's six states, and the two the machine ends on.
+ *  `pending_slot` / `pending_payment` are retired: three spellings of one idea,
+ *  and the CHECK constraint no longer permits either. */
 export type BookingStatus =
-  | 'pending_slot' | 'pending_payment' | 'confirmed' | 'cancelled' | 'expired';
+  | 'requested' | 'approved' | 'pending' | 'scheduled' | 'moved' | 'cancelled'
+  | 'confirmed' | 'expired' | 'completed' | 'no_show';
 
 export interface Profile {
   user_id: string;

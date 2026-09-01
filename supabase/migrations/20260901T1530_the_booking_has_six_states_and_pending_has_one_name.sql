@@ -81,36 +81,11 @@ AS $function$
                               'confirmed', 'scheduled', 'completed', 'no_show')
 $function$;
 
-CREATE OR REPLACE FUNCTION public.confirm_booking(p_booking_id uuid)
- RETURNS jsonb
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
-AS $function$
-DECLARE v_b bookings%ROWTYPE;
-BEGIN
-  IF NOT has_staff_access() THEN RAISE EXCEPTION 'operator access required'; END IF;
-  SELECT * INTO v_b FROM bookings WHERE id = p_booking_id AND org_id = current_org();
-  IF NOT FOUND THEN RAISE EXCEPTION 'booking not found in this org'; END IF;
-  IF v_b.status NOT IN ('requested','approved','pending') THEN
-    RAISE EXCEPTION 'only a requested, approved or pending booking can be confirmed'; END IF;
-
-  UPDATE bookings SET status = CASE WHEN kind = 'lesson' THEN 'scheduled' ELSE 'confirmed' END,
-                      updated_at = now()
-   WHERE id = p_booking_id;
-
-  UPDATE booking_change_requests SET status='approved', decided_by=auth.uid(), decided_at=now()
-   WHERE booking_id = p_booking_id AND status='pending';
-
-  IF v_b.account_user_id IS NOT NULL THEN
-    INSERT INTO notifications (org_id, user_id, kind, title, link)
-      VALUES (v_b.org_id, v_b.account_user_id, 'booking_confirmed',
-              'Your session on ' || to_char(v_b.starts_at, 'FMMon FMDD, HH12:MI AM') || ' is confirmed',
-              '/app/calendar');
-  END IF;
-  RETURN jsonb_build_object('status', 'confirmed');
-END;
-$function$;
+-- ⚠️ `confirm_booking` ALSO tested the triple, and it is NOT here: it is
+-- defined once, in full, in the migration that owns the transitions
+-- (`20260901T1640_*`), because the same edit that renames its guard also
+-- teaches it `approved`. Two partial definitions of one function across two
+-- files is how a repo ends up with two of everything.
 
 -- ⚠️ TWO FIXES BESIDE THE RENAME, both found by reading it:
 --   (a) it set 'confirmed' for a LESSON too, where every other transition in

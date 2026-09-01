@@ -17,6 +17,7 @@ import {
   saveCalendarItem,
   deleteCalendarItem,
   confirmBooking,
+  bookingAwaitsPayment,
   fetchOpenChangeRequests,
   decideBookingChange,
   requestHorseIntake,
@@ -419,11 +420,22 @@ export function CalendarItemPanel({
     onClose();
   }
 
+  /** ⚠️ TASK-LIFECYCLE / D19 — the same act as the queue's Confirm, and it says
+   *  the same thing first: on an unpaid order this APPROVES and asks for the
+   *  money, it does not schedule. */
   async function confirm() {
     if (!item?.id) return;
+    let owes = false;
+    try { owes = await bookingAwaitsPayment(item.id); } catch { owes = false; }
+    if (owes && !window.confirm(
+      'This order is not paid yet.\n\nApproving it will mark the session APPROVED and send the client a payment request. It is not scheduled until the payment is confirmed.\n\nSend the payment request?'
+    )) return;
     setBusy(true); setError(null);
     try {
-      await confirmBooking(item.id);
+      const res = await confirmBooking(item.id);
+      if (res.payment_requested) {
+        window.alert('Approved — the payment request has been sent. The session schedules itself once you confirm the money arrived.');
+      }
       done.current = true;
       onSaved();
     } catch (e) {

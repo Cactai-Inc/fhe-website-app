@@ -97,4 +97,18 @@ SELECT decide_booking_change(
            ORDER BY cr.created_at DESC LIMIT 1), true) -> 'payment_requested' AS payment_requested;
 SELECT status AS booking_now FROM bookings WHERE id = :'paid_booking'::uuid;
 
+\echo ''
+\echo '######## T12d · THE BUTTON STAFF ACTUALLY PRESS — confirm_booking, not decide ########'
+\echo '-- CalendarPage.tsx:1320 confirmNew() and CalendarItemPanel.tsx:426 both call this one. --'
+SET LOCAL request.jwt.claims = :PARTY;
+SELECT request_open_time(
+         date_trunc('hour', now()) + interval '6 days',
+         date_trunc('hour', now()) + interval '6 days 1 hour',
+         NULL, NULL, 'confirm_booking walk') ->> 'booking_id' AS cb_booking \gset
+UPDATE bookings SET purchase_id='3174b842-5c24-4c81-8e66-8afea88a0a20', credit_id=NULL
+ WHERE id = :'cb_booking'::uuid;   -- a real UNPAID order ($500, awaiting_payment)
+SET LOCAL request.jwt.claims = :STAFF;
+SELECT confirm_booking(:'cb_booking'::uuid) AS confirm_booking_says;
+SELECT status AS booking_now FROM bookings WHERE id = :'cb_booking'::uuid;
+
 ROLLBACK;

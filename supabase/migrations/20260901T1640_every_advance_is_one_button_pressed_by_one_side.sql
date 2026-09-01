@@ -22,6 +22,86 @@
 -- moved. All are `CREATE OR REPLACE` on the SAME signature — no DROP, so no ACL
 -- reset (TASK-ROLE §2a).
 
+-- ── ONE PREDICATE FOR "DOES THIS SESSION STILL OWE MONEY?" ─────────────────
+-- ⚠️ TWO SURFACES APPROVE A REQUEST, AND THEY CALL DIFFERENT FUNCTIONS.
+-- `CalendarPage.tsx:1320` (`confirmNew`) and `CalendarItemPanel.tsx:426` both
+-- call `confirm_booking`; the queue's Decide button calls
+-- `decide_booking_change`. Had the rule been written into only the one the spec
+-- names, `approved` would have been unreachable from the button staff actually
+-- press — TASK-ROLE §2b, a green function nothing reaches. It is written ONCE,
+-- here, and both callers ask it.
+CREATE OR REPLACE FUNCTION public.booking_awaiting_payment(p_booking bookings)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public'
+AS $function$
+  -- Skipped exactly where the owner said `approved` is skipped: the session was
+  -- bought with a credit, there is no order behind it, the order is paid, or it
+  -- owes nothing.
+  SELECT p_booking.credit_id IS NULL
+     AND p_booking.purchase_id IS NOT NULL
+     AND EXISTS (
+       SELECT 1 FROM purchases p
+        WHERE p.id = p_booking.purchase_id
+          AND p.deleted_at IS NULL
+          AND p.status <> 'void'
+          AND coalesce(p.payment_status,'') <> 'paid'
+          AND greatest(coalesce(p.amount,0) - coalesce(p.amount_paid,0), 0) > 0);
+$function$;
+
+REVOKE EXECUTE ON FUNCTION public.booking_awaiting_payment(bookings) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.booking_awaiting_payment(bookings) FROM anon;
+GRANT  EXECUTE ON FUNCTION public.booking_awaiting_payment(bookings) TO authenticated;
+
+-- ── THE OTHER APPROVE BUTTON ───────────────────────────────────────────────
+-- `confirm_booking` is what the staff queue's "Confirm" and the item panel both
+-- press. Its guard is renamed to the three real pre-firm states (TASK-LIFECYCLE
+-- A), and it now lands on `approved` and asks for the money on exactly the same
+-- condition `decide_booking_change` does.
+CREATE OR REPLACE FUNCTION public.confirm_booking(p_booking_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_b bookings%ROWTYPE; v_owes boolean;
+BEGIN
+  IF NOT has_staff_access() THEN RAISE EXCEPTION 'operator access required'; END IF;
+  SELECT * INTO v_b FROM bookings WHERE id = p_booking_id AND org_id = current_org();
+  IF NOT FOUND THEN RAISE EXCEPTION 'booking not found in this org'; END IF;
+  IF v_b.status NOT IN ('requested','approved','pending') THEN
+    RAISE EXCEPTION 'only a requested, approved or pending booking can be confirmed'; END IF;
+
+  v_owes := booking_awaiting_payment(v_b);
+
+  UPDATE bookings
+     SET status = CASE WHEN v_owes THEN 'approved'
+                       WHEN kind = 'lesson' THEN 'scheduled' ELSE 'confirmed' END,
+         updated_at = now()
+   WHERE id = p_booking_id;
+
+  UPDATE booking_change_requests SET status='approved', decided_by=auth.uid(), decided_at=now()
+   WHERE booking_id = p_booking_id AND status='pending';
+
+  IF v_owes THEN
+    -- the ask for the money raises the buyer's "payment due" notice and the
+    -- staff copy through notify_purchase_unpaid, so this branch does not also
+    -- send a "confirmed" notice for a session that is not confirmed yet.
+    PERFORM request_purchase_payment(v_b.purchase_id, NULL);
+    RETURN jsonb_build_object('status', 'approved', 'payment_requested', true);
+  END IF;
+
+  IF v_b.account_user_id IS NOT NULL THEN
+    INSERT INTO notifications (org_id, user_id, kind, title, link)
+      VALUES (v_b.org_id, v_b.account_user_id, 'booking_confirmed',
+              'Your session on ' || to_char(v_b.starts_at, 'FMMon FMDD, HH12:MI AM') || ' is confirmed',
+              '/app/calendar');
+  END IF;
+  RETURN jsonb_build_object('status', 'confirmed', 'payment_requested', false);
+END;
+$function$;
+
 CREATE OR REPLACE FUNCTION public.request_open_time(p_starts_at timestamp with time zone, p_ends_at timestamp with time zone, p_offering_id uuid DEFAULT NULL::uuid, p_horse_id uuid DEFAULT NULL::uuid, p_note text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -407,14 +487,8 @@ BEGIN
   -- reschedule of something already settled.
   -- Staff-only, because `request_purchase_payment` is staff-only: when the
   -- CLIENT accepts a staff counter-time this behaves exactly as it did before.
-  IF p_approve AND v_cr.request_kind = 'new' AND v_b.credit_id IS NULL
-     AND v_b.purchase_id IS NOT NULL AND has_staff_access() THEN
-    SELECT coalesce(p.payment_status,'') <> 'paid'
-             AND greatest(coalesce(p.amount,0) - coalesce(p.amount_paid,0), 0) > 0
-             AND p.status <> 'void'
-      INTO v_needs_payment
-      FROM purchases p WHERE p.id = v_b.purchase_id AND p.deleted_at IS NULL;
-    v_needs_payment := coalesce(v_needs_payment, false);
+  IF p_approve AND v_cr.request_kind = 'new' AND has_staff_access() THEN
+    v_needs_payment := booking_awaiting_payment(v_b);
   END IF;
 
   -- resolve the affected occurrences by scope
