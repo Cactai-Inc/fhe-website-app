@@ -272,22 +272,32 @@ HAND** — never because a subject *might* come back.
 was.** 🔒 **So a thread writes its record BEFORE it hands over, every time** —
 `THE-RUNNING-RECORD`. **Nothing may be recoverable only from a window that is about to be shut.**
 
-## 🔒 NAMING IS RETRIEVAL — the identifier is the only handle a week later
+## 🔒 THE PROMPT — two lines, one file, nothing else (owner, 2026-09-01)
 
-> *"its hard to find a thread once there are 100 in front of it or its a week old."*
+```
+FHE-TASK-SIGNBOOK
 
-🔒 **THREE SEGMENTS: `<ROLE>-<AREA>-<ITEM>`.** **`DISCO-CAL-FIX4` · `DSGN-BOOKS-COMP` ·
-`TASK-CAL-BACKDATE`.**
-⚠️ **NO SPACES — a space breaks the identifier as a searchable token.** `DISCO-CAL-BOOKING FIX` is
-worse than `DISCO-CAL-FIX4`.
-⚠️ **ABBREVIATE THE AREA** — `CAL`, `BOOKS`, `NAV`, `DOCS`. **The area is the coarse filter you scan
-for; the item is what tells them apart.**
-⚠️ **`DISCO-1` is unfindable in a week — a serial says nothing about what is inside it.**
-- **The identifier is the FIRST LINE of the prompt, alone** — it is what becomes the tab title.
-- ⚠️ **THE FILES CARRY THE SAME SLUG:** `DISCO-CALENDAR-HANDOFF.md`, `TASK-BACKDATE-REPORT.md`,
-  `TASK-BACKDATE-VERIFICATION.md`. **Thread name → file name, in both directions, without a lookup.**
-- **Add a date suffix ONLY when the same subject genuinely recurs** — `DISCO-CALENDAR-0915`.
-- **Keep it short enough to read in a truncated tab.**
+Read /Users/cactai/Downloads/claude-code-repo/fhe-website-app/docs/tasks/TASK-SIGNBOOK-….md and build it.
+```
+
+**LINE 1 — the thread name: `<REPO>-<ROLE>-<UNIQUE TASK NAME>`.** ⚠️ **ROLE ONLY, NEVER THE PROFILE.**
+**`CODR` is a profile and lives INSIDE the file, not in the name** — a profile in the name is a second
+name for one thing. **No spaces; the id must survive as a searchable token and as a truncated tab
+title.**
+
+**LINE 2 — ONE FILE, BY ABSOLUTE PATH, and the instruction to read it.** ⚠️ **The absolute path is why
+there is no `cd` line: a fresh session starts wherever it starts, and an absolute path works from
+there.**
+
+🔒 **THAT FILE IS THE ONLY THING ORCH HANDS OVER, AND IT IS SELF-SUFFICIENT.** **Everything the thread
+needs is inside it — the authored instruction, plus LINKS to every reference it must read.**
+⚠️ **NEVER two files in a prompt. NEVER context in the prompt itself.** **Restating anything in the
+prompt creates a second source of truth that drifts from the file within hours** — and the file is
+what survives; the prompt is thrown away the moment it is pasted.
+
+⚠️ **CONSEQUENCE FOR `DSNR`: a spec that assumes the thread already knows something is broken.** **If
+a ruling, a report or a role file matters to the build, THE SPEC LINKS IT.** **ORCH does not get to
+patch the gap in chat.**
 
 ## 🔒 THE FRONT DOOR IS `DISCO`, AND IT IS THE ONLY ONE
 ⚠️ **EVERY new request, problem, idea or correction enters through `DISCO`.** **Not through ORCH.**

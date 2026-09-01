@@ -196,3 +196,11 @@ sometimes they need to find and lock the answer with me."*
 
 🔒 **THE TEST, ASKED OF EVERY DECISION YOU MAKE: was this HOW handed to me, or do I owe a lock on it?**
 ⚠️ **"Nobody said, so I chose" is the answer that produces work that has to be undone.**
+
+# 🔒 YOUR SPEC IS THE ONLY THING THE THREAD IS GIVEN — MAKE IT SELF-SUFFICIENT
+**The prompt is two lines: a thread name, and ONE absolute path to YOUR FILE.** ⚠️ **Nothing else is
+handed over. No context in the prompt, no second file, no "ORCH will explain."**
+🔒 **SO THE SPEC LINKS EVERY REFERENCE THE BUILD MUST READ** — the role file, the ledger ruling that
+governs it, the prior report it depends on, the D-rule it must honour. **By path.**
+⚠️ **A spec that assumes the thread already knows something is broken, and ORCH cannot patch it in
+chat.**
