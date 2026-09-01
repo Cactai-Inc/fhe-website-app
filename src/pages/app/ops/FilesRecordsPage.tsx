@@ -199,8 +199,8 @@ export function FilesRecordsPage() {
         emptyMessage="Files uploaded anywhere in the app — by staff or members — appear here."
       />
 
-      {/* ⚠️ TASK-FIX4 §3 — converged. A preview holds nothing typed, so click-out
-          still closes it. */}
+      {/* ⚠️ TASK-FIX4 §3 — converged. A preview holds nothing typed.
+          ⚠️ TASK-MODAL2 D1: click-out no longer closes it. The X does. */}
       {preview && (
         <Modal open onClose={() => setPreview(null)} size="full"
           title={preview.file.title || preview.file.filename}>

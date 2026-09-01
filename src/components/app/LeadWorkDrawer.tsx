@@ -324,7 +324,7 @@ export function LeadWorkDrawer({ request, onClose, onChanged }: LeadWorkDrawerPr
   const agreedLesson = agreedLessonFrom(agreedFields, user?.id ?? null);
 
   return (
-    <Modal open onClose={onClose} title="Booking request" disableBackdropClose={busy}>
+    <Modal open onClose={onClose} title="Booking request">
       <div className="flex flex-col gap-5">
         {toast.toasts.map((t) => (
           <div key={t.id} role="status"

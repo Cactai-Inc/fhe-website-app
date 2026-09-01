@@ -235,7 +235,6 @@ export function DocumentIntegrityPanel() {
         onClose={() => {
           if (!busy) setTarget(null);
         }}
-        disableBackdropClose={busy}
         title="Remove this document?"
         footer={
           <>

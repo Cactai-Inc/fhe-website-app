@@ -13,9 +13,10 @@
  * is what makes a MIXED cart the expected outcome rather than an accident.
  *
  * Built on the project's existing `Modal` (`components/ops/kit/Modal.tsx`) — the
- * focus trap, Escape handling, scroll lock and backdrop are already solved
- * there, and §C3 says explicitly not to write a second one. That kit component
- * carries no ops-specific dependency; it is a plain dialog.
+ * focus trap and the close rule are already solved there, and §C3 says explicitly
+ * not to write a second one. That kit component carries no ops-specific
+ * dependency; it is a plain dialog. ⚠️ TASK-MODAL2 D1: neither Escape nor a
+ * click on the backdrop closes it; the header X is the only way out.
  */
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';

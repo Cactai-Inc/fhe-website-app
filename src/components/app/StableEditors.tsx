@@ -18,9 +18,11 @@ import { fetchLocations, addMyLocation, type CalendarLocation } from '../../lib/
  * ⚠️ TASK-FIX4 §3 — CONVERGED ON THE SHARED `ops/kit/Modal`. `Shell` used to be a
  * hand-rolled overlay whose backdrop carried `onClick={onClose}`, so a click
  * beside the box threw away a half-filled horse record. That is CR-68a, the
- * incident the owner reported on 2026-08-25. It is now the shared dialog's rule
- * for every caller: **a dialog holding a field does not close on a backdrop
- * click**, and what was typed is in browser storage regardless.
+ * incident the owner reported on 2026-08-25. ⚠️ TASK-MODAL2 D1 is now the rule
+ * for every caller: **nothing but a control closes a dialog** — not the
+ * backdrop, not Escape — and what was typed is in browser storage regardless.
+ * ⚠️ It was also `variant="sheet"`; D2 eliminated the sheet, so it is a centre
+ * box like everything else.
  */
 
 const inputCls = 'w-full px-3 py-2.5 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring';
@@ -36,7 +38,7 @@ function Shell({ title, onClose, onClear, saveStatus, children }: {
   children: React.ReactNode;
 }) {
   return (
-    <Modal open onClose={onClose} title={title} variant="sheet" size="sm"
+    <Modal open onClose={onClose} title={title} size="sm"
       onClear={onClear} saveStatus={saveStatus} panelClassName="bg-cream">
       {children}
     </Modal>

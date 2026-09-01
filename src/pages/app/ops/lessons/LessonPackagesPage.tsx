@@ -305,7 +305,6 @@ export function LessonPackagesPage() {
           open={drawer.mode !== 'closed'}
           onClose={closeDrawer}
           title={drawer.mode === 'edit' ? 'Edit package' : 'New package'}
-          disableBackdropClose={save.isPending}
         >
           {drawer.mode !== 'closed' && (
             <PackageForm

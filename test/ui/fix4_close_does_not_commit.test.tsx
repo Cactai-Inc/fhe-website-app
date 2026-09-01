@@ -17,6 +17,17 @@
  * The write itself is spied at `updateContactRecord` — the single RPC seam this
  * surface has — so what is being pinned is whether a WRITE LEAVES THE APP, not
  * which function called it.
+ *
+ * ⚠️ EXTENDED BY TASK-MODAL2 (CR-93). TWO ASSERTIONS BELOW WERE INVERTED AND THE
+ * RULE CHANGES ARE NAMED WHERE THEY LAND:
+ *   · **Escape used to close this record and now does not** (D1). FIX4 kept the
+ *     keystroke deliberately; the owner withdrew every exit that is not a control.
+ *     ⚠️ The half that did NOT change is the one this file exists for — Escape
+ *     wrote nothing then and writes nothing now.
+ *   · **The indicator used to read `Saved to the record` and now reads `Saved`**
+ *     (D3), in the header beside Close. The owner named the word.
+ * And one behaviour is new: **leaving a field commits at once**, without waiting
+ * out the 700ms debounce (D4).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -108,10 +119,15 @@ describe('⚠️ criterion 1 — closing a record with unsaved input does NOT co
     expect(updateContactRecord).not.toHaveBeenCalled();
   });
 
-  it('Escape writes nothing', async () => {
+  /* ⚠️ INVERTED BY TASK-MODAL2 D1 ON THE `onClose` HALF ONLY. FIX4 asserted
+     `expect(onClose).toHaveBeenCalled()` here, because Escape was a deliberate
+     exit. It is not one any more: *"just make all modals only close on click of
+     button or link."* The write half is untouched and is the point of the file. */
+  it('⚠️ Escape neither writes NOR closes', async () => {
     const { onClose } = await openWithEdit();
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(onClose).toHaveBeenCalled();
+    fireEvent.keyDown(document.querySelector('[role="dialog"]')!, { key: 'Escape' });
+    expect(onClose).not.toHaveBeenCalled();
     expect(updateContactRecord).not.toHaveBeenCalled();
   });
 
@@ -135,10 +151,24 @@ describe('criterion 2 — input DOES commit, on its own', () => {
     expect(updateContactRecord).toHaveBeenCalledWith('c1', { first_name: 'Elishevaa' });
   });
 
+  /* ⚠️ THE WORD CHANGED (D3). It read `Saved to the record` — a `savedLabel`
+     this file passed by hand — until the owner named the word: *"a green
+     checkmark with the word saved in green (light green)."* */
   it('shows the auto-save indicator, so the person can tell it happened', async () => {
     await openWithEdit({ freeze: false });
     await waitFor(() => expect(updateContactRecord).toHaveBeenCalled(), { timeout: 3000 });
-    await waitFor(() => expect(screen.getByText('Saved to the record')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Saved')).toBeTruthy());
+  });
+
+  /* ⚠️ AND IT SITS BESIDE THE CLOSE ICON (D3). This surface keeps its own shell,
+     so it reaches the rule by hand — which is exactly why it is asserted. */
+  it('⚠️ D3 — the indicator is in the header cluster, next to the X', async () => {
+    await openWithEdit({ freeze: false });
+    await waitFor(() => expect(screen.getByText('Saved')).toBeTruthy(), { timeout: 3000 });
+    const saved = screen.getByText('Saved');
+    // index 0 is the header X; the footer `Close` button is the other control.
+    expect(closeControls()[0].parentElement!.contains(saved)).toBe(true);
+    expect(saved.className).toContain('text-green-500');
   });
 
   it('⚠️ a failed write keeps the record open, the edits in the boxes, and says why', async () => {
@@ -149,6 +179,46 @@ describe('criterion 2 — input DOES commit, on its own', () => {
     expect(screen.getByRole('alert').textContent).toContain('permission denied');
     expect((screen.getByLabelText('First name') as HTMLInputElement).value).toBe('Elishevaa');
     expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+/* ⚠️ D4 — THE FIELD EXIT IS ITSELF THE TRIGGER (TASK-MODAL2 · CR-93).
+   Owner: *"the auto save and normalize functions are supposed to run when the
+   user clicks out of the field they entered the input into."* The debounce is
+   still there and still works — that is the test above — but nobody waits it out.
+   ⚠️ BOTH HALVES ARE ASSERTED, because a test proving only the blur path would
+   pass on a build that had deleted the debounce and lost mid-typing insurance. */
+describe('⚠️ D4 — leaving a field saves at once', () => {
+  it('⚠️ a blur commits WITHOUT the 700ms debounce elapsing', async () => {
+    await openWithEdit();
+    expect(updateContactRecord).not.toHaveBeenCalled();
+
+    fireEvent.blur(screen.getByLabelText('First name'));
+    // Far short of the 700ms debounce: this write can only be the blur's.
+    await act(async () => { await vi.advanceTimersByTimeAsync(30); });
+
+    expect(updateContactRecord).toHaveBeenCalledTimes(1);
+    expect(updateContactRecord).toHaveBeenCalledWith('c1', { first_name: 'Elishevaa' });
+  });
+
+  it('⚠️ and the blur saves the NORMALISED value, not what was typed', async () => {
+    render(<ContactDossierModal contactId="c1" onClose={vi.fn()} />);
+    const last = await screen.findByLabelText('Last name');
+    vi.useFakeTimers();
+    fireEvent.change(last, { target: { value: 'fiszer' } });
+    fireEvent.blur(last);
+    await act(async () => { await vi.advanceTimersByTimeAsync(30); });
+
+    // NOT `{ last_name: 'fiszer' }` — normalisation runs first, and storing the
+    // typed value would be the CR-83 inversion.
+    expect(updateContactRecord).toHaveBeenCalledWith('c1', { last_name: 'Fiszer' });
+  });
+
+  it('a blur on something that is NOT a field does not trigger a save', async () => {
+    await openWithEdit();
+    fireEvent.blur(closeControls()[0]);
+    await act(async () => { await vi.advanceTimersByTimeAsync(30); });
+    expect(updateContactRecord).not.toHaveBeenCalled();
   });
 });
 

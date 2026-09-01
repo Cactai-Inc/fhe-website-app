@@ -88,7 +88,8 @@ export default function AvatarCropModal({ file, onConfirm, onCancel }: AvatarCro
 
   return (
     /* ⚠️ TASK-FIX4 §3 — converged. It already refused a backdrop close; what it
-       lacked was a Close control in the header, which every modal now has. */
+       lacked was a Close control in the header, which every modal now has —
+       and which ⚠️ TASK-MODAL2 D1 makes the only way out. */
     <Modal open onClose={onCancel} title="Crop your photo" size="sm" error={error}
       footer={
         <>

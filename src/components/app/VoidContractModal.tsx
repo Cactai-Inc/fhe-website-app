@@ -66,15 +66,17 @@ export function VoidContractModal({
     } finally { setBusy(false); }
   }
 
-  const dismissable = page === 1 || page === 2;
-
   return (
     /* ⚠️ TASK-FIX4 §3 — converged. Page 1 holds the note to the other party, so a
        backdrop click no longer discards it; pages 2 and 3 are past the point of
-       return and were already undismissable. */
+       return and were already undismissable.
+       ⚠️ TASK-MODAL2 D1 — the page-by-page distinction is gone with the prop that
+       carried it (`disableBackdropClose={!dismissable}`): nothing but a control
+       closes any of the three pages now, so `dismissable` had nothing left to
+       decide. The X in the header, and `Keep this contract` on page 1, are the
+       exits. */
     <Modal open onClose={onClose} size="md"
-      title={page === 1 ? 'Void this document' : page === 2 ? 'Keep or remove' : 'Document voided'}
-      disableBackdropClose={!dismissable}>
+      title={page === 1 ? 'Void this document' : page === 2 ? 'Keep or remove' : 'Document voided'}>
         {/* ── PAGE 1 — confirm + note ────────────────────────────────────── */}
         {page === 1 && (
           <>

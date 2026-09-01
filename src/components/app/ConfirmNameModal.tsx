@@ -32,8 +32,9 @@ import { toErrorMessage } from '../../lib/ops/errors';
  * typed here becomes `Fiszer` ON BLUR, in front of them, before it is saved and
  * long before it is what a signature attests to. `LaBuzetta` is left alone, and a
  * correction they make to our answer is never re-applied. This dialog also
- * deliberately does NOT close on a backdrop click and has no draft: the name is
- * committed by `Confirm my name` and by nothing else.
+ * has no draft: the name is committed by `Confirm my name` and by nothing else.
+ * ⚠️ It carried `disableBackdropClose` until TASK-MODAL2 D1 made that the rule
+ * for every dialog and removed the prop.
  */
 export function ConfirmNameModal({
   state, onConfirmed, onDismiss,
@@ -68,7 +69,6 @@ export function ConfirmNameModal({
   return (
     <Modal open onClose={onDismiss ?? (() => {})} size="sm"
       title="How should your name appear?" error={err}
-      disableBackdropClose
       footer={
         <>
           {onDismiss && (

@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
-import {
-  Mail, KeyRound, ArrowRight, ArrowLeft, Check, Eye, EyeOff, Loader2, MailCheck, AlertCircle, Sparkles,
-} from 'lucide-react';
+import { Mail, KeyRound, ArrowRight, Check, Eye, EyeOff, Loader2, MailCheck, AlertCircle, Sparkles } from 'lucide-react';
 import { Modal } from '../ops/kit/Modal';
 import { normalizeEmail } from '../../lib/normalize';
 import { toErrorMessage } from '../../lib/ops/errors';
+import { BackControl } from './BackControl';
 
 /**
  * EMAIL CHANGE — the full flow, styled. UI + state machine only; the marked seams
@@ -132,7 +131,7 @@ export function EmailChangeModal({
     /* ⚠️ TASK-FIX4 §3 — converged. A typed-in new address no longer disappears on
        a backdrop click. ⚠️ NO DRAFT HERE, deliberately: two of the four fields are
        a password, and this dialog's own `omit` would be the whole form. */
-    <Modal open onClose={onClose} variant="sheet" size="sm" panelClassName="bg-cream"
+    <Modal open onClose={onClose} size="sm" panelClassName="bg-cream"
       title="Change your email" subtitle={`Signed in as ${currentEmail}`}
       bare>
         <div className="px-5 pt-4 pb-2 flex items-center gap-3">
@@ -201,9 +200,9 @@ export function EmailChangeModal({
           {/* STEP: Google re-auth */}
           {screen === 'google' && (
             <div className="flex flex-col gap-4 animate-fade-in">
-              <button type="button" onClick={() => setScreen('enter')} className="inline-flex items-center gap-1.5 text-[12px] text-muted hover:text-green-800 self-start">
-                <ArrowLeft size={14} /> Back
-              </button>
+              {/* ⚠️ TASK-MODAL2 D5 — the shared control. `setScreen` only moves
+                  the step; the address already typed stays in state. */}
+              <BackControl onClick={() => setScreen('enter')} className="self-start" />
               <div className="text-center py-2">
                 <div className="w-14 h-14 rounded-2xl bg-white border border-green-800/10 shadow-sm grid place-items-center mx-auto mb-4">
                   <GoogleGlyph size={26} />
@@ -226,9 +225,7 @@ export function EmailChangeModal({
           {screen === 'password' && (
             <div className="flex flex-col gap-4 animate-fade-in">
               <div className="flex items-center justify-between">
-                <button type="button" onClick={() => setScreen('enter')} className="inline-flex items-center gap-1.5 text-[12px] text-muted hover:text-green-800">
-                  <ArrowLeft size={14} /> Back
-                </button>
+                <BackControl onClick={() => setScreen('enter')} />
                 <Dots index={stepIndex} total={3} />
               </div>
               <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-green-50 text-green-800 text-[12px]">

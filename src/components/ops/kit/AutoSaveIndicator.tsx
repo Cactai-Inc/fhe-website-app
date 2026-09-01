@@ -13,6 +13,25 @@ import type { SaveStatus } from '../../../lib/formState';
  * ⚠️ It reports what actually happened. `useFormDraft` returns `error` when browser
  * storage REFUSED the write (private mode, quota) rather than pretending — an
  * indicator that says "Saved" when nothing was saved is worse than none.
+ *
+ * ⚠️ **WHERE IT SITS IS PART OF THE SPEC (TASK-MODAL2 D3 · CR-93).** Owner,
+ * 2026-08-31: *"save state is always shown up next to the close button/icon as a
+ * green checkmark with the word saved in green (light green), persistent until
+ * inputs that arent saved are entered. shown when the state is true."* `ops/kit/Modal`
+ * renders it in the header's right-hand cluster; `ContactDossierModal`, the one
+ * deliberate non-adopter, does the same by hand. **A call site that places it
+ * anywhere else has broken the rule, not chosen a layout.**
+ *
+ * ⚠️ **`text-green-500`, NOT `text-green-700`.** The owner asked for LIGHT green
+ * and `green-700` (#1a4429) is the body-text green — it reads as ordinary prose,
+ * not as an affirmative state. `green-500` (#2d7043) is the lightest step in this
+ * palette that still clears WCAG AA at this size (5.9:1 on white; `green-400`
+ * is 4.0:1 and fails). It is a declared theme colour, so the rule is compiled —
+ * see the T1 grep in the TASK-MODAL2 report.
+ *
+ * ⚠️ **`Saved` IS THE WORD.** The owner named it. `savedLabel` survives only for
+ * a caller that must say something narrower, and no caller currently does —
+ * `ContactDossierModal` said *"Saved to the record"* until D3 and no longer does.
  */
 export function AutoSaveIndicator({
   status,
@@ -21,7 +40,7 @@ export function AutoSaveIndicator({
 }: {
   status: SaveStatus;
   className?: string;
-  /** `Saved` for a draft; a call site committing a record may say `Saved to the record`. */
+  /** ⚠️ `Saved` is the owner's word (D3). Overriding it needs a reason. */
   savedLabel?: string;
 }) {
   if (status === 'idle') return null;
@@ -47,7 +66,7 @@ export function AutoSaveIndicator({
   }
 
   return (
-    <span className={`${base} text-green-700`} aria-live="polite">
+    <span className={`${base} text-green-500`} aria-live="polite">
       <Check size={12} aria-hidden />
       {savedLabel}
     </span>

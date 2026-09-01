@@ -113,7 +113,7 @@ export function DocumentQueuePicker({ onClose }: { onClose: () => void }) {
 
   return (
     /* ⚠️ TASK-FIX4 §3 — converged. A picker with nothing typed into it. */
-    <Modal open onClose={onClose} title="Add New" variant="sheet" size="sm"
+    <Modal open onClose={onClose} title="Add New" size="sm"
       panelClassName="bg-cream" error={err}>
           {!options && !err && <p className="text-sm text-muted">Loading…</p>}
           {options && (

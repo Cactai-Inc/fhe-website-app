@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, FileText, PencilLine, Loader2, Printer, Download, Mail } from 'lucide-react';
+import { Plus, FileText, PencilLine, Loader2, Printer, Download, Mail } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { Modal } from '../../../components/ops/kit/Modal';
@@ -12,6 +12,7 @@ import {
   type DealDetail, type DealDocumentStatus, type DealActivityEntry,
 } from '../../../lib/deals';
 import { DealBadgePill } from './DealsPage';
+import { BackControl } from '../../../components/app/BackControl';
 
 /**
  * DEAL (/app/ops/deals/:dealId) — the container's own page.
@@ -61,8 +62,8 @@ function DealRecordModal({ dealId, name, onClose }: {
   }
 
   return (
-    /* ⚠️ TASK-FIX4 §3 — converged. A generated record with nothing typed into it,
-       so click-out still closes it. */
+    /* ⚠️ TASK-FIX4 §3 — converged. A generated record with nothing typed into it.
+       ⚠️ TASK-MODAL2 D1: click-out no longer closes it. The X does. */
     <Modal open onClose={onClose} title="Deal record" size="lg" error={err}
       footer={
         <>
@@ -138,10 +139,8 @@ export default function DealPage() {
 
   return (
     <PageLayout name="Deal" width="wide">
-      <Link to="/app/records/deals"
-        className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
-        <ArrowLeft size={14} /> Deals
-      </Link>
+      {/* ⚠️ TASK-MODAL2 D5 — the deal's name is renamed in place, from here. */}
+      <BackControl to="/app/records/deals" label="Deals" className="mb-4" />
 
       {/* the deal's own identity: its name, badges, and the record. This is
           CONTENT, not the page header — a deal's name is data, not a page

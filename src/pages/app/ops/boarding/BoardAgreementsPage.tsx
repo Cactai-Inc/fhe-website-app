@@ -386,7 +386,6 @@ export function BoardAgreementsPage() {
           open={createOpen}
           onClose={() => setCreateOpen(false)}
           title="New board agreement"
-          disableBackdropClose={create.isPending}
         >
           {createOpen && (
             <AgreementForm

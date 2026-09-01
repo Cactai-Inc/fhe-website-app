@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, X } from 'lucide-react';
+import { ArrowRight, X } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { createDraftOrder } from '../lib/api';
@@ -10,6 +10,7 @@ import InquiryForm from '../components/InquiryForm';
 import ContinueShoppingModal from '../components/ContinueShoppingModal';
 import { formatPrice } from '../lib/pricing';
 import { useDocumentTitle } from '../lib/hooks';
+import { BackControl } from '../components/app/BackControl';
 
 /**
  * THE SUBMISSION PAGE, AS A ROUTE.
@@ -133,13 +134,11 @@ export default function Checkout() {
 
         {/* Header */}
         <div className="mb-10">
-          <Link
-            to={FUNNEL_BACK[state.funnel || 'rider'] ?? '/lessons'}
-            className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors mb-6 focus-ring"
-          >
-            <ArrowLeft size={16} />
-            Back to Selection
-          </Link>
+          {/* ⚠️ TASK-MODAL2 D5 — checkout collects contact details, so the back
+              affordance is the shared control. The cart is in context; leaving
+              this page revises the selection, it does not empty it. */}
+          <BackControl to={FUNNEL_BACK[state.funnel || 'rider'] ?? '/lessons'}
+            label="Back to Selection" className="mb-6" />
           <p className="eyebrow mb-2">{user ? 'Your order' : 'Almost there'}</p>
           <h1 className="heading-section text-green-800">
             {user ? 'Review & Continue' : 'Your Inquiry'}

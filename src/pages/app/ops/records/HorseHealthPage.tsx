@@ -483,7 +483,6 @@ export function HorseHealthPage() {
           open={modal.mode !== 'closed'}
           onClose={() => setModal({ mode: 'closed' })}
           title={modal.mode === 'care' ? 'Edit care team' : 'Log health event'}
-          disableBackdropClose={saveCare.isPending || saveEvent.isPending}
         >
           {modal.mode === 'care' && horse && (
             <CareTeamForm

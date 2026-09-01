@@ -420,7 +420,6 @@ export function SessionsPage() {
           open={formOpen}
           onClose={() => setFormOpen(false)}
           title="Schedule a Riding Lesson"
-          disableBackdropClose={schedule.isPending}
         >
           {formOpen && (
             <ScheduleSessionForm

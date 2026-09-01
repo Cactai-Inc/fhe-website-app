@@ -523,7 +523,7 @@ export function CalendarItemPanel({
 
   return (
     /* ⚠️ TASK-FIX4 §3 — converged on the shared dialog's `drawer` variant. */
-    <Modal open onClose={handleClose} variant="drawer" size="sm" panelClassName="bg-cream"
+    <Modal open onClose={handleClose} size="sm" panelClassName="bg-cream"
       title={`${editing ? 'Edit' : 'New'} calendar item`}
       onClear={clearForm} saveStatus={draft.status} error={error}>
         <div className="flex flex-col gap-4 flex-1">

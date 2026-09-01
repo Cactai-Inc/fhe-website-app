@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import QuestionSections from '../components/QuestionSections';
 import { cartHasQuestions } from '../lib/questionSets';
 import { useDocumentTitle } from '../lib/hooks';
+import { BackControl } from '../components/app/BackControl';
 
 /**
  * PAGE 2, FOR A VISITOR WHO DID NOT COME THROUGH A FUNNEL THAT HAS ONE.
@@ -42,13 +43,9 @@ export default function Questions() {
   return (
     <div className="min-h-screen bg-cream pt-24 pb-20">
       <div className="container-site max-w-3xl">
-        <Link
-          to="/lessons"
-          className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors mb-6 focus-ring"
-        >
-          <ArrowLeft size={16} />
-          Back to Selection
-        </Link>
+        {/* ⚠️ TASK-MODAL2 D5 — a page of questions is an input surface, so both
+            of this page's back affordances are the shared control. */}
+        <BackControl to="/lessons" label="Back to Selection" className="mb-6" />
 
         <p className="eyebrow mb-3">Tell us more</p>
         <h1 className="heading-section text-green-800 mb-3">A Few Questions</h1>
@@ -60,14 +57,7 @@ export default function Questions() {
         <QuestionSections />
 
         <div className="flex items-center justify-between mt-8 pt-8 border-t border-green-800/10">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors focus-ring"
-          >
-            <ArrowLeft size={16} />
-            Previous
-          </button>
+          <BackControl onClick={() => navigate(-1)} label="Previous" />
           <button type="button" onClick={() => navigate('/checkout')} className="btn-primary">
             Continue to Submit Inquiry
             <ArrowRight size={16} />

@@ -414,7 +414,6 @@ export function HorsePartiesPage() {
           open={modal.mode !== 'closed'}
           onClose={() => setModal({ mode: 'closed' })}
           title={modal.mode === 'edit' ? 'Edit party' : 'Add party'}
-          disableBackdropClose={save.isPending}
         >
           {modal.mode !== 'closed' && (
             <PartyForm

@@ -110,7 +110,7 @@ export function CalendarSettingsPanel({ onClose, onSaved }: { onClose: () => voi
   return (
     /* ⚠️ TASK-FIX4 §3 — converged. Settings that were half-changed no longer
        vanish on a backdrop click; each `Save …` remains the affirmative act. */
-    <Modal open onClose={onClose} variant="drawer" size="sm" panelClassName="bg-cream"
+    <Modal open onClose={onClose} size="sm" panelClassName="bg-cream"
       title="Calendar settings" error={error}>
         <p className="form-label mb-2">Business hours</p>
         <div className="flex flex-col gap-1.5 mb-5">

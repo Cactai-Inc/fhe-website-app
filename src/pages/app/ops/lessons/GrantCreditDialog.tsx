@@ -174,7 +174,7 @@ export function GrantCreditDialog({
   // ── Step 2: state it before doing it (D19.1) ─────────────────────────────
   if (confirming && preview) {
     return (
-      <Modal open={open} onClose={close} title="Confirm this grant" disableBackdropClose
+      <Modal open={open} onClose={close} title="Confirm this grant"
              footer={
                <>
                  <button type="button" className="btn-secondary" onClick={() => setConfirming(false)}>

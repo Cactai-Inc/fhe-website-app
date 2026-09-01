@@ -109,7 +109,6 @@ export default function HorsesPage() {
         open={modal.mode !== 'closed'}
         onClose={() => setModal({ mode: 'closed' })}
         title={modal.mode === 'edit' ? 'Edit horse' : 'New horse'}
-        disableBackdropClose
       >
         {modal.mode !== 'closed' && (
           <HorseForm

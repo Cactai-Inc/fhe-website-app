@@ -299,8 +299,7 @@ export function ClientHorseRecordsCard({ contactId }: { contactId: string }) {
       </div>
 
       {adding && (
-        <Modal open onClose={() => setAdding(false)} title="Add a horse for this client"
-          variant="sheet" size="lg" panelClassName="bg-cream">
+        <Modal open onClose={() => setAdding(false)} title="Add a horse for this client" size="lg" panelClassName="bg-cream">
           <HorseIntakeForm submitLabel="Add horse" ownerContactId={contactId}
             onDone={() => { setAdding(false); load(); }} />
         </Modal>

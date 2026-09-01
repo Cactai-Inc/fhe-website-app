@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { startLeaseContract, startSaleContract, linkContractToPurchase, listLeaseTemplates } from '../../../lib/api';
@@ -15,6 +15,7 @@ import {
   PartyControlsCard, DEFAULT_PARTY_CONTROLS, roleLabel,
   type PartyControlValues,
 } from '../../../components/app/PartyControlsCard';
+import { BackControl } from '../../../components/app/BackControl';
 
 /**
  * NEW CONTRACT (/app/ops/contracts/new) — company-originated, always.
@@ -251,10 +252,8 @@ export default function NewContractPage() {
       description="The company originates every contract. You can act on behalf of either party — or both — by filling their side and setting their controls below."
       width="wide"
     >
-      <Link to="/app/ops/documents"
-        className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
-        <ArrowLeft size={14} /> Documents
-      </Link>
+      {/* ⚠️ TASK-MODAL2 D5 — the most field-dense authoring surface in ops. */}
+      <BackControl to="/app/ops/documents" label="Documents" className="mb-4" />
 
       {/* contract type — buttons desktop, dropdown mobile */}
       <div className="hidden sm:flex gap-1.5 mb-2">

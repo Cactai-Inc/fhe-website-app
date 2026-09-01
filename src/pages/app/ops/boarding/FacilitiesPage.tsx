@@ -415,7 +415,6 @@ export function FacilitiesPage() {
           open={modal.mode === 'facility-create' || modal.mode === 'facility-edit'}
           onClose={closeModal}
           title={modal.mode === 'facility-edit' ? 'Edit facility' : 'New facility'}
-          disableBackdropClose={saveFacility.isPending}
         >
           {(modal.mode === 'facility-create' || modal.mode === 'facility-edit') && (
             <FacilityForm
@@ -432,7 +431,6 @@ export function FacilitiesPage() {
           open={modal.mode === 'stall-create' || modal.mode === 'stall-edit'}
           onClose={closeModal}
           title={modal.mode === 'stall-edit' ? 'Edit stall' : 'New stall'}
-          disableBackdropClose={saveStall.isPending}
         >
           {(modal.mode === 'stall-create' || modal.mode === 'stall-edit') && (
             <StallForm

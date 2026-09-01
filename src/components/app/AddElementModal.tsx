@@ -64,9 +64,9 @@ import { ClauseProse } from './ClauseDocument';
  *      POPOVER, which listens for a mousedown outside itself. No catch-all.
  *  S6  The backdrop closed on mouse-UP, so a text selection dragged past the
  *      modal edge closed it — and the draft lived in modal-local state, so it
- *      was destroyed. Closing now requires a gesture that STARTED on the
- *      backdrop, and the draft is persisted per document (see DRAFTS below), so
- *      an accidental close costs nothing.
+ *      was destroyed. ⚠️ TASK-MODAL2 D1 ends the whole class: the backdrop does
+ *      not close ANY dialog, and neither does Escape. The draft is persisted per
+ *      document (see DRAFTS below) regardless.
  */
 
 type Mode = 'compose' | 'clause';
@@ -930,19 +930,23 @@ function AddElementModal({
   useEffect(() => { if (err) errBox.current?.scrollIntoView({ block: 'nearest' }); }, [err]);
 
   /* S6's "the gesture must have STARTED on the backdrop" guard moved into
-     `ops/kit/Modal` with TASK-FIX4, alongside the stronger rule that a dialog
-     holding a field does not close on a backdrop click at all. Nothing local
-     is left to track. */
+     `ops/kit/Modal` with TASK-FIX4, and ⚠️ TASK-MODAL2 D1 removed the backdrop
+     close outright. Nothing local is left to track. */
 
-  // Escape: dismiss the open chip popover first, then the modal.
+  /* ⚠️ TASK-MODAL2 D1 — ESCAPE DISMISSES THE CHIP POPOVER AND NOTHING ELSE.
+     This listener used to fall through to `onClose()`, which made a keystroke a
+     second, invisible exit from the dialog — exactly what D1 forbids: *"just
+     make all modals only close on click of button or link."* The popover half
+     stays, because a popover is not a modal and Escape is how one is dismissed;
+     the dialog is left to its Close control. */
   useEffect(() => {
+    if (!openChip) return;
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.key !== 'Escape') return;
-      if (openChip) setOpenChip(null); else onClose();
+      if (ev.key === 'Escape') setOpenChip(null);
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [openChip, onClose]);
+  }, [openChip]);
 
   // PORTAL TO <body> (2026-08-04). The trigger lives in the contract subheader,
   // which is `sticky` + `backdrop-blur` — and a backdrop-filter creates a
@@ -950,9 +954,8 @@ function AddElementModal({
   // of the viewport: the modal rendered clipped, its header and Name field cut
   // off above the fold with no way to scroll to them. Rendering through a
   // portal puts it back on the viewport where `fixed` means what it says.
-  /* ⚠️ TASK-FIX4 §3 — converged on the shared dialog, which now owns the
-     "started on the backdrop" guard AND the stronger rule: this dialog holds a
-     textarea, so a backdrop click does not close it at all. `Discard draft`
+  /* ⚠️ TASK-FIX4 §3 — converged on the shared dialog, which owns the close rule.
+     ⚠️ TASK-MODAL2 D1: neither the backdrop nor Escape closes it. `Discard draft`
      below is this file's `Clear form`, kept where it already was because it
      carries its own explanation. */
   return createPortal((

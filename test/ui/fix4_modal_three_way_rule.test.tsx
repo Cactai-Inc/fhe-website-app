@@ -5,16 +5,32 @@ import { Modal } from '../../src/components/ops/kit/Modal';
 
 /**
  * TASK-FIX4 §10, criteria 1–4 at the component level.
+ * ⚠️ REWRITTEN BY TASK-MODAL2 (CR-93) — THE RULE CHANGED, NOT THE TEST'S AIM.
  *
- * ⚠️ THE RULE THIS PINS, and it is the whole point of converging 17 dialogs on one
- * component: **backdrop close is decided from the LIVE DOM, not from a prop.** A
- * dialog holding a field does not close on a backdrop click; an information or
- * empty one does. No call site can get it wrong by forgetting a flag, and a
- * dialog whose fields appear on step 2 is protected on step 2.
+ * ⚠️ **WHAT THIS FILE ASSERTED YESTERDAY, AND NO LONGER DOES.** TASK-FIX4 pinned
+ * a THREE-WAY rule: backdrop close decided from the LIVE DOM, so a dialog holding
+ * a field stayed open and an information or empty one closed, with
+ * `allowBackdropClose` / `disableBackdropClose` as the two escape hatches. Four
+ * assertions below said a field-less dialog CLOSES on the backdrop. **They are
+ * now inverted, deliberately, and the two hatch tests are deleted rather than
+ * inverted because the props they exercised no longer exist.**
+ *
+ * ⚠️ **THE RULE THAT REPLACED IT (TASK-MODAL2 D1).** Owner, 2026-08-31:
+ * *"just make all modals only close on click of button or link, dont let them
+ * close on click-out since you cant determine which ones the user can reopen and
+ * which ones they cant."* **A control is the only exit — no backdrop, no Escape,
+ * field or no field.** The judgement FIX4 asked the DOM to make turned out not to
+ * be a DOM question at all: whether a dismissal is recoverable is knowledge the
+ * component does not have. So there is nothing left to decide, and the tests that
+ * pinned the decision are gone with it.
+ *
+ * ⚠️ This is the same move FIX4 itself made when it superseded an older
+ * assertion: the file says which rule replaced which, so the next reader can tell
+ * a deliberate inversion from a regression.
  *
  * ⚠️ AND `onClose` MEANS CLOSE. If a future change makes any of these fire a
  * write, that is the `ContactDossierModal` defect coming back — see the header of
- * that file for the three behaviours and why this is the third.
+ * that file for the four behaviours and why this is the fourth.
  */
 
 // No global setup file in this repo, so each suite unmounts its own trees. Without
@@ -36,12 +52,17 @@ function clickBackdrop() {
   fireEvent.click(el);
 }
 
-describe('criterion 3 — the backdrop rule, decided from the live DOM', () => {
-  it('an INFORMATION modal closes on a backdrop click', () => {
+describe('⚠️ D1 — NOTHING BUT A CONTROL CLOSES A MODAL', () => {
+  /* ⚠️ INVERTED FROM TASK-FIX4, WHICH ASSERTED `toHaveBeenCalledTimes(1)` HERE.
+     *"an information modal or empty one can close on click out"* was FIX4's
+     other half of the rule and the owner withdrew it: a system-triggered notice
+     is the case with the WORST accidental-dismissal cost, because there may be
+     no way back to it. */
+  it('⚠️ an INFORMATION modal no longer closes on a backdrop click', () => {
     const onClose = vi.fn();
     render(<Modal open onClose={onClose} title="Gift"><p>Nothing to type here.</p></Modal>);
     clickBackdrop();
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('⚠️ a modal holding an INPUT does not close on a backdrop click', () => {
@@ -74,19 +95,23 @@ describe('criterion 3 — the backdrop rule, decided from the live DOM', () => {
     expect(onCloseB).not.toHaveBeenCalled();
   });
 
-  it('⚠️ a field that only appears on step 2 protects step 2 without a flag', () => {
+  /* ⚠️ INVERTED. FIX4 asserted that step 1 closed and step 2 did not, to prove
+     the decision was made at click time. There is no decision now, so what this
+     pins is that neither step closes — the same test shape, the opposite claim. */
+  it('⚠️ neither the empty step nor the one holding a field closes', () => {
     const onClose = vi.fn();
-    // Rendered directly rather than through a wrapper: the point is that the
-    // decision is made at click time against whatever is on screen THEN.
     const { rerender } = render(<Modal open onClose={onClose} title="Post"><p>Pick a kind</p></Modal>);
     clickBackdrop();
-    expect(onClose).toHaveBeenCalledTimes(1); // step 1 — nothing to lose
+    expect(onClose).not.toHaveBeenCalled();
 
     rerender(<Modal open onClose={onClose} title="Post"><textarea aria-label="Body" /></Modal>);
     clickBackdrop();
-    expect(onClose).toHaveBeenCalledTimes(1); // step 2 — still 1, the click was ignored
+    expect(onClose).not.toHaveBeenCalled();
   });
 
+  /* FIX4's drag guard: a text selection started inside and released on the
+     backdrop. It cannot close now for a stronger reason than the guard — there
+     is no backdrop handler at all — but the gesture is still worth pinning. */
   it('a drag that STARTS inside the panel and ends on the backdrop does not close', () => {
     const onClose = vi.fn();
     render(<Modal open onClose={onClose} title="Gift"><p>Selectable text.</p></Modal>);
@@ -95,22 +120,64 @@ describe('criterion 3 — the backdrop rule, decided from the live DOM', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('allowBackdropClose is the deliberate escape hatch (Messages’ member picker)', () => {
+  /* ⚠️ NEW IN TASK-MODAL2. FIX4 kept Escape DELIBERATELY — *"a keystroke nobody
+     presses by accident"* — and flagged the choice rather than deciding it
+     silently. The owner then removed the whole category. Asserted on a dialog
+     WITH a field and one WITHOUT, because the old rule distinguished them and
+     the new one does not. */
+  it('⚠️ Escape does not close a dialog holding a field', () => {
     const onClose = vi.fn();
     render(
-      <Modal open onClose={onClose} title="New message" allowBackdropClose>
-        <input aria-label="Search members" />
+      <Modal open onClose={onClose} title="Add a horse">
+        <input aria-label="Name" defaultValue="Beau" />
       </Modal>,
     );
-    clickBackdrop();
-    expect(onClose).toHaveBeenCalledTimes(1);
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).not.toHaveBeenCalled();
   });
 
-  it('disableBackdropClose holds a field-less dialog open', () => {
+  it('⚠️ Escape does not close a dialog with NO field either', () => {
     const onClose = vi.fn();
-    render(<Modal open onClose={onClose} title="Confirm" disableBackdropClose><p>Are you sure?</p></Modal>);
-    clickBackdrop();
+    render(<Modal open onClose={onClose} title="Gift"><p>Nothing to type here.</p></Modal>);
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  /* ⚠️ AND THE OTHER HALF, WHICH MATTERS MORE NOW THAN IT DID: with click-out
+     and Escape both gone, a dialog whose control did not render would be a trap
+     with no exit. */
+  it('⚠️ the Close control still works — the only way out must actually work', () => {
+    const onClose = vi.fn();
+    render(<Modal open onClose={onClose}><input aria-label="Name" /></Modal>);
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+/* ⚠️ D2 — `variant` IS GONE. It had three values and 12 call sites on the two
+   being removed. Owner: *"the side drawer i specd as eliminated. center modal is
+   the only version to use."* The prop is not deprecated, it is absent, so this
+   asserts the SHAPE rather than the prop: one overlay, centred, and a panel that
+   is a rounded box at every size. */
+describe('⚠️ D2 — one shape', () => {
+  it('every size renders the centred box, never a sheet or a drawer', () => {
+    for (const size of ['sm', 'md', 'lg', 'xl', 'full'] as const) {
+      const { unmount } = render(<Modal open onClose={() => {}} size={size} title="X"><p>b</p></Modal>);
+      const overlay = backdrop();
+      expect(overlay.className).toContain('items-center');
+      expect(overlay.className).toContain('justify-center');
+      // the drawer's `justify-end` and the sheet's `items-end` are the two
+      // shapes that must not come back.
+      expect(overlay.className).not.toContain('justify-end');
+      expect(overlay.className).not.toContain('items-end');
+      const panel = screen.getByRole('dialog');
+      expect(panel.className).toContain('rounded-xl');
+      expect(panel.className).toContain('max-h-[90dvh]');
+      expect(panel.className).not.toContain('h-full');
+      unmount();
+    }
   });
 });
 
@@ -144,6 +211,37 @@ describe('criteria 1, 2 and 4 — the controls every dialog carries', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Clear form' }));
     expect(onClear).toHaveBeenCalledTimes(1);
+  });
+
+  /* ⚠️ D3 — WHERE IT SITS IS THE ASSERTION, not just that it renders. Owner:
+     *"save state is always shown up next to the close button/icon."* It used to
+     be in the footer bar, which on a long dialog is off-screen at the moment a
+     person wants the reassurance. */
+  it('⚠️ D3 — `Saved` renders in the HEADER, beside Close, in light green', () => {
+    render(
+      <Modal open onClose={() => {}} title="Record" saveStatus="saved" onClear={() => {}}>
+        <input aria-label="Name" />
+      </Modal>,
+    );
+    const saved = screen.getByText('Saved');
+    const close = screen.getByRole('button', { name: 'Close' });
+
+    // beside Close: the same cluster, not merely the same document.
+    expect(saved.parentElement).toBe(close.parentElement);
+    // and the header, not the footer — the footer bar is where `Clear form` is.
+    const clear = screen.getByRole('button', { name: 'Clear form' });
+    expect(clear.parentElement!.contains(saved)).toBe(false);
+    expect(saved.className).toContain('text-green-500');
+  });
+
+  it('⚠️ D3 — it clears the moment unsaved input is entered', () => {
+    const { rerender } = render(
+      <Modal open onClose={() => {}} title="Record" saveStatus="saved"><input aria-label="N" /></Modal>,
+    );
+    expect(screen.getByText('Saved')).toBeTruthy();
+    // `saving` is what the storing hooks set on the first changed keystroke.
+    rerender(<Modal open onClose={() => {}} title="Record" saveStatus="saving"><input aria-label="N" /></Modal>);
+    expect(screen.queryByText('Saved')).toBeNull();
   });
 
   it('⚠️ the auto-save indicator says what actually happened', () => {

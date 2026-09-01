@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Check, ArrowRight, ArrowLeft, Gift } from 'lucide-react';
+import { Check, ArrowRight, Gift } from 'lucide-react';
 import { formatPrice } from '../lib/pricing';
 import { fetchPublicCatalog, type ServiceGroup } from '../lib/publicCatalog';
 import { useCart } from '../contexts/CartContext';
@@ -13,6 +13,7 @@ import { cartHasQuestions } from '../lib/questionSets';
 import Seo from '../components/Seo';
 import SelectionBar from '../components/SelectionBar';
 import { seoForPath } from '../lib/seo';
+import { BackControl } from '../components/app/BackControl';
 
 /**
  * THE HORSE-CARE FUNNEL — CAREPATH §C1/§C1b/§C2.
@@ -243,14 +244,12 @@ export default function BookHorse() {
         <div className={`flex items-center justify-between mt-12 pt-8 border-t border-green-800/10 ${
           stage === 'details' ? 'justify-start' : ''
         }`}>
-          <button
-            type="button"
-            onClick={handleBack}
-            className="inline-flex items-center gap-2 text-sm font-sans text-secondary hover:text-green-800 transition-colors focus-ring"
-          >
-            <ArrowLeft size={16} />
-            {current === 0 ? 'Back to Services' : 'Back'}
-          </button>
+          {/* ⚠️ TASK-MODAL2 D5 — the shared back control. Owner: *"the back control
+              should apply to saving state on all things any user inputs, not just
+              the onboarding flow steps."* `handleBack` only moves the step; the
+              selection lives in the funnel's context, so going back revises rather
+              than discards. */}
+          <BackControl onClick={handleBack} label={current === 0 ? 'Back to Services' : 'Back'} />
 
           {stage !== 'details' && (
             <div className="flex items-center gap-6">

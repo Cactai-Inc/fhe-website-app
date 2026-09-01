@@ -168,8 +168,7 @@ export function StableSection() {
       {/* ⚠️ TASK-FIX4 §3 — converged. Fourteen intake fields behind a backdrop that
           used to close on a stray click; that is CR-68a's own incident. */}
       {modal === 'horse' && (
-        <Modal open onClose={() => setModal(null)} title="Add a horse"
-          variant="sheet" size="lg" panelClassName="bg-cream">
+        <Modal open onClose={() => setModal(null)} title="Add a horse" size="lg" panelClassName="bg-cream">
           {/* the standardized record intake (spec H.2/H.3 path 2) — creates the
               real horse record with microchip dedup, then refreshes My Stable.
               ownerContactId (staff-only, already supported by this form) is

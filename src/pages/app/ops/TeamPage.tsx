@@ -212,7 +212,7 @@ function TeamMemberPanel({
        is why the panel still slides in from the right rather than becoming a box.
        The backdrop no longer discards a half-edited staff record; `Save record`
        is the affirmative action and remains the only write. */
-    <Modal open onClose={onClose} variant="drawer" size="sm" panelClassName="bg-cream"
+    <Modal open onClose={onClose} size="sm" panelClassName="bg-cream"
       title={memberName(member)} onClear={clearForm} saveStatus={draft.status}>
         <div className="flex flex-col gap-5">
           <p className="text-xs text-muted">

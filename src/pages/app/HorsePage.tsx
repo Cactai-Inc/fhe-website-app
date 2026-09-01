@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { fromHere } from '../../lib/linkOrigin';
-import { FileText, CalendarDays, ClipboardList, PencilLine, Trash2, ArrowLeft, Activity } from 'lucide-react';
+import { FileText, CalendarDays, ClipboardList, PencilLine, Trash2, Activity } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
 import { horsePageDetail, deleteStableHorse, updateHorseRecord, type HorsePageDetail } from '../../lib/horses';
 import { listHorseBreeds, listHorseColors } from '../../lib/api';
@@ -10,6 +10,7 @@ import { usePropertyTerm } from '../../contexts/BrandProvider';
 import { withArticle } from '../../lib/propertyTerm';
 import { toErrorMessage } from '../../lib/ops/errors';
 import type { LookupCode } from '../../lib/ops/types';
+import { BackControl } from '../../components/app/BackControl';
 
 /**
  * HORSE PAGE (/app/horses/:horseId) — the client-facing record for one horse, with
@@ -103,9 +104,8 @@ export default function HorsePage() {
 
   return (
     <div className="max-w-4xl">
-      <Link to="/app/account" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-green-800 mb-4">
-        <ArrowLeft size={14} /> My stable
-      </Link>
+      {/* ⚠️ TASK-MODAL2 D5 — the record tabs below hold editable fields. */}
+      <BackControl to="/app/account" label="My stable" className="mb-4" />
 
       <div className="flex items-start justify-between gap-3 mb-1">
         <div>
