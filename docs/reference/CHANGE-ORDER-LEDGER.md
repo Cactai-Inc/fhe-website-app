@@ -4042,19 +4042,13 @@ payment-request trigger hanging off `approved`, and a viewer-scoped read.**
 1. ✅ **ANSWERED 2026-09-01: *"hold until the new one is approved."*** 🔒 **The old slot is HELD until
    the new time is approved, then released.** **A refused move therefore has somewhere to fall back to.**
 
-   ⚠️ **AND THIS COLLIDES WITH THE DISPLAY RULE — FLAGGED, NOT DECIDED.** His `moved` rule says the
-   old slot *"shows as empty and available"* to everyone else. **A slot that is HELD but DISPLAYED as
-   available can be requested by someone else, and then either their booking fails at commit — the
-   worst moment to find out — or it succeeds and the revert target is gone, which defeats the hold.**
-   **The two rules cannot both be true of the same slot.**
-   **ORCH6's recommendation, for his one-word ruling:** ⚠️ **hold it SILENTLY — others see the slot as
-   simply not open, with no reason given.** **They are not told a move is pending (that is the privacy
-   rule working), and the hold is real rather than cosmetic.** **The alternative — release immediately
-   and accept that a refused move loses its old time — is coherent too, but it is a different product
-   decision and he ruled the other way.**
-2. ✅ **ANSWERED 2026-09-01: *"they stay. and both only show to the parties to the scheduled booking,
-   and to everyone else they show as taken, booked, busy, whatever we are using."*** 🔒 **`completed`
-   and `no_show` STAY, as after-the-fact outcomes, and they are PARTY-ONLY.**
+   ✅ **AND THE DISPLAY COLLISION IS RESOLVED, 2026-09-01:** *"a held slot isnt empty and available
+   until the new booking is approved then the hold is released."*
+   🔒 **WHILE HELD, THE OLD SLOT READS AS OCCUPIED TO EVERYONE ELSE — not open, and with no reason
+   given.** **On approval of the new time, the hold releases and the old slot becomes genuinely
+   available.** ⚠️ **So `moved` is only "open to everyone else" AFTER the new booking is approved.**
+   **The hold is real, not cosmetic: nobody can take the slot the mover may need to fall back to, and
+   nobody is told a move is pending.**
 
 ### 🔒 THE READ RULE, GENERALISED FROM HIS THREE ANSWERS — build this ONCE
 ⚠️ **An outsider never learns WHY a slot is in the state it is in. They see a BINARY: open, or
@@ -4065,7 +4059,8 @@ occupied.** **The state decides which side of it they land on, and nothing else 
 | `requested` · `approved` · `pending` · `scheduled` | the real state | **occupied** |
 | `completed` · `no_show` | the real state | **occupied** |
 | `cancelled` | **cancelled** | **open and available** |
-| `moved` | **moved** | **open** *(⚠️ subject to the hold collision above — ORCH6 recommends occupied-with-no-reason)* |
+| `moved`, while the new time is unapproved | **moved** | ⚠️ **occupied** — the hold is real |
+| `moved`, once the new time is approved | **moved** | **open and available** — the hold releases |
 
 🔒 **THIS IS ONE VIEWER-SCOPED READ, NOT SIX SPECIAL CASES**, and it must be decided on the READ so a
 second reader cannot leak a state a UI filter forgot to hide (D18).
