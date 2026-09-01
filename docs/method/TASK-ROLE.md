@@ -136,6 +136,23 @@ own task wrong or unsafe — that one you chase.**
 - ⚠️ **Do not spawn subagents** (CLAUDE.md).
 - ⚠️ **TEARDOWN: kill every server, browser and scratch worktree you started, and paste the census.**
 
+# 5b. 🔒 WHAT YOU SAY IN CHAT WHEN YOU FINISH — TWO LINES, NOT A SUMMARY
+**Owner, 2026-09-01:** *"the task threads are still outputting all this content for me to send to you
+instead of just printing 'Done, report at .../*'"*
+
+🔒 **YOUR CLOSING MESSAGE IS:**
+```
+Done. Report at docs/reports/TASK-<ID>-REPORT.md
+<the prompt for the next station>
+```
+⚠️ **NOTHING ELSE. No summary, no highlights, no what-changed.** **It all goes in the report, which
+`ORCH` reads itself.** **The owner is the transport, not an audience** — every sentence in chat is a
+token he pays to carry and nobody re-reads.
+⚠️ **THE ONLY EXCEPTION: you are STOPPING ON A QUESTION.** **Then say the question, in one or two
+lines, because it is not answerable from a file.**
+⚠️ **If something is important enough to say in chat, IT IS IMPORTANT ENOUGH TO BE IN THE REPORT.**
+**Put it there instead.**
+
 # 6. THE REPORT — `docs/reports/TASK-<ID>-REPORT.md`
 1. **The headline, in four lines or fewer.**
 2. **Criterion by criterion against "THE TEST THIS MUST PASS"** — pasted output, not description.
