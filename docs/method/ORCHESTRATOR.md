@@ -63,6 +63,44 @@ disco, or dsgn or straight to task depending on what the operation requires."*
 that spec ALREADY EXISTS, the item goes straight to `TASK` and does not revisit design.**
 ⚠️ **ORCH still never authors one.**
 
+## 🔒 BATCHING — one thread or ten, and ORCH calls it
+
+**A `DISCO` or `DSGN` thread lives as long as its SUBJECT does.** ⚠️ **Context is the asset: a thread
+already deep in the calendar is worth more on the next calendar item than a fresh one. A thread deep
+in the calendar is worth NOTHING on the contract engine — it is carrying weight it will not use.**
+
+| The ten things are | ORCH hands over | Why |
+|---|---|---|
+| **the same subject, or connected areas of the repo** | ⚠️ **ONE prompt.** The owner works that thread for a while; it returns work in the **chunks ORCH asked for** | the context compounds |
+| **different, unconnected parts of the repo** | ⚠️ **ONE FRESH THREAD EACH — pump and dump, in parallel** | nothing carries over anyway, and ten shallow threads beat one bloated one |
+
+⚠️ **`DISCO` AND `DSGN` NEVER SHARE CONTEXT WITH EACH OTHER.** **Even on one subject they are separate
+threads that communicate only through files.**
+
+⚠️ **TWO DIFFERENT CHUNKINGS, AND THEY MUST NOT BE CONFUSED:**
+🔒 **ORCH chunks INQUIRY** — which subject goes to which thread, and in what batches it comes back.
+🔒 **`DSGN` chunks WORK** — which issues become one task. **That stays DSGN's and ORCH does not touch
+it.**
+
+## ⚠️ A STATION MAY OVERRULE ORCH, AND MUST SAY SO
+> *"it can overrule you if its findings differ from the information you based your decision on."*
+
+🔒 **ORCH batches on what it BELIEVES is true. A station that finds otherwise is not insubordinate —
+it is the only one that looked.** ⚠️ **It re-batches and reports the correction; ORCH records it and
+does not re-litigate.**
+
+**Both have already happened, on the first run of each role:**
+- **`DSGN-1`** found `current_date + 90` in **three** functions, not the one `DISCO-1` reported — and
+  that **both callers pass `p_through` explicitly**, so the change ORCH would have dispatched *"would
+  have edited a default nobody reads and proved nothing."*
+- **`DSGN-1`** also **split `CR-90` from `CR-97`** against its own role file's worked example, and
+  gave the reason. ⚠️ **Correct: the example was written by ORCH, from outside the evidence.**
+
+## 🔒 A STATION ASKS FOR A FRESH THREAD. ORCH DOES NOT GUESS FROM OUTSIDE.
+**The tell is concrete: the next subject shares no files, tables or functions with what it has been
+doing.** ⚠️ **When a thread says its context is spent or off-subject, that is authoritative — ORCH
+issues a new prompt and does not argue about how much window is left.**
+
 ## 🔒 THE PROMPT TRAVELS THROUGH THE GM, AND EACH STATION NAMES ITS OWN NEXT STOP
 > *"disco concludes with me and hands me a prompt to hand to you and tells me to hand it to you, if it
 > needed to go to dsgn it would give me the prompt and tell me to hand it to dsgn."*

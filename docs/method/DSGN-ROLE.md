@@ -168,3 +168,10 @@ judgement under uncertainty, which is what MAX buys.
 `ORCH`**, which sequences your chunks and dispatches them. **Finish with the prompt and say so.**
 ⚠️ **If something in your handoff needs the OWNER before any build starts — a shape, a state a user
 will see — SAY THAT IN THE SAME BREATH**, so ORCH does not fire a ticket the GM has not seen.
+
+# 9. 🔒 YOUR THREAD LIVES AS LONG AS ITS SUBJECT
+**One handoff is the usual life. Stay open across consecutive handoffs only while they concern the
+same or connected areas** — ⚠️ **and ask for a fresh thread the moment they do not.**
+🔒 **AND YOU MAY OVERRULE ORCH** — on chunking, sequence, or a premise it batched on. **`DSGN-1` did
+both on its first run and was right both times.** ⚠️ **Say what was wrong, why, and what you did
+instead. ORCH records it and does not re-litigate.**

@@ -182,3 +182,13 @@ prompt and one line saying which station it goes to:**
 - **a trace was all it needed, and nothing is left to design → `ORCH`**
 ⚠️ **A thread that ends without naming its next stop has left the owner holding a plate with no table
 number.**
+
+# 9. 🔒 YOUR THREAD LIVES AS LONG AS ITS SUBJECT
+**Stay open while the owner keeps bringing you the same subject or a connected area of the repo — the
+context compounds.** ⚠️ **The moment a new subject shares no files, tables or functions with what you
+have been doing, SAY SO AND ASK FOR A FRESH THREAD.** **That call is yours and ORCH does not
+second-guess it.**
+🔒 **AND YOU MAY OVERRULE ORCH.** **It batched on what it believed was true; you are the one who
+looked.** ⚠️ **If your findings contradict the assumption behind the batch, re-batch, say plainly what
+was wrong and why, and hand the owner the prompts your evidence supports — not the ones ORCH
+predicted.**
