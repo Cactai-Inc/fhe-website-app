@@ -3893,3 +3893,58 @@ backfill is done FROM the client record.**
 it.** **ORCH either folds the sweep into a task thread or hands the owner a `CLNR` prompt unprompted.**
 🔒 **Four-letter thread naming stands: `ORCH` · `TASK` · `CLNR`.**
 **Its role file is `docs/method/CLNR-ROLE.md`.**
+
+---
+
+## CR-96 · G9 · 🔒 RULED — DISO, and the orchestrator stops doing the talking
+
+**SAID (owner, 2026-08-31):**
+> *"one thing we need to do is use disposable threads for these long discussions and decision setting
+> and request making. then that goes to you as a report and then you author the files for another task
+> thread to handle the fix."*
+
+> *"i see the 6 steps as TASK thread activities, your role is to orchestrate, that means you are doing
+> too much in this thread by discussing things with me, then collecting the information and
+> synthesizing it into files for TASK threads, then spawning the TASK threads, then reviewing their
+> output claims for validation. I developed but not yet introduced the concept of a DISO thread that
+> handles the initial steps in the 6 step sequence, the active Q&A, discovery, and handoff to you for
+> authoring TASKS."*
+
+> *"then the TASK thread hands the report back to you for validation of the claims then you can author
+> an entry into a ledger or a dedicated file for the TASK for other threads like DISCO, TASK, and ORCH
+> to read in the future, then you can write the files for the next TASK thread i need to spawn."*
+
+### 🔒 THE FOUR ROLES
+| Role | Owns | Six-step |
+|---|---|---|
+| **`DISO`** | ⚠️ **the conversation with the owner** — capture · research · discussion & lock. **Disposable by design, because the conversation is what burns a context window** | **1 · 2 · 3** |
+| **`ORCH`** | distillation · sequencing · validation · **the record** | **4 · 5 · 6 (review)** |
+| **`TASK`** | building one spec in one worktree | the deliverables |
+| **`CLNR`** | the workspace | — |
+
+**Role files: `docs/method/{ORCH,DISO,TASK,CLNR}-ROLE.md`.** *(`ORCH-ROLE.md` is `docs/ORCHESTRATOR.md`
+until `TASK-FIX5` renames it.)*
+
+### 🔒 THE RECORD ORCH WRITES AFTER EVERY MERGE — this is the "dedicated file" he asked for
+1. ⚠️ **A `## VALIDATION — ORCH<n>` block appended to `docs/reports/TASK-<ID>-REPORT.md`** — what ORCH
+   checked **itself**, the query behind it, what held, what did not, the merge commit.
+   ⚠️ **An audit living only in a merge commit message or a chat reply is not the record.**
+2. **One line in `docs/reference/TASK-LEDGER.md`** — the scannable index.
+3. **A D-rule in `CLAUDE.md`** when something was *settled*, not merely built.
+
+### ⚠️ NAMING
+**The owner wrote both `DISO` and `DISCO`.** **`DISO` is used, to hold the four-letter convention
+(`ORCH` · `DISO` · `TASK` · `CLNR`).** **A rename is one word from him.**
+
+### ⚠️ WHAT THIS SESSION PROVES — ORCH6 ran as its own DISO and it cost the window
+**This thread captured requests, researched production, discussed and locked decisions, THEN authored
+specs and validated a merge. That is three roles.** ⚠️ **It is why the session is long, and it is the
+exact failure the owner is naming.** **From CR-96 forward, a discussion of this length opens a `DISO`
+thread.**
+
+### ⚠️ THE GAP THIS RULING EXPOSES — STEPS 4 AND 5, AND IT IS UNANSWERED
+**The six-step method splits ARCHITECTURE & DESIGN from BUILD and runs design FIRST as its own thread**
+*("Build never receives an unreviewed design")*. ⚠️ **THAT HAS NEVER HAPPENED HERE — every `TASK`
+thread has been a build thread, with ORCH's spec standing in for the design deliverable.**
+**Either a `DSGN` role exists, or step 4 is formally ORCH's spec and the method says so.**
+**ASK-OWNER — this is the one question this ruling leaves open.**
