@@ -1,14 +1,14 @@
-# FHE-DISCO-CR-100-101-102 — LEDGER (thread renamed from DISCO-2, owner naming ruling 2026-09-01)
+# FHE-DISCO-CR100-102 — LEDGER (thread renamed from DISCO-2, owner naming ruling 2026-09-01)
 
 Subject: the doc-signing flow — CR-100 (address normalize/validate), CR-101 (date/signature tokens
 still visible), CR-102 (brown → company green). Opened 2026-09-01 on the owner's prompt: read
 CHANGE-ORDER-LEDGER §CR-100–102 and run them.
 
 ## RESUME
-Role / thread   FHE-DISCO-CR-100-101-102 · canonical checkout (docs only; no code, no writes)
+Role / thread   FHE-DISCO-CR100-102 · canonical checkout (docs only; no code, no writes)
 Merge-base      n/a — docs-only thread on main (main == origin/main at open, 2fa1f7b9)
 DONE            steps 1-3 COMPLETE on all three CRs. All locks in. Handoff written:
-                docs/reports/FHE-DISCO-CR-100-101-102-HANDOFF.md. Owner's CR-102 ruling appended verbatim to
+                docs/reports/FHE-DISCO-CR100-102-HANDOFF.md. Owner's CR-102 ruling appended verbatim to
                 CHANGE-ORDER-LEDGER.md §CR-102.
 IN FLIGHT       nothing — complete, nothing in flight
 NEXT            owner carries the ticket to DSNR (prompt handed). This thread stays open for
@@ -29,10 +29,14 @@ CORRECTED       DISCO framed CR-102 as "flow only vs app-wide gold→green" — 
                 references what the thread is working on and that name would then be changed to
                 DSNR-[this threads name]". REFINED by the owner same day: the full convention is
                 FHE-[ROLE]-[task name] — repo prefix always first, and this lineage's task name is
-                the CR numbers. So this thread is FHE-DISCO-CR-100-101-102 (briefly renamed
+                the CR numbers. So this thread is FHE-DISCO-CR100-102 (briefly renamed
                 DISCO-SIGNFLOW in between — that subject guess was overridden); downstream is
-                FHE-DSNR-CR-100-101-102, then FHE-ORCH-CR-100-101-102, then
-                FHE-TASK-CR-100-101-102. Files git-mv'd twice, references updated.
+                FHE-DSNR-CR100-102, then FHE-ORCH-CR100-102, then
+                FHE-TASK-CR100-102. Files git-mv'd twice, references updated.
+                Naming requirement (owner, same day): THE SHORTEST POSSIBLE UNIQUE NAME — it
+                populates the sidebar and tab space and must be retrievable by search or visual
+                lookup. Applied: CR-100-101-102 shortened to the contiguous range CR100-102, so
+                this thread is FHE-DISCO-CR100-102, downstream FHE-DSNR-CR100-102, etc.
                 Naming nuance (owner, same day): subject names like SIGNFLOW are fine but ONE-USE —
                 burnt once used; future work on the area revisits the original threads only if
                 their context is still accurate, else starts fresh as signflow-2. CR numbers
