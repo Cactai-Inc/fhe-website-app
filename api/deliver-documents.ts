@@ -3,7 +3,15 @@
  * the participant flow) as ONE email with each document attached as a PDF —
  * instead of one text email per document.
  *
- * Body: { documentIds: string[], recipientContactIds?: string[] }
+ * Body: { documentIds: string[], recipientContactIds?: string[],
+ *         context?: { purchaseId?: string, bookingId?: string } }
+ *
+ * CONTEXT (SIGNBOOK, CR-98 step 8): the onboarding wizard holds its signing run
+ * until the person has chosen an offering and asked for a time, then releases it
+ * with the order and the booking request named. Both are read back from the
+ * DATABASE by id — the body is trusted for nothing but which rows to look at —
+ * and they only ever add two optional blocks to the party copy. No context, and
+ * the email is byte-identical to the one this endpoint has always sent.
  * -> 200 { delivered:[{email, count}], companyNotified } on success
  * -> 400 on a missing/empty documentIds
  * -> 403 when a recipientContactIds entry is not an authorized recipient
@@ -47,7 +55,7 @@ import type { EmailAttachment } from './_lib/email.js';
 import { renderDocumentPdf, partyPdfFileName } from './_lib/documentPdf.js';
 import { resolveMinorRecipient, notifyMinorRecipientsSkipped } from './_lib/delivery.js';
 import type { GuardianRecipient } from './_lib/delivery.js';
-import { renderEmailTemplate } from './_lib/emailTemplates.js';
+import { renderEmailTemplate, escapeHtml } from './_lib/emailTemplates.js';
 
 const CHANNEL = 'EMAIL';
 const STAFF_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EMPLOYEE'];
@@ -57,6 +65,29 @@ const STAFF_ROLES = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EMPLOYEE'];
 const FACILITY_RULES_TAIL_RE = /\n+FACILITY RULES ACKNOWLEDGMENT\n[\s\S]*$/;
 function stripFacilityRulesTail(body: string): string {
   return body.replace(FACILITY_RULES_TAIL_RE, '\n');
+}
+
+interface PurchaseLine {
+  label: string | null;
+  price_amount: number | string | null;
+  price_unit: string | null;
+  quantity: number | null;
+  voided_at: string | null;
+}
+
+/** A line's price as the catalog holds it. Mirrors /api/request-received's
+ *  `priceText` — same shape of answer, so the two emails about one order cannot
+ *  describe it differently. */
+function money(amount: number | string | null, unit: string | null): string {
+  if (amount == null) return 'Price on inquiry';
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return 'Price on inquiry';
+  const text = `$${n.toLocaleString('en-US', {
+    minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2,
+  })}`;
+  const u = (unit ?? '').trim();
+  if (!u || u === 'flat' || u === 'session') return text;
+  return `${text} / ${u}`;
 }
 
 interface DocRow {
@@ -100,6 +131,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const recipientContactIds = Array.isArray(body.recipientContactIds)
     ? (body.recipientContactIds.filter((d) => typeof d === 'string' && d.trim() !== '') as string[])
     : [];
+  const ctx = (body.context ?? null) as { purchaseId?: unknown; bookingId?: unknown } | null;
+  const contextPurchaseId = typeof ctx?.purchaseId === 'string' ? ctx.purchaseId : null;
+  const contextBookingId = typeof ctx?.bookingId === 'string' ? ctx.bookingId : null;
 
   try {
     const db = getSupabaseAdmin();
@@ -161,6 +195,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
       if (offending.length > 0) {
         return res.status(403).json({ error: `not authorized recipients: ${offending.join(', ')}` });
+      }
+    }
+
+    /* 1c. SIGNBOOK / CR-98 step 8 — WHAT ELSE THE ONE EMAIL SAYS.
+       *"copies of every signed document, plus the order contents and the booking
+       request in the body."* Read from the rows, never from the caller: the body
+       supplied two ids and nothing else, and a wrong id yields empty blocks
+       rather than a wrong email. Money comes from `purchase_items`, which is
+       where the price the person was actually shown was captured. */
+    const orderLines: { LABEL: string; PRICE: string }[] = [];
+    let orderTotal = '';
+    let bookingWhen = '';
+    if (contextPurchaseId) {
+      const { data: purchase } = await db
+        .from('purchases').select('id, org_id, amount')
+        .eq('id', contextPurchaseId).eq('org_id', orgId).maybeSingle();
+      if (purchase) {
+        const { data: lines } = await db
+          .from('purchase_items')
+          .select('label, price_amount, price_unit, quantity, voided_at')
+          .eq('purchase_id', contextPurchaseId);
+        for (const l of (lines ?? []) as PurchaseLine[]) {
+          if (l.voided_at) continue;
+          const qty = Math.max(Number(l.quantity ?? 1), 1);
+          orderLines.push({
+            LABEL: escapeHtml(qty > 1 ? `${l.label ?? 'Item'} × ${qty}` : (l.label ?? 'Item')),
+            PRICE: escapeHtml(money(l.price_amount, l.price_unit)),
+          });
+        }
+        const amount = Number((purchase as { amount: number | string | null }).amount);
+        if (Number.isFinite(amount) && amount > 0) orderTotal = escapeHtml(money(amount, null));
+      }
+    }
+    if (contextBookingId) {
+      const { data: booking } = await db
+        .from('bookings').select('id, org_id, starts_at')
+        .eq('id', contextBookingId).eq('org_id', orgId).maybeSingle();
+      const startsAt = (booking as { starts_at: string | null } | null)?.starts_at ?? null;
+      /* ⚠️ ONE TIMEZONE, NAMED. There is no tenant timezone in this system
+         (LESSONREQUEST), and an email is read outside the browser that wrote it,
+         so the barn's own zone is stated rather than inferred — the same
+         constant /api/request-received already uses for "Submitted". */
+      if (startsAt) {
+        bookingWhen = escapeHtml(new Date(startsAt).toLocaleString('en-US', {
+          timeZone: 'America/Los_Angeles',
+          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+          hour: 'numeric', minute: '2-digit',
+        }));
       }
     }
 
@@ -297,6 +379,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'PARTY.GREETING_NAME': (guardianRecipient ? guardianRecipient.firstName : party.contacts?.first_name) ?? '',
         'PARTY.FULL_NAME': [party.contacts?.first_name, party.contacts?.last_name].filter(Boolean).join(' '),
         'MSG.IS_GUARDIAN_COPY': guardianRecipient ? '1' : '',
+        // SIGNBOOK — always passed, empty when there is no context, so the
+        // renderer never reports an unresolved token and every {{#if}} above
+        // simply renders nothing on the paths that have no order.
+        'ORDER.LINES': orderLines,
+        'ORDER.TOTAL': orderTotal,
+        'BOOKING.WHEN': bookingWhen,
       });
       if (!rendered) continue; // template missing -> no send, no delivery row, logged
 
