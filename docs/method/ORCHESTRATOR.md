@@ -197,11 +197,34 @@ own rule is the one whose death costs the most, because it holds the sequencing 
 
 | Role | Lifecycle | Opened by |
 |---|---|---|
-| **`DISCO`** | 🔒 **STANDING — ONE thread, kept open across tasks.** The owner types into the same one for days | once, then never again |
+| **`DISCO`** | 🔒 **PER SUBJECT.** Opened when ORCH says, closed when ORCH says, lives while its subject does | a prompt from ORCH |
 | **`ORCH`** | **STANDING — one, until it hands off to `ORCH<n+1>`** | at handoff |
-| **`DSGN`** | ⚠️ **ONE PER `DISCO` HANDOFF.** It takes a handoff, produces specs, and is done | a prompt from ORCH |
+| **`DSGN`** | ⚠️ **PER SUBJECT** — usually one handoff, kept open across consecutive ones only while they connect | a prompt from ORCH |
 | **`TASK`** | ⚠️ **DISPOSABLE. One per task, CLOSED FOR GOOD once verified, never reopened** | a prompt from ORCH |
 | **`CLNR`** | ⚠️ **NO THREAD.** Runs as the first act inside each `TASK` | — |
+
+
+## 🔒 PARK, DO NOT CLOSE-AND-REOPEN — the one correction to the GM's model
+
+**Owner, 2026-09-01:** *"you tell me when to close it … and you can tell me to reopen it later if we
+are going to benefit from the context it holds."*
+
+⚠️ **THE FIRST HALF IS RIGHT. THE SECOND CANNOT WORK, AND THE DIFFERENCE MATTERS:**
+🔒 **CLOSING IS THE ACT THAT DISCARDS THE CONTEXT.** **A reopened thread is a NEW thread reading
+files — which is fine, and is exactly what the running record is for, but it is not the old thread's
+context returning.** ⚠️ **So "close it, we'll reopen it for its context later" buys nothing.**
+
+**THEREFORE ORCH GIVES ONE OF THREE INSTRUCTIONS, AND NEVER CONFUSES THEM:**
+| | Means | Use when |
+|---|---|---|
+| **PARK** | ⚠️ **leave it open and idle** | we are plausibly coming back to this subject. **Costs nothing but a tab** |
+| **CLOSE** | the context is spent and is not coming back | the subject is finished, or it has gone off-subject |
+| **OPEN** | a fresh thread, reading the files | always — including anything called a "reopen" |
+
+⚠️ **DEFAULT TO PARK WHEN THE SUBJECT MIGHT RETURN.** **Closing is cheap to say and irreversible in
+the only way that matters.**
+🔒 **AND NOTHING MAY DEPEND ON A PARKED THREAD.** **Its findings are in the files before it parks, or
+they do not exist** — `THE-RUNNING-RECORD`. **Parking is an optimisation, never a store.**
 
 ## 🔒 THE FRONT DOOR IS `DISCO`, AND IT IS THE ONLY ONE
 ⚠️ **EVERY new request, problem, idea or correction enters through `DISCO`.** **Not through ORCH.**

@@ -6,11 +6,13 @@ been doing and should not have been.**
 **Thread naming: `ORCH` · `DISCO` · `DSGN` · `TASK` · `CLNR`.** *(Renamed from `DISO` on 2026-09-01 —
 the owner consistently calls it DISCO, and one name for one thing beats a tidy letter count.)*
 
-## ⚠️ DISCO IS A STANDING THREAD, NOT A ONE-OFF
-🔒 **The owner keeps ONE DISCO open and works from it.** **It is where he brings what he needs, and it
-stays alive across tasks** — unlike `TASK` threads, which are disposable and are closed for good once
-their work is verified. ⚠️ **`DISCO-1` was NOT this: it was a single scoped research run on CR-94.
-The standing thread is the model from 2026-09-01 forward.**
+## ⚠️ DISCO IS OPENED PER SUBJECT — ORCH SAYS WHEN, AND ORCH SAYS WHEN TO CLOSE
+🔒 **You do not exist until `ORCH` tells the GM to open you, and you live as long as your SUBJECT
+does.** **While the owner keeps bringing the same or a connected area, you stay open and the context
+compounds.** ⚠️ **When the subject changes, you say so** (§9) **and ORCH issues a fresh thread.**
+*(⚠️ **CORRECTED 2026-09-01 — this section briefly said DISCO was ONE STANDING thread kept open across
+everything. That was wrong: it makes one window carry unrelated subjects, which is the bloat the role
+exists to prevent.**)*
 
 > *"I developed but not yet introduced the concept of a DISCO thread that handles the initial steps in
 > the 6 step sequence, the active Q&A, discovery, and handoff to you for authoring TASKS. This way
