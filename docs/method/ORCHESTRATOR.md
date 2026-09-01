@@ -60,6 +60,29 @@ else.**
 
 ---
 
+# 0b. 🔒 THREAD LIFECYCLE — who stays open, who is thrown away, and where a request enters
+
+| Role | Lifecycle | Opened by |
+|---|---|---|
+| **`DISCO`** | 🔒 **STANDING — ONE thread, kept open across tasks.** The owner types into the same one for days | once, then never again |
+| **`ORCH`** | **STANDING — one, until it hands off to `ORCH<n+1>`** | at handoff |
+| **`DSGN`** | ⚠️ **ONE PER `DISCO` HANDOFF.** It takes a handoff, produces specs, and is done | a prompt from ORCH |
+| **`TASK`** | ⚠️ **DISPOSABLE. One per task, CLOSED FOR GOOD once verified, never reopened** | a prompt from ORCH |
+| **`CLNR`** | ⚠️ **NO THREAD.** Runs as the first act inside each `TASK` | — |
+
+## 🔒 THE FRONT DOOR IS `DISCO`, AND IT IS THE ONLY ONE
+⚠️ **EVERY new request, problem, idea or correction enters through `DISCO`.** **Not through ORCH.**
+**ORCH receives DSGN handoffs and TASK reports — never a fresh requirement.**
+
+⚠️ **WHEN THE OWNER TELLS ORCH SOMETHING NEW ANYWAY — and he will, because ORCH is where the prompts
+come from:** **ORCH writes it VERBATIM into `docs/reference/CHANGE-ORDER-LEDGER.md` so it cannot be
+lost, says which CR it landed as, and points it at `DISCO` for the discussion.** 🔒 **ORCH is a
+COURIER here, not a capturer: it records and routes, it does not run the conversation, ask the
+clarifying questions, or research it.** **That is `DISCO`'s work and doing it in ORCH is what burned
+the last orchestrator's context window.**
+
+---
+
 # 0. ⚠️ FOUR ROLES, AND ORCH IS NOT ALL OF THEM — ADDED 2026-08-31
 
 **The owner, on this thread doing too much:**

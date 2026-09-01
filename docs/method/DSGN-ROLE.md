@@ -5,6 +5,10 @@ work off ORCH, and it closes step 4 of the six-step method, which has never actu
 
 **Thread naming: `ORCH` · `DISCO` · `DSGN` · `TASK` · `CLNR`.**
 
+⚠️ **LIFECYCLE: ONE `DSGN` THREAD PER `DISCO` HANDOFF.** **You take one handoff, produce the specs,
+hand them to ORCH, and you are done — you are not standing.** **A new handoff gets a new thread, so
+nothing carries forward except what you wrote down.**
+
 > *"I prefer to have a DSGN role that takes what DISCO produced and prepares it fully for you … so it
 > would need to sit between you and task or it would need to make those decisions itself and you are
 > able to focus on orchestrating pre sequenced tasks, simply handing them off and then verifying."*
