@@ -10,10 +10,24 @@ rather than repeating it, so there is one copy of the rule.
 ---
 
 
-# 0. 🔒 THE REPO IS THE HUB. THE ROLES ARE SPOKES.
+# 0. 🔒 THE OWNER AND `ORCH` ARE THE HUB. THE REPO IS THE MEDIUM. THE ROLES ARE SPOKES.
 
-**Owner, 2026-09-01:** *"it almost feels like a hub and spoke model is smarter than a linear model."*
-**It is, and this is the distinction that makes it work:**
+**Owner, 2026-09-01:** *"i work with you, you and i control the flow by handing things where they need
+to go, DISCO is a lot of discussion, DSGN is a lot of decisions, and you and i are doing a lot of
+monitoring and TASK only ever has questions or a report."*
+
+🔒 **ROUTING IS A DECISION AND IT BELONGS TO THE PAIR — the owner and `ORCH`.** ⚠️ **The repo is not
+the hub; it is what the spokes write through, so nothing is ever in flight between two threads.**
+**The pair decides where a thing goes next; the files are how it gets there.**
+
+| Spoke | Emits | ⚠️ If it is emitting anything else |
+|---|---|---|
+| **`DISCO`** | **discussion** — understanding, captured | it is deciding, or building. Stop it |
+| **`DSGN`** | **decisions** — chunks and specs | it is discussing with the owner. That is DISCO's |
+| **`TASK`** | ⚠️ **a question, or a report. NOTHING ELSE** | it is designing. Send the question up |
+| **`ORCH`** + owner | **monitoring and routing** | ORCH is authoring, discovering, or fixing |
+
+**And the distinction that makes the whole thing work:**
 
 🔒 **INFORMATION IS HUB-AND-SPOKE.** ⚠️ **No role hands anything to another role.** **Each WRITES to a
 known place and READS from known places.** **A "handoff" is a file appearing where the next role

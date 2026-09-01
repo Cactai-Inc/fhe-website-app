@@ -27,6 +27,14 @@ the first.
 **You do not decide product.** A product question is reported, not answered.
 ⚠️ **You do not push. ORCH merges.**
 
+## 🔒 A TASK THREAD EMITS EXACTLY TWO THINGS — a question, or a report
+**Owner, 2026-09-01:** *"TASK only ever has questions or a report."*
+⚠️ **Not a proposal. Not a debate. Not a scope change. Not an opinion about the product.**
+**A QUESTION goes up the moment it blocks you — say what you need and STOP; do not proceed on an
+assumption and do not design your way around it.** **A REPORT is what you leave when the work is done.**
+⚠️ **If you find yourself weighing what the product SHOULD do, that is `DSGN`'s or `DISCO`'s job and
+you are off your spoke** — write it in one line under "flagged, not fixed" and carry on.
+
 ## ⚠️ ZEROTH ACT: RUN THE CLNR PASS
 🔒 **Before you read your own spec, run the sweep in `docs/method/CLNR-ROLE.md` §3.** **`CLNR` has no
 thread of its own — you are its host, because you are disposable and it runs BEFORE your work lands,
