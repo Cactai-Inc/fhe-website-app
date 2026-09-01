@@ -1,8 +1,8 @@
-# DISCO-SIGNFLOW HANDOFF — for DSNR
+# FHE-DISCO-CR-100-101-102 HANDOFF — for DSNR
 
-**From DISCO-SIGNFLOW, 2026-09-01. Subject: the doc-signing flow — CR-100, CR-101, CR-102.**
+**From FHE-DISCO-CR-100-101-102, 2026-09-01. Subject: the doc-signing flow — CR-100, CR-101, CR-102.**
 **Everything below is researched and LOCKED with the owner; validation criteria agreed 2026-09-01.**
-Working ledger with every query behind these numbers: `docs/reports/DISCO-SIGNFLOW-LEDGER.md`.
+Working ledger with every query behind these numbers: `docs/reports/FHE-DISCO-CR-100-101-102-LEDGER.md`.
 
 ---
 
