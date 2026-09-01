@@ -240,6 +240,15 @@ own rule is the one whose death costs the most, because it holds the sequencing 
 | **`DSNR`** | ⚠️ **PER SUBJECT** — usually one handoff, kept open across consecutive ones only while they connect | a prompt from ORCH |
 | **`TASK`** | ⚠️ **DISPOSABLE. One per task, CLOSED FOR GOOD once verified, never reopened** | a prompt from ORCH |
 | **`CLNR`** | ⚠️ **NO THREAD.** Runs as the first act inside each `TASK` | — |
+| **`RNR`** | ⚠️ **NOT A THINKING ROLE — the transport.** Carries, configures and SENDS a queued ticket; moves work between the `ORCH`s of different altitudes | always running · `docs/method/RNR-ROLE.md` |
+
+🔒 **TOPOLOGY: `ORCH` IS THE CENTRE OF THE NODE; the other roles are the sprawl. They talk to `ORCH`
+and to `RNR`, and reach each other only THROUGH `RNR`.** ⚠️ **ORCH's dispatch output stops being "a
+prompt for the owner to paste" and becomes A TICKET ON A QUEUE** — `RNR-ROLE.md` §2. **The owner's
+hands leave the relay; his time is chat, decisions and reading.**
+⚠️ **ORCH still answers WHO, WHEN and how the work runs. `RNR` executes that answer and may REFUSE
+it** — on a resource collision (D35), an id collision, a dirty worktree, or the cap. **A refusal
+returns to ORCH with the reason.**
 
 
 ## 🔒 CLOSE IS THE DEFAULT. PARK ONLY WITH SOMETHING IN HAND.
