@@ -248,3 +248,15 @@ All six migrations are ALREADY APPLIED TO PRODUCTION. Read
 docs/reports/TASK-REQCARDS-LEDGER.md before re-dispatching REQCARDS: the owner
 answered its §9 and named the modal's option set as still open.
 ```
+
+---
+## VALIDATION — ORCH7, 2026-09-01
+Independently verified in production at merge time (not from the thread's own outputs): the CHECK
+constraint (six states in, two spellings retired), the DEFAULT ('requested'), zero
+`current_date + 90` sites, the `purchases_confirm_bookings` trigger with NO column list, proacl
+on the three new functions (no anon, no PUBLIC), status distribution (604/117/6/1 unchanged),
+`plan_horizon_through()` = 2026-10-31, `request_open_time` writing 'requested', and
+`calendar_free_busy` viewer-scoping. Reach verified in source (`api-calendar.ts:551` →
+RequestsBar/ItemPanel; legend row `CalendarPage.tsx:138`). Gates after merge: typecheck 0 ·
+typecheck:api 0 · lint 46w/0e · build clean · test:api 7/7. Full detail:
+`TASK-LIFECYCLE-VERIFICATION.md`. Merge commit: 5b9fed67.

@@ -19,4 +19,4 @@ with a change ORCH made or reversed, named in the report · `REVERTED` · `OPEN`
 | `TASK-SIGNSTRIP` | 2026-09-01 | the unauthorised catalog block off every `/sign/*` funnel, with its fetch and imports | **MERGED** — grep-clean, gates pass; render not verified by ORCH | `merge task/signstrip` |
 | `TASK-SIGNDOOR` | 2026-09-01 | the four funnel doors ask for the email only; name/phone/address/minor move to the first page after auth; the path rides the invitation | **MERGED** — four functions verified live, no `anon`, path-not-in-categories confirmed. ⚠️ Spec trap 3 was wrong; routed to DSNR | `merge task/signdoor` |
 | `TASK-ANALYTICS` | 2026-09-01 | Vercel Web Analytics installed and mounted | **MERGED** — owner's snippet used the `/next` entry point; this is Vite+React, so `/react` was used | `merge task/analytics` |
-
+| `TASK-LIFECYCLE` | 2026-09-01 | six booking states, 30+30 horizon, viewer-scoped calendar read, transitions wired to the existing buttons; thread corrected the spec (3 states not 2; 7 more functions) | **VERIFIED** — dispatched as REQCARDS, stood down on the owner's ruling; see `TASK-LIFECYCLE-VERIFICATION.md` | `5b9fed67` |
