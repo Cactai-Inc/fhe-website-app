@@ -4272,3 +4272,28 @@ and `compose_address` composes what is typed), what "normalize" is (capitalizati
 D34-adjacent idiom: on blur, once, in front of the person, never re-correcting a deliberate
 change), and what "valid address somehow" means — a format-level check vs a real verification
 service, the latter being an external dependency with a cost, which is the owner's call to make.
+
+## CR-101 — signing flow still shows the date and signature tokens; a prior task was meant to fix it
+
+**SAID (owner, 2026-09-01, verbatim):**
+> *"noticed that the docs in the signing flow still show the tokens for date and signature, we
+> previously ran a task thread that was supposed to remove the visibility of the signature token
+> and insert the real date rather than show the token."*
+
+**Recorded by ORCH7 as courier; routed to `DISCO`.** ⚠️ This is a CLAIMED REGRESSION or an
+unreached fix (D17's pattern): a prior thread was supposed to have done it. DISCO's first job is
+the trace — which task that was (note: `TASK-SIGNSTRIP` 2026-09-01 was a different scope, the
+catalog block; do not assume), whether its change merged, and whether the owner is seeing a path
+the fix never reached. The signing freeze is in force; whatever the fix is, it must not touch
+executed documents (D32, D33).
+
+## CR-102 — the doc-signing flow's brown becomes the company green
+
+**SAID (owner, 2026-09-01, verbatim):**
+> *"change the brown used on the things like icons, strikethru, checkmarks, text, boarders,
+> highlights, and buttons in the doc signing flow to the company green color."*
+
+**Recorded by ORCH7 as courier; routed to `DISCO`.** Scope named by the owner: icons ·
+strikethrough · checkmarks · text · borders · highlights · buttons, in the doc signing flow.
+Trap to carry into any spec: T1 — arbitrary Tailwind values have silently emitted nothing here
+twice; the built CSS must be grepped for the emitted value.
