@@ -3579,3 +3579,196 @@ name what does not. **They are not blocked; these are.**
 1. **Does a campaign need a BUDGET / spend figure?** *(It is the difference between "did it work" and
    "was it worth it", and it decides whether campaigns touch the P&L.)*
 2. **What company-level expense categories does he want?** ⚠️ **Do not invent a chart of accounts.**
+
+---
+
+## CR-89 · G5 · 🔒 RULED — a comp is a PAYMENT DISPOSITION on a normal order, not a special grant
+
+**SAID (owner, 2026-08-31), correcting ORCH6's reading of `TASK-BOOKS1`:**
+> *"that is not the mechanism i asked for and i said we need to construct the order like any other,
+> then we mark it paid by using an option that comps the purchase. This shows the customer the price
+> in full, and it shows the amount owed is $0. The system needs to record the loss of the revenue as
+> whatever standard accounting dictates, but ultimate anything of monetary value given for free is a
+> write-down on our collected revenue in some way and the system needs to track these as well as
+> discounts appropriately. so when we do our taxes our revenue and costs and losses and profits are
+> all easily within reach and exportable."*
+
+> *"Yes we have not comped anyone yet, but we have been giving a lot of discounts and need to track
+> and account for those and the capability to discount to $0 is part of the same mechanisms."*
+
+### 🔒 WHAT THIS RULES OUT, AND IT IS WHAT ORCH6 HAD SPECCED
+⚠️ **`grant_lesson_credit`'s `comp` mode is NOT the model.** It builds a *special* order — `amount = 0`,
+`payment_method = 'comp'` — so **the customer never sees a price and never sees that they were given
+something worth $880.** The owner's mechanism is the opposite: **an ordinary order at the ordinary
+price, and the COMP HAPPENS AT PAYMENT TIME.**
+
+### 🔒 THE MECHANISM
+1. **The order is constructed like any other** — real lines, real list prices, a real total.
+2. **Marking it paid offers a disposition**: paid in full · **discounted** · **comped**.
+3. ⚠️ **The customer sees the price IN FULL and sees the amount owed is $0.** *(A discount shows the
+   full price, the reduction, and what is owed.)* **The comp is visible, not hidden behind a zero.**
+4. ⚠️ **The write-down is recorded as its own quantity** — revenue collected, and value given away,
+   are two separate figures on the same sale. **A discount to $0 IS a comp — one mechanism, one
+   spectrum, not two features.**
+5. ⚠️ **EXPORTABLE FOR TAX: revenue · costs · losses · profits, all reachable and exportable.**
+   **Export is a requirement of this CR, not a later nicety.**
+
+### CONSEQUENCES FOR THE BUILD
+- ⚠️ **Discounts are the URGENT half, not comps.** *"we have been giving a lot of discounts"* — that
+  is **historical data already given away and unrecorded**, and it is the owner's data pass.
+- ⚠️ **`revenue_summary`'s `coalesce(nullif(amount_paid, 0), amount, 0)` NOW BITES FOR REAL.** Under
+  this mechanism a comped order carries the **full list price in `amount`** and **0 in `amount_paid`**
+  — exactly the shape that books a give-away as full-price revenue. **The deadline stands and the
+  mechanism is no longer hypothetical.**
+- **`grant_lesson_credit` keeps its `handwrite`/`bill` modes** *(they are order-creation shortcuts)*.
+  ⚠️ **Its `comp` mode is superseded by this one and must not become a second way to comp** (D18).
+  **0 rows have ever used it, so nothing is stranded.**
+- **`mark_purchase_paid` is the incumbent seam** — the disposition belongs there, not in a new RPC.
+
+---
+
+## CR-90 · G3 · 🔒 RULED — a standing schedule is 30 days confirmed + 30 days pending, and the month is invoiced
+
+**SAID (owner, 2026-08-31), on finding Madeline Do booked through 30 November:**
+> *"Why did you set 90 days worth when the directive ive instructed is that the schedule should be set
+> every 30 days with the next 30 days shown as pending until payment is confirmed. The payment
+> invoices which need to go out today should be automatically generated and sent 3 days before the
+> last day of the month stating that their payment for next month is due at the end of the month and
+> then if unpaid on the last day of the month another notice goes out via email reminding them of the
+> payment being due. Once they confirm their payment to us we confirm it was received and the pending
+> bookings for the month flip to booked or confirmed or whatever term we use internally for that
+> status."*
+
+### ⚠️ MEASURED 2026-08-31 — THE SYSTEM DOES THE OPPOSITE, AND IT WAS NOT A HUMAN CHOICE
+**`ensure_standing_slots` (TASK-BUYANDBOOK, `20260821T0120…`, line 502) hardcodes
+`v_through date := coalesce(p_through, current_date + 90)`.** ⚠️ **Ninety days, in a default argument.**
+Setting Madeline's two standing days therefore materialised **three months at once**:
+
+| | |
+|---|---|
+| bookings | ⚠️ **39, ALL `scheduled`** — Jul 3 · Aug 10 · **Sep 8 · Oct 9 · Nov 9** — **not one is `pending`** |
+| credits minted **on 2026-08-31** | ⚠️ **Sep 8 · Oct 9 · Nov 9** — three unpaid months entitled in one act |
+| paid | **one order, `PUR-000319`, $880** |
+
+⚠️ **SO THREE UNPAID MONTHS ARE CONFIRMED ON THE CALENDAR AND ENTITLED IN THE CREDIT LEDGER.**
+**This is the defect, not the horizon length by itself.**
+
+### 🔒 THE RULE
+- **Confirmed month + ONE pending month.** Never three. ⚠️ **A pending month must be visibly
+  `pending`** — on the calendar, to the client, and in the credit ledger.
+- **Payment confirmed → that month's pending bookings flip to confirmed**, and only then.
+- **Invoice: generated and sent 3 days before the last day of the month**, stating next month's
+  payment is due at month end.
+- **Unpaid on the last day of the month → a second email reminder.**
+- ⚠️ **Nothing accrues past the pending month** until money is confirmed.
+
+### ⚠️ WHAT DOES NOT EXIST YET
+**No invoice is generated anywhere.** ⚠️ **And the five Vercel crons in `vercel.json` — including
+`mint-monthly-allotments` — have a `CRON_SECRET` history of never having fired** *(see
+TASK-DEALAUTO follow-up)*. **Establish whether ANY scheduled job runs in production before designing
+a cadence on top of one.** ⚠️ **Today, 2026-08-31, is the last day of the month: both the 3-day-prior
+invoice and the month-end reminder are already due and neither can have been sent.**
+
+---
+
+## CR-91 · G5/G9 · 🔒 RULED — categories are typed once and remembered, and they exist to be charted
+
+**SAID (owner, 2026-08-31), answering the CR-88 budget question:**
+> *"no it doesnt need a budget for a campaign, as a hard requirement, but there should be a place to
+> record expenses and see the total spend and then record revenue attributable to the campaign and
+> calculate the roi."*
+
+> *"dont put labels on anything, ill type in the labels when enter the expenses and the system should
+> remember them and provide a menu for me to pick from based on where the expense is being recorded
+> (ie: horse related expense categories menu is the entries ive typed into the cateory field wtih the
+> input values. marketing expense categories menu is the entries ive type into the catedory field with
+> those input values. … i can see the marketing spend by category or the horse spend by category, and
+> then when i look at a companywide report i can see the horse spend total as a categoy or the finer
+> breakdown of the horse categories in place of the single horse spend value, pie charts are cool for
+> this, so are other chart types … so if we implement category capture we need to make use of it with
+> ui visuals and reports with graphical visuals."*
+
+### 🔒 THE RULING
+- ⚠️ **NO SEEDED CHART OF ACCOUNTS. Do not invent category labels.** He types them.
+- **The system remembers what he typed and offers it back as a menu — SCOPED TO WHERE THE EXPENSE IS
+  BEING RECORDED.** Horse expenses offer the horse vocabulary; marketing expenses offer the marketing
+  vocabulary. ⚠️ **The scope is part of the key, not a filter applied afterwards.**
+- ⚠️ **`lookup_options` IS THE INCUMBENT VOCABULARY STORE** *(TASK-ORIGIN, editable at
+  `/app/ops/admin/editor`)*. **Use it. Do NOT build a second vocabulary table** (D18) — but note
+  `lookup_options`' **Add is allowlisted**, so a new key is only half-editable until three allowlists
+  are widened.
+- ⚠️ **CATEGORY CAPTURE WITHOUT REPORTING IS NOT WORTH BUILDING — his words.** Category totals per
+  department, a company-wide roll-up where **a total can be expanded into its finer breakdown in
+  place**, and **real charts** (pie among others), on the Ops and Admin dashboard views.
+- **A campaign gets expenses, total spend, attributable revenue and an ROI.** ⚠️ **Attribution comes
+  from `contacts.client_origin` / `contact_channel` — do NOT build a second attribution vocabulary,
+  and results read EMPTY until his backfill.**
+
+---
+
+## CR-92 · G9 · captured — the repo, the role docs, and a thread that owns hygiene
+
+**SAID (owner, 2026-08-31):**
+> *"the entire calude code repo folder needs to be cleaned up, as does the repo itself, there are
+> documents everywhere, the ORCH and TASK thread instructions for 6 steps, handoff, and operating
+> requirements need a home and need to be kept to strict adherence to these approaches. I should be
+> able to close any thread and open a new one and tell it which ORCH or with TASK thread it is and it
+> an pick up where the last thread stopped without context loss, memory loss, or any degradation or
+> risk of duplication/repetition. strict logs and data records inside the repo is required and the
+> hygiene needs to be well defined and a SWEEP or BROOM or CLEANUP thread role is needed with this as
+> its sole responsibility. and each thread needs to ensure other threads are honoring the instructions
+> and requirements docs for their thread role type. this means an ORCH that takes over for another
+> ORCH evaluates the handoff file and state of the repo against what it should be based on ORCH
+> instructions and requirements and task and hygiene thread instructions and requirements."*
+
+### THE FOUR REQUIREMENTS, SEPARATED
+1. **A HOME for the role documents** — the six-step method, the ORCH role, the TASK requirements, the
+   handoff format, the hygiene rules. ⚠️ **One home, not "documents everywhere."**
+2. **RESUMABILITY AS A TEST:** *"tell it which ORCH or which TASK thread it is and it picks up where
+   the last one stopped"* — **no context loss, no memory loss, no duplication.** ⚠️ **This is a
+   stricter test than today's handoff passes: today a new thread must be TOLD which file to read.**
+3. **STRICT LOGS AND DATA RECORDS IN THE REPO**, with hygiene defined rather than assumed.
+4. ⚠️ **A DEDICATED SWEEP / BROOM / CLEANUP ROLE** whose SOLE responsibility this is —
+   **and mutual enforcement: every thread checks that the others honoured their role's own
+   instructions.** **An incoming ORCH audits the outgoing ORCH's handoff and the repo state against
+   what the role documents require.**
+
+⚠️ **`TASK-FIX5` (repo hygiene) IS NOT THIS.** FIX5 is the mechanical `git mv` pass against
+`docs/reference/DOCS-LAYOUT.md`. **This CR is the ROLE and the STANDARD that FIX5's layout then has to
+serve.** **Sequence: FIX5 moves the files; the BROOM role owns keeping them that way.**
+
+---
+
+## CR-93 · G9 · 🔒 RULED — the close rule, refined, and the save state sits next to the close icon
+
+**SAID (owner, 2026-08-31), on `TASK-FIX4`'s shipped behaviour:**
+> *"The request is that a modal cannot be accidentally closed by clicking ouside of it when there is
+> content inside of it that the user input or selected. the close button/icon is the only way to close
+> it once they engage with it. information only modals should close if they are user triggered but if
+> they are not user triggered and they are system triggered they should be harder to close to prevent
+> accidental closure since the user cannot simply reopen it if they accidentally close it. auto save
+> is good, auto save along with each input field being clicked out of is the spec, for normalizing
+> fields we auto save after the normalization and the normalization runs after the user clicks out of
+> the input field. save state is always shown up next to the close button/icon as a green checkmark
+> with the word saved in green (light green) persistent until inputs that arent saved are entered.
+> shown when the state is true."*
+
+### ⚠️ WHAT FIX4 SHIPPED vs WHAT IS ASKED — measured on `main` 2026-08-31
+| | Shipped | Asked |
+|---|---|---|
+| **backdrop click** | ✅ blocked whenever the panel holds a field *(live-DOM check)* | ✅ satisfied — **and stricter**, since it protects a field before anything is typed |
+| ⚠️ **Escape** | ⚠️ **still closes** (`Modal.tsx:152`) | ⚠️ **MUST NOT** — *"the close button/icon is the only way to close it once they engage with it"* |
+| **info modal, user-triggered** | closes on outside click *(no fields present)* | ✅ satisfied |
+| ⚠️ **info modal, SYSTEM-triggered** | ⚠️ **no such concept exists** — the component cannot tell who opened it | ⚠️ **must be HARDER to close**, because the user cannot reopen it |
+| **normalise on blur, then save** | ✅ built, that order | ✅ |
+| ⚠️ **the save indicator's PLACE** | ⚠️ **in the FOOTER bar** (`Modal.tsx:270`) | ⚠️ **next to the close button/icon** — i.e. the header |
+| **persistence** | stays `saved` until the next edit | ✅ |
+| **wording / colour** | `Check` + `Saved` in `text-green-700`; the dossier says *"Saved to the record"* | **green checkmark + the word "Saved", LIGHT green** |
+
+⚠️ **AND THE PROCESS NOTE, WHICH IS THE MORE IMPORTANT HALF:**
+> *"you dont tell me what you are keeping when it might contradict a request — you explain to me
+> exactly what the current state is and how it differs from my request."*
+
+**ORCH6 reported "Escape still closes — keeping it" as a settled decision. It was a DEVIATION from
+his instruction and should have been presented as a delta, with the current state and the difference
+named.** ⚠️ **A ruling of the owner's is not an input to the orchestrator's judgement.**
