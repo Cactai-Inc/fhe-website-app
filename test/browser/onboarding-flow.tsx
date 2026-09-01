@@ -58,6 +58,12 @@ window.__tables = {
       sort_order: 1, tagline: null, weekly_frequency: null,
     },
     {
+      id: '00000000-0000-4000-8000-0000000000e3', org_id: orgId, name: 'Full Body Clip',
+      slug: 'full-body-clip', segment: 'horse', active: true, config_kind: 'scheduled',
+      unit_count: 1, price_amount: 180, price_unit: 'session', service_type: 'HORSE_CARE',
+      sort_order: 1, tagline: null, weekly_frequency: null,
+    },
+    {
       id: '00000000-0000-4000-8000-0000000000e2', org_id: orgId, name: 'Single Lesson',
       slug: 'single-lesson', segment: 'rider', active: true, config_kind: 'scheduled',
       unit_count: 1, price_amount: 150, price_unit: 'session', service_type: 'RIDING_LESSON',
