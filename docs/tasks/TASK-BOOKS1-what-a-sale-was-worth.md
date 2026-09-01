@@ -1,33 +1,43 @@
-# TASK-BOOKS1 — what a sale was worth, and what we gave away
+# TASK-BOOKS1 — what a sale was worth, what was collected, and what was given away
 
-**Authored 2026-08-31 by ORCH6. Builds the REVENUE half of `CR-86` — gaps 2 and 4.**
-⚠️ **It does NOT build the cost sheet, the P&L page or any dashboard tile.** Those are separate and
-sequenced after this one; §7 says so explicitly.
+**Authored 2026-08-31 by ORCH6. ⚠️ REWRITTEN THE SAME DAY after the owner corrected the mechanism —
+see `CR-89`. If you have seen an earlier version of this file quoted anywhere, it is superseded.**
 
-⚠️ **THIS TASK CARRIES A DEADLINE AND IT IS THE REASON IT EXISTS.** See §3.
+Builds **`CR-89`** and the revenue half of **`CR-86`** *(gaps 2 and 4)*.
+⚠️ **It does NOT build the monthly cost sheet, the P&L page, campaign ROI or any dashboard tile.**
 
 ---
 
-## 1. THE REQUIREMENT, VERBATIM
+## 1. THE REQUIREMENT, VERBATIM — and the correction that defines this task
 
-> *"we also had discussed the implementation of a discount and promotional (full comp no cost to the
-> customer) designation we can assign to purchasable offerings. its important for our records to show
-> when we give away a service or provide a discount, a lot of people are getting discounts on the
-> services we are providing them and these are technically a business loss … money in/money out,
-> profit or loss, discounts given during a period, money paid for a sale and discount given, etc..."*
+> *"we need to construct the order like any other, then we mark it paid by using an option that comps
+> the purchase. This shows the customer the price in full, and it shows the amount owed is $0. The
+> system needs to record the loss of the revenue as whatever standard accounting dictates, but
+> ultimate anything of monetary value given for free is a write-down on our collected revenue in some
+> way and the system needs to track these as well as discounts appropriately. so when we do our taxes
+> our revenue and costs and losses and profits are all easily within reach and exportable."*
+
+> *"Yes we have not comped anyone yet, but we have been giving a lot of discounts and need to track
+> and account for those and the capability to discount to $0 is part of the same mechanisms."*
 > — owner, 2026-08-31
 
-And on where the act happens:
+**And the earlier, still-standing ruling:** **a comp's loss is valued at the LIST price**, captured on
+the line **at the time of sale**, because offering prices are editable.
 
-> *"the books is on my side, the visible kpi is shown on the dashboard. the inputs happen on claires
-> side and on my side."*
+### 🔒 THE MECHANISM, AND IT IS NOT WHAT AN EARLIER DRAFT OF THIS FILE SAID
+1. **The order is built like any other order** — real lines, real prices, a real total.
+2. ⚠️ **The comp or discount is a DISPOSITION APPLIED WHEN THE ORDER IS MARKED PAID.**
+3. ⚠️ **The customer sees the full price AND that they owe $0.** The give-away is visible, never
+   hidden behind a zero-priced line.
+4. **The shortfall is recorded as a write-down against collected revenue** — two figures on one sale.
+5. ⚠️ **A discount to $0 IS a comp. ONE mechanism on a spectrum, not two features.**
+6. ⚠️ **EXPORTABLE. Tax season is the stated use.** Export is in scope, not a later nicety.
 
-**A discount or a comp is applied WHEN THE SALE IS MADE, by whoever makes it, on the line.** It is
-never reconstructed afterwards on an accounting screen.
-
-**And the loss is valued at LIST** *(owner, asked twice, answered once — do not ask a third time)*:
-a comp's recorded loss is what the thing would have sold for, **captured on the line at the time of
-sale**, because offering prices are editable and valuing a 2026 comp from a 2027 catalogue is wrong.
+⚠️ **THEREFORE `grant_lesson_credit`'s `comp` MODE IS SUPERSEDED, NOT THE MODEL TO COPY.** It builds a
+*special* order (`amount = 0`, `payment_method = 'comp'`), so **the customer never sees what they were
+given.** ⚠️ **Measured: it has been used ZERO times, so nothing is stranded by retiring that mode.**
+**Its `handwrite` and `bill` modes are order-creation shortcuts and stay.** ⚠️ **Do not leave two ways
+to comp** (D18).
 
 ---
 
@@ -35,204 +45,183 @@ sale**, because offering prices are editable and valuing a 2026 comp from a 2027
 
 | | |
 |---|---|
-| `purchase_items` | **14 rows**. Columns: `price_amount · price_unit · quantity · config jsonb` — ⚠️ **no list price, no disposition, no reason** |
-| lines carrying `config->>'grant_mode'` | ⚠️ **0** |
-| lines carrying `config->>'list_price'` | ⚠️ **0** |
-| `purchases`, paid | **4** — `PUR-000316 $120 · PUR-000319 $880 · PUR-000320 $880 · PUR-000333 $55`. **Every one has `amount_paid = amount`** |
+| `purchase_items` | **14 rows** · `price_amount · price_unit · quantity · config jsonb` — ⚠️ **no list price, no disposition, no reason** |
+| lines carrying `config->>'grant_mode'` / `'list_price'` | ⚠️ **0 / 0** — the credit-side comp model has never been used |
+| `purchases`, paid | **4** — `PUR-000316 $120` · `PUR-000319 $880` · `PUR-000320 $880` · `PUR-000333 $55`. **Every one `amount_paid = amount`.** Total **$1,935.00** |
 | comps in the database | ⚠️ **ZERO** |
+| ⚠️ **discounts already given, unrecorded** | ⚠️ **UNKNOWN AND REAL** — *"we have been giving a lot of discounts."* **This task builds the field; the history is the owner's data pass** |
 
-### ✅ THIS CLOSES THE LEDGER'S OWN URGENT QUESTION
-`CR-86` ASK-OWNER 1 — *"Have comps been marked 'paid' to date? If so the revenue figures are already
-wrong"* — **is answered: no. There are no comps. Today's revenue figures are trustworthy.** Do not
-re-ask it; do not re-derive it. **That is exactly why the fix is cheap now and expensive later.**
+✅ **`CR-86`'s urgent ASK-OWNER 1 — "have comps been marked paid to date?" — is ANSWERED: no.**
+**Today's revenue figures are trustworthy. Do not re-ask it.**
 
 ---
 
-## 3. ⚠️ THE DEADLINE — AND THE MECHANISM IS NOT WHAT THE BRIEF SAYS
-
-`revenue_summary(p_from, p_to)` sums:
+## 3. ⚠️ THE DEADLINE, AND UNDER CR-89 IT IS NO LONGER HYPOTHETICAL
 
 ```
-coalesce(sum(coalesce(nullif(p.amount_paid, 0), p.amount, 0)), 0)
-     FROM purchases WHERE payment_status = 'paid' AND paid_at IN WINDOW
+revenue_summary:  coalesce(sum(coalesce(nullif(p.amount_paid, 0), p.amount, 0)), 0)
+                  FROM purchases WHERE payment_status = 'paid' AND paid_at IN WINDOW
 ```
 
-⚠️ **`nullif(amount_paid, 0)` means: a PAID order that collected ZERO books at `p.amount` — the full
-list price — and records no loss.**
+⚠️ **`nullif(amount_paid, 0)` means a PAID order that collected ZERO books at `p.amount`.**
+**Under CR-89 a comped order carries the FULL LIST PRICE in `amount` and 0 in `amount_paid` — exactly
+that shape.** ⚠️ **So the first comp entered under the new mechanism books as full-price revenue and
+records no loss: a double error in one direction.**
 
-⚠️ **CORRECTION TO `ORCH6-BRIEF.md` §3, verified in the function bodies today.** The brief says a comp
-recorded as the owner intends already books as full-price revenue. **It does not — yet.**
-`grant_lesson_credit` writes a comp as `amount = 0, amount_paid = 0`, so `coalesce(nullif(0,0), 0, 0)`
-= **0**. Today's comp path books nothing and is CORRECT.
-
-⚠️ **THE TRAP ARMS ITSELF THE MOMENT THIS TASK DOES WHAT IT WAS ASKED TO DO.** The instant a line
-carries the LIST price and the order records what was actually collected, the natural shape of a comp
-becomes *"worth $880, collected $0"* — and `nullif` converts that zero into **$880 of revenue that
-never arrived**. A 50%-discounted sale collected in full is fine; a fully-comped one inverts.
-
-⚠️ **THEREFORE: THE `revenue_summary` FIX AND THE DESIGNATION SHIP IN THE SAME BRANCH.** Not the fix
-first, not the designation first. **Either alone leaves the books wrong in one direction.**
+⚠️ **THE FIX AND THE DISPOSITION SHIP IN THE SAME BRANCH.** Neither alone is safe.
 
 ---
 
-## 4. ⚠️ THE INCUMBENT — A COMP MODEL ALREADY EXISTS. DO NOT BUILD A SECOND ONE (D18)
+## 4. THE SEAM THAT ALREADY EXISTS — extend it, do not add one
 
-**`grant_lesson_credit(p_client_id, p_offering_id, p_quantity, p_mode, p_reason, p_payment_method,
-p_paid_at)` already implements the whole idea, on the CREDIT side only:**
+**`mark_purchase_paid(p_purchase_id, p_amount, p_reference, p_method, p_paid_at)` is the ONE payment
+spine** *(D6 — `api-payments.ts:14`: "one payment spine, not two")*. Everything settles through it:
+`/api/orders-mark-paid`, `confirm_payment_claim`, the Zelle match, the cash confirm, the booking fee.
 
-| It already does | Where |
-|---|---|
-| three modes — `handwrite · comp · bill` | `p_mode`, validated server-side |
-| **the list price read at grant time and stored on the line** | `purchase_items.config` → `list_price` |
-| **a reason is mandatory** — no reason, no grant (D19) | `p_reason` |
-| the loss reported from the captured price, never re-derived | `comped_credit_value()` → `config->>'grant_mode' = 'comp'` |
-| the confirmation the staff member reads | `GrantCreditDialog.tsx` — *"Comped — $X recorded as a loss."* |
-| **an undo that refuses a spent grant** | `revoke_lesson_credit_grant()` |
-| the client-facing telling | order `notes`: *"With our compliments. …"* |
+⚠️ **IT ALREADY TAKES AN AMOUNT.** A short payment is already recordable. **What is missing is
+WHY it was short** — a discount, a comp, or a balance still owed — **and everything that follows from
+knowing.**
 
-⚠️ **So the work is NOT inventing discount/comp. It is GENERALISING the model that exists from one
-write path to all of them, and giving it a home a report can aggregate.**
-
-### THE FIVE WRITE PATHS — every one of them must end up honest
-`create_my_purchase` *(client checkout)* · `_provision_purchase_for_offerings` *(ProvisionClientForm —
-the staff first order)* · `grant_lesson_credit` *(the incumbent)* · `apply_booking_fee` ·
-`submit_public_request`. ⚠️ **A designation enforced in the UI of one of them is not enforced.**
+⚠️ **THE FIVE ORDER-WRITING PATHS** — `create_my_purchase` · `_provision_purchase_for_offerings` ·
+`grant_lesson_credit` · `apply_booking_fee` · `submit_public_request`. **They CREATE orders; they do
+not settle them.** ⚠️ **The disposition belongs at settlement, on one function — that is the whole
+point of CR-89.** **What the creation paths owe this task is the LIST PRICE on the line.**
 
 ---
 
-## 5. 🔒 RULINGS — decided by ORCH6, with the reasoning. Do not re-litigate these; build them
+## 5. 🔒 RULINGS — decided, with the reasoning. Build them; do not re-open them
 
-**R1 · The three money facts become COLUMNS on `purchase_items`, not jsonb keys.**
-`list_price_amount numeric` · `price_disposition text` *(CHECK `full | discount | comp`, default
-`full`, NOT NULL)* · `price_reason text`.
-**Why, given `grant_lesson_credit` deliberately chose `config` "rather than new columns nothing else
-would read":** *something else now reads them* — that is precisely what a P&L is. A vocabulary five
-writers must spell identically belongs in a CHECK constraint, and money a period report must aggregate
-and filter belongs in a column. ⚠️ **`config` keeps per-line INTENT** *(recurrence, horse, plan
-window)*; **it stops holding money.**
+**R1 · The disposition lives on the ORDER, at settlement.** `purchases.payment_disposition`
+*(CHECK `paid | discounted | comped`, NOT NULL, default `paid`)* · `purchases.write_down_amount`
+*(what was given away)* · `purchases.write_down_reason` *(required whenever the disposition is not
+`paid` — D19: no reason, no give-away)*.
+⚠️ **`amount` stays the FULL price and `amount_paid` stays what was COLLECTED.** The write-down is
+`amount − amount_paid`, **stored** rather than re-derived, so a later price edit cannot move a closed
+month's books.
 
-**R2 · One copy of the fact.** `config`'s `grant_mode` / `list_price` / `grant_reason` keys are
-**retired in the same migration**, and `comped_credit_value()` is repointed at the columns.
-⚠️ **Measured: 0 rows carry either key, so there is nothing to migrate and no dual-read window.**
-`granted_by` / `granted_at` stay in `config` — provenance, not money.
+**R2 · The LIST PRICE is captured on the LINE at the time of sale.**
+`purchase_items.list_price_amount numeric`. **Why both:** the order-level write-down is the accounting
+figure; the line-level list price is what makes it defensible three years later, when the offering
+costs something different. ⚠️ **Never re-derive a past loss from today's catalogue.**
 
-**R3 · The record is always TWO amounts plus a reason** — what it was worth (`list_price_amount`) and
-what was charged (`price_amount`). ⚠️ **A percentage is an ENTRY convenience, computed to a figure and
-never stored as a rule.** This answers the ledger's open *"percentage, fixed, or both"* without
-another round trip: **both, at entry; one shape, in the record.** ⚠️ **A discount RULE — a standing
-formula — is NOT in this task** (D21 would demand an editor for it; see §7).
+**R3 · Percentage is an ENTRY convenience, never a stored rule.** The record is always the two
+amounts plus a reason. **A standing discount RULE is NOT in this task** *(D21 would demand an editor
+for it)*.
 
-**R4 · The client sees it.** CR-39 already rules a comp must be visible to the person receiving it.
-**A discount is the same act with a smaller number** — the line shows list, the reduction, and what
-they paid. ⚠️ **Flag this one back in the report for his confirmation; build it as ruled.**
+**R4 · The customer sees it.** Full price · the reduction · **amount owed $0**. ⚠️ **This is the
+owner's own sentence, not an inference.** It applies to a discount and to a comp alike.
 
-**R5 · `revenue_summary` recognises what was COLLECTED.** `payment_status = 'paid'` with
-`amount_paid = 0` is **zero revenue**, not list. ⚠️ **`nullif(amount_paid, 0)` goes.** The function
-additionally returns `discount_total` and `comp_total` for the same window and the prior window,
-**from one read, in the same call** — because a second function computing its own figure is exactly how
-`calendar_revenue` and `revenue_summary` came to disagree 9.7×.
-⚠️ **`amount_paid IS NULL` is not zero.** Preserve `coalesce(p.amount_paid, p.amount, 0)` for the
-null case; only the *explicit zero* changes meaning.
+**R5 · `revenue_summary` recognises what was COLLECTED.** ⚠️ **`nullif(amount_paid, 0)` goes.**
+`amount_paid = 0` on a paid order is **zero revenue**. ⚠️ **`amount_paid IS NULL` is NOT zero** —
+keep `coalesce(p.amount_paid, p.amount, 0)` for the null case; only the explicit zero changes meaning.
+**The same call additionally returns `write_down_total` and a count, for the window and the prior
+window, FROM ONE READ** — a second function computing its own figure is how `calendar_revenue` and
+`revenue_summary` came to disagree **9.7×**.
 
-**R6 · An offering-level designation and a line-level fact are DIFFERENT FACTS and both are kept.**
-*"This offering is promotional"* ≠ *"this sale was discounted."* ⚠️ **This task builds the LINE fact
-only.** If the offering flag is added later it seeds the line's default; it never replaces the record
-of what actually happened.
+**R6 · EXPORT IS IN SCOPE.** ⚠️ **One named period read → CSV: order · date · client · full price ·
+collected · write-down · disposition · reason.** *"so when we do our taxes … all easily within reach
+and exportable."* **The cost and profit columns arrive with the cost sheet; this export must be built
+so they slot in without a second export appearing beside it.**
+
+**R7 · `grant_lesson_credit`'s `comp` mode is RETIRED** *(0 rows, superseded by R1)*.
+**Retire behind the repo's own pattern — do not delete.** `handwrite` and `bill` stay.
+
+**R8 · An offering-level "promotional" flag is a DIFFERENT FACT and is NOT this task.** *This offering
+is promotional* ≠ *this sale was discounted*. If it is added later it seeds the default; it never
+replaces the record of what happened.
 
 ---
 
 ## 6. ⚠️ THE TRAPS
 
-- ⚠️ **`DROP FUNCTION` + `CREATE FUNCTION` resets the ACL to the schema default, silently.**
-  `revenue_summary`, `comped_credit_value` and `grant_lesson_credit` are all `SECURITY DEFINER`.
-  **Restore grants explicitly and prove them from `pg_proc.proacl` before and after.**
-- ⚠️ **`CREATE OR REPLACE` with a NEW defaulted parameter OVERLOADS rather than replaces.** Old
-  call sites keep resolving to the old body — a fix that appears to do nothing. **Drop the old
-  signature explicitly if you widen one.**
-- ⚠️ **A trigger declared `UPDATE OF <col>` fires on the columns the STATEMENT NAMES.** If you touch
-  the purchases status/payment triggers, prove firing — do not infer it from a correct stored value.
-- ⚠️ **`purchases.amount` is not the sum of its lines today.** Establish the relationship before you
-  make `amount` mean anything new. **Report what you find; do not silently redefine it.**
-- ⚠️ **THE SIGNING FREEZE IS IN FORCE** and **71 EXECUTED documents are evidence.** Nothing here
-  touches `documents` or `signatures`.
-- ⚠️ **A LIVE LEASE IS IN PRODUCTION** — Pamela Godde, `7adcd08f-fd5d-40f9-b726-634074266d7c`.
-  Rehearse anything destructive inside `BEGIN; … ROLLBACK;`.
-- ⚠️ **`test:db` is red at baseline and proves nothing.** Verify against production with SQL.
-- **Lint baseline is 46**, typecheck 0, typecheck:api 0.
+- ⚠️ **`CREATE OR REPLACE` with NEW DEFAULTED PARAMETERS OVERLOADS RATHER THAN REPLACES.** You are
+  widening `mark_purchase_paid`, which has **five existing call sites across the API and the UI**.
+  **Old 5-arg calls will keep resolving to the OLD body — a fix that appears to do nothing.**
+  ⚠️ **Drop the old signature explicitly and prove every caller moved.**
+- ⚠️ **`DROP FUNCTION` + `CREATE FUNCTION` RESETS THE ACL silently.** `revenue_summary`,
+  `mark_purchase_paid`, `comped_credit_value` and `grant_lesson_credit` are `SECURITY DEFINER`.
+  **Restore grants explicitly; paste `pg_proc.proacl` before and after.**
+- ⚠️ **`UPDATE OF <col>` triggers fire on the columns the STATEMENT NAMES**, not on what ends up
+  stored. `status_purchases` is declared `UPDATE OF status, payment_status`. **If you settle an order
+  by writing new columns, prove the status events still fire** — this exact trap has bitten three
+  times in this repo, and `report_my_payment` already lost every status event to it.
+- ⚠️ **`purchases.amount` is not necessarily the sum of its lines today.** **Establish the
+  relationship and REPORT it before making `amount` mean anything new.**
+- ⚠️ **THE SIGNING FREEZE IS IN FORCE**; **71 EXECUTED documents are evidence**; **a LIVE LEASE is in
+  production** (Pamela Godde, `7adcd08f-fd5d-40f9-b726-634074266d7c`). Nothing here touches them.
+- **`test:db` red is the documented baseline and proves nothing.** Verify with SQL against production.
+- **Lint baseline 46** · typecheck 0 · typecheck:api 0.
 
-## 7. OUT OF SCOPE — name these in the report, build none of them
+## 7. OUT OF SCOPE — name them in the report, build none
 
-**The monthly cost sheet on the horse record** *(CR-86 gap 3 — the owner's simplification, its own
-task)* · **the P&L page and any financial-analysis surface** *(CR-88, and it is blocked on his
-company-expense categories)* · **any dashboard tile** *(`TASK-FIX6` renders; it does not create the
-means of recording)* · **the full line-item editing model** — CR-16/CR-38…CR-42, quantity/void/mark-paid
-as one model — ⚠️ **this task adds the two money facts to the line and the point-of-sale control; it
-does not build the line editor** · **the offering-level promotional flag** (R6) · **a standing discount
-RULE** (R3) · **his backdated data pass** (D30 — after the refactor).
+The **monthly cost sheet on the horse record** *(CR-86 gap 3, its own task)* · **the P&L / financial
+page** *(CR-88)* · **expense categories and their charts** *(`CR-91` — typed by him, remembered per
+scope, and they must go through `lookup_options`, never a second vocabulary)* · **campaign ROI**
+*(CR-88)* · **any dashboard tile** *(`TASK-FIX6` renders what exists)* · **the full line-item editing
+model** *(CR-16/CR-38…CR-42)* · **the standing-schedule cadence and month-end invoicing** *(`CR-90` —
+its own task, and it is a bigger one)* · **his historical discount backfill** *(his data pass — this
+task gives it somewhere to land)*.
 
-⚠️ **`resources` · `resource_lots` · `consumption_events` · `cost_allocation_rules` · `billable_lines`
-are all built and all 0 rows. THE OWNER RULED THE PER-EVENT COST LEDGER OUT on 2026-08-31** — cost is
-a monthly sheet typed in at month end. **LEAVE THEM UNDRIVEN (D32) and say so in the report**, so a
-later thread does not "finish" them.
+⚠️ **`resources` · `resource_lots` · `consumption_events` · `cost_allocation_rules` ·
+`billable_lines` are built and all 0 rows. THE OWNER RULED THE PER-EVENT COST LEDGER OUT.
+LEAVE THEM UNDRIVEN (D32) and say so**, so a later thread does not "finish" them.
 
 ## 8. CONSTRAINTS
 
 - **Worktree `~/Downloads/claude-code-repo/wt-books1`, branch `task/books1`, from `origin/main`.**
-  ⚠️ **Copy `.env.db` AND `.env` in** — both gitignored, and `npm run build` dies without `.env`.
-- ⚠️ **NEVER `~/Desktop`.**
-- ⚠️ **Files you do NOT own:** `AppLayout.tsx`, `pageRegistry.ts` *(`TASK-CR85`)*, `OwnerDashboard.tsx`
-  and `dashboard/*` *(`TASK-FIX6`)*. **If you need a change there, REPORT THE DIFF; the orchestrator
-  applies it.**
-- ⚠️ **`revenue_summary` IS YOURS.** `TASK-FIX6` may call it and may not redefine it. If its shape
-  changes, **say so in the report in one clearly-marked block** so FIX6 is told, not surprised.
-- **Migrations:** `BEGIN; … ROLLBACK;` dry run → apply → verify → commit. Timestamp-named, repo
-  convention `YYYYMMDDTHHMM_sentence_case_name.sql`. **No self-contained `COMMIT;`.**
+  ⚠️ **Copy `.env.db` AND `.env` in.** ⚠️ **NEVER `~/Desktop`.**
+- ⚠️ **Files you do NOT own:** `AppLayout.tsx` / `pageRegistry.ts` *(`TASK-CR85`)* ·
+  `OwnerDashboard.tsx` and `dashboard/*` *(`TASK-FIX6`)* · `ops/kit/Modal.tsx` *(`TASK-MODAL2`)*.
+  **Need a change there? REPORT THE DIFF; the orchestrator applies it.**
+- ⚠️ **`revenue_summary` AND `mark_purchase_paid` ARE YOURS.** Other threads may call them and may not
+  redefine them. **If either's shape changes, say so in ONE clearly-marked block** so FIX6 is told,
+  not surprised.
+- **Migrations:** `BEGIN; … ROLLBACK;` → apply → verify → commit. `YYYYMMDDTHHMM_sentence_name.sql`.
+  **No self-contained `COMMIT;`.**
 - **COMMIT AS YOU GO. DO NOT PUSH.** **Stage explicit paths; never `git add docs/`.**
-- ⚠️ **TEARDOWN: paste a process census at the end** — no vite/vitest/chromium/psql left running.
+- ⚠️ **TEARDOWN: paste a process census.**
 
-## 9. THE REACH — required, and it is half the value of this task
+## 9. THE REACH — answer both, with file and line
 
-**Answer both, in the report, with the file and line:**
-1. ⚠️ **What does a person CLICK, from which page, to comp or discount a line — and is that the only
-   way?** The incumbent is `GrantCreditDialog` (credits only, reached from the credits page). The
-   other point of sale is **`ProvisionClientForm`'s order block** *(the staff first order, reached
-   from `LeadWorkDrawer` and `ClientInvitationSection`)*, whose own copy already says *"A comped,
-   zero-priced offering counts the same as a paid one"* — **so it already talks about comps it cannot
-   record.** ⚠️ **That surface is the one the owner and Claire actually use to sell something, and it
-   is where the designation has to appear.**
-2. **Where does the owner READ the discounts and comps given in a period?** ⚠️ **Not a new page** —
-   the credits page already shows a comped total from `comped_credit_value`. **Say plainly which
-   existing surface shows the order-side figure, or state that nothing does yet and that CR-88's
-   financial page is where it will land.** **Do not build a page to hold a number.**
+1. ⚠️ **What does a person CLICK to comp or discount, and is it the only way?** The settlement
+   surfaces are **`PaymentReviewPage`**, the orders list's mark-paid action, and
+   `/api/orders-mark-paid`. ⚠️ **`ProvisionClientForm`'s order block already tells staff *"A comped,
+   zero-priced offering counts the same as a paid one"* — it talks about a comp it cannot record.**
+   **Reconcile that copy with what you build.**
+2. ⚠️ **Where does the owner READ discounts and comps for a period, and EXPORT them?** Name the
+   surface. **Do not build a page to hold a number** — but R6's export must be reachable by a click,
+   not only by a SQL query.
 
-## 10. THE TELL — required (D19)
+## 10. THE TELL (D19)
 
-- **Comping or discounting states what it is doing BEFORE it does it**, records **who, why and when**,
-  and **can be undone.** `revoke_lesson_credit_grant` is the shape to follow.
-- **The staff member sees the loss in dollars at the moment they apply it** — *"Comped — $880 recorded
-  as a loss"* is the existing wording and it is good.
-- **The client sees what they were given** (R4).
+- **It states what it will do before it does it** — the amount being written down, in dollars.
+- **It records who, why and when**, and **it can be undone.**
+- **The customer's copy shows full price, the reduction, and $0 owed** (R4).
 
 ## 11. THE TEST THIS MUST PASS — numbered, provable, pasted
 
-1. **A line records list, charged, disposition and reason.** Paste the row.
-2. ⚠️ **A comp of an $880 offering books ZERO revenue and an $880 loss** — paste `revenue_summary`
-   and the comp figure for the same window, from ONE call each.
-3. ⚠️ **REGRESSION, AND IT IS THE ONE THAT MATTERS: the four existing paid orders total exactly the
-   same before and after your change to `revenue_summary`.** Paste both totals. **$1,935.00.**
-4. **A 10%-discounted $880 sale collected in full books $792 revenue and an $88 discount.**
-5. ⚠️ **`amount_paid IS NULL` still behaves as it did.** Prove it — a rolled-back transaction is fine.
-6. **A designation cannot be spelled wrongly** — the CHECK refuses `COMP`, `comped`, `free`.
-7. ⚠️ **All five write paths produce a valid disposition** — name each and show what it writes.
-   A path that can leave the column NULL is a failure of this criterion.
-8. **`comped_credit_value` reads the columns, `config` no longer carries money, and the two cannot
-   disagree** — because there is only one of them (R2).
-9. ⚠️ **`pg_proc.proacl` for every function you replaced, before and after.**
-10. **A comp is undoable, and the undo refuses a spent one.**
-11. `typecheck` · `typecheck:api` · **lint ≤ 46** · `npm run build` — paste the numbers.
-12. ⚠️ **Renders NOT VERIFIED by you.** End with a numbered checklist the owner runs in a browser.
+1. **An ordinary order, marked paid as COMPED, keeps its full price on the order and the line**, and
+   shows **$0 owed**. Paste the row.
+2. ⚠️ **That order books ZERO revenue and an $880 write-down** — from ONE `revenue_summary` call.
+3. ⚠️ **THE REGRESSION THAT MATTERS: the four existing paid orders total EXACTLY `$1,935.00` before
+   and after.** Paste both.
+4. **A $880 order settled at $792 books $792 revenue and an $88 write-down**, disposition
+   `discounted`, reason recorded.
+5. ⚠️ **A short payment that is NOT a discount still reads as a balance owed** — prove the two are
+   distinguishable, because that is the whole point of the disposition.
+6. ⚠️ **`amount_paid IS NULL` behaves exactly as it did.** Prove it.
+7. **The CHECK refuses `COMP`, `comped `, `free`.**
+8. ⚠️ **Every existing `mark_purchase_paid` call site resolves to the NEW body.** Name them; prove
+   the old signature is gone.
+9. ⚠️ **The status events still fire on settlement** — probe it, do not infer it from a correct row.
+10. **`pg_proc.proacl` for every function replaced, before and after.**
+11. **The export produces the period file, and the numbers in it reconcile to criterion 2 and 4.**
+12. **A comp is undoable, and the undo refuses one whose credits are spent.**
+13. `typecheck` · `typecheck:api` · **lint ≤ 46** · `npm run build` — paste the numbers.
+14. ⚠️ **Renders NOT VERIFIED by you** — a numbered checklist the owner runs, ⚠️ **including what the
+    CUSTOMER sees on a comped order**, which is the half only he can confirm.
 
 ## 12. WHERE THE REPORT GOES
 
 `docs/reports/TASK-BOOKS1-REPORT.md`. ⚠️ **Its most valuable section is "flagged, not fixed."**
-**Never report a green function call as a shipped feature** — prove the reach.
+**A green function call is not a shipped feature — prove the reach.**
