@@ -42,50 +42,62 @@ judgement a component would get wrong, and being wrong loses their work.
 
 ---
 
-## 3. 🔒 THE FOUR DELTAS
+## 3. 🔒 THE FIVE DELTAS — ⚠️ REWRITTEN 2026-08-31 AFTER THE OWNER SIMPLIFIED THE RULE
 
-### D1 · ⚠️ ESCAPE MUST NOT CLOSE AN INPUT-BEARING DIALOG
-**Today `Modal.tsx:152` closes on Escape, unconditionally.** The owner: *"the close button/icon is the
-only way to close it once they engage with it."*
-**Escape must obey the SAME live-DOM test the backdrop already obeys** — no field, Escape closes; a
-field present, Escape does nothing. ⚠️ **One rule, one code path, asked once.** *(An earlier thread
-kept Escape open on a11y grounds. That was a deviation from an instruction, not a decision to make —
-the a11y concern is answered by the close control always being present and focusable, which FIX4
-already guarantees on every dialog, titled or not.)*
+> *"just make all modals only close on click of button or link, dont let them close on click-out since
+> you cant determine which ones the user can reopen and which ones they cant."*
+> *"the side drawer i specd as eliminated. center modal is the only version to use."*
+> *"the back control should apply to saving state on all things any user inputs, not just the
+> onboarding flow steps."*
 
-### D2 · ⚠️ A SYSTEM-TRIGGERED DIALOG IS HARDER TO CLOSE THAN A USER-TRIGGERED ONE
-**The component cannot currently tell who opened it, and that is the gap.**
-- **User-triggered + information only** → click-out closes. *(Today's behaviour, correct.)*
-- ⚠️ **System-triggered** *(it appeared on its own — an alert, a notice, a prompt the person did not
-  ask for)* → **click-out must NOT close it. The close control does.**
-  **The owner's reason is the spec: *"the user cannot simply reopen it if they accidentally close
-  it."***
-- **Add an explicit `trigger: 'user' | 'system'` input.** ⚠️ **Choose the DEFAULT so that forgetting
-  it is safe** — and say in the report which you chose and why.
-- ⚠️ **INVENTORY EVERY DIALOG THAT OPENS WITHOUT A CLICK** and set it. **A default nobody applies is
-  the same as no feature** — this repo's dominant failure mode is correct code nothing reaches.
+### D1 · ⚠️ NO MODAL CLOSES ON CLICK-OUT. NO MODAL CLOSES ON ESCAPE. EVER.
+**A control — a button or a link — is the only way out of any modal, whether it holds a field or not.**
+⚠️ **This REPLACES the live-DOM field test and both escape hatches.** `allowBackdropClose` and
+`disableBackdropClose` **both go**: there is nothing left for them to express.
+⚠️ **The owner's reasoning is the spec and it settles the question a component cannot answer from
+inside: you cannot tell whether the person can reopen what they just dismissed.**
+**Every dialog must therefore have a visible, reachable close control** — FIX4 already guarantees one
+on every modal, titled or not. ⚠️ **Verify that is still true of all 37 after your change; a modal with
+no control is now a trap with no exit.**
+
+### D2 · ⚠️ ONE VARIANT. THE DRAWER AND THE SHEET ARE ELIMINATED.
+**Measured on `main`: `variant="drawer"` at 4 call sites** *(`CalendarPage` ×3, `TeamPage`,
+`CalendarSettingsPanel`, `CalendarItemPanel`)* **and `variant="sheet"` at 8** *(`HorseRecordsPage`,
+`EvaluationsPage`, `DocumentQueuePicker`, `StableSection`, `StableEditors`, `EmailChangeModal`,
+`CreateModal`, `ClientRecordActions`)*.
+🔒 **All become the centre modal. Remove the `variant` prop entirely** — a prop with one legal value is
+a prop nobody needs. ⚠️ **FIX4's report defends the three shapes; that defence is superseded by the
+owner's ruling. Do not re-argue it.**
+⚠️ **The four calendar panels are the ones most likely to look wrong as boxes** — they were built full
+height. **Report how they read; do not re-introduce a variant to fix it.**
 
 ### D3 · ⚠️ THE SAVE STATE MOVES TO THE HEADER, BESIDE THE CLOSE ICON
-**Today it renders in the FOOTER bar (`Modal.tsx:270`).** The owner: *"save state is always shown up
-next to the close button/icon."* **Move it beside the header Close control (`Modal.tsx:239`).**
-- **Green checkmark + the word `Saved`** — ⚠️ **light green.** Today it is `text-green-700`; pick the
-  lighter token this design system already uses and **grep it out of the BUILT css** (T1 — arbitrary
-  values have silently emitted nothing here twice).
-- ⚠️ **`Saved`, not `Saved to the record`.** The dossier passes a custom `savedLabel`; the owner named
-  the word. **One word, everywhere.**
-- **Persistent while true**, clearing when unsaved input is entered. *(Already the behaviour — pin it
-  with a test rather than rebuilding it.)*
-- ⚠️ **`saving` and `error` states keep their current wording and stay honest.** *"Not saved — your
-  input is still here"* is doing real work.
+**Today it renders in the FOOTER bar (`Modal.tsx:270`); the close control is at `Modal.tsx:239`.**
+**Green checkmark + the word `Saved`, LIGHT green** *(today `text-green-700`; pick the lighter token
+this system already uses and ⚠️ **grep it out of the BUILT css** — T1)*. ⚠️ **`Saved`, not `Saved to
+the record`** — the dossier passes a custom label and the owner named the word. **Persistent while
+true, clearing when unsaved input is entered** *(already the behaviour — pin it with a test)*.
+**`saving` and `error` keep their current honest wording.**
 
-### D4 · ⚠️ AUTO-SAVE FIRES ON FIELD EXIT, NOT ONLY ON A DEBOUNCE
-*"auto save along with each input field being clicked out of is the spec."*
-**Blur must flush the pending write** — normalise, then save, then the indicator turns true — rather
-than leaving the person to wait out a timer. ⚠️ **The debounce stays for mid-typing safety; blur is an
-additional, immediate flush.** **Prove both: a blur saves at once, and typing without blurring still
-saves.**
+### D4 · ⚠️ AUTO-SAVE AND NORMALISATION BOTH RUN ON FIELD EXIT
+> *"the auto save and normalize functions are supposed to run when the user clicks out of the field
+> they entered the input into."*
 
----
+**Blur normalises, then saves, immediately** — the person does not wait out a timer. **The debounce
+stays as mid-typing insurance.** ⚠️ **Prove both: a blur saves at once, and typing without blurring
+still saves.**
+🔒 **AND THE ENTRY RULE IS UNCHANGED AND ABSOLUTE:** *"a save or submit or confirm button is the only
+way something is entered as an entry, closing doesnt submit."* **(D34.)**
+
+### D5 · ⚠️ THE BACK CONTROL IS NOT AN ONBOARDING FEATURE — THE SWEEP IS NOW IN SCOPE
+**`TASK-FIX4` built `BackControl.tsx` and deliberately did NOT sweep the ~18 remaining hand-rolled
+back affordances** *(AR5 found 20+ instances and no shared component)*. **The owner has now ruled it
+applies to *"all things any user inputs."***
+- **Inventory every hand-rolled back affordance**, and **convert each one that sits on a surface where
+  a person enters input.** ⚠️ **Paste the inventory with a verdict per row** — converted, or left with
+  a one-line reason.
+- ⚠️ **The back control must not lose input.** Going back is a navigation, not a discard: the draft
+  survives, exactly as it does on the onboarding steps FIX4 already did.
 
 ## 4. ⚠️ THE TRAPS
 
@@ -122,11 +134,13 @@ turns up.
 
 ## 7. THE TEST THIS MUST PASS
 
-1. ⚠️ **Escape does NOT close a dialog holding a field; it DOES close one with none.** Both asserted.
-2. **The backdrop rule is unchanged** — FIX4's seven assertions still pass.
-3. ⚠️ **A system-triggered information dialog does not close on click-out; a user-triggered one does.**
-4. ⚠️ **The inventory from D2, pasted** — every dialog that opens without a click, and what you set it
-   to. **A dialog you could not classify is a finding, not a silent default.**
+1. ⚠️ **NO modal closes on click-out or Escape** — asserted on a dialog WITH a field and one WITHOUT.
+   **FIX4's assertions that a fieldless dialog closes on the backdrop are INVERTED, with the rule
+   change named in the file**, exactly as FIX4 did when it superseded an older assertion.
+2. ⚠️ **Every one of the 37 dialogs has a visible close control.** Paste the list — a modal without
+   one is now unexitable.
+3. ⚠️ **`variant` is gone**, and all 12 former drawer/sheet call sites render the centre modal.
+4. ⚠️ **The D5 inventory, pasted, with a verdict per row.**
 5. **The save state renders in the header, beside Close**, reads **`Saved`**, and is light green.
    ⚠️ **Paste the built-CSS grep.**
 6. **Clicking out of a field saves immediately** — no waiting on the debounce — **and the indicator

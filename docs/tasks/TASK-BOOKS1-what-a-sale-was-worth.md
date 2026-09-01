@@ -123,8 +123,19 @@ collected · write-down · disposition · reason.** *"so when we do our taxes �
 and exportable."* **The cost and profit columns arrive with the cost sheet; this export must be built
 so they slot in without a second export appearing beside it.**
 
-**R7 · `grant_lesson_credit`'s `comp` mode is RETIRED** *(0 rows, superseded by R1)*.
-**Retire behind the repo's own pattern — do not delete.** `handwrite` and `bill` stay.
+**R7 · ⚠️ `grant_lesson_credit` IS ELIMINATED ENTIRELY — owner, 2026-08-31.** *"The grant lesson
+credit was supposed to be eliminated. i dont see a use case for it, we just process an order and use
+the comp to make the user cost $0 and it works for all purchases not just lessons."*
+⚠️ **All three modes go, not just `comp`.** `handwrite` and `bill` are order-creation shortcuts that
+the ordinary order path plus the payment disposition already covers — **for every kind of purchase,
+not just lessons.** **0 rows have ever used any mode.** **Retire behind the repo's pattern; do not
+hard-delete** (D32).
+⚠️ **BUT NOT BEFORE ITS REPLACEMENT IS REACHABLE.** **Measured 2026-08-31: `markOrderPaid` has exactly
+ONE call site — `PaymentReviewPage` — and the client record's Orders tab cannot settle an order.**
+**So today, removing this RPC would take away a capability before the replacement path exists.**
+🔒 **THEREFORE: this task builds the disposition and the accounting; the RETIREMENT lands with
+`CR-94` pass 2, which makes settling reachable from the client record.** ⚠️ **State this explicitly in
+your report so the next thread does not think it was forgotten.**
 
 **R8 · An offering-level "promotional" flag is a DIFFERENT FACT and is NOT this task.** *This offering
 is promotional* ≠ *this sale was discounted*. If it is added later it seeds the default; it never
