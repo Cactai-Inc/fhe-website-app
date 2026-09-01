@@ -119,3 +119,21 @@ email link that opens the same modal. For each: is that the only way? Say so in 
 
 ## 11 · THE REPORT
 `docs/reports/TASK-REQCARDS-REPORT.md`. Worktree from the first edit.
+
+---
+
+# ⚠️ REQUIRED READING ADDED 2026-09-01 BY ORCH6 — §9 IS SUPERSEDED
+
+🔒 **`CR-99` ASK-OWNER **A2** IS ANSWERED** in `/Users/cactai/Downloads/claude-code-repo/fhe-website-app/docs/reference/CHANGE-ORDER-LEDGER.md` — search `## CR-99 · A2`.
+**IT SUPERSEDES §9 OF THIS SPEC. Do not build §9's proposed card anatomy or its "Requests band".**
+
+**The owner's ruling, in short:**
+- ⚠️ **ONE SPECIFIC SPOT ON THE DASHBOARD LISTING ALL NEW REQUESTS — leads, bookings, orders,
+  "etc."** **Not an orders band. One inbox of new requests, whatever kind they are.**
+- 🔒 **THE SHAPE IS WHATEVER THE SYSTEM ALREADY BUILDS. Do NOT design a new card** (D18). **The
+  only requirement is that it CARRIES the five functions already specified in CR-99:** see the
+  contact information · suggest a different date and/or time · approve the order · approve the
+  booking · mark it paid.
+
+⚠️ **Verify this spec's premises against production before building — a sibling thread proved one
+of its own spec's traps wrong on 2026-09-01, and it was the load-bearing one (D20).**

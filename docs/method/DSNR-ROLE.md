@@ -204,3 +204,21 @@ handed over. No context in the prompt, no second file, no "ORCH will explain."**
 governs it, the prior report it depends on, the D-rule it must honour. **By path.**
 ⚠️ **A spec that assumes the thread already knows something is broken, and ORCH cannot patch it in
 chat.**
+
+# ⚠️ WRITE FROM THE DATABASE, NOT FROM DOCUMENTS — the pattern, 2026-09-01
+
+**FOUR BUILD THREADS HAVE NOW CAUGHT A WRONG PREMISE IN A SPEC HANDED TO THEM:**
+| Thread | What the spec claimed | What was true |
+|---|---|---|
+| `TASK-MODAL2` | the back sweep was in scope (§3) **and** out of scope (§5) | ⚠️ **the spec answered one question twice** |
+| `TASK-CR85` | "six registry rows" carry the `community` key | **three** — the count was wrong the day it was written |
+| `DSGN-1` | `current_date + 90` is one line in one function | **three functions, and both callers pass `p_through` explicitly** — the edit would have proved nothing |
+| `TASK-SIGNDOOR` | the `/sign/*` path survives as standing categories | ⚠️ **it does not — proven empty on production. Building to the spec would have re-created the AR7 incident** |
+
+🔒 **THIS IS A HABIT, NOT FOUR ACCIDENTS: the specs are being written from DOCUMENTS rather than
+from the DATABASE AND THE CODE.** ⚠️ **A prior report, a ledger entry and a handoff are all
+hypotheses (D20).**
+
+🔒 **THEREFORE, IN EVERY SPEC: each premise carries the query or the `file:line` that produced it,
+run BY YOU, on the day you wrote it.** ⚠️ **A number inherited from a document and not re-run is
+not a measurement — mark it as inherited, or do not state it.**

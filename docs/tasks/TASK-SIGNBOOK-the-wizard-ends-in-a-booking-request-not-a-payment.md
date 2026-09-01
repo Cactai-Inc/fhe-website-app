@@ -111,3 +111,21 @@ or the client withdraws; nothing money-shaped happened yet.
 
 ## 11 · THE REPORT
 `docs/reports/TASK-SIGNBOOK-REPORT.md`. Worktree from the first edit.
+
+---
+
+# ⚠️ REQUIRED READING ADDED 2026-09-01 BY ORCH6 — read these before you build
+
+1. 🔒 **`CR-98` ASK-OWNER **A1** IS ANSWERED** in `/Users/cactai/Downloads/claude-code-repo/fhe-website-app/docs/reference/CHANGE-ORDER-LEDGER.md` — search `## CR-98 · A1`.
+   **TWO DOORS: the `/sign/*` path decides the documents when there is NO order; the OFFERING
+   decides them when there is one.** ⚠️ **AND ASSIGNMENT HAS TWO TRIGGERS, not two alternatives:
+   activation-by-path, AND first-purchase-if-none-yet.** **A build that wires only the first
+   leaves every manually-created client permanently paperless.** ⚠️ **It also dissolves the wizard
+   loop-back question: an offering picked at step 5 carrying a document the path-set did not
+   include assigns under the general first-purchase rule — no special case.**
+2. **`TASK-SIGNDOOR` HAS MERGED** — `docs/reports/TASK-SIGNDOOR-REPORT.md` and its
+   `-VERIFICATION.md`. ⚠️ **Its migration `20260901T1120` is applied to production, and the path
+   now rides the INVITATION, not standing categories.** **Read that before assuming where the
+   path lives.**
+3. ⚠️ **THAT THREAD PROVED ONE OF ITS OWN SPEC'S TRAPS WRONG against production.** **Verify this
+   spec's premises the same way — every number here is a hypothesis until you re-run it (D20).**
