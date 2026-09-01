@@ -55,7 +55,7 @@ window.__tables = {
       id: evalOfferingId, org_id: orgId, name: 'Evaluation Lesson', slug: 'evaluation-lesson',
       segment: 'rider', active: true, config_kind: 'scheduled', unit_count: 1,
       price_amount: 170, price_unit: 'session', service_type: 'RIDING_LESSON',
-      sort_order: 1, tagline: null, weekly_frequency: null,
+      sort_order: 1, tagline: null, weekly_frequency: null, horse_included: true,
     },
     {
       id: '00000000-0000-4000-8000-0000000000e3', org_id: orgId, name: 'Full Body Clip',
@@ -68,6 +68,16 @@ window.__tables = {
       slug: 'single-lesson', segment: 'rider', active: true, config_kind: 'scheduled',
       unit_count: 1, price_amount: 150, price_unit: 'session', service_type: 'RIDING_LESSON',
       sort_order: 2, tagline: 'Once your evaluation is done', weekly_frequency: null,
+      horse_included: true,
+    },
+    {
+      // horse_included = false — "bring your own", the rows the /sign/rider door
+      // must NOT offer and the rider+horse door must.
+      id: '00000000-0000-4000-8000-0000000000e4', org_id: orgId,
+      name: 'Single Lesson (With your horse)', slug: 'single-lesson-own-horse',
+      segment: 'rider', active: true, config_kind: 'scheduled', unit_count: 1,
+      price_amount: 120, price_unit: 'session', service_type: 'RIDING_LESSON',
+      sort_order: 3, tagline: null, weekly_frequency: null, horse_included: false,
     },
   ],
   // getOrder / getOrderPayment read `purchases`, and `purchase_items` for the lines.

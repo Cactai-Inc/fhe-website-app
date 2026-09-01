@@ -247,7 +247,9 @@ ok(await page.locator('input[type="date"]').count() >= 1, 'and a day/time picker
 console.log('── the catalog follows the door ──');
 for (const [path, want, notWant] of [
   ['horse', 'Full Body Clip', 'Evaluation Lesson'],
-  ['rider+horse', 'Evaluation Lesson', null],
+  // ⚠️ Owner, 2026-09-01: "rider only should only show lessons with company horse."
+  ['rider', 'Evaluation Lesson', 'With your horse'],
+  ['rider+horse', 'With your horse', null],
 ]) {
   await arrive(`?path=${encodeURIComponent(path)}`);
   await page.locator('input[name="ob-signing-for"]').first().check().catch(() => {});
@@ -262,8 +264,23 @@ for (const [path, want, notWant] of [
   const shopText = await page.locator('section').first().innerText();
   ok(shopText.includes(want), `/sign/${path} — the catalog offers "${want}"`);
   if (notWant) {
-    ok(!shopText.includes(notWant),
-      `/sign/${path} — and NOT "${notWant}" (it used to show riding lessons to horse owners)`);
+    ok(!shopText.includes(notWant), `/sign/${path} — and NOT "${notWant}"`);
+  }
+  if (path === 'rider+horse') {
+    /* ⚠️ CASE-INSENSITIVE. The section headings use the `eyebrow` class, which
+       uppercases in CSS — `innerText` returns the RENDERED text, so an
+       exact-case assertion fails on a heading that is perfectly correct. */
+    const flat = shopText.toLowerCase();
+    ok(flat.includes('lessons on our horses') && flat.includes('lessons with your horse')
+       && flat.includes('for your horse'),
+       '/sign/rider+horse — three sections: our horses, your horse, and horse care');
+    ok(!/full body clip[\s\S]{0,80}available once your evaluation/i.test(shopText),
+       'and the horse-care section is NOT gated by the evaluation lesson');
+    ok(shopText.includes('Evaluation Lesson'), 'and the evaluation lesson is still offered');
+  }
+  if (path === 'rider') {
+    ok(!shopText.toLowerCase().includes('lessons on our horses'),
+       '/sign/rider — one section, so no heading (there is nothing to distinguish)');
   }
 }
 
