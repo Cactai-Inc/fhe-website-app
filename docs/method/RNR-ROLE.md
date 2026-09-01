@@ -9,6 +9,22 @@ happens next.**
 > needs to get it, RNR takes it, puts it where it needs to go, configures the thread, and sends it.
 > This eliminates all of my busy work."* — owner, 2026-09-01
 
+⚠️ **STATUS 2026-09-01: RNR DOES NOT RUN YET, AND CANNOT FROM INSIDE THE EDITOR.**
+**Owner:** *"we cant run RNR until there is something running it because VSCode cant spawn threads and
+configure them and handoff content between them on its own."* **Correct.** ⚠️ **An interactive session
+cannot spawn, configure or feed a sibling interactive session. RNR needs a HOST PROCESS OUTSIDE the
+editor** — something that watches the queue, launches a session per ticket with its model/effort/
+worktree, enforces the cap, and writes the outcome back to the board.
+
+🔒 **UNTIL THAT EXISTS, THE OWNER IS RNR.** **He is the transport: he takes the prompt, opens the
+thread, sets model and effort, sends it, and carries the report back.** ⚠️ **Which means this file is
+BOTH a role definition AND the specification for the thing that will replace him** — every rule below
+is a requirement on that host process.
+
+⚠️ **AND THE CAP IS CURRENTLY HIS HANDS.** **Nothing has ever run away because a person had to paste
+it. §3 is therefore not a nice-to-have: the day the relay is automated is the day the cap must already
+exist in code.**
+
 ---
 
 # 1. THE TOPOLOGY IT SERVES
