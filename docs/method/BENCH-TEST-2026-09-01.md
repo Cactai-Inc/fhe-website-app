@@ -146,28 +146,32 @@ pointer — one home per fact.**
 
 ---
 
-# 5 · THE PROFILE SPLIT — which of tonight's rules are protocol, which are software
+# 5 · THE SPLIT — ⚠️ CORRECTED 2026-09-01 BY THE OWNER. IT IS THREE LAYERS, NOT TWO.
 
-**Offered as the concrete input to "the 6-step SOP repositioned as the software profile."**
+**Owner:** *"this platform runs on an ai model, github, a local repo copy, supabase, and when needed
+for hosting, vercel. it is literally always 'coding' even when the project doesnt require code for the
+finished product."*
 
-| PROTOCOL — true in any domain | SOFTWARE PROFILE — replace per domain |
-|---|---|
-| verbatim capture; an overridden statement is DELETED | worktrees, branches, merge-base diffs |
-| widening vs clarifying — **which altitude does this put him at** | migration conventions, ACL proofs, trigger semantics |
-| one owner per artifact; authority is linear | lint/typecheck baselines as gates |
-| information is hub-and-spoke, routing is the pair's | `test:db` trust status |
-| a killed item is gone-and-recorded, never re-proposed | the reach/tell test *(shape is protocol; "route, nav row, call site" is profile)* |
-| claims board over the SHARED MUTABLE RESOURCE | "a worktree isolates git, not the DB" |
-| re-verify immediately before reporting | Chromium probes, built-CSS greps |
-| the running record; a killed thread costs one step | `git` mechanics of the record |
-| a station may overrule the sequencer, with evidence | — |
-| a spec answers each question once | — |
-| close is the default; nothing depends on a parked thread | — |
+⚠️ **MY FIRST SPLIT WAS WRONG AND IT UNDERSOLD THE SYSTEM.** **I filed worktrees, branches,
+merge-base diffs and migrations as "software profile — replace per domain." They are not profile.
+They are SUBSTRATE, and the substrate NEVER CHANGES.** **A physical product — sketch, 3D model,
+renders, BOM, vendors, logistics, inventory, sales, cart, campaigns, projections — runs on the same
+model, the same GitHub, the same local repo, the same Supabase, the same Vercel.** ⚠️ **The work is
+always commits, branches, rows and migrations, whatever the deliverable is made of.**
 
-⚠️ **The boundaries, the emissions and the loop are all protocol. Almost every TRAP is profile.**
-**That ratio is the real answer to "what does a profile plug in?"**
+| Layer | Changes? | Contents |
+|---|---|---|
+| **PROTOCOL** | ⚠️ **never** | the roles and their boundaries · the loop · verbatim capture · widening vs clarifying · one owner per artifact · authority linear, information hub-and-spoke · claims over the shared mutable resource · re-verify before reporting · the running record · a station may overrule the sequencer · a spec answers each question once · close is the default · killed is gone-and-recorded |
+| **SUBSTRATE** | ⚠️ **never — this is the correction** | model · GitHub · local repo · Supabase · Vercel. **Worktrees, branches, merge-base diffs, migrations, commits, the record's git mechanics, the DB as the shared mutable resource, TEARDOWN.** ⚠️ **`D35` therefore applies LITERALLY in every project, not by analogy — there is always a database and it is always shared** |
+| **PROFILE** | ✅ **the only layer that changes** | ⚠️ **what the subject IS, and what counts as PROVEN for it.** Code: typecheck · lint · `test:db` trust status · the built-CSS grep · the reach *(route, nav row, call site)*. Physical product: BOM completeness · a vendor quote in hand · a render approved · an inventory count. Marketing: a campaign's attribution actually populated |
 
----
+🔒 **SO A NEW DOMAIN PLUGS IN FAR LESS THAN I CLAIMED.** **It does not bring new mechanics — it brings
+a subject and a definition of proof.** ⚠️ **The heavy, hard-won half — the substrate rules and the
+traps that come with them — is written once and never rewritten.**
+
+⚠️ **AND ONE THING MOVES FROM PROFILE TO PROTOCOL AS A RESULT: the reach and the tell.** **"What does
+a person click, and how do they know it happened" generalises to "how is this REACHED, and what TELLS
+the human it is real."** **A BOM nobody can find and a nav row nobody can click are the same defect.**
 
 # 6 · WHAT I WOULD BUILD FIRST, GIVEN TONIGHT
 
