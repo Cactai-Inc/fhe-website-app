@@ -101,6 +101,60 @@ type Step = 'order' | 'details' | 'horse' | 'shop' | 'sign' | 'payment' | 'slots
    gating anything the day the offering is re-priced into a new row. */
 
 
+/* ── SIGNDOOR — THE MINOR QUESTION LIVES HERE NOW ──────────────────────────
+   Owner, 2026-09-01: the /sign/* door *"was supposed to only ask for their email
+   address"*, and the personal-information form is *"the first page after auth …
+   the MINIMUM the DOCUMENTS require."* So FIX1 §A's question — the one AR7 was
+   written about — is asked on THIS page, in the shape FIX1 gave it: two radios,
+   NO DEFAULT, above the name fields, because until it is answered "First name"
+   is ambiguous and that ambiguity is the whole defect.
+
+   ⚠️ WHY IT IS SAFE HERE AND WAS NOT BEFORE. FIX1 moved this question OUT of
+   onboarding and onto the door, because onboarding asked it only after the email,
+   the click and the first login — "by which point the wrong person already
+   exists". That was true when the DOOR captured the name. It no longer does: the
+   door captures an email address and nothing else, so the first place a human
+   name is typed is this form. Nothing exists to be wrong before it is answered.
+
+   ⚠️ AND IT IS SAFER: post-auth the account is PROVABLY the guardian's, because
+   they clicked a link sent to an address only they can read.
+
+   WHICH DOORS ASK (owner ruling, 2026-08-31): *"sign/rider and sign/guest … are
+   the only places a minor is applicable. the other two cannot be a minor, one is
+   a horse owner for horse care services and the other is horse owner for deal
+   party, both require a person to be 18+ to be horse owner."* `rider+horse` is a
+   RIDER door and asks — FIX1 applied his RULE, not his count of four.
+
+   ⚠️ THE BROWSER IS NOT THE AUTHORITY. This map decides what is RENDERED; the
+   database re-decides what is ATTACHED — `_sign_path_allows_minor(text)`, read by
+   `update_my_onboarding_profile` (20260901T1120). One rule, stated twice on
+   purpose, exactly as the door used to state it twice. */
+const MINOR_QUESTION: Record<string, { question: string; self: string; child: string }> = {
+  guest: { question: 'Who is visiting?', self: 'Me', child: 'My child (I am the parent or legal guardian)' },
+  rider: { question: 'Who will be riding?', self: 'Me', child: 'My child (I am the parent or legal guardian)' },
+  'rider+horse': { question: 'Who will be riding?', self: 'Me', child: 'My child (I am the parent or legal guardian)' },
+};
+
+/** The two doors that never ask. ⚠️ A DENY-LIST, DELIBERATELY: an unknown path —
+ *  no invitation, a staff invite with no categories — FAILS OPEN to asking, and
+ *  gets the neutral wording below. Not asking is the 2026-08-28 incident; asking
+ *  a horse owner one extra question is not. Mirrors the SQL of the same name. */
+const NON_MINOR_PATHS = new Set(['horse', 'deal']);
+const MINOR_QUESTION_FALLBACK = {
+  question: 'Who are you signing up?', self: 'Me',
+  child: 'My child (I am the parent or legal guardian)',
+};
+
+/** Under 18 on the day they answer. The same test `sign_release` applies to a
+ *  kiosk minor release, and the same one the door applied: an "18-year-old minor"
+ *  is a data error, and recording one would put an adult in the non-signing
+ *  PARTICIPANT slot where nobody would ever ask them to sign for themselves. */
+function isUnder18(dob: string): boolean {
+  const d = new Date(`${dob}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return false;
+  return new Date(d.getFullYear() + 18, d.getMonth(), d.getDate()) > new Date();
+}
+
 /** The plain profile fields (the name, minor toggle + fields are tracked apart). */
 type ProfileFormFields = Omit<
   OnboardingProfileInput,
@@ -334,14 +388,33 @@ export default function Onboarding() {
   const needsName = nameUnconfirmed
     || !((profile?.first_name ?? '').trim() && (profile?.last_name ?? '').trim());
 
-  // Step 1 — minor rider toggle. `hadMinor` tracks the SERVER's state (from
-  // my_onboarding_state().minor) so an explicit toggle-off sends
-  // has_minor:false, while never-touched sends no minor keys at all.
-  const [hasMinor, setHasMinor] = useState(false);
+
+  /* ── SIGNDOOR — WHO IS THIS FOR ──────────────────────────────────────────
+     ⚠️ `null` is "not answered yet" and is deliberately distinct from 'self'.
+     A checkbox stood here, and an unticked checkbox is an ANSWER the person never
+     gave: it says "this is for me" by default, which is precisely the assumption
+     that produced the 2026-08-28 incident. On a door that asks, an unanswered
+     question is now REFUSED rather than assumed (FIX1 §A, held). */
+  const [signingFor, setSigningFor] = useState<'self' | 'child' | null>(null);
+  // `hadMinor` tracks the SERVER's state (from my_onboarding_state().minor) so an
+  // explicit "Me" AFTER a child was attached sends has_minor:false, while a
+  // never-answered question sends no minor keys at all.
   const [hadMinor, setHadMinor] = useState(false);
   const [minorFirst, setMinorFirst] = useState('');
   const [minorLast, setMinorLast] = useState('');
   const [minorDob, setMinorDob] = useState('');
+  /* ── SIGNDOOR — the door they came in by, and therefore which questions this
+     form owes them. `''` (unknown) falls through to asking; see NON_MINOR_PATHS. */
+  const signPath = (state?.sign_path ?? '').trim();
+  /* ⚠️ A guardian who ALREADY has a child attached is always asked, whatever the
+     door said. Otherwise the block would vanish and they could neither correct
+     the child's details nor detach them — a screen that silently drops an edit,
+     which is this repo's most common defect shape. */
+  const asksMinor = !NON_MINOR_PATHS.has(signPath) || Boolean(state?.minor);
+  const minorCopy = MINOR_QUESTION[signPath] ?? MINOR_QUESTION_FALLBACK;
+  const isForChild = asksMinor && signingFor === 'child';
+  const minorNamesFilled = minorFirst.trim() !== '' && minorLast.trim() !== '';
+  const minorDobValid = minorDob.trim() !== '' && isUnder18(minorDob);
 
   // Step "horse" — the member's EXISTING horses (a re-invited owner already has
   // records): offer them for selection instead of forcing re-entry. Selecting
@@ -529,7 +602,7 @@ export default function Onboarding() {
         setProfile(p);
         // Prefill the minor toggle from the attached PARTICIPANT (if any).
         if (s.minor) {
-          setHasMinor(true);
+          setSigningFor('child');
           setHadMinor(true);
           setMinorFirst(s.minor.first_name ?? '');
           setMinorLast(s.minor.last_name ?? '');
@@ -617,12 +690,12 @@ export default function Onboarding() {
      what they typed is the newer answer. */
   const draft = useFormDraft(
     'onboarding.details',
-    { ...form, firstName, lastName, hasMinor, minorFirst, minorLast, minorDob },
+    { ...form, firstName, lastName, signingFor, minorFirst, minorLast, minorDob },
     (d) => {
       setForm((f) => ({ ...f, ...(d as Partial<typeof f>) }));
       if (typeof d.firstName === 'string') setFirstName(d.firstName);
       if (typeof d.lastName === 'string') setLastName(d.lastName);
-      if (typeof d.hasMinor === 'boolean') setHasMinor(d.hasMinor);
+      if (d.signingFor === 'self' || d.signingFor === 'child') setSigningFor(d.signingFor);
       if (typeof d.minorFirst === 'string') setMinorFirst(d.minorFirst);
       if (typeof d.minorLast === 'string') setMinorLast(d.minorLast);
       if (typeof d.minorDob === 'string') setMinorDob(d.minorDob);
@@ -633,7 +706,7 @@ export default function Onboarding() {
   function clearDetailsForm() {
     setForm(EMPTY_FORM);
     setFirstName(''); setLastName('');
-    setHasMinor(false); setMinorFirst(''); setMinorLast(''); setMinorDob('');
+    setSigningFor(null); setMinorFirst(''); setMinorLast(''); setMinorDob('');
     setSaveError(null);
     draft.clear();
   }
@@ -693,6 +766,28 @@ export default function Onboarding() {
   async function saveDetails(e: React.FormEvent) {
     e.preventDefault();
 
+    /* ⚠️ SIGNDOOR/FIX1 §A — asked FIRST, because it decides what every field
+       below MEANS. Until it is answered, "First name" is ambiguous. */
+    if (asksMinor && signingFor === null) {
+      setSaveError(`Please tell us ${minorCopy.question.replace(/\?$/, '').toLowerCase()}.`);
+      return;
+    }
+    if (isForChild && !minorNamesFilled) {
+      setSaveError("Please enter your child's first and last name.");
+      return;
+    }
+    if (isForChild && !minorDob.trim()) {
+      setSaveError("Please enter your child's date of birth.");
+      return;
+    }
+    if (isForChild && !isUnder18(minorDob)) {
+      /* Not pedantry: an 18-year-old put in the PARTICIPANT slot is an adult
+         recorded as a dependent, and nobody would ever ask them to sign for
+         themselves. sign_release refuses the same case for the same reason. */
+      setSaveError('That date of birth is 18 or older. An adult rider signs up in their own name — choose "Me" above.');
+      return;
+    }
+
     setSaving(true);
     setSaveError(null);
     try {
@@ -705,12 +800,14 @@ export default function Onboarding() {
       // it only when the contact/profile name is currently blank.
       if (firstName.trim()) payload.first_name = firstName.trim();
       if (lastName.trim()) payload.last_name = lastName.trim();
-      if (hasMinor) {
+      if (isForChild) {
         payload.has_minor = true;
         payload.minor_first_name = minorFirst;
         payload.minor_last_name = minorLast;
         payload.minor_dob = minorDob;
       } else if (hadMinor) {
+        // They answered "Me" after a child had been attached: that is a DETACH,
+        // and it is a different act from never having answered.
         payload.has_minor = false;
       }
       await updateMyOnboardingProfile(payload);
@@ -1030,13 +1127,54 @@ export default function Onboarding() {
             {draft.restored && ' We put back what you had already typed.'}
           </p>
 
+          {/* ── SIGNDOOR / FIX1 §A — THE QUESTION, ABOVE THE NAME FIELDS ─────
+              It sits first because it decides what every field below means. Two
+              radios, NO DEFAULT: an unanswered question is refused rather than
+              assumed, because assuming "me" is the defect. `horse` and `deal`
+              never render it — the owner ruled a horse owner must be 18+. */}
+          {asksMinor && (
+            <fieldset className="mb-6 border border-green-800/10 p-4">
+              <legend className="form-label px-2">{minorCopy.question} *</legend>
+              <div className="flex flex-col gap-2">
+                {([['self', minorCopy.self], ['child', minorCopy.child]] as const).map(([value, label]) => (
+                  <label key={value} className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="ob-signing-for"
+                      className="mt-1"
+                      value={value}
+                      checked={signingFor === value}
+                      onChange={() => setSigningFor(value)}
+                    />
+                    <span className="body-text text-sm">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+
+          {/* The heading appears ONLY once "my child" is chosen. Without it the
+              two name blocks are indistinguishable, which is the whole problem
+              this fix exists to solve. */}
+          {isForChild && (
+            <>
+              <h3 className="form-label mb-1">Your details</h3>
+              <p className="text-sm text-muted mb-4">
+                You are the account holder — the person we email, invoice and hold
+                to the agreement. You will sign the paperwork.
+              </p>
+            </>
+          )}
+
           {needsName && (
             <>
               <h3 className="form-label mb-3">Your name</h3>
               <p className="text-sm text-muted mb-3">This is the name that appears on your documents.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="form-label" htmlFor="ob-first">First name</label>
+                  <label className="form-label" htmlFor="ob-first">
+                    {isForChild ? 'Your first name' : 'First name'}
+                  </label>
                   {/* ⚠️ TASK-FIX4 §4 — normalised ON BLUR, in front of them, and
                       revisable: this is the name the signature will attest to. */}
                   <input id="ob-first" required className="form-input" value={firstName}
@@ -1044,7 +1182,9 @@ export default function Onboarding() {
                     onBlur={normalize('ob-first', 'name', firstName, setFirstName)} />
                 </div>
                 <div>
-                  <label className="form-label" htmlFor="ob-last">Last name</label>
+                  <label className="form-label" htmlFor="ob-last">
+                    {isForChild ? 'Your last name' : 'Last name'}
+                  </label>
                   <input id="ob-last" required className="form-input" value={lastName}
                     autoComplete="family-name" onChange={(e) => setLastName(e.target.value)}
                     onBlur={normalize('ob-last', 'name', lastName, setLastName)} />
@@ -1053,38 +1193,46 @@ export default function Onboarding() {
             </>
           )}
 
-          <h3 className="form-label mb-3">Rider</h3>
-          <label className="flex items-start gap-3 mb-4 cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-1"
-              checked={hasMinor}
-              onChange={(e) => setHasMinor(e.target.checked)}
-            />
-            <span className="body-text text-sm">
-              This is for a minor rider (I am the parent/legal guardian).
-            </span>
-          </label>
-          {hasMinor && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              <div>
-                <label className="form-label" htmlFor="ob-minor-first">Minor first name</label>
-                <input id="ob-minor-first" required className="form-input" value={minorFirst}
-                  onChange={(e) => setMinorFirst(e.target.value)} autoComplete="off"
-                  onBlur={normalize('ob-minor-first', 'name', minorFirst, setMinorFirst)} />
+          {/* ── FIX1 §A — THE RIDER'S DETAILS ───────────────────────────────
+              A separate, LABELLED block, so there is no longer one name box doing
+              two jobs. The child is the non-signing PARTICIPANT; the person above
+              signs. Date of birth is required here because it is the fact that
+              makes them a minor — and because generate_my_onboarding_documents
+              merges it into the release. */}
+          {isForChild && (
+            <fieldset className="mb-6 border border-green-800/10 p-4">
+              <legend className="form-label px-2">The rider&apos;s details</legend>
+              <p className="body-text text-sm text-muted mb-4">
+                Your child rides; they do not sign. Their name goes on the paperwork
+                as the participant, and yours goes on it as the person agreeing to it.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="form-label" htmlFor="ob-minor-first">Child&apos;s first name</label>
+                  <input id="ob-minor-first" required className="form-input" value={minorFirst}
+                    onChange={(e) => setMinorFirst(e.target.value)} autoComplete="off"
+                    onBlur={normalize('ob-minor-first', 'name', minorFirst, setMinorFirst)} />
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="ob-minor-last">Child&apos;s last name</label>
+                  <input id="ob-minor-last" required className="form-input" value={minorLast}
+                    onChange={(e) => setMinorLast(e.target.value)} autoComplete="off"
+                    onBlur={normalize('ob-minor-last', 'name', minorLast, setMinorLast)} />
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="ob-minor-dob">Child&apos;s date of birth</label>
+                  <input id="ob-minor-dob" type="date" required className="form-input" value={minorDob}
+                    onChange={(e) => setMinorDob(e.target.value)} />
+                  {/* Live, at the field, and only once a full date is present. */}
+                  {minorDob.trim() !== '' && !isUnder18(minorDob) && (
+                    <p role="alert" className="form-error mt-1 text-sm">
+                      That date of birth is 18 or older. An adult rider signs up in
+                      their own name — choose &ldquo;Me&rdquo; above.
+                    </p>
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="form-label" htmlFor="ob-minor-last">Minor last name</label>
-                <input id="ob-minor-last" required className="form-input" value={minorLast}
-                  onChange={(e) => setMinorLast(e.target.value)} autoComplete="off"
-                  onBlur={normalize('ob-minor-last', 'name', minorLast, setMinorLast)} />
-              </div>
-              <div>
-                <label className="form-label" htmlFor="ob-minor-dob">Minor date of birth</label>
-                <input id="ob-minor-dob" type="date" required className="form-input" value={minorDob}
-                  onChange={(e) => setMinorDob(e.target.value)} />
-              </div>
-            </div>
+            </fieldset>
           )}
 
           <h3 className="form-label mb-3">Contact</h3>
@@ -1205,8 +1353,14 @@ export default function Onboarding() {
             {/* ⚠️ CONTINUE IS THE AFFIRMATIVE ACTION — the only thing here that
                 commits. Clear form discards the draft deliberately; the two are
                 not the same act and are deliberately not the same control. */}
+            {/* ⚠️ A button that invites a click it will refuse is its own defect
+                (owner, 2026-08-24). The minor conditions join the name one for the
+                same reason FIX1 added them to the door's button. */}
             <button type="submit"
-              disabled={saving || (needsName && (!firstName.trim() || !lastName.trim()))}
+              disabled={saving
+                || (needsName && (!firstName.trim() || !lastName.trim()))
+                || (asksMinor && signingFor === null)
+                || (isForChild && (!minorNamesFilled || !minorDobValid))}
               className="btn-primary">
               {saving ? 'Saving…' : 'Save & continue to documents'}
               {!saving && <ArrowRight size={16} />}
