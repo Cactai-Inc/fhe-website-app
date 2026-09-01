@@ -381,3 +381,17 @@ should confirm they are not also in those files.
 
 Everything else in the full census is Visual Studio Code's own helpers (language servers, tsserver),
 running for days and unrelated.
+
+
+---
+
+# ⚠️ VALIDATION — ORCH6, 2026-09-01
+**Merged `c171689e`.** Verified: `StaffNavItems` exists only in comments explaining its removal —
+⚠️ **the hand-written JSX that let FIX3 ship a phone that had not changed is gone** · Admin's group
+key is still `community` (T1 held) · drift 15/30 → 15/32, **the same 15 rows, none of them this
+task's**.
+**Its correction to the spec is accepted: "six registry rows" was wrong when FIX3 wrote it — three
+rows carry `group: 'community'`, four keys begin `community.`.**
+**Carried forward:** `isPageHidden` has ONE call site and the nav never reads `org_page_visibility`,
+so the tenant can now toggle Catalog/Messages and nothing happens — ⚠️ **wider than before this task,
+and its own work.**

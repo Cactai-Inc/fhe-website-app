@@ -857,3 +857,22 @@ reporting success.
   ⚠️ **AND THE RULE THAT CAUSED IT: a migration that changes template wording must call
   `save_contract_template_version` afterwards.** The migration above did not, which is how the
   drift was created — found by TASK-VERSIONSPINE, against the orchestrator's own work.
+
+- **D35 — A WORKTREE ISOLATES GIT. IT DOES NOT ISOLATE THE DATABASE (2026-09-01).**
+  Four threads ran in parallel with file-level ownership assigned. ⚠️ **`TASK-BOOKS1` replaced
+  `mark_purchase_paid` in production fifteen minutes after `TASK-BACKDATE` had applied a guard to it.
+  The guard vanished silently — the function still existed, still compiled, still returned `paid`.**
+  It was caught only because BACKDATE re-ran a test that had passed an hour earlier.
+
+  ⚠️ **THE CAUSE WAS THE ORCHESTRATOR'S, AND IT WAS WRITTEN DOWN IN ITS OWN TWO SPECS:**
+  `TASK-BOOKS1` §8 said *"`mark_purchase_paid` IS YOURS"* while `TASK-BACKDATE` required that same
+  function to carry a date and refuse a future one. **Two specs, one function, opposite ownership.**
+
+  🔒 **THEREFORE: ownership of a DATABASE OBJECT is exclusive across every running thread, and it is
+  declared before any of them start.** **There is ONE production database and every worktree writes
+  to it.** ⚠️ **Two threads may never hold the same function, table or trigger, however different
+  their file lists look.**
+
+  🔒 **AND: a thread that applies a migration re-runs its own verification immediately before
+  reporting**, because between apply and report someone else may have replaced what it just proved.
+  ⚠️ **A green check from an hour ago is not evidence.**

@@ -532,3 +532,15 @@ work. **Two other pool trees (`wt-2`, `wt-3`) were already busy and were not tou
 Scratch SQL lived in the session scratchpad, outside the repo. **Nothing was pushed.**
 
 **Three commits on `task/backdate`:** `3643a4ce` · `e0dc0090` · `8f06337d`.
+
+
+---
+
+# ⚠️ VALIDATION — ORCH6, 2026-09-01
+**Merged `71b49d6b`.** Verified independently in production: `attach_offerings_to_client` now carries
+`p_occurred_at` and the old 7-arg signature is gone · `confirm_payment_claim(p_purchase_id, p_paid_at)`
+carries the date · the future-date guard is live in `mark_purchase_paid`'s body · ⚠️ **no `anon` grant
+on any of the three** *(the first-apply mistake this thread caught itself and repaired)*.
+**The `test:api` script it handed ORCH is applied — `b86a8968`, 7 tests passing.**
+⚠️ **The collision was ORCH's fault, not this thread's — see `CLAUDE.md` D35.** This thread's
+idempotent §4 patch is why production ended up carrying both changes rather than one.

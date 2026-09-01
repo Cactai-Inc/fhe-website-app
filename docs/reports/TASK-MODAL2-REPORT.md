@@ -511,3 +511,17 @@ work. **No scratch worktree was created.** Scratch files (`/tmp/close_audit.txt`
   **I have no diff to hand you for it.**
 - Nothing in `AppLayout.tsx` or `pageRegistry.ts` (`TASK-CR85`), and no money function
   (`TASK-BOOKS1`). `Checkout.tsx` is touched — **a back link only**, no cart or pricing logic.
+
+
+---
+
+# ⚠️ VALIDATION — ORCH6, 2026-09-01
+**Merged `4c06685d`.** Verified in source: no backdrop handler and no Escape close remain in
+`ops/kit/Modal.tsx`; `allowBackdropClose` / `disableBackdropClose` are gone.
+⚠️ **Its two spec corrections are accepted and both were ORCH's errors:** the adopter count was
+**53 files / 67 dialogs, not 37** *(a same-line grep misses `<Modal` with props on the next line —
+the same class of mistake as CR-84's "no adopters", which a barrel re-export hid)*, and **§3 and §5
+contradicted each other on the back sweep.** **It built §3, which carried the later banner. Correct
+reading of a spec ORCH should not have shipped with two answers in it.**
+**For the owner:** information-only dialogs no longer close on click-out. That follows the ruling
+exactly and is the change most likely to feel stuck rather than safe — item 2 on its checklist.

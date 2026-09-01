@@ -196,3 +196,17 @@ this needs `CRON_SECRET`, which does not belong on a phone):
 2. Run the `curl` (or `gh workflow run`) command under THE TEST §4 above.
 3. Expect HTTP 200 with a body like `{"lapsed": 0, "emailed": 0, "hour": <N>}` — not
    `{"error": "reaper failed"}` and not `{"skipped": ...}`.
+
+
+---
+
+# ⚠️ VALIDATION — ORCH6, 2026-09-01
+**Merged `d476376f`.** Verified in production: `select reap_expired_holds();` **returns 0 instead of
+raising** — the first time it has completed since 2026-07-13.
+**Its scope check is accepted:** the housekeeping the dropped function performed was itself
+decommissioned on 2026-07-14 (`calendar_cleanup.sql` dropped `availability_slots`, `hold_slot`,
+`release_booking_hold`), so there was nothing to preserve and this was not a second task.
+⚠️ **ROUTED, NOT FIXED — its own flag, confirmed by ORCH:** `reap_expired_holds` carries
+**`anon=X`**. **An unauthenticated caller can execute a function that WRITES
+(`UPDATE request_selections SET state='lapsed'`).** ⚠️ **Not probed — probing it would execute a write
+on production.** **This needs a spec, not a patch at merge.**
