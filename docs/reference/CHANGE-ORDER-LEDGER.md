@@ -4061,8 +4061,20 @@ cancelled, not as a green "available" state.** ⚠️ **Do not build an availabl
 
 ⚠️ **And an outsider never learns WHY a slot is occupied — with ONE deliberate exception.**
 ✅ **The exception, owner 2026-09-01:** *"to everyone else it can show as pending reschedule, to
-indicate its likely to open up."* ⚠️ **A held slot is still NOT bookable — the label is a signal, not
-an invitation. Do not let it become a bookable state.**
+indicate its likely to open up."* ⚠️ **A held slot is still NOT bookable.**
+✅ **BUT IT IS WAITLISTABLE — owner, 2026-09-01:** *"they can waitlist on the pending unhold spot."*
+🔒 **`Pending reschedule` accepts a WAITLIST entry, never a booking.** **That is what the label is
+for: it signals the slot is likely to open, and gives the signal somewhere to go.**
+⚠️ **MEASURED 2026-09-01: NO WAITLIST EXISTS.** **No `waitlist` table, no `waitlist` anywhere in `src`
+or the migrations** *(`inbound_queue` is lead intake, unrelated)*. **`request_selections` has 8 rows,
+all `received`, and its state column carries no CHECK constraint at all.**
+⚠️ **So this is a small greenfield build, and `request_selections` is the nearest incumbent — decide
+whether a waitlist entry IS a request selection or a new thing, and say which** (D18).
+**ASK-OWNER — what happens the moment the hold releases?** Three shapes, and they are different
+products: **(a)** the slot simply opens and the waitlister is notified · **(b)** the waitlister gets a
+first-refusal window before anyone else can take it · **(c)** it converts straight to a `requested`
+booking for them. ⚠️ **Do not build one on assumption; (b) is the only one that makes a waitlist worth
+joining, and it is also the only one that needs a timer.**
 **Nothing else leaks: no client name, no reason, no new time.**
 
 | State | The parties see | ⚠️ Everyone else sees |
