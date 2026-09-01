@@ -29,20 +29,52 @@
  * directly, as before. Still one spine either way — `confirm_payment_claim`
  * is not a competing path, it's the claim-aware wrapper around the same one.
  *
- * Body: { purchaseId, method: 'zelle' | 'cash', reference?, amount? }
+ * Body: { purchaseId, method: 'zelle' | 'cash', reference?, amount?, paidAt? }
+ *
+ * TASK-BACKDATE — `paidAt` is a plain `YYYY-MM-DD` calendar date AT THE BARN
+ * (America/Los_Angeles; the DB roles were set to it in 20260817T1600). It is the
+ * date the money actually arrived, for the owner's backfill of a year of
+ * trading, and it lands on `purchases.paid_at` — the field `revenue_summary`
+ * recognises revenue at. Omitted, everything below is byte-for-byte the
+ * behaviour it has always had (`now()`).
+ *
+ * ⚠️ A BACKDATED SETTLEMENT SENDS NO RECEIPT. `sendOrderReceipt` fires whenever
+ * the status lands `paid`; backfilling a year would email a receipt to a real
+ * client for money received in March. So a `paidAt` naming an earlier day than
+ * today suppresses the email, and the response says `sent: false` with
+ * `reason: 'backdated'` so the screen can say it out loud rather than implying a
+ * receipt went out. A SAME-DAY settlement still sends its receipt — and by
+ * construction, because the client only sends `paidAt` when it is in the past.
+ *
+ * ⚠️ A FUTURE DATE IS NOT A BACKFILL and is refused with a 400. The refusal also
+ * exists inside `mark_purchase_paid` itself, which is the real boundary: that
+ * RPC is EXECUTE-able by `authenticated` directly over PostgREST, so a check
+ * that lived only here would not be one.
  *
  * `amount` makes a PART payment (2026-08-26). Omitted, the order settles in full
  * exactly as before — mark_purchase_paid reads NULL as "settle whatever is left".
  * Given, only that much is settled: the order stays open with a running
  * amount_paid until the settled entries cover the total, and each part becomes
  * its own numbered payment record saying which money came which way.
- * -> 200 { status: 'paid' | 'already_paid', receipt: { sent, reason? }, claimConfirmed: boolean }
- * -> 400 bad body; 401 no/bad bearer; 403 not staff; 404 unknown purchase
+ * -> 200 { status: 'paid' | 'part_paid' | 'already_paid', receipt: { sent, reason? },
+ *          claimConfirmed: boolean, recordedAt: string | null }
+ * -> 400 bad body / future date; 401 no/bad bearer; 403 not staff; 404 unknown purchase
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { sendOrderReceipt } from './_lib/receipt.js';
+
+/** Today at the barn as `YYYY-MM-DD`.
+ *
+ *  ⚠️ TWIN of `barnToday()` in `src/lib/recordedDate.ts`, and not a second
+ *  implementation by choice: `tsconfig.api.json` includes only `api/`, so a
+ *  serverless function cannot import from `src/`. Change one, change both. */
+function barnToday(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+}
 
 /** A Supabase client that acts AS the calling user (RLS + auth.uid() intact) —
  *  so mark_purchase_paid's own has_staff_access() guard evaluates against the
@@ -79,6 +111,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!purchaseId) return res.status(400).json({ error: 'purchaseId required' });
   if (!method) return res.status(400).json({ error: "method must be 'zelle' or 'cash'" });
 
+  /* TASK-BACKDATE. One shape only — a bare calendar date — so there is exactly
+     one meaning and no instant to reinterpret. PostgREST casts it to
+     `timestamptz` in a session whose timezone IS the barn's, giving the start of
+     that day here. Anything else is a 400 rather than a guess. */
+  const paidAt = typeof body.paidAt === 'string' && body.paidAt.trim() ? body.paidAt.trim() : null;
+  if (paidAt !== null && !/^\d{4}-\d{2}-\d{2}$/.test(paidAt)) {
+    return res.status(400).json({ error: 'paidAt must be a calendar date (YYYY-MM-DD)' });
+  }
+  const today = barnToday();
+  if (paidAt !== null && paidAt > today) {
+    return res.status(400).json({ error: 'a payment cannot be dated in the future' });
+  }
+  // The date's PRESENCE is the backdating: a same-day settlement sends no date
+  // at all, keeps `now()`, and keeps its receipt.
+  const backdated = paidAt !== null && paidAt < today;
+
   try {
     const db = getSupabaseAdmin();
     const { data: userData, error: userErr } = await db.auth.getUser(bearer);
@@ -102,7 +150,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // in the same write, using the claim's own reported method/reference
       // rather than whatever was picked in this UI (staff is confirming what
       // the client already said, not re-declaring it).
-      const { data, error: rpcErr } = await asUser.rpc('confirm_payment_claim', { p_purchase_id: purchaseId });
+      const { data, error: rpcErr } = await asUser.rpc('confirm_payment_claim', {
+        p_purchase_id: purchaseId,
+        // TASK-BACKDATE: the claim wrapper carries the date through to the same
+        // mark_purchase_paid call it always made. Dropping it here is how a
+        // backfill would settle on the right order and the WRONG month.
+        p_paid_at: paidAt,
+      });
       if (rpcErr) return res.status(400).json({ error: rpcErr.message });
       status = (data as { settlement?: string })?.settlement ?? null;
     } else {
@@ -112,6 +166,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         p_amount: rawAmount,
         p_reference: reference,
         p_method: method,
+        // NULL keeps now() — TASK-ORIGIN §4.3 added this parameter for exactly
+        // this and nothing had ever passed it.
+        p_paid_at: paidAt,
       });
       if (rpcErr) return res.status(400).json({ error: rpcErr.message });
       status = data as string;
@@ -120,11 +177,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Same provable trail an automatic match gets — never a silent second path.
     // ⚠️ A PART PAYMENT SENDS NO RECEIPT. A receipt says the order is settled,
     // and it is not — the balance is still owed.
-    const receipt = status === 'paid'
-      ? await sendOrderReceipt(db, purchaseId)
-      : { sent: false, reason: status ?? 'unknown' };
+    // ⚠️ AND A BACKDATED SETTLEMENT SENDS NO RECEIPT EITHER. The email says "we
+    // received your payment"; for money that arrived in March, sent during a
+    // backfill, that is a lie to a real client. The reason is returned so the
+    // screen states it rather than leaving staff to assume one went out.
+    const receipt = status !== 'paid'
+      ? { sent: false, reason: status ?? 'unknown' }
+      : backdated
+        ? { sent: false, reason: 'backdated' }
+        : await sendOrderReceipt(db, purchaseId);
 
-    return res.status(200).json({ status, receipt, claimConfirmed: hasPendingClaim });
+    return res.status(200).json({
+      status, receipt, claimConfirmed: hasPendingClaim, recordedAt: paidAt,
+    });
   } catch (err) {
     console.error('orders-mark-paid error', err);
     return res.status(500).json({ error: 'could not mark this order paid' });

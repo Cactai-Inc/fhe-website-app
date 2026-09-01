@@ -2677,6 +2677,16 @@ export interface ContactDossier {
     purchase_id: string; code: string | null; status: string;
     amount: number | null; amount_paid: number | null;
     payment_status: string | null; payment_method: string | null; created_at: string;
+    /* Added 2026-09-01 (TASK-BACKDATE, migration 20260901T1200). The Orders tab
+       can now SETTLE an order — before this it could only list them — so it needs
+       the facts that decide what the control says and does: `paid_at` (the date
+       `revenue_summary` recognises revenue at, and the one a backdated settlement
+       moves), the richer `current_status` the badge reads, and whether a
+       CASHCONFIRM claim is already open, because a pending claim settles through
+       `confirm_payment_claim` rather than a fresh `mark_purchase_paid`. */
+    paid_at: string | null; current_status: string | null;
+    client_claim_status: 'none' | 'pending' | 'confirmed' | 'declined' | null;
+    client_reported_method: string | null;
     /* Added 2026-08-25 (migration 20260825T0900). The tab could only render
        "$880.00 · PUR-000302" because purchase-level fields were all it was given —
        there was nothing to hang a per-item control on. Voided lines ARE returned

@@ -665,12 +665,28 @@ export async function requestOnboardingCategories(
 
 /** Attach offering(s) to an EXISTING client account (purchase + credits only —
  *  no category/document/invitation side effects). Uses the same spine helper as
- *  provisioning via the attach_offerings_to_client RPC. */
+ *  provisioning via the attach_offerings_to_client RPC.
+ *
+ *  ⚠️ TASK-BACKDATE — `occurredAt` is the date the order REALLY happened, a bare
+ *  `YYYY-MM-DD` at the barn. Until this existed the RPC had no date parameter at
+ *  all, so a backfilled year of orders all carried the day they were typed and
+ *  every prior month read zero. It sets the purchase's `created_at`, its items'
+ *  `created_at`, the client's `client_since` when the client shell is created
+ *  here, and — when the order is marked paid at creation — `paid_at`, which is
+ *  the field `revenue_summary` recognises revenue at.
+ *
+ *  Omit it for a sale happening now: the RPC's default is `now()` and the
+ *  behaviour is unchanged. A future date is refused BY THE FUNCTION, because it
+ *  is EXECUTE-able by `authenticated` straight over PostgREST and a check in
+ *  this wrapper would not be a boundary. */
 export async function adminAttachOfferings(
   contactId: string,
   offeringIds: string[],
-  opts?: { markPaid?: boolean; paymentMethod?: string; partialAmount?: number; notes?: string },
-): Promise<{ purchaseId: string | null; amount: number; labels: string[] }> {
+  opts?: {
+    markPaid?: boolean; paymentMethod?: string; partialAmount?: number; notes?: string;
+    occurredAt?: string;
+  },
+): Promise<{ purchaseId: string | null; amount: number; labels: string[]; occurredAt: string | null }> {
   const { data, error } = await supabase.rpc('attach_offerings_to_client', {
     p_contact_id: contactId,
     p_offering_ids: offeringIds,
@@ -678,12 +694,16 @@ export async function adminAttachOfferings(
     p_payment_method: opts?.paymentMethod ?? null,
     p_notes: opts?.notes ?? null,
     p_partial_amount: opts?.partialAmount ?? 0,
+    p_occurred_at: opts?.occurredAt ?? null,
   });
   if (error) throw error;
   const out = (Array.isArray(data) ? data[0] : data) as {
-    purchase_id: string | null; amount: number; labels: string[];
+    purchase_id: string | null; amount: number; labels: string[]; occurred_at: string | null;
   };
-  return { purchaseId: out.purchase_id, amount: out.amount, labels: out.labels ?? [] };
+  return {
+    purchaseId: out.purchase_id, amount: out.amount, labels: out.labels ?? [],
+    occurredAt: out.occurred_at ?? null,
+  };
 }
 
 export interface ClientAccountRow {

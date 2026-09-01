@@ -21,6 +21,8 @@ import {
   type OrderRow,
 } from '../../../lib/ops/api-payments';
 import { useDocumentTitle } from '../../../lib/hooks';
+import { asRecordedDate, barnToday } from '../../../lib/recordedDate';
+import { RecordedDateField } from '../../../components/app/RecordedDateField';
 import { orderStatusCode, orderStatusLabel } from '../../../lib/orderStatus';
 import { statusTone } from '../../../lib/ops/api-status';
 
@@ -49,6 +51,20 @@ import { statusTone } from '../../../lib/ops/api-status';
  * paid?" — direct off `purchases`, with the one staff-manual "mark paid"
  * action (zelle/cash), reusing mark_purchase_paid via /api/orders-mark-paid
  * (same spine automatic matching uses, not a second one).
+ *
+ * TASK-BACKDATE — the Outstanding table now carries ONE date control for the
+ * whole table ("Date paid"), because a backfill session is a run of payments
+ * from the same day, not one date per row: set it once, settle the six orders
+ * that were paid that afternoon, move on. It defaults to today, where it sends
+ * no date at all and every button behaves exactly as it did before.
+ *
+ * ⚠️ AND IT IS NO LONGER THE ONLY DOOR. `markOrderPaid` is now also called from
+ * `ContactDossierModal`'s Orders tab — the staff client record — through this
+ * same function and this same endpoint. This page stays the queue ("who owes
+ * money"); the record is where you settle the person in front of you.
+ *
+ * ⚠️ `draft` orders appear in Outstanding now. One existed in production and no
+ * surface in the app could settle it. See `listOutstandingOrders`.
  */
 
 type Bucket = PaymentNotificationStatus | 'claims' | 'orders';
@@ -150,18 +166,25 @@ export function PaymentReviewPage() {
      existing button here has always had. */
   const markPaid = async (order: OrderRow, method: 'zelle' | 'cash', amount?: number) => {
     try {
-      const result = await markOrderPaid(order.id, method, undefined, amount);
+      // TASK-BACKDATE: `asRecordedDate` returns undefined for today, so a
+      // same-day settlement sends no date and keeps `now()` and its receipt.
+      const result = await markOrderPaid(order.id, method, undefined, amount, asRecordedDate(paidOn));
       const verb = result.claimConfirmed ? 'Confirmed the client’s claim' : `Marked paid (${method})`;
+      // ⚠️ "receipt NOT sent" with no reason reads as a failure. A backdated
+      // settlement suppressed it ON PURPOSE and has to say so.
+      const asOf = result.recordedAt ? ` Recorded as of ${result.recordedAt}.` : '';
       toast.success(
         result.status === 'already_paid'
           ? 'That order was already marked paid.'
           : result.status === 'part_paid'
             // No receipt on a part, and saying so is the point: the balance is
             // still owed and the client has not been told anything is settled.
-            ? `Recorded ${usdShort(amount ?? 0)} by ${method}. The balance is still outstanding.`
+            ? `Recorded ${usdShort(amount ?? 0)} by ${method}. The balance is still outstanding.${asOf}`
             : result.receipt.sent
-              ? `${verb} — receipt sent.`
-              : `${verb} — receipt NOT sent (${result.receipt.reason ?? 'unknown reason'}).`,
+              ? `${verb} — receipt sent.${asOf}`
+              : result.receipt.reason === 'backdated'
+                ? `${verb}.${asOf} No receipt was sent — this money arrived before today.`
+                : `${verb} — receipt NOT sent (${result.receipt.reason ?? 'unknown reason'}).${asOf}`,
       );
       await refreshOrders();
       setSplitting(null);
@@ -171,6 +194,9 @@ export function PaymentReviewPage() {
   };
 
   const [splitting, setSplitting] = useState<OrderRow | null>(null);
+  /** TASK-BACKDATE: the date every settlement on this table is recorded against.
+   *  One control for the table, not one per row — see the note at the top. */
+  const [paidOn, setPaidOn] = useState(barnToday());
 
   const openMatchPanel = async (row: PaymentNotification) => {
     setSelected(row);
@@ -330,6 +356,12 @@ export function PaymentReviewPage() {
         <div className="space-y-8">
           <section>
             <h2 className="form-label mb-2">Outstanding — who owes money</h2>
+            {/* ⚠️ TASK-BACKDATE R6 — the date is stated BEFORE the act, once for
+                the table, so a run of backfilled settlements cannot silently
+                land on today. */}
+            <div className="mb-3 border border-green-800/15 bg-cream-100/40 p-3">
+              <RecordedDateField value={paidOn} onChange={setPaidOn} kind="payment" />
+            </div>
             {outstandingLoad.isError ? (
               <p role="alert" className="form-error text-sm">
                 {outstandingLoad.error?.message ?? 'Could not load outstanding orders.'}

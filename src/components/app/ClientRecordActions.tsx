@@ -16,6 +16,8 @@ import {
   type HorseIntakeRecord, type ContactOption,
 } from '../../lib/horses';
 import { fetchOfferings } from '../../lib/api';
+import { asRecordedDate, barnToday } from '../../lib/recordedDate';
+import { RecordedDateField } from './RecordedDateField';
 import { Modal } from '../ops/kit/Modal';
 import { HorseIntakeForm } from './HorseIntakeForm';
 import { toErrorMessage } from '../../lib/ops/errors';
@@ -337,6 +339,14 @@ export function ClientHorseRecordsCard({ contactId }: { contactId: string }) {
  * the staff record. This panel holds no scheduling arithmetic; it collects the
  * answer and hands it to the one engine.
  *
+ * ⚠️ TASK-BACKDATE R1 — AND IT CARRIES THE DATE THE ORDER REALLY HAPPENED.
+ * `attach_offerings_to_client` had NO date parameter, so the owner's backfill of
+ * a year of trading stamped every historical order with the day it was typed:
+ * a year collapsed onto one date, every prior month reading zero, and the
+ * dashboard ribbon reporting it confidently. The panel now asks for the order's
+ * date, defaulted to today (where it changes nothing), and says on screen which
+ * month the order is about to land in BEFORE the Attach button is pressed.
+ *
  * ⚠️ AND STAFF CAN STILL DECLINE TO ANSWER. Leaving the days blank attaches the
  * plan anyway and says so — a plan awaiting a day is a real state (the client may
  * be picking it on the phone tomorrow). What is no longer possible is doing it
@@ -355,6 +365,10 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
   /** Day + time per weekly session, keyed by offering id. */
   const [weekly, setWeekly] = useState<Record<string, StandingSlotChoice[]>>({});
   const [note, setNote] = useState<string | null>(null);
+  /** TASK-BACKDATE: the date this order is being RECORDED AGAINST. Today by
+   *  default, and today is sent as no date at all — so a sale happening now
+   *  behaves exactly as it did before this existed. */
+  const [occurredOn, setOccurredOn] = useState(barnToday());
 
   useEffect(() => { if (open) fetchOfferings().then(setOfferings).catch(() => setOfferings([])); }, [open]);
 
@@ -389,10 +403,12 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
     if (picked.length === 0) return;
     setWorking(true); setErr(null); setNote(null);
     try {
+      const recorded = asRecordedDate(occurredOn);
       const { purchaseId } = await adminAttachOfferings(contactId, picked, {
         markPaid: payStatus === 'paid',
         ...(payStatus !== 'unpaid' ? { paymentMethod: method } : {}),
         ...(payStatus === 'partial' ? { partialAmount: Number(partial) || 0 } : {}),
+        ...(recorded ? { occurredAt: recorded } : {}),
       });
 
       /* ⚠️ TASK-FIX2 §2 — PLACE WHAT WAS JUST SOLD. `attach_offerings_to_client`
@@ -419,7 +435,14 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
           + 'no day or time yet — set it in "Their standing weekly time" below.');
       }
 
+      /* D19's record-side half: the panel closes, so the fact that this order
+         was filed into an earlier month has to survive the close. */
+      if (recorded) {
+        setNote((n) => [`Recorded as of ${recorded} — it counts in that month, not this one.`, n]
+          .filter(Boolean).join(' '));
+      }
       setOpen(false); setPicked([]); setPayStatus('unpaid'); setPartial(''); setWeekly({});
+      setOccurredOn(barnToday());
       onAttached();
     } catch (e) {
       setErr(toErrorMessage(e, 'Could not attach offering.'));
@@ -458,6 +481,14 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
           </label>
         ))}
       </div>
+      {/* ⚠️ TASK-BACKDATE R6 — THE DATE IS SHOWN, NOT SILENT. It sits above the
+          money, because which month this lands in is decided here and is not
+          visible anywhere else until a dashboard disagrees with itself. */}
+      {picked.length > 0 && (
+        <div className="mb-3">
+          <RecordedDateField value={occurredOn} onChange={setOccurredOn} kind="order" />
+        </div>
+      )}
       {picked.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 mb-3 text-sm">
           <span className="text-muted">Total ${total.toFixed(2)} ·</span>
