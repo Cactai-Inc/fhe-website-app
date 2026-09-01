@@ -193,8 +193,8 @@ schema. **Fact-finding is as often "this exists" as "this is absent".**
 
 | Document | Step | Holds |
 |---|---|---|
-| `docs/CHANGE-ORDER-LEDGER.md` | 1 | every change request, grouped, with its questions |
-| `docs/STEP2-FINDINGS.md` | 2 | what is actually true |
+| `docs/reference/CHANGE-ORDER-LEDGER.md` | 1 | every change request, grouped, with its questions |
+| `docs/reference/STEP2-FINDINGS.md` | 2 | what is actually true |
 | *(this file)* | — | the process itself |
 
 ⚠️ **The thread is disposable. The documents are not.**

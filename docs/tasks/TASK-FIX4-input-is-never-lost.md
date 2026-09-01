@@ -2,7 +2,7 @@
 
 ⚠️ **THIS IS A BUILD TASK.** Report to `docs/reports/TASK-FIX4-REPORT.md`.
 
-**Builds `CR-83` and `CR-84` from `docs/CHANGE-ORDER-LEDGER.md`.** ⚠️ **Read BOTH in full, including
+**Builds `CR-83` and `CR-84` from `docs/reference/CHANGE-ORDER-LEDGER.md`.** ⚠️ **Read BOTH in full, including
 CR-84's three correction entries — the design changed twice and the earlier entries are wrong.** This
 file is the settled version.
 

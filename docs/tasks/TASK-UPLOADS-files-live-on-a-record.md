@@ -14,7 +14,7 @@
 
 # WHAT ALREADY EXISTS — verified in production 2026-08-11. Build on it, do not restart it.
 
-**`docs/DOCUMENT_LIBRARY_DESIGN.md` says "no document storage bucket". That is WRONG.**
+**`docs/design/DOCUMENT_LIBRARY_DESIGN.md` says "no document storage bucket". That is WRONG.**
 Twelve buckets exist:
 
 ```

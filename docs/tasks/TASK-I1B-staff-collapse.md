@@ -40,6 +40,6 @@ opener moves. Remove the old in-content trigger; no duplicate triggers.
 - `ClauseDocument.tsx` FROZEN (not implicated).
 - Done-checks: `npm run typecheck`, `npm run typecheck:api`, `npm run lint` (baseline 29
   warnings / 0 errors).
-- Update `docs/BUILD_TRACKER.md` I1 honestly ("USER removal shipped + staff toggle
+- Update `docs/archive/BUILD_TRACKER.md` I1 honestly ("USER removal shipped + staff toggle
   code-complete, browser pending").
 - Report: `docs/reports/TASK-I1B-REPORT.md`, committed + pushed. Print ONLY the report path.

@@ -179,7 +179,7 @@ lockstep (`WHERE template_key IN ('HORSE_LEASE_V2','HORSE_LEASE_STANDARD','HORSE
 'HORSE_LEASE_SIMPLE')`). That is why they have not diverged, and it is a standing cost: every
 lease content change is a 4× write.
 
-The intended divergence is specified and unbuilt — `docs/INSURANCE_BUILD_PLAN.md` line 4:
+The intended divergence is specified and unbuilt — `docs/reference/INSURANCE_BUILD_PLAN.md` line 4:
 *"Target: `HORSE_LEASE_FULL` only. `HORSE_LEASE_V2` and `HORSE_LEASE_STANDARD` are not…"*
 
 **Document counts:** `HORSE_LEASE_V2` = 6 documents. `_FULL` / `_SIMPLE` / `_STANDARD` = **0
@@ -228,7 +228,7 @@ Per template, conversion is:
    map onto `cut_name` / `conditional_on`, which the composer already honours. **Cheap** — the
    flat templates are near-unconditional prose.
 4. **Re-point the token map** — 225 `{{TOKEN}}` occurrences move from body text to field defs
-   and `docs/TOKEN_DICTIONARY.md` (`npm run check:tokens` is the guard).
+   and `docs/design/TOKEN_DICTIONARY.md` (`npm run check:tokens` is the guard).
 5. **A golden-render test** per template (`golden_render.test.ts` / `sale_golden_render.test.ts`
    are the pattern) proving the composed output matches the flat body it replaced.
 6. **Owner review of the composed output** — the step that actually gated the lease.

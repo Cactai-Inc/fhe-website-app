@@ -54,7 +54,7 @@ a link that requires signing in to read.
 `email-change-complete.ts`, `notifications-nudge.ts`. **Reuse the existing sender and identity
 resolution** rather than introducing a second mail path.
 
-**Who receives it** — `docs/NOTIFICATIONS.md` records that `admin@` and `hello@` share one
+**Who receives it** — `docs/reference/NOTIFICATIONS.md` records that `admin@` and `hello@` share one
 notification inbox via a mirror trigger, and that **`hello@` is the only public/delivery
 address**. Read it before deciding recipients. **Website inquiries have been silently dropped
 before** — that is recorded history, not a hypothetical.

@@ -14,7 +14,7 @@ TASK-TITLESWEEP, TASK-TOKENAUDIT (all read in full).
 - item: The AccountHub and HorsePage UI changes were never visually confirmed in a browser; BUILD_TRACKER marks A11 PARTIAL, not DONE.
 - quote: "`AccountHub` and `HorsePage` UI changes are code-complete and typecheck clean but have not been visually confirmed in a browser."
 - kind: not-verified
-- artifacts: src/pages/app/AccountHub.tsx, src/pages/app/HorsePage.tsx, docs/BUILD_TRACKER.md
+- artifacts: src/pages/app/AccountHub.tsx, src/pages/app/HorsePage.tsx, docs/archive/BUILD_TRACKER.md
 - decision-mention: none
 
 ### ITEM
@@ -1444,7 +1444,7 @@ TASK-TITLESWEEP, TASK-TOKENAUDIT (all read in full).
 - item: Not done: an authenticated in-browser click-through — K1–K4 marked "code-complete, browser pending"; owner or orchestrator should do a visual pass on /app/account → Profile & preferences before shipping.
 - quote: "**Not done: an authenticated in-browser click-through.** ... Recommend the owner or the orchestrator does a visual pass on `/app/account` → \"Profile & preferences\" before this ships."
 - kind: not-verified
-- artifacts: /app/account, ProfileAndPreferences.tsx, docs/BUILD_TRACKER.md §K
+- artifacts: /app/account, ProfileAndPreferences.tsx, docs/archive/BUILD_TRACKER.md §K
 - decision-mention: none
 
 ### ITEM
@@ -1595,7 +1595,7 @@ TASK-TITLESWEEP, TASK-TOKENAUDIT (all read in full).
 - item: The one live landmine: MINOR_RIDER is ACTIVE with a 5,481-byte body and ZERO scoped token rows — generating from it would render every one of its 26 tokens as literal {{…}} text; no document has ever been generated from it, the doc says it was retired, the table disagrees; deactivation recommended (owner call).
 - quote: "**The one live landmine: `MINOR_RIDER` is ACTIVE with a 5,481-byte body and ZERO scoped token rows.** If anyone generates from it, **every one of its 26 tokens renders as literal `{{…}}` text**"
 - kind: defect
-- artifacts: contract_templates (MINOR_RIDER), template_tokens, docs/TOKEN_DICTIONARY.md
+- artifacts: contract_templates (MINOR_RIDER), template_tokens, docs/design/TOKEN_DICTIONARY.md
 - decision-mention: none
 
 ### ITEM
@@ -1667,7 +1667,7 @@ TASK-TITLESWEEP, TASK-TOKENAUDIT (all read in full).
 - item: TOKEN_DICTIONARY.md disagrees with the table in several places (MINOR_RIDER retirement, ORD.UUID source, CLIENT.* autofill path, retired TXN sections, missing clause-engine field_keys) and CLIENT.EUTHANASIA_INITIALS is a doc-only ghost with no row and no body use; the doc needs a rewrite after owner rulings — not attempted here.
 - quote: "The doc needs a rewrite **after** the owner rules on §5/§6 — not attempted here."
 - kind: correction
-- artifacts: docs/TOKEN_DICTIONARY.md, template_tokens, CLIENT.EUTHANASIA_INITIALS
+- artifacts: docs/design/TOKEN_DICTIONARY.md, template_tokens, CLIENT.EUTHANASIA_INITIALS
 - decision-mention: none
 
 ### ITEM
@@ -1718,8 +1718,8 @@ TASK-TITLESWEEP, TASK-TOKENAUDIT (all read in full).
 ### INVENTORY
 - report: TASK-TOKENAUDIT-REPORT.md
 - what: MINOR_RIDER — an active flat template body (5,481 bytes) from which no document has ever been generated, with zero scoped token rows; the dictionary doc says it was retired.
-- where: contract_templates (template_key MINOR_RIDER), docs/TOKEN_DICTIONARY.md line 192
-- quote: "No document has ever been generated from it ... and `docs/TOKEN_DICTIONARY.md` line 192 says it was **retired** — the table disagrees with the doc."
+- where: contract_templates (template_key MINOR_RIDER), docs/design/TOKEN_DICTIONARY.md line 192
+- quote: "No document has ever been generated from it ... and `docs/design/TOKEN_DICTIONARY.md` line 192 says it was **retired** — the table disagrees with the doc."
 
 ---
 

@@ -91,7 +91,7 @@ rows.** If anyone generates from it, **every one of its 26 tokens renders as lit
 text** (the per-template gap query below returned gaps ONLY for MINOR_RIDER; every other
 active flat template is fully covered). No document has ever been generated from it
 (`select count(*) from documents d join contract_templates ct on ct.id=d.template_id where template_key='MINOR_RIDER'` → 0),
-and `docs/TOKEN_DICTIONARY.md` line 192 says it was **retired** — the table disagrees with the
+and `docs/design/TOKEN_DICTIONARY.md` line 192 says it was **retired** — the table disagrees with the
 doc. **Recommendation: deactivate it (owner call; retirement = boolean, not delete).**
 
 ```sql

@@ -3,7 +3,7 @@
 - report: TASK-A11-REPORT.md
 - item: The AccountHub and HorsePage UI changes were never visually confirmed in a browser; BUILD_TRACKER marks A11 PARTIAL, not DONE.
 - kind: not-verified
-- artifacts: src/pages/app/AccountHub.tsx, src/pages/app/HorsePage.tsx, docs/BUILD_TRACKER.md
+- artifacts: src/pages/app/AccountHub.tsx, src/pages/app/HorsePage.tsx, docs/archive/BUILD_TRACKER.md
 - decision-mention: none
 
 [batch1.md#2]
@@ -1017,7 +1017,7 @@
 - report: TASK-PROFILE-REPORT.md
 - item: Not done: an authenticated in-browser click-through — K1–K4 marked "code-complete, browser pending"; owner or orchestrator should do a visual pass on /app/account → Profile & preferences before shipping.
 - kind: not-verified
-- artifacts: /app/account, ProfileAndPreferences.tsx, docs/BUILD_TRACKER.md §K
+- artifacts: /app/account, ProfileAndPreferences.tsx, docs/archive/BUILD_TRACKER.md §K
 - decision-mention: none
 
 [batch1.md#144]
@@ -1122,7 +1122,7 @@
 - report: TASK-TOKENAUDIT-REPORT.md
 - item: The one live landmine: MINOR_RIDER is ACTIVE with a 5,481-byte body and ZERO scoped token rows — generating from it would render every one of its 26 tokens as literal {{…}} text; no document has ever been generated from it, the doc says it was retired, the table disagrees; deactivation recommended (owner call).
 - kind: defect
-- artifacts: contract_templates (MINOR_RIDER), template_tokens, docs/TOKEN_DICTIONARY.md
+- artifacts: contract_templates (MINOR_RIDER), template_tokens, docs/design/TOKEN_DICTIONARY.md
 - decision-mention: none
 
 [batch1.md#159]
@@ -1178,7 +1178,7 @@
 - report: TASK-TOKENAUDIT-REPORT.md
 - item: TOKEN_DICTIONARY.md disagrees with the table in several places (MINOR_RIDER retirement, ORD.UUID source, CLIENT.* autofill path, retired TXN sections, missing clause-engine field_keys) and CLIENT.EUTHANASIA_INITIALS is a doc-only ghost with no row and no body use; the doc needs a rewrite after owner rulings — not attempted here.
 - kind: correction
-- artifacts: docs/TOKEN_DICTIONARY.md, template_tokens, CLIENT.EUTHANASIA_INITIALS
+- artifacts: docs/design/TOKEN_DICTIONARY.md, template_tokens, CLIENT.EUTHANASIA_INITIALS
 - decision-mention: none
 
 [batch1.md#167]
@@ -1236,9 +1236,9 @@
 
 [batch2.md#174]
 - report: POST_RUN_CLOSEOUT.md
-- item: docs/BACKLOG.md's other pre-existing open items (Business admin suite, pending_fee_candidates p.mobile bug, dead nav route, placeholder media) were untouched this run, out of scope.
+- item: docs/archive/BACKLOG.md's other pre-existing open items (Business admin suite, pending_fee_candidates p.mobile bug, dead nav route, placeholder media) were untouched this run, out of scope.
 - kind: inventory
-- artifacts: docs/BACKLOG.md, pending_fee_candidates
+- artifacts: docs/archive/BACKLOG.md, pending_fee_candidates
 - decision-mention: none
 
 [batch2.md#175]
@@ -1259,7 +1259,7 @@
 - report: POST_RUN_CLOSEOUT.md
 - item: Test document c36449f7 remains flagged "void or dispose at cleanup" in BACKLOG.md; its test field values were deliberately left as-is per that existing disposition.
 - kind: process
-- artifacts: docs/BACKLOG.md, documents (c36449f7)
+- artifacts: docs/archive/BACKLOG.md, documents (c36449f7)
 - decision-mention: none
 
 [batch2.md#178]
@@ -1295,7 +1295,7 @@
 - report: PROMPT_A_STAGES_4-5.md
 - item: New systemic defect D15: remerge_contract_from_clauses (the re-render path run on every draft edit) has none of U2.1's money-rendering logic — currency fields render as bare numbers; reported to BACKLOG, not fixed.
 - kind: defect
-- artifacts: remerge_contract_from_clauses, remerge_contract_body, fmt_money, docs/BACKLOG.md
+- artifacts: remerge_contract_from_clauses, remerge_contract_body, fmt_money, docs/archive/BACKLOG.md
 - decision-mention: D15
 
 [batch2.md#183]
@@ -1351,7 +1351,7 @@
 - report: PROMPT_A_STAGES_4-5.md
 - item: The plan's U7 text conflated an unrelated retirement — the "|| confirmed widenings and the types.ts:22 union member" is BACKLOG's purchases.status='confirmed' Stripe-vocabulary item, not a phone/contact column; left alone as report-only.
 - kind: correctness
-- artifacts: purchases.status, types.ts:22, docs/BACKLOG.md
+- artifacts: purchases.status, types.ts:22, docs/archive/BACKLOG.md
 - decision-mention: none
 
 [batch2.md#191]
@@ -1372,7 +1372,7 @@
 - report: PROMPT_A_STAGES_4-5.md
 - item: Two documents created this run are on the pre-launch cleanup list: c36449f7 (the sample's proof draft) and 4051bd91 (superseded first attempt, voided via void_document).
 - kind: process
-- artifacts: documents (c36449f7, 4051bd91), docs/BACKLOG.md
+- artifacts: documents (c36449f7, 4051bd91), docs/archive/BACKLOG.md
 - decision-mention: none
 
 [batch2.md#194]
@@ -3810,7 +3810,7 @@
 - report: PROMPT_A_STAGES_1-3.md
 - item: Correction — BACKLOG's stated cause for the unrunnable DB test suites ("needs a dedicated test database") is wrong; the harness is in-process PGlite and needs no external database.
 - kind: correction
-- artifacts: docs/BACKLOG.md, test/db/harness.ts
+- artifacts: docs/archive/BACKLOG.md, test/db/harness.ts
 - decision-mention: none
 
 [batch5.md#535]
@@ -3838,7 +3838,7 @@
 - report: PROMPT_A_STAGES_1-3.md
 - item: The intake deep-link is inert — IntakePage.tsx reads no query params, so `?request=<id>` renders but does not deep-link; wiring it is a recorded follow-up in BACKLOG.
 - kind: defect
-- artifacts: src/pages IntakePage.tsx, docs/BACKLOG.md
+- artifacts: src/pages IntakePage.tsx, docs/archive/BACKLOG.md
 - decision-mention: D3 (report's internal decision numbering)
 
 [batch5.md#539]
@@ -3852,7 +3852,7 @@
 - report: PROMPT_A_STAGES_1-3.md
 - item: The Charles Zigmund duplicate contact pair (07ab7dbf/d268330c) is explicitly NOT merged (d268330c is the live lessor on the reference draft) and two "Unnamed Contact" artifacts (bb57e418, 6ecceaf0) await the pre-launch purge — all recorded in BACKLOG.
 - kind: data-integrity
-- artifacts: contacts (07ab7dbf, d268330c, bb57e418, 6ecceaf0), docs/BACKLOG.md
+- artifacts: contacts (07ab7dbf, d268330c, bb57e418, 6ecceaf0), docs/archive/BACKLOG.md
 - decision-mention: D1 (report's internal decision numbering)
 
 [batch5.md#541]
@@ -4861,7 +4861,7 @@
 - report: TASK-F3-REPORT.md
 - item: F4/F5 tracker rows' stale "no UI" framing corrected to cite the existing staff compose in LessonLogEditor.tsx:104; status left BUILT per instruction.
 - kind: correctness
-- artifacts: docs/BUILD_TRACKER.md, LessonLogEditor.tsx
+- artifacts: docs/archive/BUILD_TRACKER.md, LessonLogEditor.tsx
 - decision-mention: none
 
 [batch6.md#683]
@@ -5350,7 +5350,7 @@
 - report: TASK-A12-REPORT.md
 - item: No browser step ran; the UI (Lease card, HorsePageDetail type) is code-complete and typecheck-clean but not visually confirmed. Tracker marked PARTIAL.
 - kind: not-verified
-- artifacts: src/pages/app/HorsePage.tsx, src/lib/horses.ts, docs/BUILD_TRACKER.md
+- artifacts: src/pages/app/HorsePage.tsx, src/lib/horses.ts, docs/archive/BUILD_TRACKER.md
 - decision-mention: none
 
 [batch7.md#751]
@@ -6127,7 +6127,7 @@
 - report: TASK-PARTYCTRL-REPORT.md
 - item: A2's tracker status left as NOT VERIFIED — send-to-parties itself is still unverified live and is the party-verify thread's item, not this task's.
 - kind: not-verified
-- artifacts: docs/BUILD_TRACKER.md
+- artifacts: docs/archive/BUILD_TRACKER.md
 - decision-mention: none
 
 [batch7.md#862]
@@ -6371,7 +6371,7 @@
 - report: TASK-A13-REPORT.md
 - item: The CalendarPage lesson-horse picker is code-complete but never visually confirmed in a browser; tracker marked PARTIAL, not DONE.
 - kind: not-verified
-- artifacts: src/pages/app/CalendarPage.tsx, docs/BUILD_TRACKER.md
+- artifacts: src/pages/app/CalendarPage.tsx, docs/archive/BUILD_TRACKER.md
 - decision-mention: none
 
 [batch8.md#895]

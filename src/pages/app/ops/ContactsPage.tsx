@@ -35,7 +35,7 @@ import { ContactForm } from '../../../components/ops/contacts/ContactForm';
 /* Each page is now defined by the STORED contacts.contact_type, not by a
  * client-side leftover. The old rule was `if nothing else matched → Lead`, which
  * made the Leads page a catch-all rather than a campaign list. See
- * docs/PERSON_DATA_CONSOLIDATION.md. */
+ * docs/archive/PERSON_DATA_CONSOLIDATION.md. */
 /* TASK-RECORDS (2026-08-12): 'vendors' and 'partners' are the split of the old
  * 'directory' mode (owner: "Vendors and partners are separate"). 'directory'
  * itself stays defined — DIRECTORY is a deprecated-not-removed contact_type

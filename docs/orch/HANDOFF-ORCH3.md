@@ -135,7 +135,7 @@ corrupting the ledger every time it is used.
 
 # 5. WHAT TO DO, IN ORDER, ON YOUR FIRST DAY
 
-1. **Read** `docs/reports/OWNER-WALKTHROUGH-2026-08-18.md`, then `docs/OPEN-ITEMS-2026-08-18.md`.
+1. **Read** `docs/reports/OWNER-WALKTHROUGH-2026-08-18.md`, then `docs/archive/OPEN-ITEMS-2026-08-18.md`.
 2. **Flag the ORCH3 name collision** (top of this file) and get a ruling.
 3. **Hand over the `CLOSEOUT` prompt** (§3). It is ready; nothing blocks it.
 4. **Ask for the owner's list** (his step 3). It is the only input you cannot derive.
@@ -216,11 +216,11 @@ and move on.**
 
 # 8. WHAT IS OPEN
 
-- **`docs/OPEN-ITEMS-2026-08-18.md`** is the register. It now carries the 14 pre-existing confirmed
+- **`docs/archive/OPEN-ITEMS-2026-08-18.md`** is the register. It now carries the 14 pre-existing confirmed
   bugs plus **W1–W13** from the walkthrough, 8 open owner decisions, the integration gaps, 11 live
   unrun task docs, and the 535-item `DECIDE.md` sheet awaiting the owner's keep/remove pass.
 - **`main` is `5c5f9ee`**, clean. Production was purged of test data on 2026-08-17 — paper trail in
-  `docs/PROD-TEST-DATA-PURGE-2026-08-17.md`. Two backups in `~/Downloads/claude-code-repo/backups/`.
+  `docs/archive/PROD-TEST-DATA-PURGE-2026-08-17.md`. Two backups in `~/Downloads/claude-code-repo/backups/`.
 - **No live threads.** But **nine worktrees still exist**, and one of them holds unmerged work.
 
 ## ⚠️ 8a. `task/partyrole` HOLDS 10 UNMERGED COMMITS — do not remove that worktree
@@ -292,7 +292,7 @@ week.** Do not infer liveness from the directory listing; check `git merge-base`
 
 1. `docs/method/ORCHESTRATOR.md` — the role.
 2. **`docs/reports/OWNER-WALKTHROUGH-2026-08-18.md`** — what is actually wrong, with proof.
-3. `docs/OPEN-ITEMS-2026-08-18.md` — the full register.
+3. `docs/archive/OPEN-ITEMS-2026-08-18.md` — the full register.
 4. `CLAUDE.md` — the live spine and the settled D-decisions.
 5. `~/Downloads/claude-code-repo/orchestration/lessons/LESSONS.md` — the compounding failure table.
 6. `docs/tasks/TASK-CLOSEOUT-fix-everything-found-then-prove-it.md` — the one thing ready to run.

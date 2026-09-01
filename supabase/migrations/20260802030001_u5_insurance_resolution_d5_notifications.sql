@@ -1,6 +1,6 @@
 -- ============================================================================
 -- U5 / STAGE 4b — D5: INSURANCE UNRESOLVED NOTIFICATION PRODUCER + RESOLVER
--- Spec: docs/insurance-resolution-spec.md D5
+-- Spec: docs/archive/insurance-resolution-spec.md D5
 --
 -- Producer: on the transition INTO the unresolved state, one notification per
 -- party, linked to the contract, kind 'insurance_unresolved', body = the spec's

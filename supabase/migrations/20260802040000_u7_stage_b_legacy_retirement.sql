@@ -68,7 +68,7 @@
 -- OUT OF SCOPE, deliberately NOT touched (verify-first divergence from a
 -- misreading of the plan's own phrase): the plan's U7 text mentions "the
 -- '|| confirmed' widenings and the types.ts:22 union member" as if part of this
--- unit. Traced to docs/BACKLOG.md's `purchases.status = 'confirmed'` entry —
+-- unit. Traced to docs/archive/BACKLOG.md's `purchases.status = 'confirmed'` entry —
 -- an entirely different, unrelated retiring value (Stripe status vocabulary),
 -- not a contacts/phone column at all. It is its own BACKLOG-tracked deferred
 -- cleanup with its own stated gate ("once no 'confirmed' rows remain" — true

@@ -207,7 +207,7 @@ All 4 visible; profile repoint confirmed rolled back afterward.
 All 5/5 affected documents now resolve visible to their mismatched
 party/signer.
 
-## 4. `docs/BUILD_TRACKER.md`
+## 4. `docs/archive/BUILD_TRACKER.md`
 
 A17 changed from **FAIL** to **PARTIAL — server-side fix verified, browser
 pending**, describing the fix, the dependents-check reasoning, and the live

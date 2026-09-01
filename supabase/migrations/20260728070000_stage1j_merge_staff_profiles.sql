@@ -3,7 +3,7 @@
 --
 -- D7 substrate note: staff_profiles feeds only the staff pickers and the
 -- employees scheduling suite — none of the five dual-identity lanes read it
--- (docs/DUAL_IDENTITY_TRACE.md reader list). Behavior-identity is proven by
+-- (docs/reference/DUAL_IDENTITY_TRACE.md reader list). Behavior-identity is proven by
 -- md5-comparing the trace's key functions before/after this migration (they
 -- are untouched) plus the FE surface staying shape-identical.
 --

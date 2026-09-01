@@ -90,7 +90,7 @@ new fields are excluded from it.
   note it in the report for the orchestrator instead of editing.
 - Done-checks: `npm run typecheck`, `npm run typecheck:api`, `npm run lint` (baseline 29
   warnings / 0 errors) + live RPC/RLS proofs.
-- Update `docs/BUILD_TRACKER.md`: add section K rows (K1 profile card, K2 preferences
+- Update `docs/archive/BUILD_TRACKER.md`: add section K rows (K1 profile card, K2 preferences
   boundary, K3 account info, K4 login & security, K5 duplicate elimination) with honest
   statuses.
 - Report: `docs/reports/TASK-PROFILE-REPORT.md`, committed + pushed. Print ONLY the report

@@ -56,7 +56,7 @@ tasks — do not touch their scope even where it looks adjacent.
   Dry-run any migration in `BEGIN;...ROLLBACK;` before applying.
 - Done-checks: `npm run typecheck`, `npm run typecheck:api`, `npm run lint` (baseline 29
   warnings / 0 errors), plus the two live proofs above.
-- Update `docs/BUILD_TRACKER.md` A11 honestly ("server-verified, browser pending" if that is
+- Update `docs/archive/BUILD_TRACKER.md` A11 honestly ("server-verified, browser pending" if that is
   the truth — browser-observed steps stay unclaimed).
 - Report: `docs/reports/TASK-A11-REPORT.md`, committed + pushed on the branch. Raw outputs,
   deviations with reasons, retry log. Print ONLY the report path in chat.

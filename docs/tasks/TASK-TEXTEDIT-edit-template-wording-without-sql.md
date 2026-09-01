@@ -110,7 +110,7 @@ Silently diverging them would break a settled owner decision. **State what you d
   one into a document without parties renders blank and looks broken.
 - **`template_id` is nullable** — some tokens are global, some belong to one template. Show
   both, distinguish them.
-- **Read the table, not `docs/TOKEN_DICTIONARY.md`.** That file is the behavioural contract;
+- **Read the table, not `docs/design/TOKEN_DICTIONARY.md`.** That file is the behavioural contract;
   the table is the data.
 
 ---

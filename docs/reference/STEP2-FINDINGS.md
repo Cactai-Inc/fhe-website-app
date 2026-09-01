@@ -1,6 +1,6 @@
 # STEP 2 — FACT-FINDING
 
-**Started 2026-08-25.** Answers to the assignments in `docs/CHANGE-ORDER-LEDGER.md`.
+**Started 2026-08-25.** Answers to the assignments in `docs/reference/CHANGE-ORDER-LEDGER.md`.
 Plain language; the code references are there so the task thread can go straight to the line.
 
 ---

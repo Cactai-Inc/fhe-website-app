@@ -112,11 +112,11 @@ rather than fabricated text. For two other horses in the same org with no active
 Server-side (RPC/data) behavior is proven live via the psql output above, against real production
 data. **No browser step ran in this task** — the UI (`HorsePageDetail` type, "Lease" card) is
 code-complete and typecheck-clean but has not been visually confirmed in a browser.
-`docs/BUILD_TRACKER.md` A12 is marked **PARTIAL — server-verified, browser pending** accordingly,
+`docs/archive/BUILD_TRACKER.md` A12 is marked **PARTIAL — server-verified, browser pending** accordingly,
 not DONE.
 
 ## Scope discipline
 Touched only: the one migration, `src/lib/horses.ts`, `src/pages/app/HorsePage.tsx`,
-`docs/BUILD_TRACKER.md`, this report. The only production write was the single `CREATE OR REPLACE
+`docs/archive/BUILD_TRACKER.md`, this report. The only production write was the single `CREATE OR REPLACE
 FUNCTION` migration (no data changes — read-through design, nothing to stamp). A13 (lesson booking)
 and `CalendarPage.tsx` were not touched.

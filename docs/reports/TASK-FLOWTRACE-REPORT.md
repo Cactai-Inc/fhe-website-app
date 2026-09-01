@@ -295,7 +295,7 @@ rate-limit migration, `sign_start_register_attempt` live in prod. It converges o
 1. **Zero inbound links.** Exhaustive search: no link to `/sign/*` exists anywhere in `src/` —
    only the route definition itself (re-verified this trace). There is no button. *WIRING · one
    anchor per funnel.*
-2. **`docs/BUILD_TRACKER.md:51-64` marks C4–C9 NOT STARTED** — re-verified verbatim this trace —
+2. **`docs/archive/BUILD_TRACKER.md:51-64` marks C4–C9 NOT STARTED** — re-verified verbatim this trace —
    while every artifact is merged and live. The document any thread consults to answer "was the
    kiosk forgotten?" answers *never built*. **That is the mechanism of the owner's confusion.**
    *Category: the tracker is WRONG · one docs edit (post-review).*

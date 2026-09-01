@@ -1,7 +1,7 @@
 # TASK DOCQUEUE — report
 
 **Task:** `docs/tasks/TASK-DOCQUEUE-the-documents-page-does-its-job.md`
-**Implements:** `docs/DOCUMENT_LIBRARY_DESIGN.md` (J1, plus the owner's 2026-08-11 ruling on J2)
+**Implements:** `docs/design/DOCUMENT_LIBRARY_DESIGN.md` (J1, plus the owner's 2026-08-11 ruling on J2)
 **Branch:** `task/docqueue` (worktree off `origin/main`)
 **Status:** DONE — applied (committed) on the branch, not pushed. Typecheck / lint / build all
 clean. Query results proved against production Postgres directly (no staff browser session

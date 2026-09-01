@@ -18,7 +18,7 @@ the surface over their store and their semantics. If either is missing, stop and
    surface, not a list of menus"*, in the owner's words.
 4. **`docs/reports/TASK-VERSIONSPINE-REPORT.md`** and **`docs/reports/TASK-CONTRACTOPTIONS-REPORT.md`**
    — what actually landed, which may differ from what was asked for.
-5. **`docs/CHANGE-ORDER-LEDGER.md` CR-74 and CR-75** — the surface rule and the expanding-row pattern.
+5. **`docs/reference/CHANGE-ORDER-LEDGER.md` CR-74 and CR-75** — the surface rule and the expanding-row pattern.
    ⚠️ **This editor is the SAME pattern arrived at from a different direction. Build it as one, not
    two, or the globalization pass inherits a third editing idiom.**
 

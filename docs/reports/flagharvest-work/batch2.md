@@ -48,10 +48,10 @@ TASK-ROSTERCARD-REPORT.md
 ### ITEM
 - report: POST_RUN_CLOSEOUT.md
 - date: 2026-08-02
-- item: docs/BACKLOG.md's other pre-existing open items (Business admin suite, pending_fee_candidates p.mobile bug, dead nav route, placeholder media) were untouched this run, out of scope.
-- quote: "`docs/BACKLOG.md`'s other pre-existing open items (Business admin suite, `pending_fee_candidates` p.mobile bug, dead nav route, placeholder media) — untouched this run, out of scope."
+- item: docs/archive/BACKLOG.md's other pre-existing open items (Business admin suite, pending_fee_candidates p.mobile bug, dead nav route, placeholder media) were untouched this run, out of scope.
+- quote: "`docs/archive/BACKLOG.md`'s other pre-existing open items (Business admin suite, `pending_fee_candidates` p.mobile bug, dead nav route, placeholder media) — untouched this run, out of scope."
 - kind: inventory
-- artifacts: docs/BACKLOG.md, pending_fee_candidates
+- artifacts: docs/archive/BACKLOG.md, pending_fee_candidates
 - decision-mention: none
 
 ### ITEM
@@ -78,7 +78,7 @@ TASK-ROSTERCARD-REPORT.md
 - item: Test document c36449f7 remains flagged "void or dispose at cleanup" in BACKLOG.md; its test field values were deliberately left as-is per that existing disposition.
 - quote: "`c36449f7` is already flagged \"void or dispose at cleanup\" in `BACKLOG.md` from the prior session, so its test values were left as-is per that existing disposition"
 - kind: process
-- artifacts: docs/BACKLOG.md, documents (c36449f7)
+- artifacts: docs/archive/BACKLOG.md, documents (c36449f7)
 - decision-mention: none
 
 ### ITEM
@@ -102,7 +102,7 @@ TASK-ROSTERCARD-REPORT.md
 ### INVENTORY
 - report: POST_RUN_CLOSEOUT.md
 - what: A dead nav route and placeholder media are recorded as pre-existing open BACKLOG items, untouched.
-- where: docs/BACKLOG.md
+- where: docs/archive/BACKLOG.md
 - quote: "Business admin suite, `pending_fee_candidates` p.mobile bug, dead nav route, placeholder media) — untouched this run, out of scope."
 
 ---
@@ -133,7 +133,7 @@ TASK-ROSTERCARD-REPORT.md
 - item: New systemic defect D15: remerge_contract_from_clauses (the re-render path run on every draft edit) has none of U2.1's money-rendering logic — currency fields render as bare numbers; reported to BACKLOG, not fixed.
 - quote: "`remerge_contract_body` → `remerge_contract_from_clauses` ... has **none** of Stage 2's U2.1 money-rendering logic (`fmt_money`, `fee_schedule` JSON parsing)."
 - kind: defect
-- artifacts: remerge_contract_from_clauses, remerge_contract_body, fmt_money, docs/BACKLOG.md
+- artifacts: remerge_contract_from_clauses, remerge_contract_body, fmt_money, docs/archive/BACKLOG.md
 - decision-mention: D15
 
 ### ITEM
@@ -205,7 +205,7 @@ TASK-ROSTERCARD-REPORT.md
 - item: The plan's U7 text conflated an unrelated retirement — the "|| confirmed widenings and the types.ts:22 union member" is BACKLOG's purchases.status='confirmed' Stripe-vocabulary item, not a phone/contact column; left alone as report-only.
 - quote: "The plan conflated two unrelated retirements; left alone as report-only, not applied here."
 - kind: correctness
-- artifacts: purchases.status, types.ts:22, docs/BACKLOG.md
+- artifacts: purchases.status, types.ts:22, docs/archive/BACKLOG.md
 - decision-mention: none
 
 ### ITEM
@@ -230,9 +230,9 @@ TASK-ROSTERCARD-REPORT.md
 - report: PROMPT_A_STAGES_4-5.md
 - date: 2026-08-02
 - item: Two documents created this run are on the pre-launch cleanup list: c36449f7 (the sample's proof draft) and 4051bd91 (superseded first attempt, voided via void_document).
-- quote: "both documents are recorded in `docs/BACKLOG.md`'s pre-launch cleanup list"
+- quote: "both documents are recorded in `docs/archive/BACKLOG.md`'s pre-launch cleanup list"
 - kind: process
-- artifacts: documents (c36449f7, 4051bd91), docs/BACKLOG.md
+- artifacts: documents (c36449f7, 4051bd91), docs/archive/BACKLOG.md
 - decision-mention: none
 
 ### ITEM

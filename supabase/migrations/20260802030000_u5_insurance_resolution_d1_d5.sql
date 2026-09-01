@@ -1,6 +1,6 @@
 -- ============================================================================
 -- U5 / STAGE 4b — INSURANCE RESOLUTION FLOW, DB UNIT (D1-D5)
--- Spec: docs/insurance-resolution-spec.md (owner ruling 2026-08-01)
+-- Spec: docs/archive/insurance-resolution-spec.md (owner ruling 2026-08-01)
 --
 -- Mechanism only. This migration writes NO legal language: D2's clause bodies
 -- are deliberately bracketed placeholders pending the legal pass (spec C1), and

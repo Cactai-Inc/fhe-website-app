@@ -73,7 +73,7 @@ resolver only fires when ALL sections clear); this is correct behavior, not a
 bug.
 
 **Known, separately-reported defect visible in this render (not fixed here —
-see `docs/BACKLOG.md`):** `HORSE.FAIR_MARKET_VALUE` renders `52500.00` (§2.1)
+see `docs/archive/BACKLOG.md`):** `HORSE.FAIR_MARKET_VALUE` renders `52500.00` (§2.1)
 rather than `$52,500.00`. This is `remerge_contract_from_clauses` missing
 U2.1's money-formatting layer — confirmed independently on THIS fresh document
 too, reinforcing it is a systemic gap in that render path, not specific to any

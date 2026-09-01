@@ -843,7 +843,7 @@ There are no `DIRECTORY` rows.
 
 ---
 
-## 10. Relationship to `docs/IDENTITY_MODEL_DESIGN.md`
+## 10. Relationship to `docs/reference/IDENTITY_MODEL_DESIGN.md`
 
 Read first, as instructed. Not re-litigated. Where findings touch it:
 

@@ -363,7 +363,7 @@ REVOKE ALL ON FUNCTION public.template_editor_publish(text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.template_editor_publish(text) TO authenticated;
 
 -- ── 9. Tokens for the picker ─────────────────────────────────────────────────
--- The table is the data (not docs/TOKEN_DICTIONARY.md). TOKENAUDIT wrote notes
+-- The table is the data (not docs/design/TOKEN_DICTIONARY.md). TOKENAUDIT wrote notes
 -- for all 307 rows and found 59 whose source_table no longer exists; the picker
 -- must not present dead wiring as live, so source_live is computed here from
 -- information_schema rather than trusted from the row.

@@ -50,7 +50,7 @@ on-screen rather than implying it was missed. Ordered path to done is in
 
 ## 2. THE CHANGE-ORDER PASS — ⚠️ THE BULK OF THE WORK, AND IT IS BARELY STARTED
 
-**`docs/CHANGE-ORDER-LEDGER.md` holds 80 change requests. THREE are locked.**
+**`docs/reference/CHANGE-ORDER-LEDGER.md` holds 80 change requests. THREE are locked.**
 
 The six-step method is `docs/method/02-THE-SIX-STEP-METHOD.md`. **Step 3 (Discussion & Lock) is where
 it stalled**, and it stalled because live defects kept pre-empting it — which is the owner's call, not
@@ -58,7 +58,7 @@ a failure.
 
 **Resume at CR-30's three open questions** *(people surfaces)* — ⚠️ **re-read them against CR-75
 first; the client surface changed after they were asked.** Then the recommended order at the end of
-`docs/STEP2-FINDINGS.md`: pricing/cadences/comps → open slots + the toggle → the lead's world → the
+`docs/reference/STEP2-FINDINGS.md`: pricing/cadences/comps → open slots + the toggle → the lead's world → the
 lying pages and flow exits → G9 globalization.
 
 ⚠️ **This is a chat-and-ruling job, not a build job.** It runs in the orchestrator thread with the

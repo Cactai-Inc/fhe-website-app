@@ -1,6 +1,6 @@
 /**
  * Category 1 — Schema: contract templates & token dictionary (migration 011 +
- * the owner's 2026-07-03 template revision; docs/TOKEN_DICTIONARY.md is canon).
+ * the owner's 2026-07-03 template revision; docs/design/TOKEN_DICTIONARY.md is canon).
  *
  * Proves the template-assembly substrate is real and matches the canon:
  *  - migration 11 applies after the engagements/horses backbone,
@@ -139,7 +139,7 @@ describe('template_tokens — the dictionary in the database', () => {
     // terminology resolved from the engagement's current stage via template_variants.
     // CLIENT (profile/attestation fields), ORD (order instance), and REQ (request
     // inputs) were added by 20260703040000_token_dictionary_sync for the owner's
-    // 2026-07-03 template revision (docs/TOKEN_DICTIONARY.md).
+    // 2026-07-03 template revision (docs/design/TOKEN_DICTIONARY.md).
     const namespaces = new Set(rows.map((r) => r.namespace));
     expect([...namespaces].sort()).toEqual(
       ['CLIENT', 'DIR', 'DOC', 'ENG', 'FHE', 'HORSE', 'ORD', 'ORG', 'PARTY', 'REQ', 'TXN']);

@@ -565,7 +565,7 @@ P5.2 and P8.
 
 The brief originally instructed this thread to surface leads-on-Contacts as an unresolved collision
 with CR-30. **The owner ruled again on 2026-08-30 and the collision is gone**
-(`docs/CHANGE-ORDER-LEDGER.md`, the CR-30 supersession entry; `TASK-AR3` §3 as amended). Under the
+(`docs/reference/CHANGE-ORDER-LEDGER.md`, the CR-30 supersession entry; `TASK-AR3` §3 as amended). Under the
 ledger's override rule the earlier statement is deleted. **Leads are on Contacts. This report does
 not hedge against CR-30 and does not put the question back to him.**
 
@@ -834,7 +834,7 @@ the alternative concrete, and the refactor goes looking for a third option — w
 outcome in advance. ⚠️ **The failure mode is not "he rejects it." It is shipping something he cannot
 cheaply reverse, or that nobody records a verdict on.** So the build is not closed until (a) the
 undo path in §5 has been *exercised once* on a branch and shown to restore the ten-tab page, and
-(b) his verdict is written into `docs/CHANGE-ORDER-LEDGER.md` as the CR-30 supersession's outcome.
+(b) his verdict is written into `docs/reference/CHANGE-ORDER-LEDGER.md` as the CR-30 supersession's outcome.
 
 **For the area as a whole** — four statements, all of which are false today:
 

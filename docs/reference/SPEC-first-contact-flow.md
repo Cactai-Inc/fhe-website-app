@@ -2,7 +2,7 @@
 
 **Owner, 2026-08-25.** The definitive sequence from *staff press send* to *she is looking at the
 community feed*. ⚠️ **This supersedes the branching described in
-`docs/HANDOFF-P1-CONTRACT-SHIP.md` item 1** — read this first.
+`docs/tasks/TASK-P1SHIP-contract-ship.md` item 1** — read this first.
 
 ---
 

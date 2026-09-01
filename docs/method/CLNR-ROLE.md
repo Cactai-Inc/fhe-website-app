@@ -76,7 +76,7 @@ the stale one, and it merged to production a commit that had been deliberately r
   report is a finding.**
 - **Every settled decision is a D-rule in `CLAUDE.md`.** ⚠️ **A decision recorded only in a chat
   reply does not exist** — the thread is disposable, the documents are not.
-- **Every change request is in `docs/CHANGE-ORDER-LEDGER.md`, verbatim.**
+- **Every change request is in `docs/reference/CHANGE-ORDER-LEDGER.md`, verbatim.**
 - **Superseded is archived, never deleted** (D32), and the archived file **says what superseded it.**
 
 ## 2d. ⚠️ MUTUAL ENFORCEMENT — every role checks the others

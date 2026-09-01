@@ -178,7 +178,7 @@ Heritage Equestrian", for the LESSEE seat. No box renders for the LESSOR
 (Sarah) seat — she is not in `company_signable_roles`, and the old
 generic-for-everyone behalf box no longer exists.
 
-## 5. `docs/BUILD_TRACKER.md`
+## 5. `docs/archive/BUILD_TRACKER.md`
 
 Added `A20` under section A with an honest status: **PARTIAL — RPC + UI fix
 verified live (rolled back), browser click-through not done.** Cross-

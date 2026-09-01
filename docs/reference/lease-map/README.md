@@ -32,7 +32,7 @@ more that depend only on which activities are permitted.
 
 ## Prior art
 
-`docs/CONDITIONAL_CLAUSES.md` lists the gates for the whole template. It was
+`docs/archive/CONDITIONAL_CLAUSES.md` lists the gates for the whole template. It was
 written against a 129-clause version (the template now has 144) and it stops at
 the gate: it says what a clause is conditioned on, not what happens to the rest
 of the document when that condition changes. This map resolves the gates into

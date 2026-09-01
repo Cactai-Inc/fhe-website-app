@@ -5,7 +5,7 @@ is approaching compaction.** ⚠️ **This file instructs. It is not a status re
 and still have to ask the owner how to operate or what to do first, it failed — fix it rather than
 asking him.
 
-⚠️ **APPENDED 2026-08-27, LATER SAME DAY — READ `docs/REBUILD-SCOPE-multi-tenant-platform-2026-08-27.md`
+⚠️ **APPENDED 2026-08-27, LATER SAME DAY — READ `docs/reference/REBUILD-SCOPE-multi-tenant-platform-2026-08-27.md`
 BEFORE TRUSTING ANY EXISTING RULING ON THE 80-ITEM CHANGE-ORDER LEDGER, INCLUDING ORCH5's OWN.** The
 owner has been discussing a platform-level pivot (multi-tenant, users independent of tenants) in a
 conversation ORCH5 wasn't part of. ORCH5's ruling artifact was built honestly against the interim-

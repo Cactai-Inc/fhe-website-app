@@ -1,7 +1,7 @@
 # P1 — CONTRACT SHIP: REPORT
 
 **Branch** `task/p1ship` (worktree `wt-p1ship`, from `origin/main` @ `0b1b2bbe`).
-**Written** 2026-08-25. **Assignment:** `docs/HANDOFF-P1-CONTRACT-SHIP.md`.
+**Written** 2026-08-25. **Assignment:** `docs/tasks/TASK-P1SHIP-contract-ship.md`.
 
 **All three items are built.** Nothing was descoped. Two boundaries inside the
 items are named explicitly below (§"What I did NOT build") rather than left for

@@ -1,7 +1,7 @@
 # Insurance decision map — mortality and medical
 
 **The flow charts behind the gates.** Built from the owner's five-question model
-(2026-08-07), the corrected eligibility matrix in `docs/INSURANCE_CONTROL_SET.md` §2a, and
+(2026-08-07), the corrected eligibility matrix in `docs/reference/INSURANCE_CONTROL_SET.md` §2a, and
 the elections recorded in `docs/tasks/TASK-LEASEGATE-Q1-ANSWER-insurance-disclosure.md`.
 
 **General Liability is deliberately excluded.** The owner has stated GL neither affects nor

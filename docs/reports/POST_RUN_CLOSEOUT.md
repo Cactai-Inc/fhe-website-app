@@ -304,7 +304,7 @@ string) turned out to have been written through `set_contract_field`
 directly into the field's plain-text `.value` column — bypassing the
 `.structured` jsonb column `recompose_document_fields` actually reads from.
 That shape is one no real UI write path produces. **No fix applied here —
-`docs/BACKLOG.md` updated to record the investigation and its conclusion**,
+`docs/archive/BACKLOG.md` updated to record the investigation and its conclusion**,
 so this doesn't get re-flagged as unfixed in a future pass.
 
 All test-only field edits made during this investigation on both documents
@@ -472,7 +472,7 @@ where no explicit instruction existed)
 3. Kiosk-to-account auto-promotion + new `/sign/guest|rider|horse|rider+horse`
    short URLs — explicitly deferred by the owner to a separate,
    orchestrator-authored task.
-4. `docs/BACKLOG.md`'s other pre-existing open items (Business admin suite,
+4. `docs/archive/BACKLOG.md`'s other pre-existing open items (Business admin suite,
    `pending_fee_candidates` p.mobile bug, dead nav route, placeholder
    media) — untouched this run, out of scope.
 

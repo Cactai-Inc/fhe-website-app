@@ -6,7 +6,7 @@
   tokens the GLOBAL dictionary (template_tokens WHERE template_id IS NULL) never
   carried. Per the dictionary's own rule — a field is added to the dictionary
   before it is used — this migration closes the gap. Descriptions come from
-  docs/TOKEN_DICTIONARY.md (owner canon, 2026-07-03 revision).
+  docs/design/TOKEN_DICTIONARY.md (owner canon, 2026-07-03 revision).
 
   Shape rules (matching the 20260629040000 seed):
   - kind: SIG.* = 'signature', DOC.* = 'system', everything else 'field'.

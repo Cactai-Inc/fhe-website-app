@@ -511,7 +511,7 @@ The loader now emits 11 templates instead of 17. Regenerating after a retirement
 the established pattern in this repo (15 prior commits touch this generated file,
 including the sale-template retirement in `3475dd4`).
 
-**Updated** `docs/BUILD_TRACKER.md` — new CLEANUP LEDGER entry, plus the explicit note
+**Updated** `docs/archive/BUILD_TRACKER.md` — new CLEANUP LEDGER entry, plus the explicit note
 that Service Definition documents are a separate upcoming build.
 
 ---

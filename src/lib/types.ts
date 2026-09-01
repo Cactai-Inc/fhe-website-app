@@ -39,7 +39,7 @@ export interface Profile {
   phone: string | null;
   // Address, mobile, WhatsApp, socials and contact preferences are NOT here:
   // they live on `contacts`, the single person record (see
-  // docs/PERSON_DATA_CONSOLIDATION.md). The look-alike columns that used to sit
+  // docs/archive/PERSON_DATA_CONSOLIDATION.md). The look-alike columns that used to sit
   // on profiles had zero writers for their whole life and were dropped in S6 —
   // they were the trap behind "I typed my address and it disappeared".
   is_admin: boolean;

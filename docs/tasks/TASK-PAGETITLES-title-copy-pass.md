@@ -41,6 +41,6 @@ report which other pages still carry a large title so the owner can rule on them
 - Production DB writes: at most the offering-name/description rename, logged. Nothing else.
 - Done-checks: `npm run typecheck`, `npm run typecheck:api`, `npm run lint` (baseline 29
   warnings / 0 errors).
-- Update `docs/BUILD_TRACKER.md` section I with a row for this pass, honest status.
+- Update `docs/archive/BUILD_TRACKER.md` section I with a row for this pass, honest status.
 - Report: `docs/reports/TASK-PAGETITLES-REPORT.md`, committed + pushed. Print ONLY the
   report path.

@@ -89,7 +89,7 @@ by `git log --grep` before assuming anything — don't infer from an empty diff 
 # 3. WHAT TO DO FIRST — the owner's own priorities, in his words, 2026-08-26/27
 
 He is running a **parallel `claude.ai` chat thread** doing design/architecture work (the six-step
-change process — `docs/method/METHOD-change-orders.md`, `docs/CHANGE-ORDER-LEDGER.md`, 65 change requests
+change process — `docs/method/METHOD-change-orders.md`, `docs/reference/CHANGE-ORDER-LEDGER.md`, 65 change requests
 — and the DISCO/ORCH/TASK/TEST role-split design, see §5). **Two messages from this thread are
 sitting unanswered in that chat** as of this handoff: a request for the exact files ORCH4 is
 working from (answered, with a proposal to split ORCH into four roles), and a bundle of orchestrator
@@ -163,7 +163,7 @@ recommendation, not a settled decision.
 
 ## 4.3 The OFFERINGDOCS model — read, understood, not yet propagated to the refactor docs
 
-`docs/HANDOFF-OFFERINGDOCS-2026-08-24.md`, read in full. **The obligation model inverted**:
+`docs/archive/HANDOFF-OFFERINGDOCS-2026-08-24.md`, read in full. **The obligation model inverted**:
 documents now come from the offering purchased or the sign-in door, never from a tag; tags are
 derived-only, staff never tick one. New tables (`service_type_document_requirements`,
 `sign_path_document_requirements`), new writer (`apply_offering_documents`), new disposition column
@@ -409,7 +409,7 @@ exception. Restated here only where this session found a new instance or a sharp
    detail, the full owner-working-style notes, the D-rule-adjacent context around the surface-
    editor sequence's earlier threads (VERSIONSPINE). Worth the second read even though it's
    superseded as the entry point.
-4. `docs/HANDOFF-OFFERINGDOCS-2026-08-24.md` — the obligation-model inversion. Load-bearing for
+4. `docs/archive/HANDOFF-OFFERINGDOCS-2026-08-24.md` — the obligation-model inversion. Load-bearing for
    anything touching People, Documents, or onboarding.
 5. `docs/tasks/TASK-ONERAIL-three-entry-paths-one-first-login-rail.md` — if it hasn't been run yet.
 6. `docs/design/refactor/` — all four documents, **with §8b's re-grounding in mind, not as
@@ -423,8 +423,8 @@ exception. Restated here only where this session found a new instance or a sharp
    because it's a process finding, not an FHE product rule).
 
 **Do not read** `docs/orch/HANDOFF-ORCH3.md` beyond what §10.3 above points you to specifically,
-`docs/archive/ORCHESTRATOR-HANDOFF.md`, `docs/HANDOFF.md`, `docs/HANDOFF-CHECKLIST.md`, or
-`docs/SESSION_HANDOFF_2026-08-07.md` — superseded, history.
+`docs/archive/ORCHESTRATOR-HANDOFF.md`, `docs/archive/HANDOFF.md`, `docs/archive/HANDOFF-CHECKLIST.md`, or
+`docs/archive/SESSION_HANDOFF_2026-08-07.md` — superseded, history.
 
 ---
 

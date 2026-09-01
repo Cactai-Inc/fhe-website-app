@@ -1,7 +1,7 @@
 # CHANGE ORDERS — the raw list
 
 **80 change requests, CR-01 to CR-79 plus CR-76b.** Captured from the owner across 2026-08-24 to
-2026-08-26. Distilled from `docs/CHANGE-ORDER-LEDGER.md` (2,562 lines), which stays the record.
+2026-08-26. Distilled from `docs/reference/CHANGE-ORDER-LEDGER.md` (2,562 lines), which stays the record.
 
 **This file carries no recommendations and no dispositions.** For each item:
 
@@ -13,7 +13,7 @@
 
 **Status vocabulary:** `captured` → `researched` → `locked` → `built`.
 
-⚠️ **Read this alongside `docs/REBUILD-SCOPE-multi-tenant-platform-2026-08-27.md`**, which records
+⚠️ **Read this alongside `docs/reference/REBUILD-SCOPE-multi-tenant-platform-2026-08-27.md`**, which records
 that the rebuild target is a multi-tenant platform where users are independent of tenants, and French
 Heritage is the first tenant rather than the product.
 

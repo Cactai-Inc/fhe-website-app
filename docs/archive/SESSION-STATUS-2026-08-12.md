@@ -7,7 +7,7 @@
 
 # 1. READ THESE THREE FIRST
 
-- **`docs/PLAN-OF-ATTACK-2026-08-12.md`** — all 24 unresolved items, ordered, plus six small
+- **`docs/archive/PLAN-OF-ATTACK-2026-08-12.md`** — all 24 unresolved items, ordered, plus six small
   rulings. **The single source for what is left.**
 - **`CLAUDE.md`** — settled decisions D1–D13. **D12** (two template engines), **D13** (the owner
   must be able to change it without a developer) are today's and they govern everything ahead.

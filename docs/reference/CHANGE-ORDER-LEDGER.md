@@ -2443,7 +2443,7 @@ fill. The rider-aids pair is Pamela's and filling it for her is answering on her
 
 ⚠️ **HE ALSO STATED THE ORDERING CONSTRAINT AS A FACT, AND IT SHOULD BE CONFIRMED, NOT ASSUMED:**
 that Pamela's own send carries **her documents but not the contract**, because the executed contract
-does not exist until he signs last. **The one-email ruling in `docs/SPEC-first-contact-flow.md`
+does not exist until he signs last. **The one-email ruling in `docs/reference/SPEC-first-contact-flow.md`
 describes the send at the START of her flow; this is the send at the END of it, and they are not the
 same email.** ⚠️ **Reconcile the two before either is built.**
 

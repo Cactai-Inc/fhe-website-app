@@ -564,7 +564,7 @@ export async function upsertMyProfile(patch: Partial<Profile>): Promise<void> {
 }
 
 /** U7 Stage 5: phone lives on the person's contact record, not profiles — see
- *  docs/PERSON_DATA_CONSOLIDATION.md. contacts_select's own-row policy
+ *  docs/archive/PERSON_DATA_CONSOLIDATION.md. contacts_select's own-row policy
  *  (id = current_contact_id()) permits this read directly; no RPC needed. A
  *  caller with no linked contact yet (no account-creation flow has run) reads
  *  as null rather than throwing — the public Account page still renders. */

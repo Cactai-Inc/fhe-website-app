@@ -498,8 +498,8 @@ session found a new instance or a sharper phrasing:
 6. `CLAUDE.md` — the live spine and every settled D-rule. D32 (retention) and D26 (dashboards) are
    the two this session leaned on most.
 
-**Do not read** `docs/orch/HANDOFF-ORCH3.md`, `docs/archive/ORCHESTRATOR-HANDOFF.md`, `docs/HANDOFF.md`,
-`docs/HANDOFF-CHECKLIST.md`, or `docs/SESSION_HANDOFF_2026-08-07.md` — all superseded, all
+**Do not read** `docs/orch/HANDOFF-ORCH3.md`, `docs/archive/ORCHESTRATOR-HANDOFF.md`, `docs/archive/HANDOFF.md`,
+`docs/archive/HANDOFF-CHECKLIST.md`, or `docs/archive/SESSION_HANDOFF_2026-08-07.md` — all superseded, all
 history. If any load-bearing fact from them still mattered, it is repeated in this file.
 
 ---

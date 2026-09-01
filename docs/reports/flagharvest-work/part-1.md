@@ -1067,7 +1067,7 @@ record, not `profiles.phone` (`Account.tsx:40-49`), and it mounts the real
 
 ```tsx
   // U7 Stage 5: phone is repointed from profiles.phone (retired, see below) to
-  // the person's contact record — docs/PERSON_DATA_CONSOLIDATION.md is the
+  // the person's contact record — docs/archive/PERSON_DATA_CONSOLIDATION.md is the
   // single source of truth for a person's phone number.
 ```
 

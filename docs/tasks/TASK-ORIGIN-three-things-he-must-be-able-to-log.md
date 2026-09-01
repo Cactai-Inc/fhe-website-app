@@ -34,7 +34,7 @@ client account by hand**. **If the fields do not exist when he starts, he enters
 That is the entire reason this jumps the queue.
 
 ⚠️ **RE-CHECKED AGAINST THE MULTI-TENANT PLATFORM FRAMING (2026-08-27) AND IT STILL SHIPS.**
-`docs/REBUILD-SCOPE-multi-tenant-platform-2026-08-27.md` records that the rebuild target is a
+`docs/reference/REBUILD-SCOPE-multi-tenant-platform-2026-08-27.md` records that the rebuild target is a
 platform where **users are independent of tenants** — which makes this task, adding two columns to the
 person record, the obvious candidate for "wait for the rebuild." **It is not, and the reason is worth
 stating so nobody re-opens it: the DATA is what ports, and the columns are only the vessel.** He

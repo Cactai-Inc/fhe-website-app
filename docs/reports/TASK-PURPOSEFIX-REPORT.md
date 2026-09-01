@@ -214,7 +214,7 @@ Equestrian, state `in_review`). Confirmed via read-only queries only (no writes 
 
 ## Files touched
 
-- `docs/BUILD_TRACKER.md` — new row A22.
+- `docs/archive/BUILD_TRACKER.md` — new row A22.
 - `docs/reports/TASK-PURPOSEFIX-REPORT.md` — this report.
 
 No `src/` files were changed (`git diff` is empty against the branch point).
@@ -232,7 +232,7 @@ No `src/` files were changed (`git diff` is empty against the branch point).
 ## Commits
 
 Two commits on `task/purposefix`:
-1. Docs only: `docs/BUILD_TRACKER.md` (new A22 row) + this report.
+1. Docs only: `docs/archive/BUILD_TRACKER.md` (new A22 row) + this report.
 
 No migration commit — the migration this task would have shipped already exists
 (`20260805170000_seedfix_can_edit_deal_default.sql`) and is already applied; nothing new

@@ -286,7 +286,7 @@
 [INV batch1.md#24]
 - report: TASK-TOKENAUDIT-REPORT.md
 - what: MINOR_RIDER — an active flat template body (5,481 bytes) from which no document has ever been generated, with zero scoped token rows; the dictionary doc says it was retired.
-- where: contract_templates (template_key MINOR_RIDER), docs/TOKEN_DICTIONARY.md line 192
+- where: contract_templates (template_key MINOR_RIDER), docs/design/TOKEN_DICTIONARY.md line 192
 - report: POST_RUN_CLOSEOUT.md
 - report: POST_RUN_CLOSEOUT.md
 - report: POST_RUN_CLOSEOUT.md
@@ -301,7 +301,7 @@
 [INV batch2.md#25]
 - report: POST_RUN_CLOSEOUT.md
 - what: A dead nav route and placeholder media are recorded as pre-existing open BACKLOG items, untouched.
-- where: docs/BACKLOG.md
+- where: docs/archive/BACKLOG.md
 - report: PROMPT_A_STAGES_4-5.md
 - report: PROMPT_A_STAGES_4-5.md
 - report: PROMPT_A_STAGES_4-5.md

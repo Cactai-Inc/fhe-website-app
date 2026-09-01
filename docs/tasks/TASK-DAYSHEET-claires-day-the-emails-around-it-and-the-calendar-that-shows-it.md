@@ -279,7 +279,7 @@ use rather than inventing `booking_status_log`.
 2026-09-20. That is 92% of the table, and it is all generated furniture.
 
 ### ⚠️ THIS SUPERSEDES A STANDING WARNING — read this
-`docs/HANDOFF-OFFERINGDOCS-2026-08-24.md` §5.2b warns, about the calendar toggle decommission:
+`docs/archive/HANDOFF-OFFERINGDOCS-2026-08-24.md` §5.2b warns, about the calendar toggle decommission:
 *"THE ONE THING THAT MUST NOT BE DISTURBED: `is_flexible` … it is the single most-used behaviour in
 the table."* **That warning was based on those 494 rows, and this ruling deletes them.** The two
 tasks must be sequenced together or the second will be reasoned about from a table that no longer

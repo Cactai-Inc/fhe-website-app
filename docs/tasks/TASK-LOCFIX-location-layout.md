@@ -45,7 +45,7 @@ template content changes beyond what's strictly required for the layout fix.
   warnings / 0 errors).
 - Per defect: the mechanism, the fix, and (for any DB/template change) before/after raw
   output for the affected clause rows. UI is browser-pending as usual — say so honestly.
-- Update `docs/BUILD_TRACKER.md` under section A (lease editor polish) honestly.
+- Update `docs/archive/BUILD_TRACKER.md` under section A (lease editor polish) honestly.
 
 ## Rules
 - Branch `task/locfix` off `origin/main`, own worktree

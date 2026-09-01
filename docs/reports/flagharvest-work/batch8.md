@@ -188,9 +188,9 @@ Files: HANDOFF_DEAL_SALE_BUILD_2026-08-04.md, TASK-A13-REPORT.md, TASK-A16-REPOR
 - report: TASK-A13-REPORT.md
 - date: 2026-08-04
 - item: The CalendarPage lesson-horse picker is code-complete but never visually confirmed in a browser; tracker marked PARTIAL, not DONE.
-- quote: "The `CalendarPage.tsx` picker change is code-complete and typecheck-clean but has not been visually confirmed in a browser. `docs/BUILD_TRACKER.md` A13 is marked **PARTIAL — server-verified, browser pending**"
+- quote: "The `CalendarPage.tsx` picker change is code-complete and typecheck-clean but has not been visually confirmed in a browser. `docs/archive/BUILD_TRACKER.md` A13 is marked **PARTIAL — server-verified, browser pending**"
 - kind: not-verified
-- artifacts: src/pages/app/CalendarPage.tsx, docs/BUILD_TRACKER.md
+- artifacts: src/pages/app/CalendarPage.tsx, docs/archive/BUILD_TRACKER.md
 - decision-mention: none
 
 ### ITEM

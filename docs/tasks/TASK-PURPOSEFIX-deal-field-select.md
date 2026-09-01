@@ -47,7 +47,7 @@ select inert.
      component now renders the interactive select and under which conditions.
    - Re-verify Sarah's doc READ-ONLY: confirm her controls row has can_edit_deal=true and the
      fixed UI logic would render her select actionable (reasoned trace, no writes).
-5. Update `docs/BUILD_TRACKER.md` (this rides under A-lane quality; add a row under section A
+5. Update `docs/archive/BUILD_TRACKER.md` (this rides under A-lane quality; add a row under section A
    noting the defect + fix).
 
 ## Rules

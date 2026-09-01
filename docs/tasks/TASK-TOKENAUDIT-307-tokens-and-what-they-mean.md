@@ -113,7 +113,7 @@ Each description says:
 **Do not create a second description store**, and do not put the descriptions only in a markdown
 file: the picker reads the table.
 
-**`docs/TOKEN_DICTIONARY.md` is the behavioural contract** — read it, reconcile against it, and
+**`docs/design/TOKEN_DICTIONARY.md` is the behavioural contract** — read it, reconcile against it, and
 report where the table and that document disagree. **Where they conflict, the database is the
 truth and the doc is the claim.**
 

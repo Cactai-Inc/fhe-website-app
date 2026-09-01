@@ -181,7 +181,7 @@ Includes both SENT and SIGNED events as required by the done-checks.
   (`supabase/migrations/20260803030000_publish_open_slots.sql:95`), which
   gates an existing staff-only RPC on the same `has_staff_access()` function.
   No live negative test was run.
-- `docs/BUILD_TRACKER.md` A14 updated: PARTIAL → DONE (2026-08-04) with a
+- `docs/archive/BUILD_TRACKER.md` A14 updated: PARTIAL → DONE (2026-08-04) with a
   one-line evidence summary and a pointer to this report.
 
 ## Production writes

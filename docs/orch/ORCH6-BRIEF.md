@@ -61,7 +61,7 @@ content *(the view lives in Community, the editor in Admin — `Products` at `pa
 **Home:** whatever next touches `AppLayout.tsx` + `pageRegistry.ts`. **Nothing owns them now.**
 
 ### CR-86 · the books ⚠️ **THE LARGEST UNSPECCED ITEM, AND IT HAS A DEADLINE**
-**Four gaps, in `docs/CHANGE-ORDER-LEDGER.md` — read the full entry, it is long and measured:**
+**Four gaps, in `docs/reference/CHANGE-ORDER-LEDGER.md` — read the full entry, it is long and measured:**
 1. **Services delivered and never recorded** — lease clients owed care under **unexecuted** agreements,
    plus clients with no lease at all. ⚠️ **Unrecorded REVENUE. This is his data pass, not code.**
 2. **Discount + comp designation** — ⚠️ **`purchase_items` has NO discount, comp, list-price or reason

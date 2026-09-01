@@ -32,7 +32,7 @@ supabase/migrations/20260816T1500_zelleclose_payment_notifications_staff_write.s
 
 Frontend/API, same working copy, not yet pushed: `api/orders-mark-paid.ts` (new),
 `api/_lib/reconcile.ts`, `src/lib/ops/api-payments.ts`,
-`src/pages/app/ops/PaymentReviewPage.tsx`, `docs/NOTIFICATIONS.md`,
+`src/pages/app/ops/PaymentReviewPage.tsx`, `docs/reference/NOTIFICATIONS.md`,
 `workspace/zelle-poller.gs`. `npm run typecheck`, `npm run typecheck:api`, and
 `npm run lint`: 0 errors (the one pre-existing lint error, in
 `test/db/creditfix_mint_from_unit_count.test.ts`, is untouched by this
@@ -127,7 +127,7 @@ Whatever the exact state of the Apps Script account (never pasted in, pasted
 but never triggered, or misconfigured), the operational fact is identical:
 **nothing has ever ingested a Zelle notification.** Documented in full —
 setup steps, the exact reasoning above, what "live" would take — in
-`docs/NOTIFICATIONS.md` (new "Zelle payment ingestion" section). Actually
+`docs/reference/NOTIFICATIONS.md` (new "Zelle payment ingestion" section). Actually
 deploying the Apps Script is a Google Workspace admin action outside this
 repo's reach; not attempted.
 
@@ -352,7 +352,7 @@ proof above, now correctly claim-aware of each other where they overlap.
 1. **A real order produces a memo + unique amount, shown as query output.**
    PROVEN — Z1, Claire's real $1,000 order, `BEGIN…ROLLBACK`.
 2. **The inbound path is documented and its actual existence established.**
-   DONE — `docs/NOTIFICATIONS.md`. Established, not assumed: **it does not
+   DONE — `docs/reference/NOTIFICATIONS.md`. Established, not assumed: **it does not
    operate** (0 rows, ever, in `payment_notifications`; no cron/function
    drives it). Setup steps documented for when a Workspace admin deploys it.
 3. **A matching payment marks the purchase paid with a provable event trail.**

@@ -30,7 +30,7 @@ Assigned files: PROMPT_A_STAGES_1-3.md, TASK-A-PARTY-VERIFY-2-REPORT.md, TASK-CO
 - item: Correction — BACKLOG's stated cause for the unrunnable DB test suites ("needs a dedicated test database") is wrong; the harness is in-process PGlite and needs no external database.
 - quote: "BACKLOG says the suites need \"a dedicated test database\" — **that is wrong**: the harness uses in-process PGlite and needs no external database."
 - kind: correction
-- artifacts: docs/BACKLOG.md, test/db/harness.ts
+- artifacts: docs/archive/BACKLOG.md, test/db/harness.ts
 - decision-mention: none
 
 ### ITEM
@@ -66,7 +66,7 @@ Assigned files: PROMPT_A_STAGES_1-3.md, TASK-A-PARTY-VERIFY-2-REPORT.md, TASK-CO
 - item: The intake deep-link is inert — IntakePage.tsx reads no query params, so `?request=<id>` renders but does not deep-link; wiring it is a recorded follow-up in BACKLOG.
 - quote: "`IntakePage.tsx` reads no query params, so `?request=<id>` renders fine but does not deep-link ... the deep-link is a recorded follow-up."
 - kind: defect
-- artifacts: src/pages IntakePage.tsx, docs/BACKLOG.md
+- artifacts: src/pages IntakePage.tsx, docs/archive/BACKLOG.md
 - decision-mention: D3 (report's internal decision numbering)
 
 ### ITEM
@@ -84,7 +84,7 @@ Assigned files: PROMPT_A_STAGES_1-3.md, TASK-A-PARTY-VERIFY-2-REPORT.md, TASK-CO
 - item: The Charles Zigmund duplicate contact pair (07ab7dbf/d268330c) is explicitly NOT merged (d268330c is the live lessor on the reference draft) and two "Unnamed Contact" artifacts (bb57e418, 6ecceaf0) await the pre-launch purge — all recorded in BACKLOG.
 - quote: "the Zigmund pair (**explicitly NOT merged** — `d268330c` is the live lessor on the reference sample draft) and the two `Unnamed Contact` artifacts."
 - kind: data-integrity
-- artifacts: contacts (07ab7dbf, d268330c, bb57e418, 6ecceaf0), docs/BACKLOG.md
+- artifacts: contacts (07ab7dbf, d268330c, bb57e418, 6ecceaf0), docs/archive/BACKLOG.md
 - decision-mention: D1 (report's internal decision numbering)
 
 ### ITEM

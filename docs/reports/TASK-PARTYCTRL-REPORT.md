@@ -207,7 +207,7 @@ Re-listed all 11 configurable documents post-migration: all 11 now show `n_contr
 their actual party-role count (the 10 backfilled ones at their seeded count, the one
 pre-existing-controls document untouched at its original 2 rows).
 
-## `docs/BUILD_TRACKER.md`
+## `docs/archive/BUILD_TRACKER.md`
 
 Added a one-line note under A2 pointing at this fix; **A2's status left as `NOT VERIFIED`**
 unchanged — send-to-parties itself is still unverified live and is the party-verify thread's item,
@@ -223,7 +223,7 @@ not this task's.
 
 ## Scope discipline
 Touched only: the one migration (3 `CREATE OR REPLACE FUNCTION` + 1 backfill `INSERT`),
-`docs/BUILD_TRACKER.md` (one line under A2), this report, and the task-doc copy.
+`docs/archive/BUILD_TRACKER.md` (one line under A2), this report, and the task-doc copy.
 `ClauseDocument.tsx` was not read or touched (frozen, and no UI changes were made at all, per the
 hard rule). `generate_document` was read (to confirm where `document_parties` gets populated) but
 not modified — out of scope, shared infrastructure. No document, signed or otherwise, was deleted.

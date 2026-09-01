@@ -22,7 +22,7 @@ itself, D1–D9 settled decisions), `docs/THREAD_REGISTRY.md` (thread IDs and st
 
 > **CORRECTED 2026-08-08 — this document is NOT the full index, and PART 6 was written
 > without knowing it.** It carries roughly nine open items; the real inventory is about ten
-> times that. **Read `docs/WORK-INVENTORY-2026-08-08.md` before proposing any task.** It
+> times that. **Read `docs/archive/WORK-INVENTORY-2026-08-08.md` before proposing any task.** It
 > reconciles the three sources this document never names —
 > `docs/BUILD_TRACKER.md` (129 items, sections A–K, and the closest thing to a roadmap),
 > `docs/BACKLOG.md` (owner-decision stops + zero-live-behaviour work), and
@@ -33,14 +33,14 @@ itself, D1–D9 settled decisions), `docs/THREAD_REGISTRY.md` (thread IDs and st
 > The corrections are applied inline and marked. Five items outrank everything PART 6 lists
 > as ready to run; see the inventory's PART 6 for the ranking.
 
-> ## ⚠ READ THIS BEFORE PART 6 — `docs/WORK-INVENTORY-2026-08-08.md`
+> ## ⚠ READ THIS BEFORE PART 6 — `docs/archive/WORK-INVENTORY-2026-08-08.md`
 >
 > **PART 6 of this document is incomplete and was written that way without knowing it.**
 > It lists ~9 tasks and 5 decisions. The full inventory is roughly ten times that, and the
 > two largest documents in the repo — `docs/BUILD_TRACKER.md` (129 items) and
 > `docs/BACKLOG.md` — are not named anywhere in this handoff.
 >
-> `docs/WORK-INVENTORY-2026-08-08.md` reconciles every source and is the single index that
+> `docs/archive/WORK-INVENTORY-2026-08-08.md` reconciles every source and is the single index that
 > suggestion S7 below says does not exist. **It also corrects four statements in PART 6.**
 > Read it before proposing any next task, and add every new request to it.
 
@@ -525,7 +525,7 @@ reported twice) · `GIFTCREDITS` · `GOOGLEAUTH` · `ADMINSWEEP` (the full admin
 `TITLESWEEP` (run AFTER `PAGEFRAME`; it fills titles those conversions leave empty).
 `SECFIX2` is done.
 
-**This is not the whole queue.** `docs/WORK-INVENTORY-2026-08-08.md` PART 6 ranks these
+**This is not the whole queue.** `docs/archive/WORK-INVENTORY-2026-08-08.md` PART 6 ranks these
 against the rest of the inventory; all of them sit below five items that are not on this line.
 
 The A-series numbers referenced above and below are indexed in

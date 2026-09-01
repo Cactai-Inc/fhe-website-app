@@ -1,6 +1,6 @@
 /**
  * Phase 2 — tokenized contract bodies vs. the dictionary (owner template
- * revision 2026-07-03; docs/TOKEN_DICTIONARY.md is the canon). For every
+ * revision 2026-07-03; docs/design/TOKEN_DICTIONARY.md is the canon). For every
  * tokenized body in supabase/contract_templates/:
  *  - every {{TOKEN}} resolves to a dictionary entry (template_tokens, global) —
  *    either literally (e.g. the CLIENT-specific profile fields) or after

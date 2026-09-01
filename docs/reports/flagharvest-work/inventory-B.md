@@ -1622,7 +1622,7 @@ the row** — `supabase/migrations/20260812T1500_textedit_template_wording_draft
 ```
 with the rationale at lines 366-370 of the same file:
 ```
--- The table is the data (not docs/TOKEN_DICTIONARY.md). TOKENAUDIT wrote notes
+-- The table is the data (not docs/design/TOKEN_DICTIONARY.md). TOKENAUDIT wrote notes
 -- for all 307 rows and found 59 whose source_table no longer exists; the picker
 -- must not present dead wiring as live, so source_live is computed here from
 -- information_schema rather than trusted from the row.
@@ -5414,7 +5414,7 @@ Rendered plainly, the four subject/body pairs are:
 
 The D9 decision itself, as recorded elsewhere in the tree:
 ```
-docs/PERSON_DATA_CONSOLIDATION.md:63   - `payment_reminders` — D9: no dunning email exists
+docs/archive/PERSON_DATA_CONSOLIDATION.md:63   - `payment_reminders` — D9: no dunning email exists
 docs/reports/TASK-EMAILEXTRACT-REPORT.md:106  > D9 settled that there is **no welcome email and no dunning email**, and that both producers
 docs/reports/TASK-EMAILEXTRACT-REPORT.md:329  1. **🔴 D9: the welcome and dunning WORDING still exists** in `renderTemplate`
 ```

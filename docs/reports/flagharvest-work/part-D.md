@@ -806,7 +806,7 @@ Rendered plainly, the four subject/body pairs are:
 
 The D9 decision itself, as recorded elsewhere in the tree:
 ```
-docs/PERSON_DATA_CONSOLIDATION.md:63   - `payment_reminders` — D9: no dunning email exists
+docs/archive/PERSON_DATA_CONSOLIDATION.md:63   - `payment_reminders` — D9: no dunning email exists
 docs/reports/TASK-EMAILEXTRACT-REPORT.md:106  > D9 settled that there is **no welcome email and no dunning email**, and that both producers
 docs/reports/TASK-EMAILEXTRACT-REPORT.md:329  1. **🔴 D9: the welcome and dunning WORDING still exists** in `renderTemplate`
 ```

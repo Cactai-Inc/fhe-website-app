@@ -1,6 +1,6 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- PERSON CONSOLIDATION — STAGE 1: contacts becomes the single person record
--- (2026-07-30, owner-approved. Full spec: docs/PERSON_DATA_CONSOLIDATION.md)
+-- (2026-07-30, owner-approved. Full spec: docs/archive/PERSON_DATA_CONSOLIDATION.md)
 --
 -- WHY: a person's data lives on two tables and the app cannot agree which is
 -- real. The reported symptom: a member enters their address on the app profile

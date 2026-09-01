@@ -183,7 +183,7 @@
 - sources: TASK-TOKENAUDIT-REPORT.md (2026-08-12)
 - raised: 2026-08-12
 - status: STILL OPEN
-- evidence: docs/TOKEN_DICTIONARY.md exists; `git log --oneline -3 -- docs/TOKEN_DICTIONARY.md` → newest touch is 40d7bfd ("Multi-horse onboarding"), i.e. no rewrite since TOKENAUDIT (c14e8d3, 2026-08-12). `select token from template_tokens where token like '%EUTHANASIA_INITIALS%'` → none (only `{{HORSE.EUTHANASIA_A}}` and `{{HORSE.EUTHANASIA_B}}` exist); `select field_key from contract_field_defs where field_key ilike '%EUTHANASIA%'` → none. Every drift the report named (MINOR_RIDER retirement, ORD.UUID source, retired TXN sections) is confirmed still live above.
+- evidence: docs/design/TOKEN_DICTIONARY.md exists; `git log --oneline -3 -- docs/design/TOKEN_DICTIONARY.md` → newest touch is 40d7bfd ("Multi-horse onboarding"), i.e. no rewrite since TOKENAUDIT (c14e8d3, 2026-08-12). `select token from template_tokens where token like '%EUTHANASIA_INITIALS%'` → none (only `{{HORSE.EUTHANASIA_A}}` and `{{HORSE.EUTHANASIA_B}}` exist); `select field_key from contract_field_defs where field_key ilike '%EUTHANASIA%'` → none. Every drift the report named (MINOR_RIDER retirement, ORD.UUID source, retired TXN sections) is confirmed still live above.
 - decision-note: none
 - cost-rank: 6
 - recommendation: Rewrite the doc after the owner rules on CTA-A13/A14/A15/A16, exactly as the report proposed — it is currently a misleading reference.
