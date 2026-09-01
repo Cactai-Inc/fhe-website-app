@@ -3775,6 +3775,33 @@ serve.** **Sequence: FIX5 moves the files; the BROOM role owns keeping them that
 
 ## CR-93 · G9 · 🔒 RULED — the close rule, refined, and the save state sits next to the close icon
 
+⚠️ **AMENDED AGAIN 2026-09-01, AFTER `TASK-MODAL2` SHIPPED. THIS IS THE OPERATIVE RULE.**
+> *"the request was for modals that the user can reopen it can close on clickout for any that the user
+> cannot reopen it or that has input content it doesnt close on clickout."*
+
+🔒 **THREE CASES, AND THE FIRST TWO ARE UNCHANGED FROM WHAT IS LIVE:**
+| The dialog | Click-out |
+|---|---|
+| **holds input the user entered or selected** | ⚠️ **never closes** — regardless of anything else |
+| **no input, and the user CANNOT reopen it** *(a first-login overview, a system notice, a one-time alert)* | ⚠️ **never closes** |
+| **no input, and the user CAN reopen it** *(the scheduling and shopping modals, a document preview reachable from a list)* | ✅ **closes** |
+
+⚠️ **WHAT IS LIVE TODAY IS STRICTER THAN THIS.** `TASK-MODAL2` *(merged `4c06685d`)* removed the
+backdrop handler entirely, so **NOTHING closes on click-out**, including a reopenable information
+dialog. **That was built correctly against the instruction as it then stood** — *"just make all modals
+only close on click of button or link … since you cant determine which ones the user can reopen"* —
+**and the owner has now made the determination, so the third row must come back.**
+
+⚠️ **THE DESIGN QUESTION THIS HANDS `DSGN`, AND IT IS THE ONE THAT KILLED THE FIRST ATTEMPT:
+HOW DOES THE COMPONENT KNOW IT IS REOPENABLE?** **It cannot infer it.** ⚠️ **`TASK-MODAL2` deleted the
+`trigger: 'user' | 'system'` concept when the blanket rule replaced it — reopenability is the same
+question in better clothes, and it needs an explicit input plus an INVENTORY of every dialog that
+opens without a click.** **A default nobody applies is the same as no feature.**
+
+⚠️ **NOT ASKED, NOT ASSUMED: `Escape`.** **The owner's words name CLICK-OUT only. Escape is currently
+removed on every dialog. Do not restore it as a side effect — put it to him.**
+
+
 ⚠️ **AMENDED 2026-08-31, LATER THE SAME DAY — THE RULE IS NOW SIMPLER AND HARDER. THIS SUPERSEDES THE
 USER-TRIGGERED / SYSTEM-TRIGGERED SPLIT BELOW.**
 > *"here is an example of a system modal, the overview modal on first login that tells the user about
