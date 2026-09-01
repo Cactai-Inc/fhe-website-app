@@ -1,7 +1,14 @@
 # TASK-LIFECYCLE — running ledger
 
-**Thread:** `TASK` · opened 2026-09-01 · branch `task/lifecycle` in `wt-1`, from `origin/main`
-`574a5b3e`. **Spec:** `docs/tasks/TASK-LIFECYCLE-six-states-and-the-thirty-day-horizon.md`.
+**Thread:** `TASK` · opened 2026-09-01 · branch **`task/lifecycle-b` in `wt-2`**, from `origin/main`.
+⚠️ **RELOCATED MID-BUILD.** It started on `task/lifecycle` in `wt-1`; `SIGNBOOK` was dispatched into
+the same worktree and the owner ordered separation. **`wt-1` and `task/lifecycle` are abandoned and
+must never be touched by this thread again.** The ledger commit was cherry-picked across; the three
+migration files written before the order were copied out READ-ONLY.
+⚠️ **LEFT BEHIND IN `wt-1`, FOR ORCH TO SWEEP — three UNTRACKED files I created there and did not
+delete, because the order was to stop touching that tree:**
+`supabase/migrations/20260901T1530_*.sql`, `20260901T1600_*.sql`, `20260901T1620_*.sql`.
+**They are byte-identical to the ones now on this branch. `git clean -xdf` in `wt-1` removes them.** **Spec:** `docs/tasks/TASK-LIFECYCLE-six-states-and-the-thirty-day-horizon.md`.
 **Binding:** `docs/method/TASK-ROLE.md` · `docs/method/THE-RUNNING-RECORD.md`.
 
 ## 🔴 RESUME
