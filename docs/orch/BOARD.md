@@ -7,17 +7,38 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 **Last updated:** 2026-09-01 · **ORCH6, at handoff**
 
 ## RESUME
-- ⚠️ **NOTHING IS RUNNING.** Every task branch is merged; `main` is pushed and clean.
+**Last updated 2026-09-01 at the ORCH6→ORCH7 handoff. ⚠️ THE LINE ABOVE SAYING "NOTHING IS RUNNING"
+IS SUPERSEDED BY THIS BLOCK — two threads went out after it was written.**
+
+- ⚠️ **RUNNING NOW: `SIGNBOOK` (wt-1, Opus·MAX) and `REQCARDS` (wt-2, Opus·HIGH).**
+  **Both dispatched by the owner; neither has reported.**
+  ⚠️ **THE OWNER'S READ: both are slow, and `REQCARDS` asked a question, got his answer, and then
+  said it was recalculating. He suspects they are off the rails.**
+  🔒 **ORCH7's FIRST ACT: check each thread's RUNNING RECORD before concluding anything** —
+  `docs/reports/TASK-SIGNBOOK-LEDGER.md` and `docs/reports/TASK-REQCARDS-LEDGER.md`
+  *(`THE-RUNNING-RECORD.md` requires a RESUME block kept current)*. **A thread with a current
+  RESUME block naming its IN FLIGHT step is working. A thread with a stale one, or none, is the
+  finding — and its absence is itself a role violation worth reporting.**
+  ⚠️ **`MAX` effort means single turns of many minutes are NORMAL** —
+  `docs/reference/MODEL-CHOICE-NOTES-2026-09-01.md`. **Slow is not evidence of failure; a stale
+  record is.** **And a `TASK` thread asking ONE question and stopping is correct behaviour
+  (`TASK-ROLE.md`); asking repeatedly, or re-planning after each answer, is not.**
+
+- 🔒 **HOLD, AND THIS IS ORCH6's RULING — do not release until BOTH builds merge:**
+  **`CLNR-REPO-STATE`** and **`DSNR-SITE-PUBLIC`**, both queued and ready in the owner's input.
+  ⚠️ **`CLNR` MOVES FILES, and `DSNR-SITE-PUBLIC` WRITES INTO `docs/tasks/` — which CLNR moves.**
+  **"Never move a file under a running thread" is the rule, and ORCH6 broke it once this session
+  by committing docs while `FIX5` was reorganising them.** **The owner asked whether he needed a
+  green light: the answer is yes, and it is NO for now.**
+
 - **Merged this session:** `FIX4` · `FIX5` *(step 8 reversed)* · `BACKDATE` · `CR85` · `MODAL2` ·
-  `REAPER` · `BOOKS1` *(after a rebase)* · `SIGNSTRIP` · `SIGNDOOR` · `ANALYTICS`.
+  `REAPER` · `BOOKS1` · `SIGNSTRIP` · `SIGNDOOR` · `ANALYTICS`. **`main` pushed and clean.**
 - **Gates on `main`:** typecheck **0** · typecheck:api **0** · lint **46** · build **clean** ·
   `test:api` **7/7** · ⚠️ **`test:db` red at baseline and proof of nothing.**
-- **Worktree pool:** `wt-1` `wt-2` `wt-3` — idle, detached at `origin/main`, clean, with
-  `node_modules` and the `.env` pair. 🔒 **Take one; do not create a new one.**
-- **NEXT:** dispatch the two prompts below · then the owner's four decisions · then `CR-90`+`CR-97`
-  and the CR-94 passes.
+- **Worktree pool:** ⚠️ **`wt-1` and `wt-2` are IN USE.** `wt-3` is idle at `origin/main`, clean,
+  with `node_modules` and the `.env` pair.
 
-## ▶ DISPATCH NOW — both ready, both re-linked to the owner's rulings
+## ▶ DISPATCHED 2026-09-01 — ⚠️ BOTH ARE RUNNING; DO NOT RE-ISSUE
 ```
 FHE-TASK-SIGNBOOK
 

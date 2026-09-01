@@ -59,9 +59,17 @@ struck by the owner: DSNR is never skipped.**
 ---
 
 # 2 · DO THIS FIRST
-1. **Read the board.** ⚠️ **Nothing is running as of the handoff.**
-2. **Hand the owner the two prompts on it** — `SIGNBOOK` and `REQCARDS`. **Both re-linked to his
-   A1/A2 rulings; parallel-safe.**
+1. **Read the board.** ⚠️ **`SIGNBOOK` and `REQCARDS` ARE RUNNING — the owner dispatched them after
+   this brief was first written. Do NOT re-issue them.**
+2. ⚠️ **HE THINKS THEY MAY BE OFF THE RAILS** — slow, and `REQCARDS` asked a question then said his
+   answer changed its sequence. 🔒 **Do not guess: read
+   `docs/reports/TASK-SIGNBOOK-LEDGER.md` and `docs/reports/TASK-REQCARDS-LEDGER.md`.** **A current
+   RESUME block naming an IN FLIGHT step means it is working; a stale or missing one IS the finding
+   and is itself a role violation.** ⚠️ **`MAX` effort makes many-minute turns normal — slow is not
+   evidence.** **Tell him which of the two it is, in one line each.**
+2b. 🔒 **`CLNR-REPO-STATE` and `DSNR-SITE-PUBLIC` are queued in his input and are ON HOLD until both
+   builds merge** — CLNR moves files and DSNR writes into `docs/tasks/`, which CLNR moves.
+   **Release them yourself once the merges land; he is waiting on that green light.**
 3. **Put his five open items in front of him** *(board §WAITING)*. ⚠️ **Two of them block the
    CR-90/CR-97 build, so ask before that is specced, not after.**
 4. **Verify, record, route — every merge:** a `## VALIDATION` block on the task's own report **plus
