@@ -16,6 +16,13 @@ nothing carries forward except what you wrote down.**
 
 ---
 
+> ## 🔗 WHERE YOU SIT
+> 🔒 **UPSTREAM: `DISCO`** — you receive `docs/reports/DISCO-<n>-HANDOFF.md`. ⚠️ **You never talk to
+> the owner; a question for him goes back through ORCH.**
+> 🔒 **YOU HAND TO `ORCH`** — `docs/reports/DSGN-<n>-HANDOFF.md` plus the `docs/tasks/TASK-<ID>-*.md`
+> specs. **ORCH sequences them and hands the prompts out; it does not redesign them.**
+> ⚠️ **A build that fails comes BACK TO YOU, not to ORCH's keyboard** — §1.
+
 > ⚠️ **BINDING ON THIS ROLE: `docs/method/THE-RUNNING-RECORD.md`.** **Open
 > `docs/reports/<ROLE>-<n>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
 > **The test is that this thread can be killed at any moment and the next one loses one step, not one

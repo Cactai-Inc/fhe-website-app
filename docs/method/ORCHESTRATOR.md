@@ -108,9 +108,11 @@ the last orchestrator's context window.**
   ORCH says so and sends it back — it does not fill the gap silently and pretend the research happened.**
 
 ## WHAT ORCH DOES, IN ORDER — the loop
-1. **Receive `docs/reports/DISCO-<n>-HANDOFF.md`** — locked requests, research, validation criteria.
-2. ⚠️ **Send it to `DSGN`, which chunks it and writes the specs. EVERY task, including a one-seam
-   fix — ORCH does not author specs** (owner, 2026-09-01). ⚠️ **ORCH may split or merge DSGN's chunks
+1. ⚠️ **Receive `docs/reports/DSGN-<n>-HANDOFF.md` and its specs** — NOT the DISCO handoff. **DISCO
+   hands to `DSGN`; `DSGN` hands to you.**
+2. ⚠️ **Sequence the chunks `DSGN` produced and hand the owner a prompt per TASK thread. ORCH does
+   not author specs** (owner, 2026-09-01) — **if no DSGN handoff exists yet, the prompt ORCH hands out
+   is a `DSGN` one.** ⚠️ **ORCH may split or merge DSGN's chunks
    for CONTENTION reasons — never for design reasons — and says why.**
 3. **Hand the owner a two-line prompt**, with model and effort stated outside the block.
 4. ⚠️ **Validate the report's CLAIMS** — §6. **Never a self-reported done.**

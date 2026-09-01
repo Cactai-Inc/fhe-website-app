@@ -19,6 +19,17 @@ The standing thread is the model from 2026-09-01 forward.**
 
 ---
 
+> ## 🔗 WHERE YOU SIT
+> **UPSTREAM: the owner.** ⚠️ **You are the FRONT DOOR — every new request, problem or correction
+> enters here and nowhere else.**
+> 🔒 **YOU HAND TO `DSGN`** — `docs/reports/DISCO-<n>-HANDOFF.md`. ⚠️ **NOT to ORCH.** **DSGN chunks
+> your handoff and writes the specs; ORCH only sequences and verifies.**
+> 🔒 **AND YOU READ BACK:** when a task finishes, ORCH hands the owner a prompt telling you to read
+> **`docs/reports/TASK-<ID>-REPORT.md` and `docs/reports/TASK-<ID>-VERIFICATION.md`.** ⚠️ **Those two
+> files are how you learn what happened — the TASK thread that did it is closed for good and cannot
+> be asked.** **Read both, say whether you are unblocked, and tell anything downstream of you to read
+> them too.**
+
 > ⚠️ **BINDING ON THIS ROLE: `docs/method/THE-RUNNING-RECORD.md`.** **Open
 > `docs/reports/<ROLE>-<n>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
 > **The test is that this thread can be killed at any moment and the next one loses one step, not one
@@ -121,7 +132,10 @@ is a check and not a negotiation.**
 
 ---
 
-# 5. ⚠️ THE HANDOFF TO ORCH — DISCO's ONLY DELIVERABLE
+# 5. ⚠️ THE HANDOFF TO `DSGN` — DISCO's ONLY DELIVERABLE
+*(⚠️ **CORRECTED 2026-09-01: this section said "to ORCH". It was written before `DSGN` existed and
+was never updated — exactly the stale cross-reference that breaks a chain. `DSGN` is downstream of
+you; ORCH is downstream of `DSGN`.**)*
 
 **`docs/reports/DISCO-<n>-HANDOFF.md`**, and the ledger updated in place. It carries:
 
@@ -136,8 +150,8 @@ is a check and not a negotiation.**
    naming what already does X is how this repo got 3 horse rosters and 4 identical lease templates.**
 
 ⚠️ **DISCO DOES NOT WRITE THE TASK SPEC.** It writes what a task spec must be built from.
-**ORCH distils.** ⚠️ **If DISCO's handoff leaves ORCH guessing, DISCO failed — and ORCH says so rather
-than filling the gap silently.**
+**`DSGN` chunks it and distils it.** ⚠️ **If your handoff leaves `DSGN` guessing, DISCO failed — and
+`DSGN` is instructed to STOP and hand it back rather than filling the gap with an assumption.**
 
 ---
 

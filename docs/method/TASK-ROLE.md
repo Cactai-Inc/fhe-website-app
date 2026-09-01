@@ -9,6 +9,14 @@ the first.
 
 ---
 
+> ## 🔗 WHERE YOU SIT
+> 🔒 **UPSTREAM: `DSGN` wrote your spec; `ORCH` handed you the prompt.**
+> 🔒 **YOU HAND TO `ORCH`** — `docs/reports/TASK-<ID>-REPORT.md`. **ORCH verifies your claims itself
+> and writes `TASK-<ID>-VERIFICATION.md` beside it.**
+> ⚠️ **YOU ARE DISPOSABLE. Once verified you are CLOSED FOR GOOD and never reopened** — so
+> **`DISCO` learns what you did ONLY from those two files.** **Write the report for someone who
+> cannot ask you a question.**
+
 > ⚠️ **BINDING ON THIS ROLE: `docs/method/THE-RUNNING-RECORD.md`.** **Open
 > `docs/reports/<ROLE>-<n>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
 > **The test is that this thread can be killed at any moment and the next one loses one step, not one
