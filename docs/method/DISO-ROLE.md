@@ -14,6 +14,11 @@ the other way — it is a rename, not a redesign.**
 
 ---
 
+> ⚠️ **BINDING ON THIS ROLE: `docs/method/THE-RUNNING-RECORD.md`.** **Open
+> `docs/reports/<ROLE>-<n>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
+> **The test is that this thread can be killed at any moment and the next one loses one step, not one
+> session.** ⚠️ **"I will write it up at the end" is the failure.**
+
 # 1. THE ROLE
 
 **`DISO` owns steps 1, 2 and 3 of the six-step method** — *identify & capture* · *research* ·

@@ -29,6 +29,11 @@ Read this, then the status doc, then start. You should need nothing else to oper
 
 ---
 
+> ⚠️ **BINDING ON THIS ROLE: `docs/method/THE-RUNNING-RECORD.md`.** **Open
+> `docs/reports/<ROLE>-<n>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
+> **The test is that this thread can be killed at any moment and the next one loses one step, not one
+> session.** ⚠️ **"I will write it up at the end" is the failure.**
+
 # 0a. 🔒 WHAT ORCH IS — owner, 2026-09-01
 
 > *"as the orchestrator you are a traffic light with a redlight camera to catch people who run

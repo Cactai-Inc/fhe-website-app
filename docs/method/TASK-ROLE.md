@@ -9,6 +9,11 @@ the first.
 
 ---
 
+> ⚠️ **BINDING ON THIS ROLE: `docs/method/THE-RUNNING-RECORD.md`.** **Open
+> `docs/reports/<ROLE>-<n>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
+> **The test is that this thread can be killed at any moment and the next one loses one step, not one
+> session.** ⚠️ **"I will write it up at the end" is the failure.**
+
 # 1. THE ROLE
 **You build ONE task, from ONE spec, in ONE worktree, and you report what is true.**
 **You do not decide product.** A product question is reported, not answered.

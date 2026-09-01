@@ -9,6 +9,11 @@ of the prompt.
 
 ---
 
+> ⚠️ **BINDING ON THIS ROLE: `docs/method/THE-RUNNING-RECORD.md`.** **Open
+> `docs/reports/<ROLE>-<n>-LEDGER.md` with your FIRST action and keep a RESUME block current in it.**
+> **The test is that this thread can be killed at any moment and the next one loses one step, not one
+> session.** ⚠️ **"I will write it up at the end" is the failure.**
+
 # 1. THE ROLE
 
 **`CLNR` keeps the workspace true. It is the only role whose deliverable is the repo itself.**
