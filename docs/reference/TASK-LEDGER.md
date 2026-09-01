@@ -15,5 +15,4 @@ with a change ORCH made or reversed, named in the report · `REVERTED` · `OPEN`
 | `TASK-CR85` | 2026-09-01 | three nav sections, People dissolved into Community, `StaffNavItems` deleted | **MERGED** — drift did not increase; two spec errors corrected by the thread | `c171689e` |
 | `TASK-MODAL2` | 2026-09-01 | no modal closes on click-out or Escape; one centre variant; save state beside the close icon; 16 back controls | **MERGED** — verified in source; the thread caught two contradictions in ORCH's spec | `4c06685d` |
 | `TASK-REAPER` | 2026-09-01 | the hold reaper stops calling a function dropped seven weeks ago | **MERGED** — runs clean in production. ⚠️ `anon` EXECUTE on it is ROUTED, not fixed | `d476376f` |
-| `TASK-BOOKS1` | — | comp/discount as a payment disposition; `nullif` removed from `revenue_summary` | ⚠️ **APPLIED TO PRODUCTION, NOT MERGED** — conflicts with BACKDATE in 2 files; returned for rebase | — |
-
+| `TASK-BOOKS1` | 2026-09-01 | comp/discount as a payment disposition at settlement; `nullif` removed from `revenue_summary`; list price on the line; period export | **MERGED** — returned once for rebase (D35 collision, ORCH's fault), unioned with BACKDATE, re-verified in production | `merge task/books1` |
