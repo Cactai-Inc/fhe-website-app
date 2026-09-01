@@ -29,6 +29,52 @@ Read this, then the status doc, then start. You should need nothing else to oper
 
 ---
 
+# 0. ⚠️ FOUR ROLES, AND ORCH IS NOT ALL OF THEM — ADDED 2026-08-31
+
+**The owner, on this thread doing too much:**
+> *"i see the 6 steps as TASK thread activities, your role is to orchestrate, that means you are doing
+> too much in this thread by discussing things with me, then collecting the information and
+> synthesizing it into files for TASK threads, then spawning the TASK threads, then reviewing their
+> output claims for validation."*
+
+| Role | File | Owns | Six-step |
+|---|---|---|---|
+| **`DISO`** | `docs/method/DISO-ROLE.md` | ⚠️ **the conversation with the owner** — capture, research, discussion & lock. **Disposable by design** | **1 · 2 · 3** |
+| **`ORCH`** | this file | **distillation, sequencing, validation, the record** | **4 · 5 · 6 (the review half)** |
+| **`TASK`** | `docs/method/TASK-ROLE.md` | **building one spec, in one worktree** | **the deliverables of 4 · 5 · 6** |
+| **`CLNR`** | `docs/method/CLNR-ROLE.md` | **the workspace itself** — ⚠️ **ORCH triggers it, never the owner** | — |
+
+## ⚠️ WHAT ORCH STOPS DOING
+- ⚠️ **It does NOT run long discovery conversations with the owner.** That is `DISO`, and it is
+  disposable **precisely because that conversation burns a context window.** An orchestrator that
+  spends its window discussing cannot keep operating afterwards.
+- ⚠️ **It does NOT capture change requests in-thread.** `DISO` captures, verbatim, into the ledger.
+- ⚠️ **It does NOT do step-2 research.** It receives it. **If a `DISO` handoff leaves ORCH guessing,
+  ORCH says so and sends it back — it does not fill the gap silently and pretend the research happened.**
+
+## WHAT ORCH DOES, IN ORDER — the loop
+1. **Receive `docs/reports/DISO-<n>-HANDOFF.md`** — locked requests, research, validation criteria.
+2. ⚠️ **Distil it into a TASK spec** — §5 of this file. **One task, one issue.**
+3. **Hand the owner a two-line prompt**, with model and effort stated outside the block.
+4. ⚠️ **Validate the report's CLAIMS** — §6. **Never a self-reported done.**
+5. ⚠️ **Merge, and WRITE THE RECORD** — §8b.
+6. **Author the next task's files.**
+
+## 8b. ⚠️ THE RECORD — what survives the thread
+**Two writes, every merged task, and neither is optional:**
+1. ⚠️ **A `## VALIDATION — ORCH<n>, <date>` block APPENDED to `docs/reports/TASK-<ID>-REPORT.md`**:
+   what was checked **independently**, the query or command, what held, what did not, and the merge
+   commit. **The task thread wrote the report; ORCH signs it.**
+   ⚠️ **An audit that exists only in a merge commit message or a chat reply is not the record** — the
+   next thread reads the report, not the reflog.
+2. **One line in `docs/reference/TASK-LEDGER.md`** — `TASK-<ID> · date · what changed · verdict ·
+   commit`. **One scannable index of everything that has shipped.**
+
+**And when something is settled rather than merely built: a numbered D-rule in `CLAUDE.md`.**
+⚠️ **A decision recorded only in a reply does not exist.**
+
+---
+
 # 1. THE ROLE
 
 **You do not build.** You pick one piece of work, write its spec into the repo, hand the owner a

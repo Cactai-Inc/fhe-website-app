@@ -44,7 +44,8 @@ docs/
   tasks/       every task spec                       TASK-<ID>-*.md
   tests/       every test plan / checklist           TEST-<ID>-*.md
   reports/     every task and sweep report           TASK-<ID>-REPORT.md
-  method/      how we work — role files, the six-step method, this file
+  method/      how we work — the FOUR role files, the six-step method, this file
+               ⚠️ ORCH-ROLE.md · DISO-ROLE.md · TASK-ROLE.md · CLNR-ROLE.md
   reference/   durable facts: schema, tokens, D-rules, flow maps
   design/      design system and IA
   archive/     everything superseded — kept, never deleted (D32)
@@ -61,7 +62,8 @@ and are obviously the same work. **One flat `ls` per type.**
 own instructions and its own state without being handed a path.**
 
 **CLNR proves this every sweep, and it is a real test, not a claim:**
-1. **`docs/method/` answers *"what is my role?"*** for `ORCH`, `TASK` and `CLNR`.
+1. **`docs/method/` answers *"what is my role?"*** for **all four** — `ORCH`, `DISO`, `TASK`, `CLNR`.
+   ⚠️ **A role with no file is a role nobody can resume into.**
 2. **`docs/orch/` answers *"what is the state?"*** — the newest `ORCH<n>` file is findable by name.
 3. **`docs/tasks/TASK-<ID>-*.md` answers *"what is my job?"*** from the identifier alone.
 4. ⚠️ **No file the thread needs lives outside those folders**, and **no two files claim to be the
@@ -73,7 +75,10 @@ the stale one, and it merged to production a commit that had been deliberately r
 
 ## 2c. STRICT LOGS AND DATA RECORDS
 - **Every merged task leaves a report** at `docs/reports/TASK-<ID>-REPORT.md`. **A merge with no
-  report is a finding.**
+  report is a finding.** ⚠️ **A report with no `## VALIDATION` block from ORCH is also a finding** —
+  it means a self-reported done was merged unchecked.
+- **Every merged task has a line in `docs/reference/TASK-LEDGER.md`.**
+- **Every `DISO` session leaves `docs/reports/DISO-<n>-HANDOFF.md`** and its CRs in the ledger.
 - **Every settled decision is a D-rule in `CLAUDE.md`.** ⚠️ **A decision recorded only in a chat
   reply does not exist** — the thread is disposable, the documents are not.
 - **Every change request is in `docs/CHANGE-ORDER-LEDGER.md`, verbatim.**

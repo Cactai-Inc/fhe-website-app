@@ -222,3 +222,10 @@ mutual enforcement between thread types *(an incoming ORCH auditing the outgoing
 docs)*. ⚠️ **That is a separate task. You move the files and repair the references; the role that
 keeps them that way is authored separately.** **Do not invent it here — but do not lay the files out
 in a way that makes it harder, either.**
+
+**6 · ⚠️ THE ROLE FILES NOW EXIST AND `docs/method/` IS ALREADY CREATED.**
+`docs/method/DISO-ROLE.md` · `docs/method/TASK-ROLE.md` · `docs/method/CLNR-ROLE.md` are in place.
+⚠️ **`docs/ORCHESTRATOR.md` MUST BE RENAMED `docs/method/ORCH-ROLE.md`** so all four roles sit
+together and a thread told only its identity can find its own file. **It is cited widely — the
+reference repair is the work, and prose citations count.**
+**`docs/handoff/02-THE-SIX-STEP-METHOD.md` and `docs/METHOD-*.md` join them in `docs/method/`.**
