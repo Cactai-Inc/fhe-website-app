@@ -3675,10 +3675,22 @@ Setting Madeline's two standing days therefore materialised **three months at on
 - ⚠️ **Nothing accrues past the pending month** until money is confirmed.
 
 ### ⚠️ WHAT DOES NOT EXIST YET
-**No invoice is generated anywhere.** ⚠️ **And the five Vercel crons in `vercel.json` — including
-`mint-monthly-allotments` — have a `CRON_SECRET` history of never having fired** *(see
-TASK-DEALAUTO follow-up)*. **Establish whether ANY scheduled job runs in production before designing
-a cadence on top of one.** ⚠️ **Today, 2026-08-31, is the last day of the month: both the 3-day-prior
+**No invoice is generated anywhere.**
+
+⚠️ **CORRECTED 2026-09-01 BY ORCH6 — A SCHEDULER EXISTS AND IT RUNS. THE "NOTHING HAS EVER FIRED"
+FRAMING IS OUT OF DATE.** **`.github/workflows/scheduled-jobs.yml` calls the five endpoints hourly
+from GitHub Actions**, written after the owner said *"there are no crons setup on vercel and i dont
+know how to do that."* ⚠️ **Vercel's `crons` block never ran — Hobby allows 2 daily jobs and it asks
+for 5 hourly — but GitHub Actions does, `CRON_SECRET` is set on both sides, and runs are succeeding.**
+**Verified from the run history: 2026-09-01 05:49 success, 2026-08-31 21:08 success.**
+
+⚠️ **AND A LIVE DEFECT FOUND IN THE SAME LOOK: `/api/expire-holds` returns 500 `{"error":"reaper
+failed"}` on every run**, which is the only reason those runs show as failed —
+`calendar-reminders` and `delivery-sweep` return 200 in the same run. **So holds never expire. It has
+its own fix, and it is small.**
+
+🔒 **CONSEQUENCE FOR THIS CR: the month-end cadence has somewhere to run. Build the invoice and the
+reminder as endpoints on this workflow; do not design around the absence of a scheduler.** ⚠️ **Today, 2026-08-31, is the last day of the month: both the 3-day-prior
 invoice and the month-end reminder are already due and neither can have been sent.**
 
 ---
