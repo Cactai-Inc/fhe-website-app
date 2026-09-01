@@ -9,6 +9,36 @@ rather than repeating it, so there is one copy of the rule.
 
 ---
 
+
+# 0. 🔒 THE REPO IS THE HUB. THE ROLES ARE SPOKES.
+
+**Owner, 2026-09-01:** *"it almost feels like a hub and spoke model is smarter than a linear model."*
+**It is, and this is the distinction that makes it work:**
+
+🔒 **INFORMATION IS HUB-AND-SPOKE.** ⚠️ **No role hands anything to another role.** **Each WRITES to a
+known place and READS from known places.** **A "handoff" is a file appearing where the next role
+already looks — never a message passed between two live threads, because one of them is usually
+already closed.** ⚠️ **A blocked role does not wait to be told: it reads the hub and finds out.**
+
+🔒 **AUTHORITY IS LINEAR, AND MUST STAY THAT WAY.** **One owner per artifact: `DISCO` owns capture,
+`DSGN` owns specs, `ORCH` owns sequence and verification, `TASK` owns the build.** ⚠️ **Make
+AUTHORITY hub-and-spoke and you get two authors of one thing — which is every failure this repo has
+spent a month fixing: two nav tables, two revenue functions, two live handoff lineages.**
+
+**The spokes, and what each writes into the hub:**
+| Role | Writes | Reads |
+|---|---|---|
+| `DISCO` | the ledger · `DISCO-<n>-HANDOFF.md` | the repo, the database, `TASK-*-REPORT` + `-VERIFICATION` |
+| `DSGN` | `docs/tasks/TASK-<ID>-*.md` · `DSGN-<n>-HANDOFF.md` | `DISCO-<n>-HANDOFF.md`, the ledger |
+| `ORCH` | `TASK-<ID>-VERIFICATION.md` · `TASK-LEDGER.md` · `BOARD.md` · D-rules | `DSGN-<n>-HANDOFF.md`, task reports |
+| `TASK` | `TASK-<ID>-REPORT.md` · the code | its spec, `TASK-ROLE.md`, the hub |
+| `CLNR` | `CLNR-<n>-REPORT.md` | everything |
+
+⚠️ **THEREFORE A DEAD THREAD BREAKS NOTHING.** **Nothing is in flight between two threads; it is
+either written to the hub or it does not exist.**
+
+---
+
 # 1. THE TEST
 
 🔒 **KILL ANY THREAD AT ANY MOMENT. A fresh thread of the same role reads the repo and continues.
