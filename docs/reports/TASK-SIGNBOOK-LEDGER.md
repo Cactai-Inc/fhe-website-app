@@ -100,3 +100,10 @@ first thing after closing the modal."* **Verbatim in the report, criterion 3.**
 25/25) by asserting the DESTINATION, not the `navigate()` argument.
 ⚠️ **ORCH owes this a `CR-98 · A4` entry in `docs/reference/CHANGE-ORDER-LEDGER.md`** — not filed
 here because `LIFECYCLE` is live and that file is not this thread's.
+
+### 8 · Owner question during the build — the lead/order lookup at the door
+Answered in full in the report (its own section, before "FLAGGED, NOT FIXED"): the door passes
+`p_request_id: null`; a website order submission has never sent an activation link at all; the
+contact IS matched by email so the order surfaces post-auth; and the consequence is that such a
+person lands on the PROVISIONED door and gets a payment step instead of the time/submit steps.
+⚠️ **Needs a third door case. Routed to DSNR, not built here.**

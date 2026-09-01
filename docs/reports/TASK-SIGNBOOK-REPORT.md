@@ -201,6 +201,42 @@ is `new` — staff decline, or the client says drop it. Nothing money-shaped has
 4. **§5.7 says "before changing anything, WALK the funnel"** — the walk that mattered could not be
    done by reading. B2 was invisible to source-reading and to the SQL; it took a browser.
 
+## ⚠️ ASKED DURING THE BUILD — "does the intake email field check for the email as a lead with an order request from the website?"
+**No, and there are two separate reasons, only one of which is about the door.** This is CR-98 A1's
+*"Establish where this stands today"*, so it is answered here in full rather than in one line.
+
+**1 · The door does not look.** `api/sign-start.ts:339` sends **`p_request_id: null`**.
+`provision_client_invitation` has taken a `p_request_id` all along and, when given one, derives the
+org from the lead and the onboarding categories from it (`request_onboarding_categories`). The
+funnel never supplies it. ⚠️ **Anti-enumeration is not the reason** — that rule says the RESPONSE
+must not reveal whether an address is known; it does not stop the SERVER from using what it knows.
+
+**2 · And the two paths have never met, so today there is nothing to look up.** A website order
+submission **never sends an activation link at all**: `submit_public_request` contains zero
+references to invitations or provisioning, and both live order-leads confirm it —
+```
+contact_email                | channel | order | invitation
+caseyluke1029@gmail.com      | booking |   t   | — NO INVITATION EVER SENT
+msrachelpage@gmail.com       | booking |   t   | — NO INVITATION EVER SENT
+```
+🔒 **That is the exact goal A1 states is not yet built:** *"the goal, with the only difference being
+they have already created an order in the system."*
+
+**What DOES already work, so it is not built twice:** `_ensure_client_account` upserts the contact
+**by email**, so a returning lead reuses their own contact row rather than duplicating — and
+`my_onboarding_state` reads *"the contact's latest purchase"*, so once they authenticate the wizard
+**does** see the website order. `submit_public_request` writes it as `draft`/`unpaid` with
+`buyer_user_id` NULL, *"which is precisely what 'lead' means"*.
+
+**⚠️ THE CONSEQUENCE FOR THIS TASK, AND IT IS THE PART THAT NEEDS A DECISION.** SIGNBOOK's door gate
+is `state.purchase` present at mount. **A website-order lead therefore lands on the
+staff-provisioned door** — order → details → sign → **payment** — and never reaches the new
+**time → submit** steps. Skipping the offering step is right (they chose already); **getting a
+payment step and never being asked for a day and time is not**, under CR-98's *"pay after we
+approve"*. The gate needs a third case: *has an order, but has not yet asked for a time.*
+**Not built here — it is a spec change, not a build decision** (§7 puts the door and payment out of
+scope, and `api/sign-start.ts` is SIGNDOOR's file, merged three hours ago). → `DSNR`.
+
 ## FLAGGED, NOT FIXED — one line each
 - A booking's `status_events` row is written with `entity_type = 'offering'`, not `'booking'`.
 - `request_open_time` still writes a `booking_change_requests` row AND now a `requests` row; REQCARDS
