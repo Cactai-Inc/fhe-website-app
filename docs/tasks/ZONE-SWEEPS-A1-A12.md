@@ -5,7 +5,7 @@ admin review. Launching them before those fixes means twelve sweeps reporting de
 already being repaired.
 
 **Every sweep reads, in this order:**
-1. **`docs/METHOD-area-sweeps.md`** — the directive, the five-part deliverable, the concurrency rule.
+1. **`docs/method/METHOD-area-sweeps.md`** — the directive, the five-part deliverable, the concurrency rule.
 2. **`docs/tasks/ADMIN-REVIEW-ANALYSIS-STANDARD.md`** — the depth requirement and the state matrix.
    ⚠️ **§2 applies unchanged: existence in code is not visibility, and one circumstance is not all
    circumstances.**
@@ -103,7 +103,7 @@ crons were never created.
 tenant through `current_org()`, which an anonymous visitor cannot set** — so public copy cannot be
 served from the store without an anon-safe read path first. **That is a security decision, not a
 build detail.**
-⚠️ **The messaging A or B is still the owner's to choose** — see `docs/handoff/04-OPEN-QUESTIONS.md`.
+⚠️ **The messaging A or B is still the owner's to choose** — see `docs/method/04-OPEN-QUESTIONS.md`.
 **Empty message tables are NOT evidence of anything; nobody is in the app yet.**
 
 ## A11 · Admin config & the kit

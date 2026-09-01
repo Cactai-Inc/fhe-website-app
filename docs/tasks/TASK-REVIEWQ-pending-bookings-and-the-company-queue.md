@@ -45,7 +45,7 @@ Do not re-derive what those established.
   **confirm** → `scheduled`; **decline** → see R3; **propose another time** → a counter-offer
   the client can accept or decline, reusing `booking_change_requests` rather than a new table.
 - **The client is notified on every one of these** — the notification spine exists
-  (`docs/NOTIFICATIONS.md`); one row per attempt, provable, per the fire-and-forget lesson in
+  (`docs/reference/NOTIFICATIONS.md`); one row per attempt, provable, per the fire-and-forget lesson in
   `orchestration/lessons/LESSONS.md`.
 
 ## R3 — refusal stops destroying evidence

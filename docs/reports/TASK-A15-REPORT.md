@@ -153,5 +153,5 @@ HTTP error, endpoint crash, provider rejection) — anything that prevents a
 - `supabase/migrations/20260805031000_a15_sweep_undelivered_executed_documents.sql` (new)
 - `api/delivery-sweep.ts` (new)
 - `vercel.json` (added the `/api/delivery-sweep` hourly cron entry)
-- `docs/BUILD_TRACKER.md` (A15 row updated)
+- `docs/archive/BUILD_TRACKER.md` (A15 row updated)
 - `docs/tasks/TASK-A15-delivery-failures.md` (copied into the worktree per the task instructions)

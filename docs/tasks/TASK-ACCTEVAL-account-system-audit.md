@@ -58,7 +58,7 @@ boundary is actually held, or whether facts have leaked across it. Map every acc
 field to: which table, who writes it, who reads it, whether it is duplicated, and whether
 the two copies can diverge.
 
-**Coordinate, do not contradict.** `docs/IDENTITY_MODEL_DESIGN.md` describes ratified
+**Coordinate, do not contradict.** `docs/reference/IDENTITY_MODEL_DESIGN.md` describes ratified
 identity work (`is_tenant`, freed `is_company`, `contact_affiliations`, phases P1–P5).
 Read it first. Where your findings touch that model, say so explicitly and note whether
 what you found is consistent with it or in tension with it. Do not re-litigate it.

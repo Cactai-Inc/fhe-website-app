@@ -157,7 +157,7 @@ Server-side (RPC/RLS/data) behavior is proven live via the psql output above. **
 in this task** — TASK-A11 has no owner-click-script component (unlike TASK-A-PARTY-VERIFY); its own
 "Done-checks" section lists only typecheck/lint + the two raw psql proofs, both satisfied. `AccountHub`
 and `HorsePage` UI changes are code-complete and typecheck clean but have not been visually confirmed
-in a browser. `docs/BUILD_TRACKER.md` A11 is marked **PARTIAL — server-verified, browser pending**
+in a browser. `docs/archive/BUILD_TRACKER.md` A11 is marked **PARTIAL — server-verified, browser pending**
 accordingly, not DONE.
 
 ## Scope discipline

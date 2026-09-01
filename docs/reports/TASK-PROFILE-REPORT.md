@@ -269,7 +269,7 @@ Neither touched. `AppLayout.tsx` only links to `/app/account` (never
 being requested of the parallel thread — confirmed by grep before starting.
 `ClauseDocument.tsx` has no relationship to this surface at all.
 
-## 7. `docs/BUILD_TRACKER.md`
+## 7. `docs/archive/BUILD_TRACKER.md`
 
 Added section K (K1–K5), all **"Code-complete, browser pending"** except K5
 (elimination itself, **Done** — a deletion has no browser-dependent state to

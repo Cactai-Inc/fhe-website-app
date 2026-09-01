@@ -4,7 +4,7 @@
 - item: The AccountHub and HorsePage UI changes were never visually confirmed in a browser; BUILD_TRACKER marks A11 PARTIAL, not DONE.
 - quote: "`AccountHub` and `HorsePage` UI changes are code-complete and typecheck clean but have not been visually confirmed in a browser."
 - kind: not-verified
-- artifacts: src/pages/app/AccountHub.tsx, src/pages/app/HorsePage.tsx, docs/BUILD_TRACKER.md
+- artifacts: src/pages/app/AccountHub.tsx, src/pages/app/HorsePage.tsx, docs/archive/BUILD_TRACKER.md
 - decision-mention: none
 
 ### ITEM [batch1.md#4]
@@ -103,7 +103,7 @@
 - item: Not done: an authenticated in-browser click-through — K1–K4 marked "code-complete, browser pending"; owner or orchestrator should do a visual pass on /app/account → Profile & preferences before shipping.
 - quote: "**Not done: an authenticated in-browser click-through.** ... Recommend the owner or the orchestrator does a visual pass on `/app/account` → \"Profile & preferences\" before this ships."
 - kind: not-verified
-- artifacts: /app/account, ProfileAndPreferences.tsx, docs/BUILD_TRACKER.md §K
+- artifacts: /app/account, ProfileAndPreferences.tsx, docs/archive/BUILD_TRACKER.md §K
 - decision-mention: none
 
 ### ITEM [batch1.md#145]
@@ -167,10 +167,10 @@
 ### ITEM [batch2.md#5]
 - report: POST_RUN_CLOSEOUT.md
 - date: 2026-08-02
-- item: docs/BACKLOG.md's other pre-existing open items (Business admin suite, pending_fee_candidates p.mobile bug, dead nav route, placeholder media) were untouched this run, out of scope.
-- quote: "`docs/BACKLOG.md`'s other pre-existing open items (Business admin suite, `pending_fee_candidates` p.mobile bug, dead nav route, placeholder media) — untouched this run, out of scope."
+- item: docs/archive/BACKLOG.md's other pre-existing open items (Business admin suite, pending_fee_candidates p.mobile bug, dead nav route, placeholder media) were untouched this run, out of scope.
+- quote: "`docs/archive/BACKLOG.md`'s other pre-existing open items (Business admin suite, `pending_fee_candidates` p.mobile bug, dead nav route, placeholder media) — untouched this run, out of scope."
 - kind: inventory
-- artifacts: docs/BACKLOG.md, pending_fee_candidates
+- artifacts: docs/archive/BACKLOG.md, pending_fee_candidates
 - decision-mention: none
 
 ### ITEM [batch2.md#8]
@@ -179,7 +179,7 @@
 - item: Test document c36449f7 remains flagged "void or dispose at cleanup" in BACKLOG.md; its test field values were deliberately left as-is per that existing disposition.
 - quote: "`c36449f7` is already flagged \"void or dispose at cleanup\" in `BACKLOG.md` from the prior session, so its test values were left as-is per that existing disposition"
 - kind: process
-- artifacts: docs/BACKLOG.md, documents (c36449f7)
+- artifacts: docs/archive/BACKLOG.md, documents (c36449f7)
 - decision-mention: none
 
 ### ITEM [batch2.md#21]
@@ -188,16 +188,16 @@
 - item: The plan's U7 text conflated an unrelated retirement — the "|| confirmed widenings and the types.ts:22 union member" is BACKLOG's purchases.status='confirmed' Stripe-vocabulary item, not a phone/contact column; left alone as report-only.
 - quote: "The plan conflated two unrelated retirements; left alone as report-only, not applied here."
 - kind: correctness
-- artifacts: purchases.status, types.ts:22, docs/BACKLOG.md
+- artifacts: purchases.status, types.ts:22, docs/archive/BACKLOG.md
 - decision-mention: none
 
 ### ITEM [batch2.md#24]
 - report: PROMPT_A_STAGES_4-5.md
 - date: 2026-08-02
 - item: Two documents created this run are on the pre-launch cleanup list: c36449f7 (the sample's proof draft) and 4051bd91 (superseded first attempt, voided via void_document).
-- quote: "both documents are recorded in `docs/BACKLOG.md`'s pre-launch cleanup list"
+- quote: "both documents are recorded in `docs/archive/BACKLOG.md`'s pre-launch cleanup list"
 - kind: process
-- artifacts: documents (c36449f7, 4051bd91), docs/BACKLOG.md
+- artifacts: documents (c36449f7, 4051bd91), docs/archive/BACKLOG.md
 - decision-mention: none
 
 ### ITEM [batch2.md#29]
@@ -593,7 +593,7 @@
 - item: Correction — BACKLOG's stated cause for the unrunnable DB test suites ("needs a dedicated test database") is wrong; the harness is in-process PGlite and needs no external database.
 - quote: "BACKLOG says the suites need \"a dedicated test database\" — **that is wrong**: the harness uses in-process PGlite and needs no external database."
 - kind: correction
-- artifacts: docs/BACKLOG.md, test/db/harness.ts
+- artifacts: docs/archive/BACKLOG.md, test/db/harness.ts
 - decision-mention: none
 
 ### ITEM [batch5.md#7]
@@ -602,7 +602,7 @@
 - item: The intake deep-link is inert — IntakePage.tsx reads no query params, so `?request=<id>` renders but does not deep-link; wiring it is a recorded follow-up in BACKLOG.
 - quote: "`IntakePage.tsx` reads no query params, so `?request=<id>` renders fine but does not deep-link ... the deep-link is a recorded follow-up."
 - kind: defect
-- artifacts: src/pages IntakePage.tsx, docs/BACKLOG.md
+- artifacts: src/pages IntakePage.tsx, docs/archive/BACKLOG.md
 - decision-mention: D3 (report's internal decision numbering)
 
 ### ITEM [batch5.md#9]
@@ -611,7 +611,7 @@
 - item: The Charles Zigmund duplicate contact pair (07ab7dbf/d268330c) is explicitly NOT merged (d268330c is the live lessor on the reference draft) and two "Unnamed Contact" artifacts (bb57e418, 6ecceaf0) await the pre-launch purge — all recorded in BACKLOG.
 - quote: "the Zigmund pair (**explicitly NOT merged** — `d268330c` is the live lessor on the reference sample draft) and the two `Unnamed Contact` artifacts."
 - kind: data-integrity
-- artifacts: contacts (07ab7dbf, d268330c, bb57e418, 6ecceaf0), docs/BACKLOG.md
+- artifacts: contacts (07ab7dbf, d268330c, bb57e418, 6ecceaf0), docs/archive/BACKLOG.md
 - decision-mention: D1 (report's internal decision numbering)
 
 ### ITEM [batch5.md#48]
@@ -768,7 +768,7 @@
 - item: F4/F5 tracker rows' stale "no UI" framing corrected to cite the existing staff compose in LessonLogEditor.tsx:104; status left BUILT per instruction.
 - quote: "F4/F5 rows' stale 'no UI' framing corrected to cite the existing staff compose in LessonLogEditor.tsx:104 ... only the factual note changed"
 - kind: correctness
-- artifacts: docs/BUILD_TRACKER.md, LessonLogEditor.tsx
+- artifacts: docs/archive/BUILD_TRACKER.md, LessonLogEditor.tsx
 - decision-mention: none
 
 ---
@@ -952,9 +952,9 @@
 - report: TASK-A13-REPORT.md
 - date: 2026-08-04
 - item: The CalendarPage lesson-horse picker is code-complete but never visually confirmed in a browser; tracker marked PARTIAL, not DONE.
-- quote: "The `CalendarPage.tsx` picker change is code-complete and typecheck-clean but has not been visually confirmed in a browser. `docs/BUILD_TRACKER.md` A13 is marked **PARTIAL — server-verified, browser pending**"
+- quote: "The `CalendarPage.tsx` picker change is code-complete and typecheck-clean but has not been visually confirmed in a browser. `docs/archive/BUILD_TRACKER.md` A13 is marked **PARTIAL — server-verified, browser pending**"
 - kind: not-verified
-- artifacts: src/pages/app/CalendarPage.tsx, docs/BUILD_TRACKER.md
+- artifacts: src/pages/app/CalendarPage.tsx, docs/archive/BUILD_TRACKER.md
 - decision-mention: none
 
 ### ITEM [batch8.md#22]

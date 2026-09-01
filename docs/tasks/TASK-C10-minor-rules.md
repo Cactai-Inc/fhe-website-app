@@ -66,7 +66,7 @@ correct — do not touch it. This task makes the SEND boundary honor the model.
    - For the delivery paths: no deployed preview may exist — reason the code path line-by-line
      as prior reports did, and state plainly that live email fire was not run if it wasn't.
    - Invitation guard: reason or exercise per the same rule.
-4. Update `docs/BUILD_TRACKER.md` C10 honestly.
+4. Update `docs/archive/BUILD_TRACKER.md` C10 honestly.
 
 ## Rules
 - Branch `task/c10-minor-rules` off `origin/main`, own worktree

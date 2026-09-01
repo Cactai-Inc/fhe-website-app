@@ -188,7 +188,7 @@ directly against production.
 `_save_draft`, `_publish`, `_discard_draft`, `_set_active` — and **zero TypeScript callers**:
 measured on `origin/main`, nothing in `src/` so much as names the table. 24 templates, `version` up
 to 4. **So the owner cannot change a single word the system emails**, which is D13's definition of
-unfinished, and it is a ninth instance of the shape `docs/ORCHESTRATOR.md` §3b lists.
+unfinished, and it is a ninth instance of the shape `docs/method/ORCHESTRATOR.md` §3b lists.
 
 That made the §4 decision easy in both directions: there was no shipped editor to disturb by putting
 it on the spine, and building the surface was the only way the migration would ever be reached.

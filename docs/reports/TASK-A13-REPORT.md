@@ -138,11 +138,11 @@ positive (lessee books Beau via `attach_booking_horse`) and negative (unrelated 
 by the helper; unrelated horse rejected by `book_open_slot`'s new gate) cases. **No browser step
 ran in this task** — the task's own "Done-checks" list only names typecheck/lint + the psql
 proofs, both satisfied. The `CalendarPage.tsx` picker change is code-complete and typecheck-clean
-but has not been visually confirmed in a browser. `docs/BUILD_TRACKER.md` A13 is marked **PARTIAL
+but has not been visually confirmed in a browser. `docs/archive/BUILD_TRACKER.md` A13 is marked **PARTIAL
 — server-verified, browser pending** accordingly, not DONE.
 
 ## Scope discipline
-Touched only: the one migration, `CalendarPage.tsx`, `docs/BUILD_TRACKER.md`, this report, and
+Touched only: the one migration, `CalendarPage.tsx`, `docs/archive/BUILD_TRACKER.md`, this report, and
 the task doc copy. `ClauseDocument.tsx` was not read or touched (frozen). `horse_page_detail`,
 `HorsePage.tsx`, and `src/lib/horses.ts` (A12's parallel thread) were not read or touched —
 `listStableHorses`/`StableHorse` used by the new picker come from `src/lib/stable.ts`, a

@@ -67,7 +67,7 @@ crisp at header size, correct rounding). Keep it linking where the current logo 
   Copy this doc from the shared checkout (untracked there). No DB access.
 - Done-checks: `npm run typecheck`, `npm run typecheck:api`, `npm run lint` (baseline 29
   warnings / 0 errors).
-- Update `docs/BUILD_TRACKER.md`: add these under section I as I6-I10 with honest
+- Update `docs/archive/BUILD_TRACKER.md`: add these under section I as I6-I10 with honest
   code-complete/browser-pending statuses.
 - Report: `docs/reports/TASK-UIPOLISH-REPORT.md`, committed + pushed. Print ONLY the report
   path. If the brand font is missing (item 4), the STOP-and-ask happens in chat before the

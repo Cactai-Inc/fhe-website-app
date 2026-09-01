@@ -75,6 +75,6 @@ a separate quality audit and is FROZEN to all threads; renderer defects get diag
 `docs/reports/TASK-A-PARTY-VERIFY-REPORT.md`, committed + pushed on the branch. Per item:
 PASS/FAIL/BLOCKED, evidence (owner's observed outcome + your DB verification), fixes made,
 cleanup performed (the unsigned test contract voided/removed — cite the rows). Update
-`docs/BUILD_TRACKER.md` statuses honestly (owner-observed = DONE). Print ONLY the report path.
+`docs/archive/BUILD_TRACKER.md` statuses honestly (owner-observed = DONE). Print ONLY the report path.
 Honesty rule: an item is PASS only if the owner actually performed the step and said what they
 saw — you may not infer a PASS from code reading in this task.

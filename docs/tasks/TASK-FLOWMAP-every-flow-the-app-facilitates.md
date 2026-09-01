@@ -20,7 +20,7 @@ Phase 1 is worth more than four phases begun.
 > that we undertake sequentially, basically all the different workflows and user facing purchase or
 > engagement flows the repo was designed to facilitate."*
 
-This is **step 2 of the owner's three-step plan** (`docs/HANDOFF-ORCH3.md` §3).
+This is **step 2 of the owner's three-step plan** (`docs/orch/HANDOFF-ORCH3.md` §3).
 
 **The complement already exists and is your input, not your job.**
 `docs/reference/SURFACE-INVENTORY.md` (REACHAUDIT, merged `d138017`) maps all 128 routes: reach,
@@ -69,8 +69,8 @@ already trace parts of this. **Read them first, cite them, and extend — do not
 |---|---|---|
 | `docs/reports/TASK-FLOWTRACE-REPORT.md` | **the deepest incumbent** — invitation → provisioning → order → payment → booking → credits → fulfilment, 15 sections, incl. THE INVERSION and the kiosk being implemented twice | **Absorb. This is Phase 1's spine.** Re-verify its claims still hold at `8186b47` (CLOSEOUT changed this area), then carry them forward with citation. Do not re-walk what it settled. |
 | `docs/reports/RETEST-CHECKLIST.md` | the 40-step ordered walk (CLOSEOUT phase 4), in the order a real person moves | **Use as the ordering authority.** Where your flow sequence and its step order disagree, one of you is wrong — say which. |
-| `docs/DUAL_IDENTITY_TRACE.md` | act-as-company attribution (D7's behavioural contract) | **Cite as the variant rule** wherever a staff actor can act as the company. |
-| `docs/FLOW-PROGRAM-WAVES.md` | the wave program — which flows were built when | Use to date a flow, not to describe one. |
+| `docs/reference/DUAL_IDENTITY_TRACE.md` | act-as-company attribution (D7's behavioural contract) | **Cite as the variant rule** wherever a staff actor can act as the company. |
+| `docs/method/FLOW-PROGRAM-WAVES.md` | the wave program — which flows were built when | Use to date a flow, not to describe one. |
 
 **If your map contradicts an incumbent, say so explicitly and prove it.** Threads have corrected
 the orchestrator more often than the reverse.

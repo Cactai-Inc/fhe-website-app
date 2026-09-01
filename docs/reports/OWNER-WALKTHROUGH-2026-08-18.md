@@ -314,7 +314,7 @@ is the first thing the next orchestrator does.**
 
 # 7. CORRECTIONS TO EXISTING DOCUMENTS
 
-1. **`docs/OPEN-ITEMS-2026-08-18.md` §3** says *"Nothing from wave 1 or 2 has been opened in a
+1. **`docs/archive/OPEN-ITEMS-2026-08-18.md` §3** says *"Nothing from wave 1 or 2 has been opened in a
    browser."* **This is wrong.** Owner, 2026-08-18: *"everything has been opened in a browser."*
    The gap is not that nobody looked — it is that **nobody wrote down what they saw.** Fixed in
    that file.

@@ -150,7 +150,7 @@ over `bookings` + `fulfillment_units`. Small, and it unblocks the whole "Your ho
   **we are not involved in capture and we do no editing.** The real work is CONSTRAINTS AND
   COMPRESSION on the posting control, so the feed "runs smoothly, looks professional, and dont get
   out of control in storage costs." Full audit and build plan:
-  `docs/HANDOFF-OFFERINGDOCS-2026-08-24.md` §5.2 — in short, image compression before upload is
+  `docs/archive/HANDOFF-OFFERINGDOCS-2026-08-24.md` §5.2 — in short, image compression before upload is
   missing entirely and is the single biggest storage lever, the `feed-media` bucket has no
   `allowed_mime_types`, and nine other buckets have no size limit at all.
 - **SETTLED, owner 2026-08-24:** *"parents can contribute to everything their dependent has

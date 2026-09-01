@@ -59,5 +59,5 @@ time. No new columns on `horses`, no stamping, no new tables.
   touch booking code (A13's lane) or `CalendarPage.tsx`.
 - Done-checks: `npm run typecheck`, `npm run typecheck:api`, `npm run lint` (baseline 29
   warnings / 0 errors) + the live proof.
-- Update `docs/BUILD_TRACKER.md` A12 honestly ("server-verified, browser pending" if true).
+- Update `docs/archive/BUILD_TRACKER.md` A12 honestly ("server-verified, browser pending" if true).
 - Report: `docs/reports/TASK-A12-REPORT.md`, committed + pushed. Print ONLY the report path.

@@ -160,7 +160,7 @@ consent"* — so standardising on it moves toward more owner protection, not les
 No checkbox, no initials, no per-record field. They sign the document; the clause is in it.
 
 **A CORRECTION on which token.** `CLIENT.EUTHANASIA_INITIALS` — the one named in
-`docs/TOKEN_DICTIONARY.md:38` — is **already absent from the live template.** It survives only
+`docs/design/TOKEN_DICTIONARY.md:38` — is **already absent from the live template.** It survives only
 in the dictionary and in `supabase/contract_templates/Archive/HORSE_EMERGENCY_VET.md` (the v1
 body). What is actually live is a **checkbox pair**, and these are what must go:
 
@@ -190,7 +190,7 @@ applying it. This is legal text — do not compose it and ship it in one motion.
 
 ### WHICH BODY IS AUTHORITATIVE — establish this FIRST
 
-`docs/BACKLOG.md` records, for this exact template: *"HORSE_EMERGENCY_VET historical-migration
+`docs/archive/BACKLOG.md` records, for this exact template: *"HORSE_EMERGENCY_VET historical-migration
 archaeology — ruled zero-live-behavior: the `.md` body wins live (byte-verified 2026-08-02)."*
 
 So `supabase/contract_templates/HORSE_EMERGENCY_VET.md` may be the source of truth rather than
@@ -204,7 +204,7 @@ Verified 2026-08-10. Nothing here is optional; a missed one leaves a dangling to
 **Document bodies**
 - `contract_templates` row, `HORSE_EMERGENCY_VET` v2, section 7
 - `supabase/contract_templates/HORSE_EMERGENCY_VET.md` lines 64-70
-- `docs/TOKEN_DICTIONARY.md:38` — the stale `CLIENT.EUTHANASIA_INITIALS` entry
+- `docs/design/TOKEN_DICTIONARY.md:38` — the stale `CLIENT.EUTHANASIA_INITIALS` entry
 - `supabase/contract_templates/Archive/HORSE_EMERGENCY_VET.md` — **the v1 archive. LEAVE IT.**
   It is history, not a live surface.
 

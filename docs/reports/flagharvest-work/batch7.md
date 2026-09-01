@@ -17,7 +17,7 @@
 - item: No browser step ran; the UI (Lease card, HorsePageDetail type) is code-complete and typecheck-clean but not visually confirmed. Tracker marked PARTIAL.
 - quote: "No browser step ran in this task — the UI ... is code-complete and typecheck-clean but has not been visually confirmed in a browser."
 - kind: not-verified
-- artifacts: src/pages/app/HorsePage.tsx, src/lib/horses.ts, docs/BUILD_TRACKER.md
+- artifacts: src/pages/app/HorsePage.tsx, src/lib/horses.ts, docs/archive/BUILD_TRACKER.md
 - decision-mention: none
 
 ## TASK-A14-REPORT.md
@@ -1038,7 +1038,7 @@
 - item: A2's tracker status left as NOT VERIFIED — send-to-parties itself is still unverified live and is the party-verify thread's item, not this task's.
 - quote: "A2's status left as `NOT VERIFIED` unchanged — send-to-parties itself is still unverified live and is the party-verify thread's item"
 - kind: not-verified
-- artifacts: docs/BUILD_TRACKER.md
+- artifacts: docs/archive/BUILD_TRACKER.md
 - decision-mention: none
 
 ## TASK-TESTDB-REPORT.md

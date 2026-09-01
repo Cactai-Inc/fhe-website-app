@@ -195,7 +195,7 @@ run. `/api/calendar-reminders` demonstrably has, daily, since 2026-08-23.
 
 **Consequence for whoever builds CR-03: the delete and the generator must land in one change.**
 A migration that clears the rows and ships without touching `api/calendar-reminders.ts` will look
-like it worked and be undone by 60 minutes later. Same shape as `docs/ORCHESTRATOR.md` §3.
+like it worked and be undone by 60 minutes later. Same shape as `docs/method/ORCHESTRATOR.md` §3.
 
 ---
 

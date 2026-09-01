@@ -609,7 +609,7 @@ TXN.WARRANTIES                ||  HORSE_PURCHASE_SALE
   - `length(body)` = **5,481** bytes (matches the report exactly)
   - documents ever generated from it = **0**
   - scoped `template_tokens` rows = **0** — so if anyone did generate from it, all 26 of its `{{…}}` tokens would render as literal text (the `generate_document` loop shown in artifact 20 finds nothing to substitute)
-  - `docs/TOKEN_DICTIONARY.md` line 192 (verbatim): *"All signed documents now use a single CLIENT signer block (`SIG.CLIENT.*` + `CLIENT.PRINTED_NAME`); minors are handled by CUT-marker sections (no separate ADULT/MINOR SIGNER marker blocks; no GUARDIAN co-signer namespace in the release bodies). **MINOR_RIDER template retired (no source file).**"* — the doc says retired, the table says `active=true`. They disagree.
+  - `docs/design/TOKEN_DICTIONARY.md` line 192 (verbatim): *"All signed documents now use a single CLIENT signer block (`SIG.CLIENT.*` + `CLIENT.PRINTED_NAME`); minors are handled by CUT-marker sections (no separate ADULT/MINOR SIGNER marker blocks; no GUARDIAN co-signer namespace in the release bodies). **MINOR_RIDER template retired (no source file).**"* — the doc says retired, the table says `active=true`. They disagree.
 - exists: yes
 - content — **the full body, verbatim from prod** (a legal instrument the owner has not reviewed):
 
@@ -859,10 +859,10 @@ Date: {{SIG.COMPANY.DATE}}
 
 ---
 
-## 24. `docs/BACKLOG.md` — dead nav route + placeholder media items
-- reported by: `docs/reports/POST_RUN_CLOSEOUT.md` [INV batch2.md#25] — the naming line is `POST_RUN_CLOSEOUT.md:475`: *"`docs/BACKLOG.md`'s other pre-existing open items (Business admin suite, `pending_fee_candidates` p.mobile bug, dead nav route, placeholder media) — untouched this run, out of scope."*
+## 24. `docs/archive/BACKLOG.md` — dead nav route + placeholder media items
+- reported by: `docs/reports/POST_RUN_CLOSEOUT.md` [INV batch2.md#25] — the naming line is `POST_RUN_CLOSEOUT.md:475`: *"`docs/archive/BACKLOG.md`'s other pre-existing open items (Business admin suite, `pending_fee_candidates` p.mobile bug, dead nav route, placeholder media) — untouched this run, out of scope."*
 - reachability: both are **documentation entries, not code** — they describe things that are already absent from the running app. The nav entry they refer to was removed from `MODULES_GROUP` on 2026-08-02; the placeholder media are live-but-unfinished front-end assets, not gated.
-- exists: yes, both entries still in `docs/BACKLOG.md`.
+- exists: yes, both entries still in `docs/archive/BACKLOG.md`.
 - content — verbatim:
 
 ```markdown

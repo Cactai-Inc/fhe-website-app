@@ -30,6 +30,6 @@ Onboarding: NOT in scope (state-dependent; owner reviewing separately).
   visual patterns; the `.eyebrow` class already uppercases.
 - Done-checks: `npm run typecheck`, `npm run typecheck:api`, `npm run lint` (baseline 29
   warnings / 0 errors).
-- Update `docs/BUILD_TRACKER.md` section I row honestly.
+- Update `docs/archive/BUILD_TRACKER.md` section I row honestly.
 - Report: `docs/reports/TASK-TITLESWEEP-REPORT.md`, committed + pushed. Print ONLY the
   report path.

@@ -338,7 +338,7 @@ sends and rewriting their lifecycle would be inventing history.
 ## F. NOT VERIFIED — the staff send leg, and how to confirm it
 
 Everything under §A and §C needs a signed-in staff session, which no worktree
-gets (`docs/ORCHESTRATOR-HANDOFF.md`, VERIFICATION POLICY 2026-08-10). Stated
+gets (`docs/archive/ORCHESTRATOR-HANDOFF.md`, VERIFICATION POLICY 2026-08-10). Stated
 separately, as that ruling requires:
 
 - **Proven:** the RPCs those surfaces call, with the exact arguments the

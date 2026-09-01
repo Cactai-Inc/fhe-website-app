@@ -22,7 +22,7 @@ Step 2 failed: `docs/tasks/TASK-A11-13-lessee-horse.md` does not exist.
    - `git status --short` in the shared checkout — file not present among untracked files either.
    - `find ~/Downloads/claude-code-repo -iname "*A11-13*"` (whole tree, all worktrees) — no hits.
    - Checked `wt-orchestrator` specifically (where task docs for other threads, e.g. A8, A14, C-sign-pages, are authored) — no A11-13 doc there either, only pre-existing lessee-horse *migrations* (`20260710160000_my_stable_lessee.sql`, `20260714380000_lessee_horse_access_term_scoped.sql`, `20260714420000_lessee_reads_horse_docs_in_term.sql`, `20260727230000_lease_v2_lessee_obtain_deductible.sql`) and lease contract exports — no design/discovery doc for A11-13.
-   - `docs/BUILD_TRACKER.md` lines 30-32 confirm A11/A12/A13 are tracked items but marked **NOT VERIFIED** with no linked spec:
+   - `docs/archive/BUILD_TRACKER.md` lines 30-32 confirm A11/A12/A13 are tracked items but marked **NOT VERIFIED** with no linked spec:
      - A11: Horse record VISIBLE to the lessee, showing them as lessee — visibility window may not exist
      - A12: Horse record shows the partial-lease schedule captured in the contract
      - A13: Lessee can book lessons with that horse

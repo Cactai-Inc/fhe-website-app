@@ -203,7 +203,7 @@ currently raises none at all (not even on completion — kiosk documents are
 single-signer, so there is no multi-party "completing" concept, and no
 `notify_staff` call exists in that function today).
 
-## 6. `docs/BUILD_TRACKER.md`
+## 6. `docs/archive/BUILD_TRACKER.md`
 
 A16 changed from **NOT VERIFIED** to **DONE**, describing the characterization
 finding (a completing-only staff broadcast already existed), the fix (one

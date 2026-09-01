@@ -21,7 +21,7 @@ generated. Full removal (git history is the archive).
    report anything live-looking instead of removing it.
 4. Live proof: post-migration, the six keys absent from contract_templates; defs count 0;
    dry-run first (BEGIN/ROLLBACK), then apply.
-5. Update `docs/BUILD_TRACKER.md` (cleanup note) and note in the report that Service
+5. Update `docs/archive/BUILD_TRACKER.md` (cleanup note) and note in the report that Service
    Definition documents (the replacement concept) are a SEPARATE upcoming build — this task
    only removes.
 

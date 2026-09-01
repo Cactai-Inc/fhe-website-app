@@ -45,7 +45,7 @@ why.
      reasoned trace with the inserted block quoted.
    - Post-backfill: `SELECT count(*)` of configurable-state documents still lacking controls
      rows → must be 0.
-5. Update `docs/BUILD_TRACKER.md`: add a one-line note under A2 that the party-controls
+5. Update `docs/archive/BUILD_TRACKER.md`: add a one-line note under A2 that the party-controls
    bootstrap deadlock is fixed (do not change A2's status — the party-verify thread owns that).
 
 ## Rules

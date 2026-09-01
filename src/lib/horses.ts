@@ -341,7 +341,7 @@ export async function companyContactId(): Promise<string | null> {
 // ─── Doc-derived required set + completeness (owner spec 2026-07-28) ─────────
 // The REQUIRED intake fields are exactly the HORSE.* tokens the two horse
 // onboarding documents merge (HORSE_EMERGENCY_VET + RELEASE_HORSE_CARE live
-// template bodies; see docs/TOKEN_DICTIONARY.md):
+// template bodies; see docs/design/TOKEN_DICTIONARY.md):
 //   REGISTERED_NAME/BARN_NAME (one real name), BREED, COLOR, SEX, AGE_DOB,
 //   HEIGHT, MICROCHIP, REGISTRATION_NUMBER, FAIR_MARKET_VALUE,
 //   CURRENT_LOCATION, VET_NAME, VET_PHONE, FARRIER_NAME, FARRIER_PHONE,

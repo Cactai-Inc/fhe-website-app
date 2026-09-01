@@ -56,7 +56,7 @@ parallel thread — do NOT touch `horse_page_detail`, `HorsePage.tsx`, or `src/l
      are not signed documents, cleanup is allowed).
    - Negative: a contact with NO ownership/lease of Beau is rejected by the helper (pick any
      unrelated test contact; read-only check of the helper function directly is acceptable).
-4. Update `docs/BUILD_TRACKER.md` A13 honestly ("server-verified, browser pending" if true).
+4. Update `docs/archive/BUILD_TRACKER.md` A13 honestly ("server-verified, browser pending" if true).
 
 ## Rules
 - Branch `task/a13-lessee-booking` off `origin/main`, own worktree

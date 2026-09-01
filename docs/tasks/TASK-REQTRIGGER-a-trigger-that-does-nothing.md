@@ -29,7 +29,7 @@ those were filled by a one-off backfill.
 **LEADCLEAN's backfill was the second one-off. Without this fix there will be a third.**
 
 **This is the seventh instance of the project's recurring failure mode** — code that reports
-success while doing nothing. See `docs/ORCHESTRATOR.md` §3 for the full table.
+success while doing nothing. See `docs/method/ORCHESTRATOR.md` §3 for the full table.
 
 ---
 

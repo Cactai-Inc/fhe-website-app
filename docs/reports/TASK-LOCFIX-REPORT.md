@@ -230,6 +230,6 @@ at any point.
 
 - `supabase/migrations/20260805100000_locfix_location_of_horse_linebreak.sql` (new)
 - `src/components/app/ClauseDocument.tsx` (approved diff)
-- `docs/BUILD_TRACKER.md` (new row A21)
+- `docs/archive/BUILD_TRACKER.md` (new row A21)
 - `docs/tasks/TASK-LOCFIX-location-layout.md` (copied in, per task instructions)
 - `docs/reports/TASK-LOCFIX-REPORT.md` (this report)

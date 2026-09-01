@@ -142,7 +142,7 @@ Both items touch the same header lockup in `AppLayout.tsx`, so they were built t
   correctly wired).
 - `src/pages/app/Home.tsx` — I8 (dedup + spacing).
 - `src/lib/seed.ts` — I8 (tagline copy, "All" view only).
-- `docs/BUILD_TRACKER.md` — I6–I10 rows added under section I.
+- `docs/archive/BUILD_TRACKER.md` — I6–I10 rows added under section I.
 - `docs/tasks/TASK-UIPOLISH-nav-header-feed.md` — copied into the worktree (untracked in the
   shared checkout).
 

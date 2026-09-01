@@ -41,7 +41,7 @@ Status: **CODE-COMPLETE, BROWSER PENDING**
    (`supabase/migrations/20260713250000_spine_s23d_lessons.sql:247`). "Your progress"
    section (`ReportCard`, its `'post'`-hardcoded note compose) was **not touched**.
 
-4. **`docs/BUILD_TRACKER.md`** — F3 row updated to CODE-COMPLETE/BROWSER-PENDING with a
+4. **`docs/archive/BUILD_TRACKER.md`** — F3 row updated to CODE-COMPLETE/BROWSER-PENDING with a
    pointer to `SessionNotesView.tsx` and its two mount points. F4/F5 rows' stale "no UI"
    framing corrected to cite the existing staff compose in
    `LessonLogEditor.tsx:104` (status left as BUILT, only the factual note changed, per

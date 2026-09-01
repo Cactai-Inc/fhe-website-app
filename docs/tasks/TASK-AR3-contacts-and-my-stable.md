@@ -85,7 +85,7 @@ rejected; this build exists so he can judge the opposite option against somethin
    belongs at the top of your plan.
 
 **The other half of CR-30 survives:** a lead can be a row on Contacts *and* surface as a dashboard
-item. **Only "get rid of leads as a record tab" is deleted.** Full ruling: `docs/CHANGE-ORDER-LEDGER.md`,
+item. **Only "get rid of leads as a record tab" is deleted.** Full ruling: `docs/reference/CHANGE-ORDER-LEDGER.md`,
 the CR-30 supersession entry.
 
 ⚠️ **CR-75 rules the client record is an EXPANDING ROW on the list**, not a page you travel to.

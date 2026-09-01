@@ -5,7 +5,7 @@ import type { TemplateEditorToken } from '../../../lib/templateEditor';
 /**
  * TOKEN PICKER (TASK-TEXTEDIT) — the 307-row template_tokens library, grouped
  * by namespace, insert-at-cursor. The table is the data (not
- * docs/TOKEN_DICTIONARY.md): each row shows its TOKENAUDIT-authored note and
+ * docs/design/TOKEN_DICTIONARY.md): each row shows its TOKENAUDIT-authored note and
  * what it resolves to (source_table.source_column, or "computed"). Two honesty
  * badges the owner asked for in effect if not in words:
  *   party-scoped   — meaningless where no party context exists; dropping one

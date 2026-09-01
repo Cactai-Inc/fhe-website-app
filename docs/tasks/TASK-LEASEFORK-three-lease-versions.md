@@ -104,7 +104,7 @@ touching `start_lease_contract_v2`.
 
 - **Any content change to any version.** No clauses added, removed, reworded or re-gated.
   Not even obvious improvements. If you spot something wrong, report it.
-- **The insurance gates.** They are specified in `docs/INSURANCE_CONTROL_SET.md` but are
+- **The insurance gates.** They are specified in `docs/reference/INSURANCE_CONTROL_SET.md` but are
   **not** built here, and that spec is still awaiting attorney review of its blocking
   rules.
 - **Deciding what "simple" means.** `HORSE_LEASE_SIMPLE` is created as a full copy and

@@ -417,7 +417,7 @@ contacts_normalise_phone: mobile '6195551234' -> '(619) 555-1234', mobile_displa
 
 **Out of scope, deliberately not touched:** the plan's U7 text also names
 "the `|| confirmed` widenings and the `types.ts:22` union member" as if part
-of this unit. Traced: this is `docs/BACKLOG.md`'s unrelated
+of this unit. Traced: this is `docs/archive/BACKLOG.md`'s unrelated
 `purchases.status = 'confirmed'` entry (a Stripe status-vocabulary
 retirement), not a phone/contact column — its own BACKLOG-tracked deferred
 cleanup with its own gate and owner. The plan conflated two unrelated
@@ -565,7 +565,7 @@ executable regression check.
   attempt (a document created for the initially-wrong lessee identity, which
   had no linked account to exercise the election with) was voided through the
   real `void_document` RPC rather than left as orphaned test data; both
-  documents are recorded in `docs/BACKLOG.md`'s pre-launch cleanup list. No
+  documents are recorded in `docs/archive/BACKLOG.md`'s pre-launch cleanup list. No
   PDF regenerated (no PDF pipeline available in this environment; the
   markdown is the substantive artifact).
 
@@ -581,7 +581,7 @@ with no `$`/thousands-separator in both cases, even though the stored value
 is correct per U2.1. Reproducing it on a completely independent, freshly-created
 document rules out any document-specific cause — this is a genuine, systemic
 gap in the render path, not an artifact of stale data on one old draft. Added
-to `docs/BACKLOG.md` under Known defects. The sample intentionally shows this
+to `docs/archive/BACKLOG.md` under Known defects. The sample intentionally shows this
 actual behavior rather than a hand-corrected render.
 
 ---
@@ -679,9 +679,9 @@ via `void_document` during this run.
    applied.
 2. **H3/H4 curl matrix and manual send** — BLOCKED on deployment + a
    password-capable test account; not simulated.
-3. **`docs/BACKLOG.md`: `remerge_contract_from_clauses` money-rendering gap**
+3. **`docs/archive/BACKLOG.md`: `remerge_contract_from_clauses` money-rendering gap**
    (D15) — a real, materially significant defect affecting every draft edit.
-4. **`docs/BACKLOG.md`: `pending_fee_candidates` already broken in
+4. **`docs/archive/BACKLOG.md`: `pending_fee_candidates` already broken in
    production** (`p.mobile` should be `c.mobile`) — found during the Stage 5
    sweep, unrelated to this run's scope, not fixed.
 5. **`profiles.phone` retained** — D14; needs either a conditional

@@ -30,7 +30,7 @@ unable to pay at all; **this task is what happens after they do.**
 
 ## Z2 — the arrival path, end to end
 - Establish the real inbound path (in-repo trigger, out-of-repo Apps Script, or nothing) and
-  **document it in `docs/NOTIFICATIONS.md`** so it stops being folklore.
+  **document it in `docs/reference/NOTIFICATIONS.md`** so it stops being folklore.
 - When a payment arrives and matches: mark the purchase paid through the existing spine
   (`status_events` + `receipt_sends` — one provable row per attempt), and notify staff.
 - When one arrives and does **not** match: it lands in a `review` state that a human sees.

@@ -60,7 +60,7 @@ Dry-run the migration in `BEGIN;...ROLLBACK;`, then apply live, then verify with
   its identical use in an existing staff RPC (a live negative test needs a party JWT — if you
   cannot mint one, the citation + identical-guard argument is the accepted evidence; say which
   you did).
-- Update `docs/BUILD_TRACKER.md` A14 with honest status + date + one-line evidence.
+- Update `docs/archive/BUILD_TRACKER.md` A14 with honest status + date + one-line evidence.
 
 ## Rules
 - Branch `task/a14-event-log` off `origin/main`, in your OWN worktree (`git worktree add`) —

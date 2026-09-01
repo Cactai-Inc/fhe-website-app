@@ -37,13 +37,13 @@ Database access for scripts/queries uses the connection string on the first line
 | Start here | What it is |
 |---|---|
 | **`/CLAUDE.md`** | Orientation: the live data spine, what's **retired** (don't resurrect it), the migration convention, and the settled owner decisions |
-| **`docs/HANDOFF.md`** | Where the system stands and what's worth doing next |
-| **`docs/BACKLOG.md`** | Standing work list: ready, known defects, deferred |
+| **`docs/method/00-START-HERE.md`** | Where the system stands and how to take over the orchestration workload |
+| **`docs/orch/RUN-QUEUE.md`** | What's worth doing next, in order (supersedes the old `BACKLOG.md`, archived) |
 
-Other references: `docs/NOTIFICATIONS.md` (email nudge cron),
-`docs/GOOGLE_SMTP_SETUP.md` (transactional email wiring),
-`docs/TOKEN_DICTIONARY.md` (merge tokens),
-`docs/DUAL_IDENTITY_TRACE.md` (how act-as-company works),
+Other references: `docs/reference/NOTIFICATIONS.md` (email nudge cron),
+`docs/reference/GOOGLE_SMTP_SETUP.md` (transactional email wiring),
+`docs/design/TOKEN_DICTIONARY.md` (merge tokens),
+`docs/reference/DUAL_IDENTITY_TRACE.md` (how act-as-company works),
 `supabase/contract_templates/HORSE_LEASE.md` (**how to edit the lease** — its content
 lives in the database, not in a markdown template).
 

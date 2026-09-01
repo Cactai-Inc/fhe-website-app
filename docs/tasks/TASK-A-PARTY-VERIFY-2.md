@@ -51,5 +51,5 @@ contact: delete at the end unless it now holds signed documents.
 ## Report
 `docs/reports/TASK-A-PARTY-VERIFY-2-REPORT.md`, committed + pushed. Per item PASS/FAIL/BLOCKED
 with owner-observed evidence + your DB verification; fixes made; cleanup performed. Update
-`docs/BUILD_TRACKER.md` honestly (owner-observed = DONE). Print ONLY the report path.
+`docs/archive/BUILD_TRACKER.md` honestly (owner-observed = DONE). Print ONLY the report path.
 PASS requires the owner actually performed the step and said what they saw.

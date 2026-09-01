@@ -42,7 +42,7 @@ knew existed. Six of those seven sat unworked for up to 30 days because nothing 
   model; see the fire-and-forget lesson in `orchestration/lessons/LESSONS.md`).
 
 ## F3 — correct the record
-- **`docs/BUILD_TRACKER.md` says the kiosk was never started. That is false and it is why this
+- **`docs/archive/BUILD_TRACKER.md` says the kiosk was never started. That is false and it is why this
   went unnoticed for a month.** Correct the entry to reflect what actually exists, and note the
   commerce half (kiosk purchase) that genuinely is not built, so the tracker stops lying in
   both directions.

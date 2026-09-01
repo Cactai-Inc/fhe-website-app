@@ -184,7 +184,7 @@
 - item: The one live landmine: MINOR_RIDER is ACTIVE with a 5,481-byte body and ZERO scoped token rows — generating from it would render every one of its 26 tokens as literal {{…}} text; no document has ever been generated from it, the doc says it was retired, the table disagrees; deactivation recommended (owner call).
 - quote: "**The one live landmine: `MINOR_RIDER` is ACTIVE with a 5,481-byte body and ZERO scoped token rows.** If anyone generates from it, **every one of its 26 tokens renders as literal `{{…}}` text**"
 - kind: defect
-- artifacts: contract_templates (MINOR_RIDER), template_tokens, docs/TOKEN_DICTIONARY.md
+- artifacts: contract_templates (MINOR_RIDER), template_tokens, docs/design/TOKEN_DICTIONARY.md
 - decision-mention: none
 
 ### ITEM [batch1.md#159]
@@ -256,7 +256,7 @@
 - item: TOKEN_DICTIONARY.md disagrees with the table in several places (MINOR_RIDER retirement, ORD.UUID source, CLIENT.* autofill path, retired TXN sections, missing clause-engine field_keys) and CLIENT.EUTHANASIA_INITIALS is a doc-only ghost with no row and no body use; the doc needs a rewrite after owner rulings — not attempted here.
 - quote: "The doc needs a rewrite **after** the owner rules on §5/§6 — not attempted here."
 - kind: correction
-- artifacts: docs/TOKEN_DICTIONARY.md, template_tokens, CLIENT.EUTHANASIA_INITIALS
+- artifacts: docs/design/TOKEN_DICTIONARY.md, template_tokens, CLIENT.EUTHANASIA_INITIALS
 - decision-mention: none
 
 ### ITEM [batch1.md#167]
@@ -301,7 +301,7 @@
 - item: New systemic defect D15: remerge_contract_from_clauses (the re-render path run on every draft edit) has none of U2.1's money-rendering logic — currency fields render as bare numbers; reported to BACKLOG, not fixed.
 - quote: "`remerge_contract_body` → `remerge_contract_from_clauses` ... has **none** of Stage 2's U2.1 money-rendering logic (`fmt_money`, `fee_schedule` JSON parsing)."
 - kind: defect
-- artifacts: remerge_contract_from_clauses, remerge_contract_body, fmt_money, docs/BACKLOG.md
+- artifacts: remerge_contract_from_clauses, remerge_contract_body, fmt_money, docs/archive/BACKLOG.md
 - decision-mention: D15
 
 ### ITEM [batch2.md#17]

@@ -321,7 +321,7 @@
 - item: F4/F5 tracker rows' stale "no UI" framing corrected to cite the existing staff compose in LessonLogEditor.tsx:104; status left BUILT per instruction.
 - quote: "F4/F5 rows' stale 'no UI' framing corrected to cite the existing staff compose in LessonLogEditor.tsx:104 ... only the factual note changed"
 - kind: correctness
-- artifacts: docs/BUILD_TRACKER.md, LessonLogEditor.tsx
+- artifacts: docs/archive/BUILD_TRACKER.md, LessonLogEditor.tsx
 - decision-mention: none
 
 ---

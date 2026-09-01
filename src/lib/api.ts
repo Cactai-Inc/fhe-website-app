@@ -564,7 +564,7 @@ export async function upsertMyProfile(patch: Partial<Profile>): Promise<void> {
 }
 
 /** U7 Stage 5: phone lives on the person's contact record, not profiles — see
- *  docs/PERSON_DATA_CONSOLIDATION.md. contacts_select's own-row policy
+ *  docs/archive/PERSON_DATA_CONSOLIDATION.md. contacts_select's own-row policy
  *  (id = current_contact_id()) permits this read directly; no RPC needed. A
  *  caller with no linked contact yet (no account-creation flow has run) reads
  *  as null rather than throwing — the public Account page still renders. */
@@ -2198,7 +2198,7 @@ export async function createProductPrice(input: ProductPriceInput): Promise<Prod
 // Minimal typed seam over the multi-party contract-workflow RPCs. BACKEND-FIRST:
 // these are thin, typed wrappers a later UI thread binds to — no components ship
 // here. The RPCs (SECURITY DEFINER) enforce ownership/RLS server-side; these just
-// carry the shapes. See supabase/migrations/20260705010000_contract_workflow_engine.sql.
+// carry the shapes. See supabase/migrations-archive/20260705010000_contract_workflow_engine.sql.
 
 // NOTE (2026-07-20 cleanup, audit M-1): a duplicate copy of the contract types
 // and 7 RPC wrappers (setContractField, shareDocument, setRecipientEditing,

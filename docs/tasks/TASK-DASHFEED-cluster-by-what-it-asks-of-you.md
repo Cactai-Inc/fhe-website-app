@@ -43,7 +43,7 @@
 ⚠️ **Messaging is built and has never been used once.** So "does a message reach the dashboard" is
 not a wiring question — **it is a question about whether messaging should exist at all**, and it must
 be answered before anything surfaces it. **Building an inline reply for a system with zero messages
-is building the ninth entry in `docs/ORCHESTRATOR.md` §3b.**
+is building the ninth entry in `docs/method/ORCHESTRATOR.md` §3b.**
 
 ## 2. 🔒 THE DIRECTION — CLUSTER BY THE ASK, NOT THE SUBJECT
 

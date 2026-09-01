@@ -43,7 +43,7 @@ Add a `document_parties`-based OR to BOTH gates — nothing else:
    - The 5-document check: after the fix, for each of the 5 affected executed documents, the
      mismatched signer's simulated session sees the row via `my_documents()` (loop or spot-
      check all 5; list document ids).
-4. Update `docs/BUILD_TRACKER.md` A17 (and A18/A19 notes) to reflect: server-side visibility
+4. Update `docs/archive/BUILD_TRACKER.md` A17 (and A18/A19 notes) to reflect: server-side visibility
    fixed, browser re-verification pending. Do not claim the page works — that's the re-verify
    pass's call.
 

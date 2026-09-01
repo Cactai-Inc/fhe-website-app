@@ -2,7 +2,7 @@
 
 Tracker items: **A8** (email fires on completing signature, both parties, PDF attached,
 signatures visible) and **A9** (from-name, subject, body, branding correct).
-This is the single largest go-live risk on `docs/BUILD_TRACKER.md`.
+This is the single largest go-live risk on `docs/archive/BUILD_TRACKER.md`.
 
 ## What is already known (do not re-derive; verify only where told to)
 
@@ -133,7 +133,7 @@ wiring (stamp visible inside the transaction = trigger + function ran); say whic
 used. Do not manufacture new signed documents for this.
 
 ### 7. Update the tracker
-In `docs/BUILD_TRACKER.md`: set A8 and A9 statuses to what you actually proved, with the date
+In `docs/archive/BUILD_TRACKER.md`: set A8 and A9 statuses to what you actually proved, with the date
 and one-line evidence. Do not mark DONE unless the owner confirmed inbox receipt (A8) and
 content correctness (A9). Owner-confirmed = DONE; everything else = the honest lesser status.
 

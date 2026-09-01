@@ -34,7 +34,7 @@ client account by hand**. **If the fields do not exist when he starts, he enters
 That is the entire reason this jumps the queue.
 
 ⚠️ **RE-CHECKED AGAINST THE MULTI-TENANT PLATFORM FRAMING (2026-08-27) AND IT STILL SHIPS.**
-`docs/REBUILD-SCOPE-multi-tenant-platform-2026-08-27.md` records that the rebuild target is a
+`docs/reference/REBUILD-SCOPE-multi-tenant-platform-2026-08-27.md` records that the rebuild target is a
 platform where **users are independent of tenants** — which makes this task, adding two columns to the
 person record, the obvious candidate for "wait for the rebuild." **It is not, and the reason is worth
 stating so nobody re-opens it: the DATA is what ports, and the columns are only the vessel.** He
@@ -48,9 +48,9 @@ and **not captured it never exists at all — no later schema can recover a fact
 
 1. **`CLAUDE.md`** — ⚠️ **no subagent delegation.** D13 (he changes it without a developer), D21,
    D22 §0, D31, D32.
-2. **`docs/ORCHESTRATOR.md` §3, §3b, §4** — the code-that-reports-success-and-does-nothing class, and
+2. **`docs/method/ORCHESTRATOR.md` §3, §3b, §4** — the code-that-reports-success-and-does-nothing class, and
    its sibling, the code-nothing-reaches class. **§5 below is an instance of the first.**
-3. **`docs/handoff/04-OPEN-QUESTIONS.md` §3** — why the metric list is **not yours to author**, and
+3. **`docs/method/04-OPEN-QUESTIONS.md` §3** — why the metric list is **not yours to author**, and
    why this task stops where §7 says it stops.
 
 ---

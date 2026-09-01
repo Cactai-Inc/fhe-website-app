@@ -6,7 +6,7 @@
 > the button update from + new contract to + add new."*
 
 **Specified but never implemented.** The design work is done and sitting in
-`docs/DOCUMENT_LIBRARY_DESIGN.md` — read it first. This task implements it.
+`docs/design/DOCUMENT_LIBRARY_DESIGN.md` — read it first. This task implements it.
 
 ---
 

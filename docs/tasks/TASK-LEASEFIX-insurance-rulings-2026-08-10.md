@@ -782,7 +782,7 @@ which is exactly the kind of thing the document should refuse to let someone sig
 1. **When FMV exceeds the CCC limit, what does the document do?** Disclose the gap and let the
    parties proceed knowingly, or block until it is resolved? **The insurance-resolution spec
    already has a precedent** — a both-`NONE` section is UNRESOLVED and blocks signing until the
-   responsible party elects (`docs/insurance-resolution-spec.md`, owner ruling 2026-08-01).
+   responsible party elects (`docs/archive/insurance-resolution-spec.md`, owner ruling 2026-08-01).
    **This is the same shape.**
 2. **Is covering the full declared value a REQUIREMENT the Lessor can impose**, or a fact the
    document states? The owner's phrasing — *"if they wanted to require their horse value is
@@ -935,7 +935,7 @@ changes what silence means in an executed contract and is a separate decision.
 Recorded 2026-08-10 because task docs have been writing "FROZEN" without the second half, and
 threads have twice read it as absolute, hit a genuine need, and stepped over it.
 
-**The actual rule** (`docs/SESSION_HANDOFF_2026-08-07.md`): *scoped exceptions only by
+**The actual rule** (`docs/archive/SESSION_HANDOFF_2026-08-07.md`): *scoped exceptions only by
 orchestrator approval.* `BUILD_TRACKER` A21 is the worked example — minimal diff presented,
 approved, then applied.
 

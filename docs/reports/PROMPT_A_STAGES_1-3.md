@@ -457,7 +457,7 @@ Things not in any spec file.
 
 ## 8. BACKLOG ENTRIES ADDED
 
-In `docs/BACKLOG.md` under a new **Pre-launch cleanup** section:
+In `docs/archive/BACKLOG.md` under a new **Pre-launch cleanup** section:
 
 - Charles Zigmund duplicate pair (`07ab7dbf` / `d268330c`) — owner-decided merge, NOT merged now
 - Two `Unnamed Contact` artifacts (`bb57e418`, `6ecceaf0`) — dispose at cleanup

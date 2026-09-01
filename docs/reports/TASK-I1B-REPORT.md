@@ -57,7 +57,7 @@ header, to the right of the F logo mark, with breathing room.
 
 ## Files changed
 - `src/components/app/AppLayout.tsx` — all of the above.
-- `docs/BUILD_TRACKER.md` — I1 row corrected (USER removal shipped, staff toggle was the
+- `docs/archive/BUILD_TRACKER.md` — I1 row corrected (USER removal shipped, staff toggle was the
   missing half); new I1B row added, honest about browser-pending status.
 - `docs/tasks/TASK-I1B-staff-collapse.md` — copied into the worktree (untracked in the shared
   checkout).

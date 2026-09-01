@@ -37,7 +37,7 @@ description of the content.
 | 21 | 46 defined-but-unused tokens | b1#22 |
 | 22 | 24 inactive-body-only tokens | b1#23 |
 | 23 | MINOR_RIDER template | b1#24 |
-| 24 | docs/BACKLOG.md dead-nav + placeholder-media items | b2#25 |
+| 24 | docs/archive/BACKLOG.md dead-nav + placeholder-media items | b2#25 |
 | 25 | git branch task/b-lead-notifications | b2#27 |
 | 26 | Held PAGEVIS nav-filter patch | b2#30 |
 | 27 | AdminPageVisibilityPage — /app/ops/admin/pages | b2#31 |

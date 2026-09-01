@@ -13,7 +13,7 @@ finding. **You are writing a report. You are fixing nothing.**
 **The calendar surface and everything that feeds it.** The page, the month and week views, the item
 panel, availability, standing weekly slots, durations, and the booking rows the calendar draws.
 
-**The ledger's calendar entries are CR-01 … CR-07 in `docs/CHANGE-ORDER-LEDGER.md`.** ⚠️ **Read them
+**The ledger's calendar entries are CR-01 … CR-07 in `docs/reference/CHANGE-ORDER-LEDGER.md`.** ⚠️ **Read them
 as INPUT, not as a complete list.** The owner's own criticism of them, 2026-08-28: *"they are
 snippets not full written text with a fix, it appears my statements are broken into snippets shown as
 quotes and then the cause is identified but no solution or fix mentioned."* **Supplying the missing

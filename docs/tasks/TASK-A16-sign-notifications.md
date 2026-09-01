@@ -44,7 +44,7 @@ what's missing.
    throwaway in-transaction document → notification row(s) appear for admin users with the
    right title/link; a company-side signature → NO notification; completing signature →
    single 'fully executed' notification. Zero residue after rollback, proven by counts.
-5. Update `docs/BUILD_TRACKER.md` A16 honestly.
+5. Update `docs/archive/BUILD_TRACKER.md` A16 honestly.
 
 ## Rules
 - Branch `task/a16-sign-notifications` off `origin/main`, own worktree

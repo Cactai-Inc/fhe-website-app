@@ -1,5 +1,5 @@
 /* Community / members-app domain types
- * (supabase/migrations/20260623040000_community.sql).
+ * (supabase/migrations-archive/20260623040000_community.sql).
  */
 import type { PreferredContact } from './contact';
 

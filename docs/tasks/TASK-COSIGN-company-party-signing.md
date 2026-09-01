@@ -53,7 +53,7 @@ their own company's contracts is a core product requirement.
      already does this — show it).
    - Sarah's doc: read-only reasoned trace that the fixed UI now offers "Sign as French
      Heritage Equestrian" on the LESSEE side to the owner's admin session.
-5. Update `docs/BUILD_TRACKER.md`: add this under section A (company-party signing UI) with
+5. Update `docs/archive/BUILD_TRACKER.md`: add this under section A (company-party signing UI) with
    honest status.
 
 ## Rules

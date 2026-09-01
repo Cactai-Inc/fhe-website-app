@@ -320,7 +320,7 @@ Explained this to the owner; owner confirmed: **"Yes, confirmed DONE."**
    then `UPDATE documents SET status='EXECUTED' WHERE id=...;` — triggered a real test
    email to `cjzigs@icloud.com` + mirror to `hello@fhequestrian.com`; 2 new
    `document_deliveries` rows.
-5. `docs/BUILD_TRACKER.md` — A8/A9 status rows updated to DONE.
+5. `docs/archive/BUILD_TRACKER.md` — A8/A9 status rows updated to DONE.
 
 No schema changes beyond the pg_net migration. No deletes. No writes to any non-test
 recipient.
