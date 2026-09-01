@@ -154,10 +154,10 @@ reporting success.
 
 ## The docs
 
-- `docs/BACKLOG.md` — the standing work list (the only place to look for what's next)
-- `docs/TOKEN_DICTIONARY.md` — the document merge-token contract
-- `docs/NOTIFICATIONS.md`, `docs/GOOGLE_SMTP_SETUP.md` — the email/notification setup
-- `docs/DUAL_IDENTITY_TRACE.md` — how act-as-company works (D7's behavioral contract;
+- `docs/orch/RUN-QUEUE.md` — the standing work list (the only place to look for what's next)
+- `docs/design/TOKEN_DICTIONARY.md` — the document merge-token contract
+- `docs/reference/NOTIFICATIONS.md`, `docs/reference/GOOGLE_SMTP_SETUP.md` — the email/notification setup
+- `docs/reference/DUAL_IDENTITY_TRACE.md` — how act-as-company works (D7's behavioral contract;
   any change to company-vs-personal attribution must be diffed against it)
 - `docs/contract-exports/` — generated from the live lease template
 - `supabase/contract_templates/HORSE_LEASE.md` — how to edit the lease (pointer doc)
@@ -200,7 +200,7 @@ reporting success.
 - **D7 — Dual-identity (act-as-company) is protected behavior.** Both staff accounts
   act as themselves or as the company (displayed AND recorded). It works via patches
   today; consolidation only as behavior-identical change against the Stage-1 trace
-  (`docs/DUAL_IDENTITY_TRACE.md`), never blind.
+  (`docs/reference/DUAL_IDENTITY_TRACE.md`), never blind.
 - **D8 — Access model (owner-final 2026-07-27; supersedes "guest = account with no
   group" as a derivation).** (1) Community access is gated by ACCOUNT, not documents —
   any account holder views and participates. Documents gate ACTIONS: RELEASE_GENERAL
