@@ -1,6 +1,6 @@
 # BENCH TEST — the five-role system, run live, 2026-08-31 → 09-01
 
-**Written by `ORCH6` for the Fractal/Helix design thread.** ⚠️ **This is not analysis of the design.
+**Written by `ORCH6` for the design thread.** ⚠️ **This is not analysis of the design.
 It is GROUND TRUTH from a night that ran the design, and it is offered as evidence — confirmations,
 corrections, and four findings neither thread had.**
 
