@@ -63,3 +63,49 @@ machine.
 ## EVENTS
 - **2026-09-01** — opened. CLNR pass; spec read back; premises re-run; the two blocks confirmed;
   question sent up to the owner. **Nothing edited outside this ledger.**
+
+---
+
+# 🔒 THE OWNER'S ANSWERS — 2026-09-01, in his words where it matters
+**All three questions came back. §9 (ASK-OWNER A2) IS NOW ANSWERED. DSGN must fold this into the
+spec; it is recorded here so it cannot be lost if this thread dies.**
+
+## A · SEQUENCING — **build `TASK-LIFECYCLE` first.** REQCARDS waits on it, as its header always said.
+
+## B · §9 CLUSTER LOCATION — **a rich, actionable ROW TYPE INSIDE `NotificationsZone` (N1).**
+Not a second band. One notification surface; the request card is a variety of notification row.
+
+## C · THE REACH, and the CARD'S TWO DEPTHS — his words:
+> *"the email that is sent to hello@fhequestrian.com to notify them of the request provides all the
+> information about the request received and the link takes them to the login page for the app, when
+> they login since they have a dashboard notification the app opens to the dashboard automatically
+> and they find the notification and they should be able to take action on the notification without
+> needing to go to another page, a quick action set of approve/mark paid/1-click contact to text or
+> call or send them an email (based on the preference the client selected) and then clicking on the
+> notification card itself opens a center placed large modal with the full set of options for
+> handling the request, if a request doesnt have a specific date and time then the large modal might
+> be opened to select a date and time before approving the request, make sure the date and time
+> selected if there is one is shown on the notification otherwise the staff cant know what they are
+> approving and the quick action buttons are useless."*
+
+**What that pins, for the thread that builds REQCARDS:**
+1. **No one-click-from-email actions.** The email is INFORMATION + a link to login; the app then
+   opens on the dashboard and every action is taken signed in. No token endpoint, no anon surface.
+2. **The row itself is actionable — without navigating.** Quick actions: **approve · mark paid ·
+   one-click contact**, where contact dials/texts/emails **by the channel the client chose**
+   (⚠️ find the client's stated contact preference; if no such field exists, that is a QUESTION, not
+   a default).
+3. **The row MUST show the requested date and time.** *"otherwise the staff cant know what they are
+   approving and the quick action buttons are useless."* A row without the time is a failed build.
+4. **Clicking the row opens a large, centre-placed modal** with the full handling set.
+5. **A request with NO date/time is legal** — the modal is where staff pick one BEFORE approving.
+   ⚠️ This is new: it means `requested` does not imply a chosen time, which REQCARDS §10.1 assumed.
+6. ⚠️ **OPEN, and he offered to settle it:** *"if you need to know the full set of options for
+   handling requests and payment declarations please ask me so we can discuss what the system
+   already shows vs what is expected to be needed by staff or clients."* **The modal's full option
+   set is NOT yet specified.** The REQCARDS thread must open with that conversation — inventory what
+   the surfaces show today, put it beside what staff/clients need, and get the set locked.
+
+## EVENTS (cont.)
+- **2026-09-01** — answers received. This thread stands down on REQCARDS and takes `TASK-LIFECYCLE`
+  as its build, per A. Ledger continues at `docs/reports/TASK-LIFECYCLE-LEDGER.md`.
