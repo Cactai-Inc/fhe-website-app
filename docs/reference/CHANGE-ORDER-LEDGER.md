@@ -4235,3 +4235,25 @@ permanently paperless.**
 ⚠️ **AND IT ANSWERS THE WIZARD LOOP-BACK QUESTION:** an offering chosen at wizard step 5 that carries a
 document the path-set did not include **must assign at that moment under the same first-purchase
 rule** — the wizard does not need a special case, it needs the general one.
+
+---
+
+## CR-99 · A2 — ✅ ANSWERED 2026-09-01. NO NEW CARD, AND THE LOCATION IS ONE LIST.
+
+**SAID (owner):**
+> *"yea the dashboard is where these notifications are shown, a location means that there is a specific
+> spot on the dashboard that lists all new requests (leads, bookings, orders, etc...) the shape is
+> based on what the system already creates as long as it carries the functions via buttons and
+> information that i requested, i already specd it, dsgn isnt needed."*
+
+🔒 **LOCATION: ONE SPECIFIC SPOT ON THE DASHBOARD THAT LISTS ALL NEW REQUESTS.** ⚠️ **All kinds —
+LEADS, bookings, orders, "etc."** **Not an orders band. One inbox of new requests, whatever they are.**
+
+🔒 **SHAPE: WHATEVER THE SYSTEM ALREADY CREATES.** ⚠️ **Do NOT design a new card** (D18). **The only
+requirement is that it CARRIES the functions and information already specified in CR-99:**
+**see the contact information · suggest a different date and/or time · approve the order · approve the
+booking · mark it paid.**
+
+⚠️ **`TASK-REQCARDS` §9's proposed anatomy and its "Requests band" are SUPERSEDED BY THIS.** **The
+build takes the shape from the incumbent and this ruling, not from §9.** **`DSNR` is not needed here —
+the owner has specified it.**
