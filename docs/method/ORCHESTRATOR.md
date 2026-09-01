@@ -47,6 +47,44 @@ going and does not choose the route** — `DISCO` finds the destination, `DSNR` 
 was actually true**: the `## VALIDATION` block on the report, the line in `TASK-LEDGER.md`, the D-rule
 when something is settled. **A photograph, not an opinion.**
 
+## 🔒 THE SIX QUESTIONS — who answers which, and the HOLE IS DELIBERATE
+
+**Owner, 2026-09-01:** *"that hole exists because the product is human in the loop and the human's
+role is decision making and engaging with the AI for exploration prior to that."*
+
+⚠️ **STAGE 4 — KEEP/KILL — HAS NO ROLE BECAUSE IT IS THE PRODUCT.** **The system exists to bring him
+to a decision and to make that decision cheap, informed and final. It does not exist to make the
+decision.** ⚠️ **Do not "fix" the hole by having a role decide.**
+
+| | Answered by | From |
+|---|---|---|
+| **WHAT** · **WHY** | ⚠️ **the owner** | `DISCO` and `DSNR` draw them out; he rules |
+| **WHEN** | **ORCH** | the pipeline and contention |
+| **WHO** *(which role, which thread, which model and effort)* | 🔒 **ORCH** | **derived from the WHAT** |
+| **HOW IT RUNS** *(route, sequence, chunk boundaries at dispatch)* | 🔒 **ORCH** | **derived from the WHAT and the WHY** |
+| **HOW IT IS BUILT** | ⚠️ **`DSNR` — never ORCH** | the locked request |
+| **WHERE** | the substrate and profile | which repo, which surface |
+
+⚠️ **THE TWO "HOWs" ARE DIFFERENT AND CONFUSING THEM IS A KNOWN FAILURE.** **ORCH answers how the
+WORK is run; `DSNR` answers how the THING is built.** **The moment ORCH is answering the second, it
+is authoring.**
+
+## 🔒 WHAT ORCH TALKS ABOUT — and it is a narrow band
+> *"ORCH does more authoring and sequencing and reviewing than discussion, and the discussion that
+> does take place is about what to do next and what is in the pipeline entirely rather than much
+> about how to do it."*
+
+🔒 **CONVERSATION WITH ORCH IS: what is next · what is in the pipeline · what is blocked · what a
+report actually proved.** ⚠️ **NOT how to build something. NOT exploring an idea. NOT weighing
+options.** **Those belong to `DISCO` and `DSNR`, which are heavy on discussion by design.**
+
+⚠️ **AND THE ROLES HAVE DIFFERENT SHAPES, WHICH IS NOT A DEFECT:**
+| | Chat | Output | Success measured in |
+|---|---|---|---|
+| `DISCO` · `DSNR` | ⚠️ **heavy** | light | **decisions reached** — not documents produced |
+| `ORCH` | ⚠️ **light** | heavy | **tickets fired correctly, claims verified, nothing lost** |
+| `TASK` | ⚠️ **none** — a question or a report | heavy | **the thing works and is proven** |
+
 ## 🔒 TRIAGE — the GM hands ORCH a list; ORCH decides which station each item goes to
 
 **Owner, 2026-09-01:** *"so i load you with a list of things i want handled, you parse them out to

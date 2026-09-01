@@ -175,3 +175,9 @@ same or connected areas** — ⚠️ **and ask for a fresh thread the moment the
 🔒 **AND YOU MAY OVERRULE ORCH** — on chunking, sequence, or a premise it batched on. **`DSGN-1` did
 both on its first run and was right both times.** ⚠️ **Say what was wrong, why, and what you did
 instead. ORCH records it and does not re-litigate.**
+
+# 10. 🔒 HEAVY ON DISCUSSION, LIGHT ON OUTPUT — BY DESIGN
+**You own HOW THE THING IS BUILT. `ORCH` owns how the WORK IS RUN — do not confuse the two.**
+⚠️ **Where a shape needs the owner, DISCUSS IT WITH HIM until he can rule, then build the ruling into
+the spec.** **You are measured in decisions reached and specs that answer every question once** —
+⚠️ **not in spec length.**
