@@ -4039,7 +4039,18 @@ payment-request trigger hanging off `approved`, and a viewer-scoped read.**
 - ⚠️ **`TASK-BACKDATE` is live and touches settlement. Do not run this beside it.**
 
 ### ASK-OWNER
-1. ⚠️ **`moved` — does the OLD slot free up immediately, or hold until the new one is approved?**
-   *(His rule says others see it available; the question is when.)*
+1. ✅ **ANSWERED 2026-09-01: *"hold until the new one is approved."*** 🔒 **The old slot is HELD until
+   the new time is approved, then released.** **A refused move therefore has somewhere to fall back to.**
+
+   ⚠️ **AND THIS COLLIDES WITH THE DISPLAY RULE — FLAGGED, NOT DECIDED.** His `moved` rule says the
+   old slot *"shows as empty and available"* to everyone else. **A slot that is HELD but DISPLAYED as
+   available can be requested by someone else, and then either their booking fails at commit — the
+   worst moment to find out — or it succeeds and the revert target is gone, which defeats the hold.**
+   **The two rules cannot both be true of the same slot.**
+   **ORCH6's recommendation, for his one-word ruling:** ⚠️ **hold it SILENTLY — others see the slot as
+   simply not open, with no reason given.** **They are not told a move is pending (that is the privacy
+   rule working), and the hold is real rather than cosmetic.** **The alternative — release immediately
+   and accept that a refused move loses its old time — is coherent too, but it is a different product
+   decision and he ruled the other way.**
 2. **Is `completed` / `no_show` still wanted after the fact?** They exist and are written once.
    **They are not in his six — confirm they stay rather than assuming.**
