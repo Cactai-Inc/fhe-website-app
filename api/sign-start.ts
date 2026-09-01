@@ -75,6 +75,7 @@ import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { sendInvitationEmail, recordInvitationDelivery } from './_lib/invitationEmail.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
 import { renderEmailTemplate } from './_lib/emailTemplates.js';
+import { accountStateForEmail, sendSignInEmail, greetingNameForContact } from './_lib/accountDoor.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -315,6 +316,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         emailSent = false;
         sendError = 'no claimable contract matched this address — nothing was sent';
       }
+    } else if (allowed && orgId && (await accountStateForEmail(db, email)).state === 'active') {
+      /* ⚠️ THEY ALREADY HAVE AN ACCOUNT. Owner, 2026-09-01, after his own test was
+         REJECTED at the password step: *"the input of the email address should
+         trigger an email to them that says click here to sign into your account.
+         and the link takes them to the login page since they already have an
+         active account with auth set up."*
+
+         So: no provisioning, no invitation, no activation link. Minting a claim
+         token for somebody who already holds the credential is precisely what
+         produced that rejection — `register-invited` then had to decide between
+         an invitation and an account, and it decided wrong.
+
+         ⚠️ THE RESPONSE IS UNCHANGED. `status` still reports our send outcome and
+         nothing about them, so this branch is not an enumeration oracle; the
+         attempt row below records which door was taken, for staff, not for the
+         browser. */
+      const facts = await accountStateForEmail(db, email);
+      const origin = req.headers.origin || `https://${req.headers.host}`;
+      const sent = await sendSignInEmail(db, {
+        orgId,
+        to: email,
+        origin,
+        greetingName: await greetingNameForContact(db, facts.contactId),
+      });
+      emailSent = sent.ok;
+      status = sent.ok ? 'sent' : 'send_failed';
+      sendError = sent.ok ? null : (sent.error ?? 'the email transport rejected the send');
+      messageId = sent.messageId;
     } else if (allowed && orgId) {
       /* ⚠️ SIGNDOOR — PROVISIONED NAMELESS, ON PURPOSE. `provision_client_invitation`
          has always accepted a null name (`v_fn := nullif(trim(coalesce(p_first_name,

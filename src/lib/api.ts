@@ -117,9 +117,29 @@ export async function submitRequest(
  * a fire-and-forget send that could not report failure.
  */
 function dispatchInquiryEmails(requestId: string): Promise<InquirySendOutcome> {
+  /* ⚠️ THE THIRD SEND — OWNER RULING, 2026-09-01. *"a valid form submission
+     creates a lead with an order, when the user does this they should be sent an
+     email with the link to activate their account and that is the exact same flow
+     as this one, same link destination, everything."*
+
+     This connection had NEVER existed: `submit_public_request` writes the lead and
+     the order and nothing reached the person. Both live order-bearing leads were
+     measured on 2026-09-01 as NO INVITATION EVER SENT.
+
+     ⚠️ It rides HERE, on the one spine all three intake paths share, for the same
+     reason the staff alert does — a new intake surface cannot be added without it.
+     `/api/request-activation` is a no-op for a submission with no order, so a bare
+     enquiry is unaffected; it decides between the activation email and "you already
+     have an account" from the address's real state, server-side.
+
+     ⚠️ Its outcome is deliberately NOT folded into `InquirySendOutcome`. That type
+     is what §C6b's confirmation screen reads out loud, and it says "we emailed you
+     what you sent us" — a promise this send does not make. Reporting them as one
+     number would let a failed activation read as a successful confirmation. */
   return Promise.all([
     postSend('/api/request-received', requestId),
     postSend('/api/inquiry-confirmation', requestId),
+    postSend('/api/request-activation', requestId),
   ]).then(([staff, buyer]) => ({ staff, buyer }));
 }
 
@@ -648,6 +668,23 @@ export interface DraftOrderInput {
  *  money-bearing column instead: the order opens as an unpaid DRAFT and each line
  *  is priced from the catalog. `anon`'s standing INSERT grant stays inert because
  *  no policy changed and the function is granted to `authenticated` alone. */
+/** CR-98 step 8 — HOLD THIS PERSON'S SIGNING RUN.
+ *
+ *  The wizard's remaining steps (the offering, the time, the request) all happen
+ *  AFTER the last signature, and the executed-document email leaves the moment
+ *  that signature lands. Declaring the run keeps the set together so ONE email
+ *  can carry the documents, the order and the booking request — the owner's step
+ *  8, in one message rather than two.
+ *
+ *  ⚠️ Best-effort by design, and safe when it fails: an un-held run just mails
+ *  the documents on their own, exactly as it does today. An un-RELEASED run is
+ *  flushed by `flush_held_executed_document_emails` on the hourly sweep, so
+ *  nothing can be held forever by somebody who walks away mid-wizard. */
+export async function holdMyDocumentDelivery(): Promise<void> {
+  const { error } = await supabase.rpc('hold_my_document_delivery');
+  if (error) throw error;
+}
+
 export async function createDraftOrder(input: DraftOrderInput): Promise<{ orderId: string }> {
   const { data, error } = await supabase.rpc('create_my_purchase', {
     p_items: input.items.map((i) => ({

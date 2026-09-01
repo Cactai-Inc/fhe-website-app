@@ -238,6 +238,29 @@ export function AppRoutes() {
             {/* Email-change verification landing — standalone, no chrome */}
             <Route path="/verify-email" element={<VerifyEmailScreen seams={{ verifyWithPassword, verifyWithGoogle }} />} />
 
+            {/* ⚠️ ONBOARDING RUNS OUTSIDE THE APP CHROME — OWNER, 2026-09-01.
+                *"i should either A) be seeing a modal im locked into until complete,
+                or B) be on a page with no nav, and no back to dashboard ui link only
+                a back link to return to the prior page which terminates at the
+                starting page."* B, because the wizard is already a page: a modal
+                would be a rebuild of a flow that works, and this is the same
+                component reached at the same URL with the frame taken off.
+
+                ⚠️ SAME PATH, SAME GUARD, DELIBERATELY. `/app/onboarding` still
+                requires a member — it is declared here rather than under
+                `<AppLayout>` purely so no nav, no header and no dashboard link
+                render beside a flow somebody is supposed to finish. It is placed
+                ABOVE the `/app` block so the intent reads in source order; React
+                Router ranks by specificity, so the static segment wins regardless. */}
+            <Route
+              path="/app/onboarding"
+              element={
+                <ProtectedRoute requireMember>
+                  <Onboarding />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Member community app (its own chrome, member-gated) */}
             <Route
               path="/app"
@@ -263,8 +286,8 @@ export function AppRoutes() {
                   + personal docs link). /app/content kept as an alias. */}
               <Route path="content/:slug" element={<ContentPostDetail />} />
               <Route path="documents" element={<Documents />} />
-              {/* Rider onboarding (provisioned invite → details → sign → confirmation) */}
-              <Route path="onboarding" element={<Onboarding />} />
+              {/* ⚠️ ONBOARDING IS NO LONGER A CHILD OF AppLayout — see the standalone
+                  route below. The URL is unchanged; the CHROME is gone. */}
               {/* Flow D — returning member books more (BOOKING_FLOWS_PLAN §2 Flow D) */}
               {/* /app/book retired — booking lives on the full calendar (Phase 6) */}
               <Route path="book" element={<Navigate to="/app/calendar" replace />} />

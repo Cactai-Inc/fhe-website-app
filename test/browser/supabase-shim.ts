@@ -15,7 +15,7 @@ declare global {
      * resolves to [] and rpc() falls through to the captured payloads. A second
      * entry (documents-content.tsx) that needs its own rows installs them here
      * BEFORE render rather than editing this shared file for one page. */
-    __tables?: Record<string, unknown[]>;
+    __tables?: Record<string, unknown[] | (() => unknown[])>;
     __rpcFixtures?: Record<string, unknown>;
   }
 }
@@ -70,7 +70,16 @@ export const supabase = {
     window.__rpc.push({ name, args });
     const a = (args ?? {}) as Record<string, unknown>;
     if (window.__rpcFixtures && name in window.__rpcFixtures) {
-      return result(window.__rpcFixtures[name]);
+      /* SIGNBOOK — A FIXTURE MAY BE A FUNCTION. A step machine cannot be probed
+         with constants: `my_onboarding_state` must answer "documents MISSING"
+         before the signature and "EXECUTED" after it, from the same call. A
+         function fixture receives the call's arguments and returns the answer
+         for the state the harness entry is now in. Object fixtures behave
+         exactly as before, so every existing probe is untouched. */
+      const fx = window.__rpcFixtures[name];
+      return result(typeof fx === 'function'
+        ? (fx as (a: unknown) => unknown)(args)
+        : fx);
     }
     if (name === 'set_contract_field') {
       writeField(a.p_field_key as string, { value: a.p_value as string });
@@ -97,7 +106,8 @@ export const supabase = {
        PostgREST here would only invent a second, wrong query planner. The list
        is recorded so a probe can assert WHAT WAS ASKED FOR, which is the part
        that can actually be wrong. */
-    const rows = window.__tables?.[table] ?? [];
+    const t = window.__tables?.[table];
+    const rows = (typeof t === 'function' ? (t as () => unknown[])() : t) ?? [];
     const chain: Record<string, unknown> = {};
     for (const m of ['select', 'eq', 'in', 'order', 'limit', 'is', 'neq', 'not', 'filter']) {
       chain[m] = () => chain;
