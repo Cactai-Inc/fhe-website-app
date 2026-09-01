@@ -35,6 +35,7 @@ import DocsParticipantFlow from './pages/DocsParticipantFlow';
 import BookHorse from './pages/BookHorse';
 import BookSupport from './pages/BookSupport';
 import Checkout from './pages/Checkout';
+import Visit from './pages/Visit';
 import Questions from './pages/Questions';
 import Confirmation from './pages/Confirmation';
 import NotFound from './pages/NotFound';
@@ -208,6 +209,9 @@ export function AppRoutes() {
                   asks anything, so the questions page is conditional on CONTENT
                   and never on entry point. */}
               <Route path="/questions" element={<Questions />} />
+              {/* Owner, 2026-09-01: a visit was never a request option on the
+                  website and it should be. One date, one window, one category. */}
+              <Route path="/visit" element={<Visit />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/confirmation" element={<Confirmation />} />
               <Route path="/login" element={<Login />} />

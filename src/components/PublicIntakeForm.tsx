@@ -30,6 +30,16 @@ import type {
 // reads too, so the public words and the staff filter's words are one map.
 const CATEGORIES = PUBLIC_CATEGORY_OPTIONS;
 
+/* ⚠️ THE VISIT FORM ASKS THREE, AND ONLY THREE. Owner, 2026-09-01: *"we just need
+   to know what category they go into of the three."* A visitor is here for riding,
+   for their horse, or to buy or lease one — "General question", "Media" and
+   "Partnership" are not reasons somebody drives out to look around, and offering
+   them would put visits in buckets the barn does not prepare for. Derived from the
+   one list rather than retyped, so the words stay in step with it. */
+const VISIT_CATEGORIES = PUBLIC_CATEGORY_OPTIONS.filter(
+  (c) => c.value === 'lessons' || c.value === 'horse_care' || c.value === 'acquisition',
+);
+
 function sourcesFor(term: PropertyTerm): { value: string; label: string }[] {
   return [
     { value: '', label: 'How did you hear about us?' },
@@ -81,6 +91,15 @@ export interface PublicIntakeFormProps {
   selections?: RequestSelectionInput[];
   /** Extra content rendered above the buttons (e.g. an availability picker). */
   children?: React.ReactNode;
+  /** ⚠️ VISIT MODE — owner, 2026-09-01: *"a guest who is filling this out is
+   *  planning to visit the ranch and they should be able to request a date and
+   *  time for the visit … a simple form submission with a calendar and date picker
+   *  with option to select a timeframe from this set of options 9am-noon,
+   *  noon-3pm, and 3pm-6pm."*
+   *  It REPLACES the general availability block rather than adding a second one:
+   *  that block asks "when are you generally free" for a lesson, and a visit is
+   *  one date, once. Two pickers on one form is two answers to one question. */
+  visit?: boolean;
   submitLabel?: string;
   onSubmitted?: (requestId: string) => void;
 }
@@ -92,6 +111,7 @@ export function PublicIntakeForm({
   entryLocation,
   selections,
   children,
+  visit = false,
   submitLabel = 'Send it our way',
   onSubmitted,
 }: PublicIntakeFormProps) {
@@ -114,6 +134,9 @@ export function PublicIntakeForm({
   const [days, setDays] = useState<string[]>([]);
   const [times, setTimes] = useState<string[]>([]);
   const [specifics, setSpecifics] = useState<{ date: string; time: string }[]>([]);
+  /** Visit mode: ONE date and ONE of the three windows the barn actually keeps. */
+  const [visitDate, setVisitDate] = useState('');
+  const [visitWindow, setVisitWindow] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -135,7 +158,23 @@ export function PublicIntakeForm({
     set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
   function buildProposedTimes() {
-    const out: { date: string; time: string; days?: string }[] = [];
+    const out: { date: string; time: string; days?: string; label?: string }[] = [];
+    /* One entry, already in words. `/api/request-received` renders `label` as the
+       availability line and the buyer's copy repeats it, so what the barn reads
+       and what the visitor was shown are the same string. */
+    if (visit) {
+      if (visitDate) {
+        const when = new Date(`${visitDate}T12:00:00`).toLocaleDateString(undefined, {
+          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+        });
+        out.push({
+          date: visitDate,
+          time: visitWindow || 'Any time',
+          label: `${when}${visitWindow ? `, ${visitWindow}` : ''}`,
+        });
+      }
+      return out;
+    }
     if (days.length > 0 || times.length > 0) {
       const label = [days.join(', '), times.join(' / ')].filter(Boolean).join(' — ');
       out.push({ date: '', time: label || 'Flexible', days: days.join(', ') });
@@ -243,7 +282,10 @@ export function PublicIntakeForm({
         {!lockCategory && (
           <div className="sm:col-span-2">
             <label className="form-label" htmlFor="pi-category">
-              What can we help with?
+              {/* Owner, 2026-09-01: on the visit form the question is what they are
+                  INTERESTED IN — they are not asking for help, they are telling us
+                  which side of the barn to walk them round. */}
+              {visit ? 'What are you interested in?' : 'What can we help with?'}
             </label>
             <select
               id="pi-category"
@@ -251,7 +293,7 @@ export function PublicIntakeForm({
               value={category}
               onChange={(e) => setCategory(e.target.value as RequestCategory)}
             >
-              {CATEGORIES.map((c) => (
+              {(visit ? VISIT_CATEGORIES : CATEGORIES).map((c) => (
                 <option key={c.value} value={c.value}>
                   {c.label}
                 </option>
@@ -444,7 +486,45 @@ export function PublicIntakeForm({
           </p>
         </div>
 
-        {/* Availability — preferences and/or specific date+times, all optional */}
+        {/* ── VISIT MODE: one date, one window ─────────────────────────────
+            Owner, 2026-09-01. The three windows are the barn's, not a generic
+            morning/afternoon/evening — they are the hours somebody can actually
+            be shown around. */}
+        {visit ? (
+          <div className="sm:col-span-2">
+            <span className="form-label">When would you like to visit?</span>
+            <div className="grid gap-3 sm:grid-cols-2 mt-1">
+              <input
+                type="date"
+                className="form-input"
+                aria-label="Visit date"
+                min={new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)}
+                value={visitDate}
+                onChange={(e) => setVisitDate(e.target.value)}
+              />
+              <div className="flex flex-wrap gap-1.5 items-center">
+                {['9am–noon', 'noon–3pm', '3pm–6pm'].map((w) => (
+                  <button
+                    key={w}
+                    type="button"
+                    aria-pressed={visitWindow === w}
+                    onClick={() => setVisitWindow((prev) => (prev === w ? '' : w))}
+                    className={`text-xs px-3 py-1.5 rounded-full border ${
+                      visitWindow === w
+                        ? 'bg-green-800 text-white border-green-800'
+                        : 'bg-white text-green-800 border-green-800/30'}`}
+                  >
+                    {w}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="form-hint mt-2">
+              We&apos;ll be in touch to agree the details — nothing is booked yet.
+            </p>
+          </div>
+        ) : (
+        /* Availability — preferences and/or specific date+times, all optional */
         <div className="sm:col-span-2">
           <span className="form-label">When works for you? (optional)</span>
           <div className="flex flex-wrap gap-1.5 mt-1">
@@ -487,6 +567,7 @@ export function PublicIntakeForm({
             </button>
           )}
         </div>
+        )}
       </div>
 
       {children}

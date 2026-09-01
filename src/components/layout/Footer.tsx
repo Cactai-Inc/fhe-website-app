@@ -93,6 +93,18 @@ export default function Footer() {
             >
               {user ? 'Member area' : 'Member sign-in'}
             </Link>
+            {/* ⚠️ THE VISIT REQUEST'S DOOR. Owner, 2026-09-01: *"we didnt add this
+                to the website as a request option and we should."* It goes in the
+                FOOTER rather than the header deliberately — the header row's fit
+                floor is 940px and it already carries four labels; a fifth is the
+                measurement that broke it before (TASK-BP410). Where else it should
+                appear is the owner's call, not a guess made here. */}
+            <Link
+              to="/visit"
+              className="text-sm font-sans text-white/[0.7] hover:text-white transition-colors focus-ring-dark"
+            >
+              Visit us
+            </Link>
             {/* Owner, 2026-08-17: FAQ moved to the last position. */}
             <Link
               to="/faq"
