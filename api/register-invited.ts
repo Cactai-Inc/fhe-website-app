@@ -64,11 +64,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // a reused address). The invitation is the credential, so let the invitee
       // CLAIM it: set the password they just chose + confirm, then they sign in.
       if (/already|registered|exists/i.test(msg)) {
-        const { data: existing } = await db
-          .schema('auth').from('users').select('id').ilike('email', inv.email).limit(1).maybeSingle();
-        if (!existing?.id) {
+        /* ⚠️ THIS LOOKUP USED TO READ `auth.users` THROUGH POSTGREST, AND IT COULD
+           NEVER SUCCEED. Measured 2026-09-01:
+             has_schema_privilege('service_role','auth','USAGE')      = t
+             has_table_privilege ('service_role','auth.users','SELECT') = f
+           So `existing` was always null, and this branch — written precisely to
+           let an invitee claim an address that already had a partial account —
+           fell straight through to the 409 below. The owner hit it in his own
+           test: he set a password on his own invitation and was told to sign in
+           instead. Failure mode 2a, exactly: code that reads as if it handles the
+           case and handles nothing.
+           `account_state_for_email` is the ONE reader of `auth.users` now — a
+           SECURITY DEFINER function owned by postgres, service_role only. */
+        const { data: facts } = await db.rpc('account_state_for_email', { p_email: inv.email });
+        const existingId = (facts as { user_id?: string | null } | null)?.user_id ?? null;
+        if (!existingId) {
           return res.status(409).json({ error: 'an account already exists for this email — sign in instead' });
         }
+        const existing = { id: existingId };
         const { error: updErr } = await db.auth.admin.updateUserById(existing.id, {
           password, email_confirm: true,
         });
