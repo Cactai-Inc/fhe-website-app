@@ -692,7 +692,23 @@ export default function Onboarding() {
     'onboarding.details',
     { ...form, firstName, lastName, signingFor, minorFirst, minorLast, minorDob },
     (d) => {
-      setForm((f) => ({ ...f, ...(d as Partial<typeof f>) }));
+      /* ⚠️ ONLY THE FORM'S OWN KEYS. This was `{ ...f, ...d }`, and `d` is the
+         WHOLE draft — which also carries firstName, lastName and the minor
+         answer, none of which are profile fields. They landed in `form`, `form`
+         is spread into the jsonb this page sends to
+         update_my_onboarding_profile, and the RPC was therefore being handed
+         `signingFor` / `minorFirst` / `minorLast` / `minorDob` keys it has no
+         reading for. Harmless — it reads named keys — but it is junk in a
+         payload that goes to the database, and it was invisible until
+         probe-sign-minor printed the body. Caught 2026-09-01. */
+      setForm((f) => {
+        const next = { ...f };
+        for (const k of Object.keys(EMPTY_FORM) as (keyof typeof EMPTY_FORM)[]) {
+          const v = (d as Record<string, unknown>)[k];
+          if (typeof v === 'string') next[k] = v;
+        }
+        return next;
+      });
       if (typeof d.firstName === 'string') setFirstName(d.firstName);
       if (typeof d.lastName === 'string') setLastName(d.lastName);
       if (d.signingFor === 'self' || d.signingFor === 'child') setSigningFor(d.signingFor);
