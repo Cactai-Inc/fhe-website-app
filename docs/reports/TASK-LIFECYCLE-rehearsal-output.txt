@@ -1,0 +1,73 @@
+Timing is off.
+BEGIN
+DO
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+REVOKE
+REVOKE
+REVOKE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+REVOKE
+REVOKE
+GRANT
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+REVOKE
+REVOKE
+REVOKE
+DROP TRIGGER
+CREATE TRIGGER
+===== T1 · the CHECK permits the six, and still refuses a typo =====
+                                                                                                                              constraint_now                                                                                                                              
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ CHECK ((status = ANY (ARRAY['draft'::text, 'available'::text, 'unavailable'::text, 'requested'::text, 'approved'::text, 'pending'::text, 'scheduled'::text, 'moved'::text, 'cancelled'::text, 'confirmed'::text, 'expired'::text, 'completed'::text, 'no_show'::text])))
+(1 row)
+
+psql:TASK-LIFECYCLE-rehearsal.sql:22: NOTICE:  T1 typo refused: new row for relation "bookings" violates check constraint "bookings_status_check"
+DO
+===== T11 · booking_status_code + one status_events row per new state =====
+  status   |   code    
+-----------+-----------
+ requested | pending
+ approved  | pending
+ pending   | pending
+ moved     | pending
+ scheduled | scheduled
+ confirmed | scheduled
+ cancelled | cancelled
+ completed | completed
+(8 rows)
+
+===== T2 · every current_date + 90 site is gone =====
+   ninety_day_sites    
+-----------------------
+ (none — empty result)
+(1 row)
+
+ horizon_now 
+-------------
+ 2026-10-31
+(1 row)
+
+===== T13 · sessions still beyond 30+30 (NOT changed by this task) =====
+ within_30 | days_30_60 | beyond_60 |   latest   
+-----------+------------+-----------+------------
+        23 |         22 |        21 | 2026-11-30
+(1 row)
+

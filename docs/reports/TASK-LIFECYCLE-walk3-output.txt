@@ -1,0 +1,71 @@
+SET
+######## the plan under test ########
+  month  |  status   | count 
+---------+-----------+-------
+ 2026-09 | scheduled |     5
+ 2026-10 | scheduled |     4
+ 2026-11 | scheduled |     4
+(3 rows)
+
+
+######## T3 · REGENERATED FROM SCRATCH: one confirmed month, one pending month, nothing beyond ########
+DELETE 13
+UPDATE 2
+UPDATE 1
+                                        horizon_says                                         
+---------------------------------------------------------------------------------------------
+ {"ok": true, "minted": 0, "months": 2, "created": 9, "pending": 4, "through": "2026-10-31"}
+(1 row)
+
+  month  |  status   | count 
+---------+-----------+-------
+ 2026-09 | scheduled |     5
+ 2026-10 | pending   |     4
+(2 rows)
+
+
+######## T4 · THE DAILY CRON, RUN TWICE, DOES NOT EXTEND PAST THE PENDING MONTH ########
+                                                      first_run                                                      
+---------------------------------------------------------------------------------------------------------------------
+ {"month": "2026-09-01", "through": "2026-10-31", "plans_generated": 3, "sessions_booked": 0, "plans_considered": 6}
+(1 row)
+
+ furthest_booking_after_run_1 
+------------------------------
+ 2026-11-30
+(1 row)
+
+                                                     second_run                                                      
+---------------------------------------------------------------------------------------------------------------------
+ {"month": "2026-09-01", "through": "2026-10-31", "plans_generated": 3, "sessions_booked": 0, "plans_considered": 6}
+(1 row)
+
+ furthest_booking_after_run_2 
+------------------------------
+ 2026-11-30
+(1 row)
+
+-- nothing this org generated sits beyond the horizon (the 43 pre-existing rows are NOT ours) --
+ generated_beyond_the_horizon 
+------------------------------
+                            0
+(1 row)
+
+
+######## T5 · CONFIRMING PAYMENT FLIPS *THAT* MONTH AND NO OTHER ########
+  month  |  status   | count 
+---------+-----------+-------
+ 2026-09 | scheduled |     5
+ 2026-10 | pending   |     4
+(2 rows)
+
+UPDATE 1
+UPDATE 1
+-- after the flip --
+  month  |  status   | count 
+---------+-----------+-------
+ 2026-09 | scheduled |     5
+ 2026-10 | scheduled |     4
+(2 rows)
+
+ROLLBACK

@@ -782,7 +782,10 @@ function DetailPanel({ item, onClose, onChanged, onBuy }: { item: CalendarItem; 
   const isMine = !!item.is_mine;
   // ONBOARD §7: a booking still waiting on us is EDITABLE, not "changeable by
   // request" — nothing has been agreed, so there is nothing to renegotiate.
-  const isPending = isMine && item.status === 'pending';
+  // ⚠️ TASK-LIFECYCLE — `requested` is the new first state, and this is what
+  // lets the client edit or withdraw their OWN unanswered ask. Without it the
+  // member's own request became read-only the moment it was made.
+  const isPending = isMine && ['requested', 'pending'].includes(item.status);
   const canChange = isMine && ['scheduled', 'confirmed'].includes(item.status);
   const hoursOut = (new Date(item.starts_at).getTime() - Date.now()) / 3_600_000;
   const feeNow = hoursOut < 48 ? fee : 0;

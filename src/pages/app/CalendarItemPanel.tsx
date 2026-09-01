@@ -949,7 +949,13 @@ export function CalendarItemPanel({
 
         {/* actions */}
         <div className="p-4 border-t border-green-800/10 flex items-center gap-2 sticky bottom-0 bg-cream">
-          {item?.status === 'pending' && (
+          {/* ⚠️ TASK-LIFECYCLE — a fresh ask is `requested` now, not `pending`.
+              Gating this on 'pending' alone would have taken the staff approve
+              and decline buttons off every new request the day the state
+              landed: correct machine, no button. `approved` is deliberately NOT
+              here — that booking has already been approved and its payment
+              request already sent, and pressing this again would send it twice. */}
+          {['requested', 'pending'].includes(item?.status ?? '') && (
             <>
               <button type="button" className="btn-primary justify-center" disabled={busy} onClick={() => void confirm()}>
                 Confirm request

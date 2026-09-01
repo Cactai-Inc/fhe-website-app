@@ -1,0 +1,44 @@
+BEGIN
+===== the arms, in the function itself — `requested`/`approved`/`moved` are NAMED =====
+                             booking_status_code_body                             
+----------------------------------------------------------------------------------
+                                                                                 +
+   SELECT CASE                                                                   +
+     WHEN p_status IN ('completed') THEN 'completed'                             +
+     WHEN p_status IN ('cancelled','expired') THEN 'cancelled'                   +
+     -- asked for · approved and awaiting payment · payment declared · held while+
+     -- a move is decided. None of these is a session anyone can rely on yet.    +
+     WHEN p_status IN ('requested','approved','pending','moved') THEN 'pending'  +
+     WHEN p_status IN ('scheduled','confirmed') THEN 'scheduled'                 +
+     ELSE 'pending' END;                                                         +
+ 
+(1 row)
+
+
+===== one status_events row per new state =====
+UPDATE 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+ code_written |          created_at          
+--------------+------------------------------
+ pending      | 2026-09-01 14:42:16.51885-07
+ scheduled    | 2026-09-01 14:42:16.51885-07
+(2 rows)
+
+-- ⚠️ the four writes collapse to TWO events on purpose: the trigger only
+-- writes when the CODE changes, and requested/approved/moved are all
+-- `pending`. current_status carries the code; the row below is the truth. --
+  status   | current_status 
+-----------+----------------
+ scheduled | scheduled
+(1 row)
+
+
+===== T13 · sessions still beyond 30+30, AFTER the change (not touched) =====
+ days_30_60 | beyond_60 |   latest   
+------------+-----------+------------
+         22 |        21 | 2026-11-30
+(1 row)
+
+ROLLBACK
