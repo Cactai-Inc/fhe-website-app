@@ -1,14 +1,14 @@
-# DISCO-2 — LEDGER
+# DISCO-SIGNFLOW — LEDGER (thread renamed from DISCO-2, owner naming ruling 2026-09-01)
 
 Subject: the doc-signing flow — CR-100 (address normalize/validate), CR-101 (date/signature tokens
 still visible), CR-102 (brown → company green). Opened 2026-09-01 on the owner's prompt: read
 CHANGE-ORDER-LEDGER §CR-100–102 and run them.
 
 ## RESUME
-Role / thread   DISCO-2 · canonical checkout (docs only; no code, no writes)
+Role / thread   DISCO-SIGNFLOW · canonical checkout (docs only; no code, no writes)
 Merge-base      n/a — docs-only thread on main (main == origin/main at open, 2fa1f7b9)
 DONE            steps 1-3 COMPLETE on all three CRs. All locks in. Handoff written:
-                docs/reports/DISCO-2-HANDOFF.md. Owner's CR-102 ruling appended verbatim to
+                docs/reports/DISCO-SIGNFLOW-HANDOFF.md. Owner's CR-102 ruling appended verbatim to
                 CHANGE-ORDER-LEDGER.md §CR-102.
 IN FLIGHT       nothing — complete, nothing in flight
 NEXT            owner carries the ticket to DSNR (prompt handed). This thread stays open for
@@ -21,6 +21,17 @@ DECIDED         🔒 CR-100 NORMALIZE-ONLY (owner, mid-run: "just normalize the 
                 🔒 Validation criteria for all three agreed as proposed ("agree").
 CORRECTED       DISCO framed CR-102 as "flow only vs app-wide gold→green" — both wrong; the owner's
                 rule is by FUNCTION, not by surface. Recorded in the handoff §Item 3.
+                ALSO (owner, 2026-09-01) — THREAD NAMING RULING, verbatim: "im not sure what the
+                thread name is supposed to mean but that is not the appropriate naming convention
+                for threads and if a thread from you is a handoff born from a thread prompt you
+                received you need to use the same name and replace DISCO with the new thread role
+                name. so this thread is named DISCO-2, its a bad name, it should have a name that
+                references what the thread is working on and that name would then be changed to
+                DSNR-[this threads name]". So: thread names are ROLE-SUBJECT, not ROLE-<n>; a
+                downstream thread keeps the subject and swaps the role. This thread renamed
+                DISCO-SIGNFLOW (files git-mv'd, references updated); downstream is DSNR-SIGNFLOW.
+                ⚠️ FOR ORCH: the role files still template ROLE-<n> (and DSNR-ROLE.md §7 still says
+                "DSGN-<n>" — a stale pre-rename label); both need codifying to the new convention.
                 ALSO (owner, 2026-09-01): every prompt handed to him must state model tier + effort
                 level, plus thinking on/off unless the model is Fable (Fable's thinking is always
                 on — MODEL-CHOICE-NOTES-2026-09-01.md). ORCH prompts exempt. The DSNR prompt below
