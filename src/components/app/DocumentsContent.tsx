@@ -11,6 +11,8 @@ import {
 import { Modal } from '../ops/kit/Modal';
 import { toErrorMessage } from '../../lib/ops/errors';
 import type { SeedDocument } from '../../lib/seed';
+import { resolveUnsignedSignatureTokens } from '../../lib/documentBody';
+import { BodyWithSignatures } from '../ops/documents/MergedBodyView';
 
 /**
  * MY DOCUMENTS — the shared subject content (TASK-ACCOUNTSURFACE §3), rendered
@@ -60,7 +62,13 @@ const MEMBER_INLINE_SIGN_ENABLED = false;
 
 /** Splits a document's merged body into readable "paper" pages. Lifted
  *  unchanged from the old DocumentsPanel, which computed this eagerly for
- *  every row; here it's computed once, when a document is opened to read. */
+ *  every row; here it's computed once, when a document is opened to read.
+ *
+ *  🔒 CALL `resolveUnsignedSignatureTokens` ON THE BODY BEFORE THIS, NOT AFTER.
+ *  This accumulator breaks pages on a 2,400-CHARACTER budget, so it MEASURES the
+ *  text. "{{SIG.CLIENT.DATE}}" is 20 characters; "September 1, 2026" is 17 — so
+ *  resolving afterwards would move the page break relative to what the reader is
+ *  shown. Both existing call sites resolve first; a third one must too. */
 function paginateBody(body: string): string[] {
   const paras = body.split(/\n\n+/);
   const pages: string[] = [];
@@ -163,8 +171,16 @@ function PaperViewer({ doc, onClose }: { doc: SeedDocument; onClose: () => void 
           <div className="bg-white shadow-2xl shadow-green-950/30 rounded-[3px] mx-auto"
             style={{ width: 'min(100%, 600px)' }}>
             <div className="px-8 sm:px-12 py-10 sm:py-14">
+              {/* ⚠️ WAS BARE TEXT. This reader is the one body surface that never
+                  had the script face the other renderers give a signature line,
+                  and never resolved a signature token either. `BodyWithSignatures`
+                  gives it both, and is the same component the onboarding step and
+                  the ops viewer use — one renderer, not a fourth copy (D18).
+                  The page text is ALREADY resolved (see paginateBody); the second
+                  pass inside this component finds nothing to match, which is
+                  harmless and is why the ordering above is the one that counts. */}
               <p className="whitespace-pre-line font-serif text-[14.5px] leading-[1.85] text-green-950">
-                {doc.pages[page]}
+                <BodyWithSignatures text={doc.pages[page]} />
               </p>
             </div>
             {/* page-edge foot */}
@@ -270,7 +286,9 @@ function SelfSignRow({
       title: doc.title ?? doc.display_code ?? 'Document',
       signedOn: signed ? 'Signed' : 'Awaiting signature',
       kind: doc.status ?? '',
-      pages: paginateBody(doc.merged_body),
+      // Resolved BEFORE pagination — see the note on paginateBody. `body` stays
+      // as stored: it feeds the PDF writer, which resolves for itself.
+      pages: paginateBody(resolveUnsignedSignatureTokens(doc.merged_body)),
       body: doc.merged_body,
     });
   };
@@ -504,7 +522,9 @@ export function DocumentsContent() {
                           title: r.title,
                           signedOn: r.signed_at ? `Signed ${new Date(r.signed_at).toLocaleDateString()}` : 'Signed',
                           kind: r.current_status ?? '',
-                          pages: paginateBody(matched.merged_body as string),
+                          // Resolved before pagination — see paginateBody. An
+                          // executed body has no literal token left to match.
+                          pages: paginateBody(resolveUnsignedSignatureTokens(matched.merged_body as string)),
                           body: matched.merged_body as string,
                         })} />
                       )}

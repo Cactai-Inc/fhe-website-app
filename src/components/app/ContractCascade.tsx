@@ -4,6 +4,7 @@ import { clauseConditionMet, type ContractField, type FieldStructured, type Part
 import { fieldSourceTip } from '../../lib/fieldSources';
 import { listHorseMedications, type HorseMedication } from '../../lib/horses';
 import { ExplainTip } from './ExplainTip';
+import { resolveUnsignedSignatureTokens } from '../../lib/documentBody';
 
 /**
  * THE HORSE THIS DOCUMENT IS ABOUT — TASK-PAMELA §B rule 6.
@@ -258,38 +259,21 @@ const inputCls = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm
  *  When `onSelectSpan` is provided, selecting text inside the body surfaces a
  *  floating "Comment" button; clicking it reports the selected quote (plus a
  *  little preceding context to disambiguate) so a pinned span-comment can be
- *  anchored to it. This is the single body renderer used across the app (m-5). */
+ *  anchored to it.
+ *
+ *  ⚠️ IT IS NOT THE ONLY BODY RENDERER. `BodyWithSignatures`
+ *  (components/ops/documents/MergedBodyView.tsx) is the other one, and the claim
+ *  that this was "the single body renderer used across the app" is what produced
+ *  CR-101: three surfaces rendered a body without ever coming through here. */
 const NEEDS_RE = /⟦NEEDS:(.*?)⟧(.*?)⟧/g;
 // A signature line: "Signature: Jane Doe" / "By (signature): Jane Doe". Matched per
 // line (no /g). The label passes through; the typed name gets the script face.
 const SIGNATURE_LINE_RE = /^(Signature|By \(signature\)):\s*(.+)$/m;
-/* ⚠️ AN UNSIGNED DOCUMENT MUST NOT SHOW ITS SIGNATURE TOKENS.
-   Owner, 2026-08-24: "on the signable docs we dont need to show the date token we
-   should show the actual date and we shouldnt show anything in the signature
-   space its showing the signature token there."
-
-   `generate_document` substitutes every token EXCEPT `kind = 'signature'` — on
-   purpose: a signature is written by `record_signature` at the moment somebody
-   signs, not composed in advance. So an unsigned body carries the literal
-   {{SIG.CLIENT.NAME}} and {{SIG.CLIENT.DATE}} until then, and the reader was
-   being shown the machinery.
-
-   Two different answers, because they are two different things:
-     · the DATE is a fact we already know — this document is being signed today —
-       so it renders as today's date, in the same "August 24, 2026" shape
-       generate_document produces, so nothing changes appearance on execution;
-     · the SIGNATURE is the one thing we must NOT invent. It renders as empty
-       space, which is what an unsigned signature line is.
-
-   Only ever touches tokens that are still literal. Once signed, the body holds
-   the real name and date and there is nothing here left to match. */
-const UNSIGNED_SIG_DATE = /\{\{SIG\.[A-Z_]+\.DATE\}\}/g;
-const UNSIGNED_SIG_NAME = /\{\{SIG\.[A-Z_]+\.(?!DATE)[A-Z_]+\}\}/g;
-
-export function resolveUnsignedSignatureTokens(body: string, today = new Date()): string {
-  const stamp = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  return body.replace(UNSIGNED_SIG_DATE, stamp).replace(UNSIGNED_SIG_NAME, '');
-}
+/* The unsigned-signature-token resolution lives in lib/documentBody.ts, because
+   two renderers need it and neither owns the other — see the note there and the
+   one above `body = resolveUnsignedSignatureTokens(body)` below. Re-exported here
+   so the importers that predate the move keep working. */
+export { resolveUnsignedSignatureTokens } from '../../lib/documentBody';
 
 export function ContractBody({
   body, onSelectSpan,
@@ -316,9 +300,21 @@ export function ContractBody({
   };
 
   if (!body) return null;
-  // Every frame that shows a document body comes through here — the flat
-  // renderer, the read-only frame and the executed frame — so resolving the
-  // unsigned tokens once, here, covers all of them and cannot drift between them.
+  /* ⚠️ THERE ARE EXACTLY TWO RESOLUTION POINTS, AND THIS IS ONE OF THEM.
+     The sentence that used to sit here — "every frame that shows a document body
+     comes through here" — was FALSE, and believing it is why CR-101 exists: the
+     onboarding signing step, the ops document viewer and the /app/documents paper
+     reader all rendered a body and none of them came through `ContractBody`.
+
+     The two points are:
+       · `ContractBody`, here — the contract page's flat/read-only/executed frames
+         and the party view;
+       · `BodyWithSignatures` (components/ops/documents/MergedBodyView.tsx) — the
+         onboarding signing step, the ops viewer, and the paper reader.
+     Both call the SAME function from lib/documentBody.ts, so they cannot drift.
+
+     🔒 A NEW BODY RENDERER MUST CALL `resolveUnsignedSignatureTokens` ITSELF, or
+     reuse one of those two. Adding a third renderer that skips it re-opens CR-101. */
   body = resolveUnsignedSignatureTokens(body);
   const nodes: ReactNode[] = [];
   let last = 0; let m: RegExpExecArray | null; let i = 0;
