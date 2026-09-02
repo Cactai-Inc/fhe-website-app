@@ -1,24 +1,17 @@
 /* /visit — COME AND SEE THE PLACE.
  *
- * OWNER, 2026-09-01: *"a guest who is filling this out is planning to visit the
- * ranch and they should be able to request a date and time for the visit, we
- * didnt add this to the website as a request option and we should, its a simple
- * form submission with a calendar and date picker with option to select a
- * timeframe from this set of options 9am-noon, noon-3pm, and 3pm-6pm. After
- * submitting the guest visit request form they get the email showing what they
- * submitted and telling them we will be in touch to discuss scheduling a visit
- * and provide the account activation link. the form needs to ask what they are
- * interested in"* — and, asked which options that last field takes:
- * *"we just need to know what category they go into of the three … except its not
- * buying or selling its buying or leasing a horse."*
+ * OWNER, 2026-09-01: *"we didnt add this to the website as a request option and
+ * we should."*
  *
- * ⚠️ IT IS THE ONE PUBLIC INTAKE FORM (D18), in `visit` mode. Not a second form:
- * the same component, the same `submit_public_request`, the same staff alert and
- * the same buyer copy. All this page decides is that the category question is
- * asked as "what are you interested in", that the availability block is one date
- * and one window, and that the entry location marks it as a visit — which is the
- * row fact `/api/request-activation` reads to send the activation link even
- * though a visit carries no order.
+ * ⚠️ IT IS THE ONE PUBLIC INTAKE FORM (D18), opened on the `visit` menu answer.
+ * Not a second form and not a mode: the same component, the same
+ * `submit_public_request`, the same staff alert and the same buyer copy. All this
+ * page does is preselect the menu, which then reveals the interest checkboxes on
+ * its own.
+ *
+ * ⚠️ NO WHEN-PICKER. The owner cut it explicitly: *"lets avoid adding the options
+ * for selecting when they want to visit when they select visit the ranch from the
+ * menu."* Scheduling the visit is a conversation, for now.
  */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -64,15 +57,13 @@ export default function Visit() {
                 Come and see {withArticle(propertyTerm)}.
               </h1>
               <p className="body-text text-sm mb-8">
-                Pick a day and a window that suits you, tell us what you&apos;re interested in,
-                and we&apos;ll be in touch to arrange it.
+                Tell us what you&apos;re interested in and we&apos;ll be in touch to arrange it.
               </p>
               <PublicIntakeForm
-                channel="booking"
-                defaultCategory="lessons"
-                entryLocation="guest_visit"
-                visit
-                submitLabel="Request a visit"
+                channel="contact"
+                defaultCategory="visit"
+                entryLocation="visit_page"
+                submitLabel="Send it our way"
                 onSubmitted={() => setSent(true)}
               />
             </>

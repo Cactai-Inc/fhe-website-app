@@ -94,6 +94,7 @@ export async function submitRequest(
       label: s.label ?? null,
     })),
     p_details: input.details ?? {},
+    p_interests: input.interests && input.interests.length > 0 ? input.interests : null,
   });
   if (error) throw error;
   const requestId = (data as { request_id: string }).request_id;

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { submitRequest } from '../lib/api';
 import { fetchIntakeRequirements } from '../lib/ops/api-public';
-import { CATEGORY_FIELDS, PUBLIC_CATEGORY_OPTIONS } from '../lib/intakeCategoryFields';
+import { CATEGORY_FIELDS, PUBLIC_CATEGORY_OPTIONS, interestOptionsFor } from '../lib/intakeCategoryFields';
 import { usePropertyTerm } from '../contexts/BrandProvider';
 import { toErrorMessage } from '../lib/ops/errors';
 import { withArticle, type PropertyTerm } from '../lib/propertyTerm';
@@ -30,15 +30,6 @@ import type {
 // reads too, so the public words and the staff filter's words are one map.
 const CATEGORIES = PUBLIC_CATEGORY_OPTIONS;
 
-/* ⚠️ THE VISIT FORM ASKS THREE, AND ONLY THREE. Owner, 2026-09-01: *"we just need
-   to know what category they go into of the three."* A visitor is here for riding,
-   for their horse, or to buy or lease one — "General question", "Media" and
-   "Partnership" are not reasons somebody drives out to look around, and offering
-   them would put visits in buckets the barn does not prepare for. Derived from the
-   one list rather than retyped, so the words stay in step with it. */
-const VISIT_CATEGORIES = PUBLIC_CATEGORY_OPTIONS.filter(
-  (c) => c.value === 'lessons' || c.value === 'horse_care' || c.value === 'acquisition',
-);
 
 function sourcesFor(term: PropertyTerm): { value: string; label: string }[] {
   return [
@@ -91,22 +82,6 @@ export interface PublicIntakeFormProps {
   selections?: RequestSelectionInput[];
   /** Extra content rendered above the buttons (e.g. an availability picker). */
   children?: React.ReactNode;
-  /** ⚠️ VISIT MODE — owner, 2026-09-01: *"a guest who is filling this out is
-   *  planning to visit the ranch and they should be able to request a date and
-   *  time for the visit … a simple form submission with a calendar and date picker
-   *  with option to select a timeframe from this set of options 9am-noon,
-   *  noon-3pm, and 3pm-6pm."*
-   *  It REPLACES the general availability block rather than adding a second one:
-   *  that block asks "when are you generally free" for a lesson, and a visit is
-   *  one date, once. Two pickers on one form is two answers to one question. */
-  visit?: boolean;
-  /** ⚠️ OFFER IT, rather than being it. Owner, 2026-09-01: the visit request
-   *  *"should be an option from the contact page form."* So the contact form
-   *  carries a tick-box that turns the date-and-window picker on in place, and
-   *  the submission becomes a visit request — the same row, the same
-   *  `entry_location`, the same activation email — without a second form or a
-   *  second page. A page that IS the visit form passes `visit` instead. */
-  offerVisit?: boolean;
   submitLabel?: string;
   onSubmitted?: (requestId: string) => void;
 }
@@ -118,8 +93,6 @@ export function PublicIntakeForm({
   entryLocation,
   selections,
   children,
-  visit = false,
-  offerVisit = false,
   submitLabel = 'Send it our way',
   onSubmitted,
 }: PublicIntakeFormProps) {
@@ -142,13 +115,16 @@ export function PublicIntakeForm({
   const [days, setDays] = useState<string[]>([]);
   const [times, setTimes] = useState<string[]>([]);
   const [specifics, setSpecifics] = useState<{ date: string; time: string }[]>([]);
-  /** Visit mode: ONE date and ONE of the three windows the barn actually keeps. */
-  const [visitDate, setVisitDate] = useState('');
-  const [visitWindow, setVisitWindow] = useState('');
-  /** Ticked on the contact form: this submission is a visit request. */
-  const [wantsVisit, setWantsVisit] = useState(false);
-  /** Visit mode is either what this page IS, or what they just asked for. */
-  const asVisit = visit || (offerVisit && wantsVisit);
+  /* ⚠️ THE CHECKBOXES — `requests.interests`, a field of their own. The menu
+     answer (`category`) decides WHICH are offered; ticking one never changes the
+     menu answer and never touches attribution. Cleared whenever the menu changes,
+     because an interest revealed by one menu answer is meaningless under another.
+     ⚠️ NO WHEN-PICKER. The owner cut it explicitly on 2026-09-01: *"lets avoid
+     adding the options for selecting when they want to visit when they select
+     visit the ranch from the menu."* */
+  const [interests, setInterests] = useState<string[]>([]);
+  const interestOptions = useMemo<{ value: string; label: string }[]>(
+    () => interestOptionsFor(category), [category]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -171,22 +147,6 @@ export function PublicIntakeForm({
 
   function buildProposedTimes() {
     const out: { date: string; time: string; days?: string; label?: string }[] = [];
-    /* One entry, already in words. `/api/request-received` renders `label` as the
-       availability line and the buyer's copy repeats it, so what the barn reads
-       and what the visitor was shown are the same string. */
-    if (asVisit) {
-      if (visitDate) {
-        const when = new Date(`${visitDate}T12:00:00`).toLocaleDateString(undefined, {
-          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-        });
-        out.push({
-          date: visitDate,
-          time: visitWindow || 'Any time',
-          label: `${when}${visitWindow ? `, ${visitWindow}` : ''}`,
-        });
-      }
-      return out;
-    }
     if (days.length > 0 || times.length > 0) {
       const label = [days.join(', '), times.join(' / ')].filter(Boolean).join(' — ');
       out.push({ date: '', time: label || 'Flexible', days: days.join(', ') });
@@ -276,14 +236,8 @@ export function PublicIntakeForm({
              alert and the lead card both read, and attribution stands. */
           entry_location: source || entryLocation,
           intent: intentFor(category, isCart),
-          details: (() => {
-            /* The visit rides in `details`, beside every other category answer,
-               so it prints in the staff email (REQ.DETAILS) and on the lead
-               without displacing anything. */
-            const d = { ...cleanDetails };
-            if (asVisit) d.visit_requested = 'Yes — would like to come and visit';
-            return Object.keys(d).length ? d : undefined;
-          })(),
+          details: Object.keys(cleanDetails).length ? cleanDetails : undefined,
+          interests,
         },
         selections ?? [],
       );
@@ -310,15 +264,21 @@ export function PublicIntakeForm({
               {/* Owner, 2026-09-01: on the visit form the question is what they are
                   INTERESTED IN — they are not asking for help, they are telling us
                   which side of the barn to walk them round. */}
-              {asVisit ? 'What are you interested in?' : 'What can we help with?'}
+              What can we help with?
             </label>
             <select
               id="pi-category"
               className="form-input"
               value={category}
-              onChange={(e) => setCategory(e.target.value as RequestCategory)}
+              onChange={(e) => {
+                setCategory(e.target.value as RequestCategory);
+                // A tick revealed by the previous answer means nothing under the
+                // new one; carrying it forward records an interest they were
+                // never shown.
+                setInterests([]);
+              }}
             >
-              {(visit ? VISIT_CATEGORIES : CATEGORIES).map((c) => (
+              {CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>
                   {c.label}
                 </option>
@@ -511,65 +471,40 @@ export function PublicIntakeForm({
           </p>
         </div>
 
-        {/* The offer itself — only on a form that is not already a visit form. */}
-        {offerVisit && !visit && (
+        {/* ── THE CHECKBOXES THE MENU REVEALS ────────────────────────────
+            Owner, 2026-09-01: *"the menu selection happens first, the checkboxes
+            are shown once that selection is made and the checkbox options are
+            dependent on which menu item is selected."*
+            ⚠️ They go to `requests.interests`, a field of their own. They are NOT
+            the menu answer, and they never touch `entry_location` — *"It cannot
+            wipe the attribution tagging."* */}
+        {interestOptions.length > 0 && (
           <div className="sm:col-span-2">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={wantsVisit}
-                onChange={(e) => setWantsVisit(e.target.checked)}
-              />
-              <span className="text-sm text-green-900">
-                I&apos;d like to come and visit
-                <span className="block text-[12.5px] text-muted">
-                  Pick a day and a window below and we&apos;ll be in touch to arrange it.
-                </span>
-              </span>
-            </label>
+            <span className="form-label">
+              {category === 'visit'
+                ? 'What are you interested in? (tick any that apply)'
+                : 'While you are here'}
+            </span>
+            <div className="flex flex-col gap-2 mt-1">
+              {interestOptions.map((opt) => (
+                <label key={opt.value} className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={interests.includes(opt.value)}
+                    onChange={(e) => setInterests((prev) => (
+                      e.target.checked
+                        ? [...prev, opt.value]
+                        : prev.filter((x) => x !== opt.value)))}
+                  />
+                  <span className="text-sm text-green-900">{opt.label}</span>
+                </label>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* ── VISIT MODE: one date, one window ─────────────────────────────
-            Owner, 2026-09-01. The three windows are the barn's, not a generic
-            morning/afternoon/evening — they are the hours somebody can actually
-            be shown around. */}
-        {asVisit ? (
-          <div className="sm:col-span-2">
-            <span className="form-label">When would you like to visit?</span>
-            <div className="grid gap-3 sm:grid-cols-2 mt-1">
-              <input
-                type="date"
-                className="form-input"
-                aria-label="Visit date"
-                min={new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)}
-                value={visitDate}
-                onChange={(e) => setVisitDate(e.target.value)}
-              />
-              <div className="flex flex-wrap gap-1.5 items-center">
-                {['9am–noon', 'noon–3pm', '3pm–6pm'].map((w) => (
-                  <button
-                    key={w}
-                    type="button"
-                    aria-pressed={visitWindow === w}
-                    onClick={() => setVisitWindow((prev) => (prev === w ? '' : w))}
-                    className={`text-xs px-3 py-1.5 rounded-full border ${
-                      visitWindow === w
-                        ? 'bg-green-800 text-white border-green-800'
-                        : 'bg-white text-green-800 border-green-800/30'}`}
-                  >
-                    {w}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <p className="form-hint mt-2">
-              We&apos;ll be in touch to agree the details — nothing is booked yet.
-            </p>
-          </div>
-        ) : (
-        /* Availability — preferences and/or specific date+times, all optional */
+        {/* Availability — preferences and/or specific date+times, all optional */}
         <div className="sm:col-span-2">
           <span className="form-label">When works for you? (optional)</span>
           <div className="flex flex-wrap gap-1.5 mt-1">
@@ -612,7 +547,6 @@ export function PublicIntakeForm({
             </button>
           )}
         </div>
-        )}
       </div>
 
       {children}
