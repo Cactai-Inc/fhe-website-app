@@ -4,8 +4,8 @@
 Role / thread   TASK-SIGNFLOW-D · wt-1 · branch task/signflow-d
 Merge-base      c23dc022 (origin/main at checkout) — origin/main not moved since fetch
 DONE            worktree claimed, ledger opened, CLNR pass run, spec §2 re-verified, §4.2 measured against prod
-IN FLIGHT       Phase 1 §4 — measurements 2 done (usage + deliveries); 1 (prod fetch), 3 (module trace), 4 (/sign coverage) remain
-NEXT            fetch the 3 routes in production, then trace §4.3 modules
+IN FLIGHT       Phase 1 COMPLETE, stop condition did not fire. Starting Phase 2 step 1 (routes)
+NEXT            §7.1 remove the 3 routes + 2 imports from src/App.tsx
 DECIDED         —
 BLOCKED         —
 DO NOT          —
@@ -50,3 +50,45 @@ run these counts because the repo only had `VITE_*` keys. `psql "$(cat .env.db)"
   4-doc `/docs/release-participant` flow.**
 - **F3's "35 delivery rows" is WRONG. The real number is 28** (`document_deliveries` joined to
   KIOSK_TYPED documents), all channel EMAIL, 2026-07-28 → 2026-08-15. 107 delivery rows in total.
+
+### Phase 1 §4.1 · §4.3 · §4.4 · §4.5
+
+**§4.1 PRODUCTION REACHABILITY.** The site is `https://www.frenchheritageequestrian.com`
+(`src/components/Seo.tsx`). ⚠️ **It is an SPA: EVERY path returns HTTP 200 with the same 9,474-byte
+`index.html` shell** — `/release`, `/release/general`, `/docs/release-participant`, `/sign`,
+`/sign/guest` are byte-identical. **HTTP status can never distinguish a live route from a retired
+one here, and "404" in this task means the app's not-found SCREEN, not an HTTP 404.**
+So reachability was proved from the DEPLOYED BUNDLE instead — `curl .../assets/index-B5KF9vyk.js`
+(2,525,045 bytes): `"/docs/release-participant"` ×2, `"release/:releaseKey"` ×1, `"sign-release"` ×1,
+`"sign/guest"` ×1. **All three routes are live and shipping today.** No form was submitted.
+
+**§4.3 MODULE TRACE — nothing has a second live consumer.**
+| module | other consumers | verdict |
+|---|---|---|
+| `src/pages/Release.tsx` (+`RELEASE_OPTIONS`) | none — export used only inside itself | GOES |
+| `src/pages/DocsParticipantFlow.tsx` | none but `App.tsx:32,240` | GOES |
+| `api-public.ts` `ReleaseTemplateKey`/`ReleasePreview`/`fetchReleasePreview`/`SignReleaseInput`/`SignReleaseResult`/`signRelease` | only the two pages | GOES |
+| `api-public.ts` `fetchIntakeRequirements` | `PublicIntakeForm.tsx:4`, `InquiryForm.tsx:33` | **STAYS — the file stays** |
+| `api/sign-release.ts` | only `api-public.ts:170` posts to it | GOES |
+| `api/deliver-documents` | `SendCopiesMenu.tsx:39`, `Onboarding.tsx:78,1229-1240` | 🔒 **STAYS, PROVEN** |
+| the hold close inside it (`deliver-documents.ts:486`) | onboarding's own held run | **STAYS — nothing kiosk-only to remove** |
+| `open_document_delivery_hold` | `Onboarding.tsx:21,627` `holdMyDocumentDelivery()`; widened for onboarding by `20260901T1420_signbook...:26,80` | **STAYS** |
+| `sign_release` / `sign_general_release` | ⚠️ `sign_general_release` has **ZERO code callers** — comments only | **NOT DROPPED (D32). Grants revoked only** |
+🔒 **THE ONE STOP CONDITION DOES NOT FIRE. Phase 2 runs.**
+
+**§4.4 `/sign/` COVERS ALL FIVE KEYS — from `sign_path_document_requirements` in PRODUCTION**
+(owner-editable table, seeded `20260824T1210_offeringdocs_sign_paths_and_tags_stop_deciding.sql:53`;
+applied by `api/sign-start.ts:401` `apply_sign_path_documents`):
+- `RELEASE_GENERAL` → **`/sign/guest`**
+- `RELEASE_PARTICIPANT` → **`/sign/rider`, `/sign/horse`, `/sign/rider+horse`**
+- `FACILITY_RULES` → **all four**
+- `COMPANY_POLICIES` → **all four**
+- `HUMAN_EMERGENCY_MEDICAL` → **`/sign/rider`, `/sign/rider+horse`**
+🔒 **NO GAP. `/sign/rider`'s set is EXACTLY the four documents the kiosk ever produced**
+(RELEASE_PARTICIPANT + FACILITY_RULES + COMPANY_POLICIES + HUMAN_EMERGENCY_MEDICAL). **Nothing for
+TASK-SIGNFLOW-E.**
+
+**§4.5 LINKS IN THE WILD.** The repo proves NOTHING links to either (§2, re-run). A printed QR code,
+a laminated sign, or a link in a past sent email is invisible from here — and 10 real people reached
+`/docs/release-participant` somehow, so a link exists SOMEWHERE outside the repo. Owner ruled it: a
+retired URL 404s.
