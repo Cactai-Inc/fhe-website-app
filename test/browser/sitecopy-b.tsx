@@ -95,7 +95,10 @@ window.__rpcFixtures = {
 };
 
 /** The `payment` step's own mount, lifted out so the retired surface renders with
- *  the order it would have had. */
+ *  the order it would have had.
+ *  (react-refresh wants components in an exported module; a probe harness entry is
+ *  a script with a side effect and has no HMR story, so the rule does not apply.) */
+// eslint-disable-next-line react-refresh/only-export-components
 function RetiredOnboardingPayment() {
   const [order, setOrder] = useState<(Order & { items: OrderItem[] }) | null>(null);
   const [payment, setPayment] = useState<Payment | null>(null);
