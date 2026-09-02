@@ -17,6 +17,14 @@
  * main bundle and only loads when a member actually clicks Download.
  */
 import { PDFDocument, StandardFonts, rgb, type PDFFont } from 'pdf-lib';
+/* ⚠️ THE ONE PLACE THIS FILE DELIBERATELY DIVERGES FROM ITS SERVER TWIN.
+   `resolveUnsignedSignatureTokens` used to be a private copy here. It is now
+   imported, because on the client three consumers share it (this writer and the
+   two on-screen renderers) and D18 forbids a second implementation beside a
+   correct one. api/_lib/documentPdf.ts CANNOT import it — the two tsconfig
+   projects share no module, per the note above — so it keeps the inline copy.
+   The BEHAVIOUR is identical and must stay so; only the location differs. */
+import { resolveUnsignedSignatureTokens } from './documentBody';
 
 const PAGE_W = 612; // US Letter, points
 const PAGE_H = 792;
@@ -81,20 +89,6 @@ function wrap(text: string, font: PDFFont, size: number, maxWidth: number): stri
 }
 
 /** Render one document body to a PDF, returned as bytes (Uint8Array). */
-/** An unsigned body still carries its literal {{SIG.*}} tokens — generate_document
- *  leaves `kind = 'signature'` alone because a signature is written when somebody
- *  signs. The working-copy PDF is exactly that document, so it gets the same
- *  treatment the on-screen renderer gives it: the date is a fact we know, the
- *  signature is the one thing we must not invent. */
-function resolveUnsignedSignatureTokens(body: string): string {
-  const stamp = new Date().toLocaleDateString('en-US', {
-    month: 'long', day: 'numeric', year: 'numeric',
-  });
-  return body
-    .replace(/\{\{SIG\.[A-Z_]+\.DATE\}\}/g, stamp)
-    .replace(/\{\{SIG\.[A-Z_]+\.(?!DATE)[A-Z_]+\}\}/g, '');
-}
-
 export async function renderDocumentPdf(title: string, body: string): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.TimesRoman);
