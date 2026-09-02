@@ -922,3 +922,20 @@ reporting success.
   (1) **Never "hunter/jumper" — FHE trains jumpers only.** (2) **The business is a PROGRAM (or the
   tenant's chosen property word via `usePropertyTerm()`), never "the barn", in any copy a guest or
   member reads.** Enforced by `TASK-SITECOPY-A/B`; any future copy task inherits both.
+
+- **D39 — THE UNIT OF WORK IS THE OUTCOME, NOT THE INSTRUCTION (owner, 2026-09-01).** Said after a
+  thread built exactly the field he named and nothing that made it visible: *"its obvious that if we
+  collect any information from a person it needs to be visible somewhere, right? … you seem to really
+  like to build half of something and skip the part where it becomes usable or accessible."*
+  🔒 **"Add a field" is never the job — the job is what the field makes possible.** Anything CAPTURED
+  is named with the surface that SHOWS it and the surface it is ACTED ON from, and for anything
+  time-bound that means the surface the owner actually watches, not a detail page he must go looking
+  at. ⚠️ **And anything the outcome needs that was not asked for is PRESENTED BEFORE THE WORK IS
+  CALLED DONE** — *"if there are additional things to be done, present them to the user before
+  completing your work."*
+  ⚠️ **THIS IS NOT A RESTATEMENT OF D17.** D17 asks what a person clicks to reach a FEATURE, and it
+  is answered in a spec's own §THE REACH section. **D39 governs work that arrives as a bare
+  instruction with no spec** — which is exactly where the question gets skipped, and where it was
+  skipped. ⚠️ **It fails hardest under time pressure:** the thread cut the reach question *because* a
+  customer was waiting, which is how the customer finds the missing half in production.
+  Enforced in `docs/method/TASK-ROLE.md` §2c as three questions every report must answer.

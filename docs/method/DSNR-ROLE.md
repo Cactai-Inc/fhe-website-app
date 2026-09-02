@@ -131,6 +131,11 @@ requirements live there. **Carry only what is specific to this task.**
 4. **THE TRAPS** — named, with why each is a trap. ⚠️ **This is most of a spec's value.**
 5. **What is OUT of scope**, explicitly.
 6. **THE REACH** — *what does a person click, from which page, and is that the only way?*
+   ⚠️ **AND, FOR ANYTHING THE SPEC ASKS TO BE CAPTURED: WHERE IS IT SEEN, AND WHERE IS IT ACTED
+   ON?** (`TASK-ROLE.md` §2c, D39, owner 2026-09-01.) A spec that names a new column, key or answer
+   without naming its reader hands a build thread the failure ready-made — and one did:
+   `requests.interests` shipped stored and rendered nowhere. **For anything time-bound, name the
+   surface the owner actually WATCHES, not the detail page he would have to go looking at.**
 7. **THE TELL** — what the user sees confirming what happened, and how it is undone (D19).
 8. **THE TEST THIS MUST PASS** — numbered, provable, ⚠️ **built from the validation criteria the owner
    agreed in step 3, not from your own idea of done.**
