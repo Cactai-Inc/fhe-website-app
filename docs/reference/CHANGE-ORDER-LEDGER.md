@@ -4350,3 +4350,29 @@ in their cart needs to go to the cart."* **R2** `/ride`/`/shop`/`/membership`: *
 redirect to the booking page the CTA links to"* — keep-and-301 to `/lessons`; 404 struck; SITESEO
 ungated. **R3** narrows D37 — tier lines only on prompts that LAUNCH threads (amended in CLAUDE.md,
 ORCHESTRATOR.md, DSNR/DISCO role files).
+
+## CR-106 — full public-site SEO audit + full analytics with attribution, an admin analytics page, and dashboard tiles
+**SAID (owner, 2026-09-02, verbatim):**
+> *"SITESEO needs to do a full SEO audit for the public facing website pages only and we need full
+> analytics with ref attribution and click level user tracking so we know where they went, what they
+> did, and where they were when they came to us. the analytics needs to feed an analytics page in the
+> app under the admin section and certain key data points should be visible on the admin and ops
+> dashboards."*
+**Recorded by ORCH; routed to research (DISCO profile) before any spec.** Widens SITESEO beyond its
+current spec (301s + route-list convergence, which stays dispatchable as-is). The analytics half
+needs a tooling decision (Vercel Web Analytics is live but is page-level; click-level tracking with
+referrer attribution needs an events pipeline or product choice — a ruling to prepare, not invent),
+a privacy/consent consideration (CA), the admin page, and the dashboard tiles (D26 surfaces).
+
+## CR-107 — many dashboards, with an accessibility selector for the two owner accounts
+**SAID (owner, 2026-09-02, verbatim, asked as "did we do the dashboard refactor where…"):**
+> *"…there are a lot of different ones and i can enable them as accessible for claire and myself and
+> we can choose which ones we want to have accessible from the dashboards page using a selector of
+> some kind?"*
+**Answer established from the record: NO — not built.** What shipped is TASK-DASHBOARDBUILD
+(2026-08-22): the two D26 role-emphasis ops dashboards on the self-arranging zone framework
+(`src/lib/dashboard/registry.ts`). The multi-dashboard build was planned
+(`docs/design/DASHBOARDS-GROUND-UP-PLAN.md`, owner was reviewing) and held; TASK-FIX6 ("the
+dashboards — renders what exists") never ran. ⚠️ **The D13 exception ruled out per-zone ARRANGEMENT
+editors; a WHICH-DASHBOARDS-ARE-ACCESSIBLE selector is access control, not arrangement — it is not
+excluded by that ruling.** Routed: revisit the plan against this description before any build.
