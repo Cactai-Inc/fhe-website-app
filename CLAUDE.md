@@ -914,3 +914,11 @@ reporting success.
   THINKING on/off when the model is not Fable** (Fable needs no thinking line). Recorded in all
   four role files + `ORCHESTRATOR.md` § THE PROMPT — the role files predated both rules, which is
   why DISCO's SIGNFLOW handoff shipped without a name or tier line.
+
+- **D38 — PUBLIC-COPY IDENTITY RULINGS: FHE IS JUMPER-ONLY, AND IT IS A PROGRAM, NOT A BARN
+  (owner, 2026-08-26, promoted to a D-rule 2026-09-01).** Two wording rulings lived only in
+  `docs/design/refactor/CHAT-THREAD-ADMIN-REFACTOR-2026-08-26.md:104-112` and nothing stopped the
+  words returning in the next round of marketing copy — DSNR-SITE-PUBLIC flagged the gap.
+  (1) **Never "hunter/jumper" — FHE trains jumpers only.** (2) **The business is a PROGRAM (or the
+  tenant's chosen property word via `usePropertyTerm()`), never "the barn", in any copy a guest or
+  member reads.** Enforced by `TASK-SITECOPY-A/B`; any future copy task inherits both.
