@@ -34,3 +34,25 @@ Zero migrations touch both `contract_clauses` and `{{SIG.` — clause bodies nev
 
 ## RESUME BLOCK (updated)
 - Next: build §3 steps 1–5. `api/_lib/documentPdf.ts` untouched (§3.6).
+
+## BUILD COMPLETE — commit `d78d3b3c`
+All five §3 steps done. Gates: tsc clean, typecheck clean, typecheck:api clean,
+lint 45 warnings/0 errors (= baseline, stash-verified), build ✓ 4.27s.
+Proofs run against PRODUCTION data, not reasoning:
+- T3: real EXECUTED body (14,199 chars) → `resolve(body) === body` TRUE, 7/7 pages, breaks identical.
+  0 of 81 EXECUTED docs contain a literal `{{SIG.`.
+- T2: live Pamela lease (25,813 chars, 13 pages) → resolve-then-paginate vs paginate-then-resolve
+  DIFFER at page 12 (25581 vs 25493). The trap is real. Shipped order === already-real control.
+- Tell: `{{` count 4 → 0; today's stamp present.
+
+## ⚠️ OPEN QUESTION HANDED TO THE OWNER (report §5)
+`remerge_contract_from_clauses:171` appends `.` to any composed line not ending in punctuation, so
+`Signature: {{SIG.LESSEE.NAME}}` is stored as `...}}.`. After resolution the line is `Signature: .`
+and SIGNATURE_LINE's `(.+)` script-faces the lone period. Affects the 3 unsigned docs, 0 of 81
+executed. Every fix is forbidden by §3/§5, so NOT fixed — decision sent up. Spec's T4 is false on
+real data because of this.
+
+## FINAL STATE
+Report at `docs/reports/TASK-SIGNFLOW-A-REPORT.md`. Branch `task/signflow-a` @ `d78d3b3c`, NOT pushed.
+merge-base `0ae5855f` (origin/main since advanced to `d6eb5691`, docs-only, no overlap).
+Next station: ORCH.
