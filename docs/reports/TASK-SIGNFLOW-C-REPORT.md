@@ -311,7 +311,7 @@ $ git worktree list
 /Users/Cactai/Downloads/claude-code-repo/fhe-website-app 8edfe7fe [main]
 /Users/Cactai/Downloads/claude-code-repo/wt-1            8edfe7fe (detached HEAD)
 /Users/Cactai/Downloads/claude-code-repo/wt-2            8edfe7fe (detached HEAD)
-/Users/Cactai/Downloads/claude-code-repo/wt-3            b54e3a25 [task/signflow-c]   ← mine
+/Users/Cactai/Downloads/claude-code-repo/wt-3            (tip of task/signflow-c) [task/signflow-c]   ← mine
 $ ps aux | grep -E 'vite|node |vitest|playwright|chromium|esbuild' | grep -v grep
 (empty — I started no server or browser; the build and tests exited)
 ```
