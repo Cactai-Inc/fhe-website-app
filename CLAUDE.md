@@ -979,24 +979,3 @@ reporting success.
   5. **Discussion now lives in ORCH's window, which is what DISCO existed to prevent — the accepted
      cost.** The mitigation is THE-RUNNING-RECORD discipline: the board and ledgers stay current so
      an ORCH handoff loses one step, not a session.
-
-- **D42 — THE WORKLIST-AND-BUNDLE PATTERN FOR ORCH (owner, 2026-09-02).** Extends D41. Owner:
-  *"gather as much information from me as you can upfront, author it into a file that you read from
-  as the to-do list, then run a pass over the file to collect them into groups based on the context
-  relevance to one another… we attack the bundle in one orch thread if we run past 50% context
-  budget we dump and restart a fresh thread… once we are done with that bundle we return to the main
-  orch thread and review the list, anything new added to it is assigned to a bundle, we pick the
-  next bundle to start and spawn a fresh orch thread, and the pattern repeats."*
-  **The mechanics:**
-  1. **`docs/orch/WORKLIST.md` is the intake file.** Every item the owner raises lands there
-     verbatim before anything else happens to it. The MAIN ORCH thread owns it.
-  2. **A grouping pass bundles items by SHARED CONTEXT** — same surface, same machine, same files —
-     never by theme-sounding similarity. Bundles are named; a bundle name is a change name (D37).
-  3. **One bundle = one ORCH thread** (`FHE-ORCH-<BUNDLE>`), which sequences that bundle's tasks,
-     dispatches, verifies, records. 🔒 **At 50% of its context budget it DUMPS — board + ledger +
-     bundle notes current — and hands the owner a fresh-thread spawn prompt for the same bundle.**
-     Heritability comes from the notes; the rest of the window is deliberately flushed.
-  4. **Bundle done → back to the MAIN ORCH thread:** review the worklist, assign anything new to
-     bundles, pick the next bundle, spawn its thread. Repeat.
-  5. The board stays the single right-of-way record across all of it; the worklist is intake and
-     grouping, never dispatch state.
