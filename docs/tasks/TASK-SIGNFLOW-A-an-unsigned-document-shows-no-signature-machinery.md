@@ -44,8 +44,18 @@ verbatim in `src/components/app/ContractCascade.tsx:270-284`):
 |---|---|---|---|
 | 1 | `src/pages/app/Onboarding.tsx:1994` | `<BodyWithSignatures text={body}>` — **the surface the owner was looking at** | ❌ no |
 | 2 | `src/pages/app/ops/DocumentViewerPage.tsx:200` → `MergedBodyView` (`src/components/ops/documents/MergedBodyView.tsx:77`) | staff doc viewer | ❌ no |
-| 3 | ⚠️ **`src/pages/DocsParticipantFlow.tsx:432`** — **MISSED BY DISCO** | the PUBLIC participant signing flow, route `/docs/release-participant` (`src/App.tsx:240`); renders an **unsigned `previewBody`** immediately above the "type your full name to sign" box | ❌ no |
-| 4 | `src/pages/Release.tsx:274` | kiosk confirmation, an **executed** body | ❌ no — but harmless, nothing left to match. **Covered for free; do not special-case it.** |
+| 3 | ⚠️ **`src/pages/DocsParticipantFlow.tsx:432`** — **MISSED BY DISCO** | the PUBLIC participant flow, `/docs/release-participant`; renders an **unsigned `previewBody`** above the signature box | ❌ no — 🔻 **RETIRING, see below** |
+| 4 | `src/pages/Release.tsx:274` | the public kiosk confirmation, an **executed** body | ❌ no — harmless, nothing left to match — 🔻 **RETIRING, see below** |
+
+### 🔻 READERS 3 AND 4 ARE BEING DECOMMISSIONED — YOU GET THEM FOR FREE AND SPEND NOTHING
+**Owner, 2026-09-01:** *"we dont use docs/release-participant nor /release, those urls if they are
+still operational should be traced and most likely anything associated with them should be
+decommissioned and the /sign/ flow should be the single pathway we use."*
+🔒 **`TASK-SIGNFLOW-D` owns their retirement. You do not touch them, and you do not verify them.**
+**They both render through `BodyWithSignatures`, so §3's single edit fixes them at zero cost — which
+is the only reason they stay on this list at all.** ⚠️ **Do NOT write a line of code aimed at either
+page, and do NOT put them in the owner's checklist.** **One line in your report: "readers 3 and 4
+resolve via the shared renderer; both pending decommission under TASK-SIGNFLOW-D; not verified."**
 | 5 | `PaperViewer`, `src/components/app/DocumentsContent.tsx:139` | the "Read" reader on `/app/documents` and the Account panel: `{doc.pages[page]}` — **raw text**, and **no signature script-face styling at all** | ❌ no |
 
 ⚠️ **DISCO's line number for the onboarding reader (1963) was already stale on the day it was written.
@@ -116,8 +126,9 @@ also correct at what it does — it script-faces `Signature: <name>` / `By (sign
 - **T5 — three copies, and after this task there must be exactly two.** `src` gets ONE
   (`src/lib/documentBody.ts`); `api/_lib` keeps its twin. ⚠️ **Prove it:**
   `grep -rn "UNSIGNED_SIG_DATE" src api` must return **one hit under `src/`** and one under `api/`.
-- **T6 — `DocsParticipantFlow` is a PUBLIC route.** `/docs/release-participant`, no auth. It is the
-  one reader you cannot check with a staff login. Include it in the owner's checklist by URL.
+- **T6 — do not chase the retiring pages.** `/docs/release-participant` and `/release` are public,
+  unauthenticated, and on their way out (`TASK-SIGNFLOW-D`). ⚠️ **Reader 5, `PaperViewer`, is the one
+  that needs real work and is easy to skim past because it is not in DISCO's list.**
 
 ## 5. OUT OF SCOPE — do not touch
 - **Colour.** `CR-102` is `TASK-SIGNFLOW-C/D/E` and owns every `gold-*` in these files. ⚠️ **You and
@@ -161,9 +172,10 @@ name the phone.**
 2. **Unsigned, Documents "Read"** (`PaperViewer`): same three results — **and** an already-signed
    `Signature: Jane Doe` line now renders in the script face, which it never did before.
 3. **Unsigned, ops viewer** (`/app/ops/documents/:id`): same three results.
-4. **Unsigned, public participant flow** (`/docs/release-participant`, logged out): same three results.
-5. **Executed, all four**: **unchanged** — real name in script face, real date. Compare against the
-   same document before the change.
+4. ⚠️ **NOT TESTED: `/docs/release-participant` and `/release`.** They are covered by the same edit
+   and are being retired — **one line in the report, no walk, no checklist entry.**
+5. **Executed, in readers 1, 2 and 3**: **unchanged** — real name in script face, real date. Compare
+   against the same document before the change.
 6. **A multi-page document in `PaperViewer`** paginates identically to a document whose tokens were
    already real — i.e. the page break did not move because of a token. State which document you used
    and its page count.

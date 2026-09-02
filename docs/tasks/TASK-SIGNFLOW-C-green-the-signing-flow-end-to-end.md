@@ -55,18 +55,26 @@ off by one or two nearly everywhere. **Use the table in §3 and re-run it yourse
 **Of those 568, this task changes 175 — about 31%. The other 393 stay gold** and are the owner's
 "nav and other accents throughout the app."
 
-⚠️ **The finding that decides this task's shape:** `grep -oE 'gold-[0-9]+'` on the three **public**
-signing doors returns **ZERO**.
+⚠️ **The finding that decides this task's shape:** `grep -oE 'gold-[0-9]+'` on the **public** signing
+door returns **ZERO**.
 
 | Door | inline `gold-*` | `eyebrow` | `btn-outline-gold` | `btn-sign` |
 |---|---:|---:|---:|---:|
 | `src/pages/SignStart.tsx` | **0** | 1 | 1 | 0 |
-| `src/pages/DocsParticipantFlow.tsx` | **0** | 5 | 0 | 0 |
-| `src/pages/Release.tsx` | **0** | 5 | 2 | 1 |
+| ~~`src/pages/DocsParticipantFlow.tsx`~~ | 0 | 5 | 0 | 0 | 🔻 **OUT — retiring** |
+| ~~`src/pages/Release.tsx`~~ | 0 | 5 | 2 | 1 | 🔻 **OUT — retiring** |
 
-🔒 **THEREFORE: replacing inline `gold-*` classes ALONE leaves three of the signing flow's pages
-completely unchanged.** **All of their brown arrives through GLOBAL CLASSES in `src/index.css`.**
-**That is why §4 exists, and it is the part of this task that is not find-and-replace.**
+🔒 **THEREFORE: replacing inline `gold-*` classes ALONE leaves `/sign/...` — the public door, and the
+one the owner has ruled will become the single pathway — completely unchanged.** **All of its brown
+arrives through GLOBAL CLASSES in `src/index.css`.** **That is why §4 exists, and it is the part of
+this task that is not find-and-replace.**
+
+### 🔻 TWO PAGES CUT FROM THIS TASK ON 2026-09-01 — DO NOT PAINT THEM
+**Owner:** *"we dont use docs/release-participant nor /release … the /sign/ flow should be the single
+pathway we use."* 🔒 **`TASK-SIGNFLOW-D` retires them. Greening a page that is being deleted is waste
+and creates a merge conflict with `D`.** ⚠️ **`Release.tsx:466` uses `.btn-sign`, which you flip
+anyway (§5.2) — that is incidental and costs you nothing. Do not apply `.flow-green` to either page
+and do not open either file.**
 
 ## 3. 🔒 THE FILE LIST — exhaustive. 15 files, 175 inline refs, 9 `gold-ink`.
 ⚠️ **A file not on this list is out of scope. Re-grep every count before you start.**
@@ -85,12 +93,10 @@ completely unchanged.** **All of their brown arrives through GLOBAL CLASSES in `
 | `src/components/app/PartyDocumentView.tsx` | 3 | 0 | the party's read of a document |
 | `src/components/app/DocumentsContent.tsx` | 2 | 3 | `/app/documents` + the Account panel |
 | `src/pages/SignStart.tsx` | **0** | 0 | **the public door** — §4 only |
-| `src/pages/DocsParticipantFlow.tsx` | **0** | 0 | **the public participant flow** — §4 only |
-| `src/pages/Release.tsx` | **0** | 0 | **the kiosk release** — §4 only |
 | `src/pages/app/ops/DocumentViewerPage.tsx` | **0** | 0 | staff doc viewer — **verified clean, nothing to do** |
 | **total** | **175** | **9** | |
 
-**Plus `src/index.css`** — §4 and §5 only. **That is the complete set: 16 files.**
+**Plus `src/index.css`** — §4 and §5 only. **That is the complete set: 14 files.**
 
 ### ⚠️ WHAT IS DELIBERATELY *NOT* HERE, AND WHY
 An earlier draft of this change order included the staff **template and queue tooling** —
@@ -134,9 +140,9 @@ tokens **for its descendants only**, and apply it at the root of the six signing
 (0,3,0) beats `.focus-ring:focus-visible` (0,2,0). ⚠️ **Do not reach for `!important`. If you find
 yourself needing it, the selector is wrong — say so and stop.**
 
-**The six application points** (⚠️ re-grep; `A` and `B` have moved lines):
-`Onboarding.tsx` · `SignStart.tsx` · `DocsParticipantFlow.tsx` · `Release.tsx` · `ContractPage.tsx` ·
-`DocumentsContent.tsx`.
+**The FOUR application points** (⚠️ re-grep; `A` and `B` have moved lines):
+`Onboarding.tsx` · `SignStart.tsx` · `ContractPage.tsx` · `DocumentsContent.tsx`.
+🔻 **`DocsParticipantFlow.tsx` and `Release.tsx` were the fifth and sixth and are CUT — retiring.**
 ⚠️ **`SignStart.tsx` returns a FRAGMENT (`<>`), not an element** — see `:507`. **Wrap its sections in
 a `div className="flow-green"`, or put the class on each top-level `<section>`. Check every one of the
 six for this before assuming there is a single root to decorate.**
@@ -149,7 +155,8 @@ as `/app/documents`. **Scoping it at its own root is correct and greens it in bo
    verbatim and stating plainly that **it exists because the rest of the app stays gold on purpose.**
 2. 🔒 **`.btn-sign` (`index.css:245-256`) — FLIP THE CLASS ITSELF. Do not scope it.**
    **Verified: it has exactly three adopters and all three are the signing flow** —
-   `Release.tsx:466`, `Onboarding.tsx:2046`, `ContractPage.tsx:2307`. **Zero collateral.**
+   `Onboarding.tsx:2046`, `ContractPage.tsx:2307`, and `Release.tsx:466` (retiring — incidental, and it
+   costs you nothing since you change the class, not the call site). **Zero collateral.**
    `bg/border-gold-800` → `green-800` · `hover:gold-700` → `green-700` · `active:gold-600` →
    `green-600` · `ring-gold-800` → `ring-green-800`.
    ⚠️ **`index.css:228-245` records the owner's 2026-08-24 design for this button verbatim** —
@@ -239,14 +246,12 @@ inline deletes a semantic token for no gain.**
 | 2 | `/app/documents` **and** Account → Documents → **Read** | member | `DocumentsContent.tsx` |
 | 3 | `/app/contracts/:id` **as a party** | member / counterparty | `ContractPage.tsx` + the 8 contract components |
 | 4 | `/app/contracts/:id` → **Add Item** | staff, on the signing surface | `AddElementModal.tsx` |
-| 5 | `/sign/...` **deal branch** | counterparty, **often logged out** | `SignStart.tsx` — **§4 only** |
-| 6 | `/docs/release-participant` | **public, no login** | `DocsParticipantFlow.tsx` — **§4 only** |
-| 7 | `/release` and `/release/:releaseKey` | **kiosk, public** | `Release.tsx` — **§4 only** |
-| 8 | `/app/ops/documents/:id` | staff | `DocumentViewerPage.tsx` — **verified zero gold, nothing to do** |
+| 5 | `/sign/...` **all four funnels + the deal branch** | visitor / counterparty, **often logged out** | `SignStart.tsx` — **§4 only** |
+| 6 | `/app/ops/documents/:id` | staff | `DocumentViewerPage.tsx` — **verified zero gold, nothing to do** |
 
-⚠️ **Paths 5, 6 and 7 change ONLY through `.flow-green`.** 🔒 **If the scope class does not land, those
-three pages are untouched and the flow is not green end to end — which is the exact thing the owner
-asked for. They are the proof this task worked.**
+⚠️ **Path 5 changes ONLY through `.flow-green`.** 🔒 **If the scope class does not land, `/sign/...` is
+untouched and the flow is not green end to end — and `/sign/` is the pathway the owner has ruled
+everything will funnel into. It is the proof this task worked.**
 
 ## 10. THE TEST THIS MUST PASS
 **Built from the validation criteria the owner agreed on 2026-09-01
@@ -254,8 +259,9 @@ asked for. They are the proof this task worked.**
 ⚠️ **Renders are NOT verified by you** (`docs/method/TASK-ROLE.md` §3). **Items 5–10 are the numbered
 checklist you hand the owner, and it must name the phone.**
 
-1. 🔒 **`git diff --stat` shows exactly 16 files** — the 15 in §3 (minus any of the four zero-gold ones
-   you did not need to touch) plus `src/index.css`. ⚠️ **List them. A 17th is a failure.**
+1. 🔒 **`git diff --stat` shows at most 14 files** — the 13 in §3 (minus the two zero-gold ones you did
+   not need to touch) plus `src/index.css`. ⚠️ **List them. A 15th is a failure, and
+   `DocsParticipantFlow.tsx` or `Release.tsx` appearing at all is a failure.**
 2. 🔒 **`grep -rE 'gold-[0-9]+'` across §3's files returns ZERO.**
    `grep -rEo 'gold-[0-9]+' src | wc -l` goes **568 → 393**. ⚠️ **If it is not 393, find out why before
    you report.** State both numbers.
@@ -274,9 +280,10 @@ checklist you hand the owner, and it must name the phone.**
    — **zero brown**. The completed-document **strikethrough unchanged** (T7).
 6. **The sign button, all four states**: unarmed = muted outline · armed = filled green · hover
    lightens · press lightens again. ⚠️ **Name each state separately.**
-7. 🔒 **The three public doors — `/sign/...` (deal), `/docs/release-participant`, `/release`.**
-   **Eyebrow labels green, outline buttons green, focus rings green when tabbing, input focus borders
-   green when typing.** ⚠️ **These prove `.flow-green` landed. Test them LOGGED OUT.**
+7. 🔒 **The public door — `/sign/guest`, `/sign/rider`, `/sign/horse`, `/sign/rider+horse` and the
+   deal branch.** **Eyebrow label green, outline button green, focus rings green when tabbing, input
+   focus borders green when typing.** ⚠️ **This proves `.flow-green` landed. Test it LOGGED OUT.**
+   🔻 **Do NOT test `/release` or `/docs/release-participant` — they are out of scope and retiring.**
 8. **`/app/contracts/:id` as a party**, plus **Add Item** and the drawer: banner strips, change and
    amendment cards, activity card, subheader, inline fields, ⟦NEEDS⟧ marks, "Add …" controls —
    **zero brown**. ⚠️ **Open the modal and the drawer specifically — that is T5.**
