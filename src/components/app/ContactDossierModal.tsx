@@ -724,8 +724,30 @@ export function ContactDossierModal({
 
                   {d.account ? (
                     <>
+                      {/* ⚠️ THE ACCOUNT'S NAME IS THE PERSON'S NAME. Owner,
+                          2026-09-01: *"even though her name is listed her account
+                          shows 'no display name' under account name."*
+
+                          `profiles.display_name` is the COMMUNITY handle — the
+                          social layer's field, set by the member themselves, and
+                          nothing populates it at provisioning because nothing
+                          should. It is not the account's name, and printing
+                          "(no display name)" where the account's name belongs told
+                          staff a record was broken when it was complete: Casey
+                          Caddell's profile and contact both carry her name.
+
+                          So the row shows who the account IS, and the handle only
+                          when they have chosen one. */}
                       <Section title="Account">
-                        <Row main={d.account.display_name ?? '(no display name)'} sub={d.account.role ?? undefined}
+                        <Row
+                          main={[c.first_name, c.last_name]
+                            .map((v) => (typeof v === 'string' ? v.trim() : ''))
+                            .filter(Boolean).join(' ')
+                            || d.account.display_name
+                            || (typeof c.email === 'string' ? c.email : '')
+                            || 'This account'}
+                          sub={[d.account.role, d.account.display_name ? `“${d.account.display_name}”` : null]
+                            .filter(Boolean).join(' · ') || undefined}
                           badge={d.account.is_suspended ? 'suspended' : (d.account.member_status ?? undefined)} />
                       </Section>
                       <Section title="Sign-in">
