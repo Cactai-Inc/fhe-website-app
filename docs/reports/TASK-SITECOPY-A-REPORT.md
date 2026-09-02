@@ -228,3 +228,7 @@ On your phone or laptop, in an actual browser tab (not devtools' "view source" �
 - `wt-2` retained on branch `task/sitecopy-a`, commit `0e65023e`, not pushed — this is the
   deliverable worktree, not scratch; leaving it for ORCH's audit diff.
 - No other scratch worktrees created.
+
+---
+## VALIDATION — ORCH, 2026-09-02
+See TASK-SITECOPY-A-VERIFICATION.md beside this report — independently verified and merged; details there.

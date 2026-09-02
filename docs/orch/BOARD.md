@@ -4,7 +4,7 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-02 · **ORCH — D41 consolidation applied: two thread kinds, ORCH holds the conversation**
+**Last updated:** 2026-09-02 · **ORCH — wave 1 VERIFIED AND MERGED (SITECOPY-A · SIGNFLOW-B · SIGNFLOW-D); wave 2 dispatching**
 
 ## RESUME
 - ✅ **`TASK-LIFECYCLE` — VERIFIED, MERGED, PUSHED** (merge `5b9fed67`, docs `b9aa8b82`).
@@ -47,20 +47,22 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 ## ▶ THE PLAN OF RECORD — nothing below has started; the owner launches in this order
 **Canonical-checkout writer (D40): ORCH.** No docs thread is writing it right now.
 
-### Wave 1 — three build threads, three worktrees, file-disjoint
+### Wave 1 — ✅ ALL THREE VERIFIED AND MERGED 2026-09-02 (verification files beside each report)
+SITECOPY-A · SIGNFLOW-B (4th door accepted) · SIGNFLOW-D (anon grants closed; ran with merge priority)
+
+### Wave 2 — DISPATCH NOW, trees are free
 | Thread | Settings | Worktree |
 |---|---|---|
-| `FHE-TASK-SITECOPY-A` | Sonnet · HIGH · thinking OFF | `wt-2` |
-| `FHE-TASK-SIGNFLOW-B` | Opus · HIGH · thinking ON | `wt-3` |
-| `FHE-TASK-SIGNFLOW-D` | Opus · HIGH · thinking ON | `wt-1` — two-phase; its §5 questions come UP before Phase 2 removes |
-
-### Wave 2 — dispatched by ORCH as each wave-1 thread merges and frees its tree
-`FHE-TASK-SITECOPY-B` · `FHE-TASK-SIGNFLOW-A` · `FHE-TASK-LANDINGSIGNIN` (all Opus · HIGH · ON)
+| `FHE-TASK-SITECOPY-B` | Opus · HIGH · thinking ON | `wt-2` |
+| `FHE-TASK-SIGNFLOW-A` | Opus · HIGH · thinking ON | `wt-3` |
+| `FHE-TASK-LANDINGSIGNIN` | Opus · HIGH · thinking ON | `wt-1` |
+⚠️ **Pool hygiene (SIGNFLOW-B finding): stale `node_modules` broke the build until `npm ci` — run
+`npm ci` on entering a pool tree if deps changed on main since the tree last built.**
 
 ### Wave 3 — gated
 | Thread | Gate |
 |---|---|
-| `FHE-TASK-SITESEO` | after `SITECOPY-A` merges (shares `seo.ts`). ⚠️ **UNGATED by R2 — keep-and-301 to `/lessons`; `App.tsx` freed, the `<Navigate>` routes stay** |
+| `FHE-TASK-SITESEO` | ✅ **DISPATCHABLE NOW** — SITECOPY-A merged; keep-and-301 ruled. Runs in the first tree wave 2 frees (or after LANDINGSIGNIN, smallest of the three) |
 | `FHE-TASK-SIGNFLOW-C` | after `SIGNFLOW-A` AND `-B` merge; re-greps its line numbers |
 
 ### Docs tasks (D41: profiles, not roles) — ONE canonical-checkout writer at a time (D40)
@@ -70,6 +72,16 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 ORCH) ·
 `FHE-TASK-INROADS` (DISCO profile — fill the contract-inroads matrix from the database; research
 only, NO removal/merge/convergence; `SIGNFLOW-E` withdrawn)
+
+### New queue items out of wave 1
+- **`FHE-TASK-SIGNFLOW-F`** — the 3 remaining unnormalised address writers (ProvisionClientForm,
+  ContractIntake, ContractPage). DSNR-profile spec first; **sequenced AFTER SIGNFLOW-C** (ContractPage).
+- **D's §4/§5 leftovers** — 3 stale comments in other threads' files (exact replacements in the
+  report) + the caller-less `authenticated` grant on both retired sign functions.
+- **OWNER, from D's report:** (a) the redirect-vs-404 call on the two retired URLs — ten real people
+  used the old link from something outside the repo; (b) render checklists for all three merges.
+- **10 pre-D41 reports carry no VALIDATION block** (SIGNFLOW-B's CLNR finding) — SIGNSTRIP, SIGNDOOR,
+  AR4, REAPER, MODAL2, CR85, BOOKS1, BACKDATE, ZELLECLOSE, WALLSYNC. Backfill audit queued.
 
 ### 🔒 HOLDS
 - **Contract entry points (`/sign/deal` alignment, the three-state-door widening)** — HELD for the

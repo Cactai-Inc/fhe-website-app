@@ -276,3 +276,7 @@ $ git worktree list
 **All three Wave-1 threads are live and file-disjoint as the board planned.** ⚠️ **`wt-2` was idle and
 detached when I censused it at open; it is now claimed by `SITECOPY-A` — the board's Wave 1 is fully
 dispatched.**
+
+---
+## VALIDATION — ORCH, 2026-09-02
+See TASK-SIGNFLOW-B-VERIFICATION.md beside this report — independently verified and merged; details there.

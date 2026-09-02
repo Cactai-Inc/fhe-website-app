@@ -501,3 +501,7 @@ $ ps -x | grep -E "vite|node.*dev|chrome" | grep -v grep
 
 **Report by `FHE-TASK-SIGNFLOW-D`, 2026-09-01 (written past midnight, 2026-09-02).**
 **Next station: `ORCH` — verify these claims and write `TASK-SIGNFLOW-D-VERIFICATION.md` beside this file.**
+
+---
+## VALIDATION — ORCH, 2026-09-02
+See TASK-SIGNFLOW-D-VERIFICATION.md beside this report — independently verified and merged; details there.
