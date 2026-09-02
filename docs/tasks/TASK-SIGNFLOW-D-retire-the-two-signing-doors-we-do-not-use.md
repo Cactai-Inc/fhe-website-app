@@ -31,8 +31,16 @@ If one fires, you write the report and you stop — that is a SUCCESSFUL outcome
 > various scenarios/places/events a client would be served with the link to it."*
 > — owner, 2026-09-01
 
-⚠️ **Note the shape of the instruction: *traced*, then *most likely* decommissioned.** 🔒 **He is not
-certain, and neither am I. That is why Phase 1 exists and why it deletes nothing.**
+**AND THE RULING THAT SETTLED IT, same day, after this spec's first draft asked:**
+> *"we dont have a situation where a person without an account signs documents on an ipad or any other
+> way."* — owner, 2026-09-01
+
+🔒 **THAT IS THE ANSWER TO THE ONLY QUESTION THAT COULD HAVE STOPPED THIS TASK.** ⚠️ **An earlier
+draft held Phase 2 pending "is there a printed QR code" and "does visit-day need a replacement." Both
+are answered: there is no no-account signing scenario at all.** **Phase 2 runs. Do not re-ask either
+question.**
+**Phase 1 still runs first — he asked to have it *traced* — but it now measures for the record and to
+protect the removal order, not to decide whether to remove.**
 
 ## 2. WHAT WAS MEASURED — by DSNR on 2026-09-01, from the code. ⚠️ Re-run all of it.
 
@@ -115,27 +123,33 @@ task is "delete four routes" or "delete four routes AFTER something replaces vis
    (§2)** — and state plainly that **a printed QR code, a laminated sign at the barn, or a link pasted
    into a past email cannot be seen from here.** **That is §5 Q3 and only the owner can answer it.**
 
-## 5. ⚠️ THE THREE QUESTIONS THAT GO BACK UP — do not answer them yourself
-**`docs/method/TASK-ROLE.md`: a task thread emits a question or a report. These are questions.**
-**Put them at the TOP of your report, not the bottom.**
+## 5. 🔒 THE QUESTIONS ARE ANSWERED — do not re-ask them
+**An earlier draft sent three questions up. The owner answered all three on 2026-09-01 before this
+spec was dispatched:**
+- **Usage** — irrelevant to the decision. **Measure it for the record (§4.2), then proceed.**
+- **Visit-day** — *"we dont have a situation where a person without an account signs documents on an
+  ipad or any other way."* **There is nothing to replace.**
+- **Links in the wild** — same ruling. **A retired URL 404s.**
 
-- **Q1 — usage.** *"Production shows N documents and M deliveries through these flows, most recently
-  on <date>. Retire anyway?"* — with the real numbers from §4.2.
-- **Q2 — visit-day.** *"A walk-in visitor can no longer sign on the spot; they submit at `/sign/guest`
-  and sign in their account after activating it. Is that the intended visit-day experience, or does
-  something need to replace the kiosk first?"*
-- **Q3 — links in the wild.** *"Is there a printed QR code, a sign at the property, or a past email
-  pointing at `/release` or `/docs/release-participant`? Nothing in the repo does."*
+⚠️ **You still emit a question the moment something blocks you** (`docs/method/TASK-ROLE.md` §1).
+**But not these three.**
 
-## 6. 🔒 THE STOP CONDITIONS — if any fires, Phase 2 does NOT run
-⚠️ **Stopping here is a SUCCESSFUL outcome. Write the report and stop.**
-1. **Any production document or delivery attributable to these flows within the last 90 days.**
-2. **Any of the five document keys that `/sign/` cannot produce** (§4.4).
-3. **Any module in §4.3 that turns out to have a second, still-live consumer** you cannot cleanly
-   separate.
-4. **Any uncertainty about Q3** that you cannot resolve from the repo — ⚠️ **which is the expected
-   case. Q3 almost certainly stops Phase 2 on its own, and that is correct: a laminated QR code at a
-   barn is invisible from a git repository.**
+## 6. 🔒 THE STOP CONDITIONS — reduced to ONE by the owner's ruling
+⚠️ **Stopping is still a SUCCESSFUL outcome. But only one condition survives, and it is technical:**
+
+1. 🔒 **Any module in §4.3 that turns out to have a second, still-live consumer you cannot cleanly
+   separate.** ⚠️ **`api/deliver-documents` is the likeliest** — it is shared with
+   `SendCopiesMenu.tsx:39` and the onboarding set-delivery. **It STAYS. If separating the `hold_set`
+   path from it is not clean, stop and report rather than surgery-by-guess.**
+
+**THE THREE CONDITIONS THAT WERE HERE AND ARE NOW STRUCK, so you do not reinstate them:**
+- ~~production usage in the last 90 days~~ — ⚠️ **he ruled regardless of usage.** **Still MEASURE it
+  (§4.2) — you must know what exists so you do not delete it (D32) — but it does not gate the removal.**
+- ~~a document key `/sign/` cannot produce~~ — **still measure and report it (§4.4); it is a finding
+  for `TASK-SIGNFLOW-E`, not a stop here.**
+- ~~a printed QR code in the wild~~ — 🔒 **answered: *"we dont have a situation where a person without
+  an account signs documents on an ipad or any other way."*** ⚠️ **A stranger with an old link is now
+  a 404 by design, and §9 covers what to recommend about it.**
 
 ## 7. PHASE 2 — THE REMOVAL, only on a clean Phase 1 and only in this order
 🔒 **NOT A DELETION SPREE. Each step is separately provable and separately revertable.**
@@ -191,12 +205,15 @@ decision and belongs with Q2.*
 ⚠️ **Renders are NOT verified by you. Items 7–9 are the numbered checklist you hand the owner, and it
 must name the phone.**
 
-**If you stopped at Phase 1:**
-1. **All five §4 measurements are in your report, each with its query and its output.**
-2. **The three §5 questions are at the TOP of the report, with real numbers in Q1.**
-3. **Which STOP condition fired, and why.** ⚠️ **Nothing was changed** — `git diff --stat` is empty.
+**Phase 1, always:**
+1. **All five §4 measurements are in your report, each with its query and its output.** ⚠️ **§4.2's
+   attribution reasoning matters more than its number** — say how you separated kiosk-signed documents
+   from the identical template keys signed through `/app/onboarding`.
+2. **§4.4's answer** — which `/sign/` funnel produces each of the five document keys, with `file:line`.
+   ⚠️ **Any key nothing produces is a finding for `TASK-SIGNFLOW-E`. Report it in one line; do not fix it.**
+3. **If the one STOP condition fired:** say which module and why, and `git diff --stat` is empty.
 
-**If Phase 2 ran:**
+**Phase 2 — expected to run:**
 4. `grep -rn "release-participant\|Release.tsx\|DocsParticipantFlow" src api` returns **only** what
    §7.6's documentation edits leave behind. **List every remaining hit and why it is fine.**
 5. 🔒 **`pg_proc.proacl` for `sign_release` and `sign_general_release` shows NO `anon`**, pasted before
