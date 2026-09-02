@@ -1,3 +1,17 @@
+> # ⚠️ WITHDRAWN 2026-09-01, BEFORE DISPATCH — DO NOT BUILD THIS
+> **Its central "finding" — that `?kind=contract` is a legacy duplicate to retire — was WRONG.**
+> `api/contract-invite.ts:5-25` shows it is the **has-an-account branch of a deliberate two-branch
+> design**, and says in terms: *"This is a real case and that path serves it well … Neither
+> `redeem_contract_invitation` nor the CONTRACT kind is removed."*
+> **Owner, 2026-09-01:** *"there is a set of inroads to contracts that accommodate both when there is
+> an account and when the signer doesnt have their account activated with auth yet. dont want to
+> bungle the whole thing and multiple entry points to the same document doesnt make sense the way
+> youve said they exist, so we need to fully understand what we are looking at before taking action."*
+> 🔒 **Replaced by RESEARCH, not by a build: `docs/reports/FHE-SIGNFLOW-CONTRACT-INROADS.md`.**
+> Kept for its door-by-door trace of the five entry paths, which stands.
+
+---
+
 # TASK-SIGNFLOW-E — five doors, one signing flow. Prove it, then close the gaps.
 
 **Spec by `FHE-DSNR-SIGNFLOW`, 2026-09-01. Owner directive, same day — see §1.**
