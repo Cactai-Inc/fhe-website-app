@@ -29,3 +29,4 @@ with a change ORCH made or reversed, named in the report · `REVERTED` · `OPEN`
 | `TASK-SITECOPY-B` | 2026-09-02 | app self-description via usePropertyTerm, 5 strings, plural-proven; spec premise false (16 consumers existed); barnops wording question routed | **VERIFIED** | `870a0607` |
 | `TASK-SIGNFLOW-A` | 2026-09-02 | signature-token resolution centralised, 3 readers wired, executed bodies byte-identical; cursive-period defect routed | **VERIFIED** | `59135079` |
 | `TASK-LANDINGSIGNIN` | 2026-09-02 | landing Sign In, pathname-gated, cart-frame shape; two physical deviations accepted | **VERIFIED** | `9891bcd5` |
+| `TASK-SIGNFLOW-C` | 2026-09-02 | signing flow green end-to-end (175 refs, .flow-green scope, .btn-sign flip); chooser diff applied by ORCH; semantic-pair collapse to owner checklist | **VERIFIED** | `56be160a` |

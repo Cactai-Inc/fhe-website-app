@@ -4,7 +4,7 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-02 · **ORCH — waves 1 AND 2 all VERIFIED AND MERGED; wave 3 (SIGNFLOW-C · SITESEO) dispatching**
+**Last updated:** 2026-09-02 · **ORCH — SIGNFLOW-C VERIFIED AND MERGED; SITESEO out in wt-2; wt-3 free; RANCHWORD/TACKROOM queued for wt-1**
 
 ## RESUME
 - ✅ **`TASK-LIFECYCLE` — VERIFIED, MERGED, PUSHED** (merge `5b9fed67`, docs `b9aa8b82`).
@@ -49,12 +49,13 @@ SITECOPY-A · SIGNFLOW-B (4th door accepted) · SIGNFLOW-D (anon grants closed; 
 SITECOPY-B (two spec routings + the Barn Ops product question) · SIGNFLOW-A (cursive-period defect
 routed; C's gate OPEN) · LANDINGSIGNIN (two physical deviations accepted by ORCH).
 
-### Wave 3 — DISPATCH NOW
-| Thread | Settings | Worktree |
-|---|---|---|
-| `FHE-TASK-SIGNFLOW-C` | Opus · HIGH · thinking ON | `wt-3` (npm ci on entry) |
-| `FHE-TASK-SITESEO` | Opus · HIGH · thinking ON | `wt-2` (npm ci on entry) |
-`wt-1` free for the next docs task or SIGNFLOW-F after C.
+### Wave 3
+| Thread | State |
+|---|---|
+| `FHE-TASK-SIGNFLOW-C` | ✅ **VERIFIED AND MERGED 2026-09-02** — chooser diff applied by ORCH; §5.9 to owner checklist |
+| `FHE-TASK-SITESEO` | dispatched · Opus · HIGH · ON · `wt-2` |
+`wt-3` FREE. **SIGNFLOW-F's gate (after C) is now OPEN** — DSNR-profile spec next.
+New unruled item: `::selection` renders gold app-wide (`index.css:97`) — owner call whether it joins the green flow.
 
 ### Wave 3 — gated
 | Thread | Gate |

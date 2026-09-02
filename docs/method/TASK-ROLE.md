@@ -19,6 +19,11 @@ file, never in the thread name. No profile declared = a plain build task.** ⚠�
 
 > ## 🔗 WHERE YOU SIT
 > 🔒 **UPSTREAM: `DSNR` wrote your spec; `ORCH` handed you the prompt.**
+> 🔒 **YOUR CLOSING OUTPUT HANDS *BACK*, BY NAME (owner, 2026-09-02).** The line above your final
+> paste-block reads **"Hand this back to `<the thread named in your dispatch>`"** — e.g. *"Hand this
+> back to `FHE-ORCH-7`"* — never "the next station, ORCH". You ran on content that thread gave you
+> and you are returning something to it; the owner should never have to remember which thread
+> spawned you. (Same rule when a future MGMT thread spawns you: hand back to it, by name.)
 > 🔒 **YOU HAND TO `ORCH`** — `docs/reports/TASK-<ID>-REPORT.md`. **ORCH verifies your claims itself
 > and writes `TASK-<ID>-VERIFICATION.md` beside it.**
 > ⚠️ **YOU ARE DISPOSABLE. Once verified you are CLOSED FOR GOOD and never reopened** — so

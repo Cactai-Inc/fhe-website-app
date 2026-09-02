@@ -322,3 +322,7 @@ Scratch files: `scratchpad/contrast.mjs`, `scratchpad/t1proof.mjs` (session scra
 
 ## VALIDATION
 *(ORCH appends its verdict here — `TASK-SIGNFLOW-C-VERIFICATION.md` beside this file.)*
+
+---
+## VALIDATION — ORCH, 2026-09-02
+Independently verified and merged; §4 diff applied by ORCH; §5.9 ruled to the owner's checklist. See TASK-SIGNFLOW-C-VERIFICATION.md.

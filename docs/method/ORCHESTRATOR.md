@@ -291,7 +291,10 @@ threads, with NEW task threads lettered continuing after the last that ran.**
 ⚠️ **ROLE ONLY, NEVER THE PROFILE.** **`CODR` is a profile and lives INSIDE the file, not in the
 name.** **No spaces; the id must survive as a searchable token and as a truncated tab title.**
 
-**LINE 2 — ONE FILE, BY ABSOLUTE PATH, and the instruction to read it.** ⚠️ **The absolute path is why
+**LINE 2 — ONE FILE, BY ABSOLUTE PATH, and the instruction to read it.**
+🔒 **AND THE DISPATCH NAMES ITS SENDER (owner, 2026-09-02): the thread must know who spawned it, so
+its closing output can say "Hand this back to `<sender>`" — the exact tab name, with "back". State
+the sender beside the model line.** ⚠️ **The absolute path is why
 there is no `cd` line: a fresh session starts wherever it starts, and an absolute path works from
 there.**
 
