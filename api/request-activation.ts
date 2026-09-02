@@ -40,7 +40,8 @@ interface RequestRow {
   contact_first_name: string | null;
   contact_last_name: string | null;
   contact_phone: string | null;
-  details: Record<string, string> | null;
+  category: string | null;
+  interests: string[] | null;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -61,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { data } = await db
       .from('requests')
-      .select('id, org_id, contact_email, contact_first_name, contact_last_name, contact_phone, details')
+      .select('id, org_id, contact_email, contact_first_name, contact_last_name, contact_phone, category, interests')
       .eq('id', requestId)
       .maybeSingle();
     const r = data as RequestRow | null;
@@ -81,12 +82,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
          visitor signs a release before they set foot on the property.
        ⚠️ A BARE ENQUIRY STILL GETS NOTHING. It is a conversation, not an account
        waiting to be claimed, and `/api/inquiry-confirmation` already answers it. */
-    /* ⚠️ READ THE ANSWER, NOT THE ATTRIBUTION. This used to test
-       `entry_location = 'guest_visit'`, which meant the form had to overwrite how
-       the person found us in order to say they wanted to visit — the owner's
-       *"It cannot wipe the attribution tagging."* The visit is its own answer in
-       `details`, and attribution is left exactly as it arrived. */
-    const isVisit = Boolean(r.details?.visit_requested);
+    /* ⚠️ READ THE ANSWER, NOT THE ATTRIBUTION. Two ways somebody says they want
+       to come: the MENU answer is "visit", or they ticked the box under one of the
+       offering categories. Both live in their own fields; `entry_location` is
+       never touched — the owner's *"It cannot wipe the attribution tagging."*
+       ⚠️ AND A VISITOR EARNS THE LINK because they cannot set foot on the property
+       until the rules, policies and liability waiver are signed, which happens
+       after activation. */
+    const isVisit = r.category === 'visit' || (r.interests ?? []).includes('visit');
     const { data: order } = await db
       .from('purchases').select('id').eq('request_id', r.id).is('deleted_at', null).limit(1).maybeSingle();
     if (!order?.id && !isVisit) {

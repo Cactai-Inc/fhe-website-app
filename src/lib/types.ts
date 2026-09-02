@@ -130,7 +130,11 @@ export type RequestCategory =
   | 'acquisition'
   | 'media'
   | 'partnership'
-  | 'gift';
+  | 'gift'
+  /** Owner, 2026-09-01: "add a selection option to the menu on the contact us
+   *  form. if they want to come for a visit as their primary interest they select
+   *  that." The MENU answer — one value, like every other. */
+  | 'visit';
 
 /** Which public form the request came in through. */
 export type RequestChannel = 'contact' | 'inquiry' | 'booking' | 'kiosk' | 'gift';
@@ -152,6 +156,11 @@ export interface RequestInput {
   intent?: string;
   /** Category-specific answers (C1), keyed by field key → requests.details. */
   details?: Record<string, string>;
+  /** ⚠️ THE CHECKBOXES, and they are NOT the menu answer. Owner, 2026-09-01:
+   *  "i told you to add a new element with a new field that records the checkboxes
+   *  when they are checked … the checkbox options are dependent on which menu item
+   *  is selected." → `requests.interests`. */
+  interests?: string[];
 }
 
 export interface RequestSelectionInput {

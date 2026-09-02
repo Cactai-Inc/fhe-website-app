@@ -91,12 +91,42 @@ export const REQUEST_CATEGORY_LABEL: Record<RequestCategory, string> = {
   media: 'Media / press',
   partnership: 'Partnership / sponsorship',
   gift: 'Gift enquiry',
+  visit: 'Visit the ranch',
 };
+
+/* ⚠️ THE THREE OFFERING CATEGORIES — the ones a person can be interested in
+   BUYING from us, as opposed to the reasons they might write to us. Owner,
+   2026-09-01: *"when visit the ranch is selected we show the offering categories
+   (riding lessons, leasing & purchasing, horse care)."* Named once here because
+   the checkbox list and the "would you also like to visit" rule are two readings
+   of the same three. */
+export const OFFERING_CATEGORIES: RequestCategory[] = ['lessons', 'acquisition', 'horse_care'];
+
+/** The CHECKBOXES a menu answer reveals. `[]` means the menu answer reveals none.
+ *  ⚠️ This is the whole rule, in one place:
+ *    · "Visit the ranch"      → which of our offerings interests you
+ *    · an offering category   → would you also like to come and visit
+ *    · anything else          → nothing to ask */
+export function interestOptionsFor(
+  category: RequestCategory,
+): { value: string; label: string }[] {
+  if (category === 'visit') {
+    return OFFERING_CATEGORIES.map((c) => ({
+      value: c,
+      // "leasing & purchasing" is the owner's phrase for it on THIS question.
+      label: c === 'acquisition' ? 'Leasing & purchasing' : REQUEST_CATEGORY_LABEL[c],
+    }));
+  }
+  if (OFFERING_CATEGORIES.includes(category)) {
+    return [{ value: 'visit', label: "I'd like to come and visit the ranch" }];
+  }
+  return [];
+}
 
 /** What the PUBLIC form offers. `gift` is absent deliberately: a gift enquiry
  *  has its own form and is never something a visitor picks from this list. */
 export const PUBLIC_CATEGORY_OPTIONS: { value: RequestCategory; label: string }[] =
-  (['general', 'lessons', 'horse_care', 'acquisition', 'media', 'partnership'] as const)
+  (['general', 'lessons', 'horse_care', 'acquisition', 'visit', 'media', 'partnership'] as const)
     .map((value) => ({ value, label: REQUEST_CATEGORY_LABEL[value] }));
 
 /** The label for a stored category value, however old the row is. */

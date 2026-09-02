@@ -56,7 +56,6 @@ export default function Contact({
                   channel="contact"
                   defaultCategory={defaultCategory}
                   entryLocation={entryLocation}
-                  offerVisit
                   onSubmitted={() => setSent(true)}
                 />
               )}
