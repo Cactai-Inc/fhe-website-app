@@ -50,31 +50,45 @@ worst habit is concluding a feature is missing because production is empty**
 | 4 | **manual provisioning of the docs being required** | `src/components/app/ClientRecordActions.tsx:718` → `POST /api/documents-requested` → ⚠️ its email link is **`${origin}/app/onboarding`** (`api/documents-requested.ts:116`) — a DIFFERENT URL from doors 1–3 |
 | 5 | an **initial order requiring docs** → *"the system generates the flow for them to sign them on the next app login"* | **the SIGNING WALL.** `myWallState()` → `src/components/app/AppLayout.tsx:1548-1568`, `:1693`. Fed by `contract_role_documents.disposition = 'AT_LOGIN'`, the column **default** (`20260824T1300…sql:19`) |
 
-## 2. 🔒 WHAT THE CANON ACTUALLY IS — and it is NOT one destination today
+## 2. 🔒 WHAT THE CANON ACTUALLY IS — one rule, and a LEGACY path beside it
 
-**Follow door 2 to its end.** `/activate?token=` → `ActivateShell` → `Register.tsx` / `RegisterComplete.tsx`.
-**The destination is chosen at `src/pages/Register.tsx:40-55` and again at
-`src/pages/RegisterComplete.tsx:86-106`, and there are FOUR outcomes:**
+⚠️ **AN EARLIER DRAFT OF THIS SPEC SAID `Register.tsx` "picks four destinations" and called that a
+divergence. THAT WAS WRONG and is struck.** **Read the code, not the earlier claim.**
 
-| Condition | Destination |
-|---|---|
-| the invitation carries a `documentId` (**the `deal` door**) | `/app/contracts/{documentId}` |
-| a carried document id | `/app/contracts/{id}/start` |
-| `state?.needed` | **`/app/onboarding`** |
-| otherwise | `/app` |
+**`src/pages/Register.tsx:33-42` states the rule in its own words:**
+> *"⚠️ P1 ITEM 1 — THE INVITATION SAYS WHERE TO GO, NOT THE URL. … document_id present → the contract,
+> via ITEM 2's gate; no document_id → the existing landing rule. The gate at `/app/contracts/:id/start`
+> decides for itself whether anything is actually missing and forwards straight to the document when
+> nothing is, so a complete record never sees an interstitial."*
 
-⚠️ **THEREFORE `/sign/*` ITSELF ALREADY HAS TWO ENDINGS:** `/sign/guest|rider|horse|rider+horse` land
-on **`/app/onboarding`**; `/sign/deal` lands on **`/app/contracts/:id`**.
+🔒 **That is ONE rule with branches, not four destinations.** And the branch that sends someone to a
+contract instead of the wizard is **the owner's own ruling**, recorded at
+`src/pages/app/Onboarding.tsx:898-907` (P1 ITEM 2, owner 2026-08-25): *"a counterparty claims her
+account and 'on activation she sees the contract'."* ⚠️ **It fires only when `!s.needed`** — when there
+is **no** onboarding paperwork. **So paperwork and a waiting contract do not compete; the flow divides
+by what is actually outstanding.** **That is correct behaviour and is NOT in scope to change.**
 
-🔒 **THAT IS THE FIRST THING YOU MUST RESOLVE, AND IT IS A QUESTION, NOT A DECISION.**
-**Ask it as Q1 (§6):** *is `/app/onboarding` the one flow, with the deal counterparty joining it — or
-is the deal contract page a legitimate second ending because a counterparty signs one named document
-rather than an onboarding set?*
-⚠️ **DSNR's read, offered so you are not starting from nothing and NOT to be treated as the answer:
-the deal ending is probably legitimate and the two are not really two flows — `/app/onboarding` itself
-navigates to `/app/contracts/{id}/start` when a contract is what is outstanding
-(`src/pages/app/Onboarding.tsx:907`). If that is true, they already converge one step later, and the
-finding is that nothing SAYS so.** **Prove it or disprove it — do not assume it.**
+### 🔒 2a. THE ONE REAL FINDING — `?kind=contract`, a SECOND live path the code itself calls OLD
+**`src/pages/Register.tsx:35-36`, verbatim:**
+> *"`?kind=contract` is the OLD two-email path (a counterparty who already has an account). The unified
+> send issues an ACCOUNT invitation carrying `document_id`, so after the claim we route on what the
+> invitation carries."*
+
+⚠️ **BUT IT IS STILL BEING SENT, BY TWO ENDPOINTS:**
+- `api/contract-invite.ts:191` — `${origin}/activate?token=${token}&kind=contract`
+- 🔒 **`api/sign-start.ts:278` — the `/sign/deal` branch. A door the owner named as canonical is
+  emitting the path its own successor calls OLD.**
+
+**And the same file knows better twenty lines earlier** — `api/contract-invite.ts:136`:
+> *"NO `&kind=contract`: this is the ACCOUNT claim, and the document it…"*
+
+🔒 **SO `contract-invite.ts` CONTAINS BOTH THE OLD PATH AND ITS REPLACEMENT, AND CHOOSES BETWEEN
+THEM.** ⚠️ **That is D18 — a second path beside a correct one — and it is what the owner meant by
+*"the others can be removed."*** **It reaches `redeemContractInvitation` instead of
+`redeemInvitation` + the carried `document_id`, so the two paths redeem differently and land
+differently.**
+
+**This is the substantive work in this task. §7 owns it.**
 
 ## 3. THE INCUMBENT, NAMED (D18) — everything below already exists
 
@@ -104,18 +118,28 @@ finding is that nothing SAYS so.** **Prove it or disprove it — do not assume i
   new signup has. ⚠️ **`my_standing_categories()` reads `groups` and will be EMPTY for exactly the
   people this task is about.** **The path lives in `invitations.categories` and
   `invitations.document_id`.** **Gating anything on categories reintroduces the AR7/FIX1 incident.**
-- **T3 — door 4 sends a different URL.** `api/documents-requested.ts:116` emails
-  `${origin}/app/onboarding` directly, while doors 1–3 email `/activate?token=`. ⚠️ **That may be
-  correct — door 4 is for someone who ALREADY HAS AN ACCOUNT, so there is nothing to activate.**
-  **Check `has_account` (`api/documents-requested.ts:35`) and report whether the no-account case is
-  handled.** 🔒 **If a person with no account is emailed a bare `/app/onboarding` link, they hit a
-  login wall with no way through — that is a real defect and it is IN scope.**
-- **T4 — door 5 is the one most likely to be dead.** ⚠️ **`AT_LOGIN` is the column DEFAULT, so it
-  looks correct from the schema alone.** 🔒 **Prove the wall actually FIRES**: that an order for an
-  offering with required documents writes `contract_role_documents` rows, that `myWallState()` then
-  returns them, and that `AppLayout` redirects. **Prove each link, not the chain's plausibility.**
-  ⚠️ **This repo's dominant failure is "code that works and nothing reaches it"**
-  (`docs/method/TASK-ROLE.md` §2b).
+- **T3 — door 4's no-account case IS handled. Do not "fix" it.** ⚠️ **An earlier draft of this spec
+  claimed a person with no account gets a bare `/app/onboarding` link and hits a login wall. FALSE.**
+  `api/documents-requested.ts:98-101`:
+  > *"// No login yet → nothing to send. They meet the documents when they activate."*
+  > `if (!out.has_account || !out.email) return res.status(200).json({ …, emailSkipped: 'no account yet' });`
+  **No email is sent at all.** 🔒 **The requirement and the in-app notification are still written
+  first, by the RPC, in one transaction** (`api/documents-requested.ts:16-21`) — **so the documents are
+  waiting when they activate.** **Confirm this; do not repair it.**
+- **T4 — door 5's chain is NAMED END TO END. Your job is to prove it FIRES, not to find it.**
+  ⚠️ **An earlier draft called it "schema-level evidence" and named the wrong table. Struck.**
+  **The real chain, `20260824T1600_offeringdocs_documents_arrive_when_the_order_opens.sql`:**
+  `trg_documents_when_order_opens()` (`:95`) → trigger **`purchases_assign_documents`** on `purchases`
+  (`:150-151`), on the **draft → open** transition **staff perform when they approve an order** —
+  *"the same transition credits mint on (D23), so 'what you owe' and 'what you got' appear together
+  and cannot disagree about when the order became real"* → `apply_offering_documents()` (`:58`) →
+  🔒 **`INSERT INTO contact_required_documents (contact_id, template_key, org_id, disposition)`
+  (`:73`)** → `my_wall_state()` → `AppLayout.tsx:1704-1707`, a hard
+  `<Navigate to="/app/onboarding" replace />`.
+  ⚠️ **THE TABLE IS `contact_required_documents`, NOT `contract_role_documents`.** **Confirm which one
+  `my_wall_state()` actually reads** — `20260824T1310_offeringdocs_wall_state_carries_the_asked_for_set.sql`
+  — **because a mismatch there is the one thing that would break this door silently.**
+  🔒 **Prove the TRIGGER FIRES on production, not that the code is correct.**
 - **T5 — do not weaken the wall to make a walk pass.** If the wall blocks you, that is the wall
   working. **Clear the documents; do not disable it.**
 - **T6 — `/release` and `/docs/release-participant` are NOT doors.** `TASK-SIGNFLOW-D` is retiring
@@ -144,16 +168,39 @@ finding is that nothing SAYS so.** **Prove it or disprove it — do not assume i
 ## 6. THE QUESTIONS THAT GO UP — do not answer them yourself
 **Put them at the TOP of your report.** ⚠️ **`docs/method/TASK-ROLE.md`: a task thread emits a question
 or a report.**
-- **Q1 — the deal ending.** §2. *"`/sign/deal` lands on `/app/contracts/:id`, not `/app/onboarding`. One
-  flow with two endings, or a divergence to close?"* **Bring the evidence from §5, including whether
-  `/app/onboarding` already forwards to the contract page (`Onboarding.tsx:907`).**
+⚠️ **THE "DEAL ENDING" QUESTION AN EARLIER DRAFT ASKED HERE IS STRUCK — §2 answers it from the code
+and from the owner's own P1 ITEM 2 ruling. Do not re-ask it.**
+- **Q1 — only if §7 finds that `?kind=contract` cannot be removed cleanly.** State exactly what still
+  depends on it and the smallest change that would retire it. ⚠️ **Do not leave it in place silently
+  and do not remove it if something real still needs it — ASK.**
 - **Q2 — only if §5 finds a door that lands nowhere usable.** State the door, what happens today, and
   the smallest change that would fix it. ⚠️ **Do not build it without an answer.**
 
-## 7. PHASE 2 — REPAIR, and only what Phase 1 proved broken
-🔒 **NO SPECULATIVE FIXES. If §5 shows all five converge, this task's output is the walk report and
-that is a COMPLETE, SUCCESSFUL result.** ⚠️ **Finding nothing broken is the most likely outcome and
-you must be willing to report it.**
+## 7. 🔒 PHASE 2 — RETIRE `?kind=contract`, and repair only what else Phase 1 proved broken
+
+**This half is NOT conditional. §2a is a measured finding, not a hypothesis, and it is the owner's
+*"the others can be removed"* applied where it actually bites.**
+
+1. **Prove what still depends on it.** `grep -rn "kind=contract\|isContractInvite\|redeemContractInvitation" src api`
+   — DSNR counted **two senders** (`api/contract-invite.ts:191`, `api/sign-start.ts:278`) and the
+   consumer branches in `Register.tsx` (`:27`, `:44`, `:110`, `:158`, `:293`, `:303`, `:389`) and
+   `RegisterComplete.tsx:91`. ⚠️ **Re-run it; there may be more.**
+2. **Establish whether the unified send covers every case the old one did.** `contract-invite.ts:136`
+   says the ACCOUNT claim carries the document instead. 🔒 **The old path exists for "a counterparty
+   who ALREADY HAS AN ACCOUNT" — prove the unified path handles that person**, including the
+   already-signed case `Register.tsx:104-116` currently rescues.
+   ⚠️ **If it does not, STOP and ask (Q1). Removing a rescue path for someone whose signature is
+   already on file would be worse than the duplication.**
+3. **If it does: stop SENDING it first** — both senders switch to the account invitation carrying
+   `document_id`. **That alone ends the divergence**, and it is separately revertable.
+4. **Then remove the consumer branches**, leaving `redeemContractInvitation` itself in place if
+   anything server-side still calls it. ⚠️ **Check before deleting.**
+5. ⚠️ **`redeem_contract_invitation` is a DB function. Do not drop it** (D32). **Code only.**
+
+**And, for anything ELSE Phase 1 proved broken:**
+🔒 **NO SPECULATIVE FIXES. Doors 1–5 are traced by name (§1, §3, T3, T4) and are expected to be
+sound.** ⚠️ **"All five converge, here is the proof, and the legacy path is gone" is the expected
+complete result.**
 
 **If a door IS broken, the repair is bounded by:**
 - 🔒 **Use the incumbents in §3.** ⚠️ **A new door must call `provision_client_invitation` and land on
@@ -164,8 +211,8 @@ you must be willing to report it.**
 - 🔒 **Do NOT touch the wall's fail-closed behaviour** (`AppLayout.tsx:1550-1554`).
 
 ## 8. OUT OF SCOPE
-- 🔒 **REMOVING ANY OTHER ENTRY PATH.** ⚠️ **His *"the others can be removed"* refers to `/release` and
-  `/docs/release-participant`, which `TASK-SIGNFLOW-D` owns.** **If your walk finds a SIXTH way to
+- 🔒 **REMOVING ANY ENTRY PATH OTHER THAN `?kind=contract`.** ⚠️ **`/release` and
+  `/docs/release-participant` belong to `TASK-SIGNFLOW-D`.** **If your walk finds yet another way to
   reach a signable document, REPORT IT — one line — and remove nothing.** **What looks like a stray
   path is usually one of the five wearing a different name.**
 - **`/release`, `/docs/release-participant`, `api/sign-release.ts`** — `D`'s files.
@@ -191,10 +238,14 @@ checklist you hand the owner, and it must name the phone.**
 3. **Every door's write is proven from the DATABASE** — the invitation row, its `categories`, the
    `contract_role_documents` rows and their `disposition`. ⚠️ **Not from the code that should have
    written them.**
-4. 🔒 **DOOR 5 IS PROVEN LINK BY LINK** (T4): order → `contract_role_documents` written →
-   `myWallState()` returns them → `AppLayout` redirects → the person lands in the flow. **Four
-   separate proofs. A green function call is not a shipped feature.**
-5. **Door 4's no-account case is answered** (T3): what happens when `has_account` is false.
+4. 🔒 **DOOR 5 IS PROVEN LINK BY LINK** (T4): staff approve an order (draft → open) → the
+   `purchases_assign_documents` trigger fires → `contact_required_documents` rows exist → `my_wall_state()`
+   returns them → `AppLayout.tsx:1704` redirects. **Five separate proofs, from the DATABASE.**
+   ⚠️ **And state which table `my_wall_state()` reads.**
+5. **Door 4's no-account case CONFIRMED, not repaired** (T3): `emailSkipped: 'no account yet'`, and the
+   requirement + notification still written.
+5b. 🔒 **`?kind=contract` no longer sent by either endpoint**, and a counterparty who already has an
+   account still lands on their document — **including the already-signed case**.
 6. **Door 2 walked end to end, logged out**: `/sign/guest` → email → `/activate?token=` → account →
    **the signing flow, with documents actually listed**.
 7. **Door 1 walked**: a website order submission → the same landing.
