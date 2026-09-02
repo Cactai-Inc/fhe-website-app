@@ -268,14 +268,22 @@ export function PublicIntakeForm({
           notes: message.trim() || undefined,
           category,
           channel,
-          /* ⚠️ `guest_visit` IS THE ROW FACT `/api/request-activation` READS to
-             send the activation link on a submission with no order. Ticking the
-             box on the contact form has to write it, or the visit they just asked
-             for would silently be an ordinary enquiry. It wins over the
-             "how did you hear" preset, which is analytics, not routing. */
-          entry_location: asVisit ? 'guest_visit' : (source || entryLocation),
+          /* ⚠️ ATTRIBUTION IS NEVER OVERWRITTEN. Owner, 2026-09-01: *"It cannot
+             wipe the attribution tagging."* This briefly wrote 'guest_visit' over
+             `entry_location` when a visit was asked for, which destroyed how the
+             person found us — the one fact that column exists to keep. The visit
+             is recorded in `details.visit_requested` instead, which the staff
+             alert and the lead card both read, and attribution stands. */
+          entry_location: source || entryLocation,
           intent: intentFor(category, isCart),
-          details: Object.keys(cleanDetails).length ? cleanDetails : undefined,
+          details: (() => {
+            /* The visit rides in `details`, beside every other category answer,
+               so it prints in the staff email (REQ.DETAILS) and on the lead
+               without displacing anything. */
+            const d = { ...cleanDetails };
+            if (asVisit) d.visit_requested = 'Yes — would like to come and visit';
+            return Object.keys(d).length ? d : undefined;
+          })(),
         },
         selections ?? [],
       );
