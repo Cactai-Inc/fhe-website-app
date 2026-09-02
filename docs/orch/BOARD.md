@@ -49,7 +49,7 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 |---|---|---|---|
 | `FHE-TASK-SITECOPY-A` | Sonnet · HIGH · thinking OFF | `wt-2` | prompt handed |
 | `FHE-TASK-SITECOPY-B` | Opus · HIGH · thinking ON | `wt-3` | prompt handed |
-| `FHE-TASK-LANDINGSIGNIN` | Opus · HIGH · thinking ON | `wt-1` | prompt handed |
+| `FHE-TASK-LANDINGSIGNIN` | Opus · HIGH · thinking ON | `wt-1` | prompt handed — shape gate CLOSED by owner ruling `967d983d` (cart glyph + Sign In) |
 | `FHE-DSNR-ONERAIL` | Opus · HIGH · thinking ON | — (docs only) | prompt handed — rebase pass, both its gate merges landed today |
 | `FHE-TASK-SITESEO` | Opus · HIGH · thinking ON | after SITECOPY-A merges | 🔒 GATED on ASK-OWNER 2 (301 vs 404) |
 | `FHE-TASK-POLICIESANDFAQ` | — | — | ⛔ BLOCKED: draft + COMPLIANCE-FINDINGS not in repo (ASK-OWNER 1) |
@@ -65,7 +65,8 @@ applied and merged (`61b75a42`); wt-1 back in the pool.
 |---|---|---|---|
 | `FHE-TASK-SIGNFLOW-A` | Opus · HIGH · thinking ON | ⚠️ **`wt-4` — CREATE IT** (pool full; TASK-ROLE §5 fallback, copy `.env`+`.env.db`) | prompt handed |
 | `FHE-TASK-SIGNFLOW-B` | Opus · HIGH · thinking ON | ⚠️ **`wt-5` — CREATE IT** (same) | prompt handed |
-| `FHE-TASK-SIGNFLOW-C` | Opus · HIGH · thinking ON | assigned at dispatch | 🔒 **GATED: dispatches only after A AND B merge** — 3 shared files, re-greps line numbers per its §7 T3 |
+| `FHE-TASK-SIGNFLOW-C` | Opus · HIGH · thinking ON | assigned at dispatch | 🔒 **GATED: dispatches only after A AND B merge** — 3 shared files, re-greps line numbers per its §7 T3. ⚠️ Amended `f139c3b6`: the two retiring doors left its list |
+| `FHE-TASK-SIGNFLOW-D` | Opus · HIGH · thinking ON | ⚠️ **`wt-6` — CREATE IT** (pool full) | prompt handed — two-phase: Phase 1 measures, its §5 questions go to the owner BEFORE Phase 2 removes |
 
 **Cross-lane check run by ORCH7:** SIGNFLOW-C's 15-file list contains NONE of SITECOPY-B's three
 files and not `Header.tsx` — the two lanes are file-disjoint. The one shared file across lanes is
@@ -90,6 +91,7 @@ builds merged; dispatch when no build is mid-flight, it moves files).
 | `src/lib/documentBody.ts` (new) · `MergedBodyView.tsx` · `ContractCascade.tsx` · `DocumentsContent.tsx` · `DocsParticipantFlow.tsx` · `PaperViewer` | **`SIGNFLOW-A`** | running |
 | `src/lib/normalize.ts` · `SignStart.tsx` · `Onboarding.tsx` (inputs) | **`SIGNFLOW-B`** | running |
 | the 15-file green list + `src/index.css` `.flow-green` | **reserve for `SIGNFLOW-C`** | gated on A+B |
+| `Release.tsx` · `DocsParticipantFlow.tsx` · `api/sign-release.ts` · `/release`+`/docs/release-participant` routes in `App.tsx` · 🔒 DB: `sign_release` + `sign_general_release` (the anon-grant close) | **`SIGNFLOW-D`** | running — ⚠️ `App.tsx` also wanted by gated SITESEO: **D merges before SITESEO dispatches** |
 | `mark_purchase_paid` · `revenue_summary` · the money columns | — | free — the BACKDATE+BOOKS1 union |
 | `AppLayout.tsx` · `pageRegistry.ts` · `ops/kit/Modal.tsx` | — | free |
 
