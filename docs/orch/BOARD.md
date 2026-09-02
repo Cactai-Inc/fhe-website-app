@@ -47,10 +47,10 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 ## ▶ DISPATCHED 2026-09-01 — the public-site lane (FHE-DSNR-SITE-PUBLIC-HANDOFF)
 | Thread | Model/effort/thinking | Worktree | State |
 |---|---|---|---|
-| `FHE-TASK-SITECOPY-A` | Sonnet · HIGH · thinking OFF | `wt-2` | prompt handed |
-| `FHE-TASK-SITECOPY-B` | Opus · HIGH · thinking ON | `wt-3` | prompt handed |
-| `FHE-TASK-LANDINGSIGNIN` | Opus · HIGH · thinking ON | `wt-1` | prompt handed — shape gate CLOSED by owner ruling `967d983d` (cart glyph + Sign In) |
-| `FHE-DSNR-ONERAIL` | Opus · HIGH · thinking ON | — (docs only) | prompt handed — rebase pass, both its gate merges landed today |
+| `FHE-TASK-SITECOPY-A` | Sonnet · HIGH · thinking OFF | `wt-2` | ⚠️ handed, NOT STARTED |
+| `FHE-TASK-SITECOPY-B` | Opus · HIGH · thinking ON | `wt-3` | ⚠️ handed, NOT STARTED |
+| `FHE-TASK-LANDINGSIGNIN` | Opus · HIGH · thinking ON | `wt-1` | ⚠️ handed, NOT STARTED — shape gate closed (`967d983d`) |
+| `FHE-DSNR-ONERAIL` | Opus · HIGH · thinking ON | — (docs only) | ⚠️ handed, NOT STARTED |
 | `FHE-TASK-SITESEO` | Opus · HIGH · thinking ON | after SITECOPY-A merges | 🔒 GATED on ASK-OWNER 2 (301 vs 404) |
 | `FHE-TASK-POLICIESANDFAQ` | — | — | ⛔ BLOCKED: draft + COMPLIANCE-FINDINGS not in repo (ASK-OWNER 1) |
 
@@ -63,10 +63,10 @@ applied and merged (`61b75a42`); wt-1 back in the pool.
 ## ▶ DISPATCHED 2026-09-01 — the SIGNFLOW lane (FHE-DSNR-SIGNFLOW-HANDOFF · CR-100/101/102)
 | Thread | Model/effort/thinking | Worktree | State |
 |---|---|---|---|
-| `FHE-TASK-SIGNFLOW-A` | Opus · HIGH · thinking ON | ⚠️ **`wt-4` — CREATE IT** (pool full; TASK-ROLE §5 fallback, copy `.env`+`.env.db`) | prompt handed |
-| `FHE-TASK-SIGNFLOW-B` | Opus · HIGH · thinking ON | ⚠️ **`wt-5` — CREATE IT** (same) | prompt handed |
+| `FHE-TASK-SIGNFLOW-A` | Opus · HIGH · thinking ON | `wt-2`* | ⚠️ handed, NOT STARTED |
+| `FHE-TASK-SIGNFLOW-B` | Opus · HIGH · thinking ON | `wt-3`* | ⚠️ handed, NOT STARTED |
 | `FHE-TASK-SIGNFLOW-C` | Opus · HIGH · thinking ON | assigned at dispatch | 🔒 **GATED: dispatches only after A AND B merge** — 3 shared files, re-greps line numbers per its §7 T3. ⚠️ Amended `f139c3b6`: the two retiring doors left its list |
-| `FHE-TASK-SIGNFLOW-D` | Opus · HIGH · thinking ON | ⚠️ **`wt-6` — CREATE IT** (pool full) | prompt handed — two-phase: Phase 1 measures, its §5 questions go to the owner BEFORE Phase 2 removes |
+| `FHE-TASK-SIGNFLOW-D` | Opus · HIGH · thinking ON | `wt-1`* | ⚠️ handed, NOT STARTED — two-phase; §5 questions come up before Phase 2 removes |
 
 **Cross-lane check run by ORCH7:** SIGNFLOW-C's 15-file list contains NONE of SITECOPY-B's three
 files and not `Header.tsx` — the two lanes are file-disjoint. The one shared file across lanes is
@@ -84,14 +84,23 @@ builds merged; dispatch when no build is mid-flight, it moves files).
 | the onboarding wizard · the delivery-hold/submit RPCs · the door (`account_state_for_email`, `api/register-invited.ts`) | — | **free — SIGNBOOK merged `2fa1f7b9`** |
 | the whole booking state machine (`bookings_status_check` · `booking_status_code` · `calendar_free_busy` · `request_open_time` · `request_booking_change` · `decide_booking_change` · `confirm_booking` · `confirm_booking_for_purchase` · `purchases_confirm_bookings` trigger · `_ensure_plan_horizon` · `ensure_standing_slots` · `mint_recurring_allotments` · `plan_horizon_through`) | — | **free — LIFECYCLE merged.** 🔒 SIGNBOOK still may not edit `request_open_time`; it calls it |
 | the staff dashboard cards · the client payment modal | **reserve for `REQCARDS`** | queued |
-| `index.html` · `src/lib/seo.ts` (copy values) · `Services.tsx` · `About.tsx` | **`SITECOPY-A`** | running |
-| `Confirmation.tsx` · `OrderPayment.tsx` · `ActivationOrderPanel.tsx` · `usePropertyTerm` adoption | **`SITECOPY-B`** | running |
-| `src/components/layout/Header.tsx` | **`LANDINGSIGNIN`** | held on wt-1 |
+| `index.html` · `src/lib/seo.ts` (copy values) · `Services.tsx` · `About.tsx` | **`SITECOPY-A`** | reserved, not started |
+| `Confirmation.tsx` · `OrderPayment.tsx` · `ActivationOrderPanel.tsx` · `usePropertyTerm` adoption | **`SITECOPY-B`** | reserved, not started |
+| `src/components/layout/Header.tsx` | **`LANDINGSIGNIN`** | reserved, not started |
 | `scripts/prerender.mjs` · `scripts/seo-files.mjs` · `seo.ts` route list · `App.tsx` redirects | **reserve for `SITESEO`** | gated |
-| `src/lib/documentBody.ts` (new) · `MergedBodyView.tsx` · `ContractCascade.tsx` · `DocumentsContent.tsx` · `DocsParticipantFlow.tsx` · `PaperViewer` | **`SIGNFLOW-A`** | running |
-| `src/lib/normalize.ts` · `SignStart.tsx` · `Onboarding.tsx` (inputs) | **`SIGNFLOW-B`** | running |
+| `src/lib/documentBody.ts` (new) · `MergedBodyView.tsx` · `ContractCascade.tsx` · `DocumentsContent.tsx` · `PaperViewer` | **`SIGNFLOW-A`** | reserved, not started |
+| `src/lib/normalize.ts` · `SignStart.tsx` · `Onboarding.tsx` (inputs) | **`SIGNFLOW-B`** | reserved, not started |
 | the 15-file green list + `src/index.css` `.flow-green` | **reserve for `SIGNFLOW-C`** | gated on A+B |
-| `Release.tsx` · `DocsParticipantFlow.tsx` · `api/sign-release.ts` · `/release`+`/docs/release-participant` routes in `App.tsx` · 🔒 DB: `sign_release` + `sign_general_release` (the anon-grant close) | **`SIGNFLOW-D`** | running — ⚠️ `App.tsx` also wanted by gated SITESEO: **D merges before SITESEO dispatches** |
+
+🔴 **REALITY CHECK 2026-09-01 (owner):** NONE of the handed prompts above has been RUN — not
+SITECOPY-A/B, LANDINGSIGNIN, ONERAIL, SIGNFLOW-A/B/D, FUNNELDEBT, CLNR-REPO-STATE, POLICIESANDFAQ
+or SITESEO. Every "running" on this board was wrong; a handed prompt is NOT a dispatched thread
+until the owner runs it. *Worktree assignments rebalanced to the real idle pool (wt-1/2/3 —
+no wt-4/5/6 exist or are needed yet): SIGNFLOW-A→wt-2 conflicts with SITECOPY-A→wt-2 ONLY if run
+simultaneously — the owner starts threads in his own order, so the FIRST of each pair to start
+takes the tree and ORCH reassigns the other on request. Two more threads are about to report;
+nothing else is live.
+| `Release.tsx` · `DocsParticipantFlow.tsx` · `api/sign-release.ts` · `/release`+`/docs/release-participant` routes in `App.tsx` · 🔒 DB: `sign_release` + `sign_general_release` (the anon-grant close) | **`SIGNFLOW-D`** | queued — ⚠️ `App.tsx` also wanted by gated SITESEO: **D merges before SITESEO dispatches** |
 | `mark_purchase_paid` · `revenue_summary` · the money columns | — | free — the BACKDATE+BOOKS1 union |
 | `AppLayout.tsx` · `pageRegistry.ts` · `ops/kit/Modal.tsx` | — | free |
 
