@@ -7,6 +7,8 @@
  *   Brand Green:   #143321  (deep forest, authority, nature)
  *   Gold:          #BA9935  (prestige, warmth, heritage — fills/accents only)
  *   Gold Text:     #7a6421  (gold-800, the gold-for-text token on light, 5.39:1 on cream)
+ *   ⚠️ THE SIGNING FLOW RUNS GREEN under `.flow-green` (CR-102, owner 2026-09-01) — the app's
+ *   nav and accents stay gold everywhere the flow is not. See the `.flow-green` block below.
  *   Green Dark:    #0d2118  (deep shadow, text)
  *
  * Typography:
@@ -238,17 +240,22 @@
      see across the room; opacity is not.
 
      Three steps, each lighter than the last, so the button answers every stage of
-     the gesture: ARMED fills gold-800, HOVER lifts to gold-700, PRESS lifts again
-     to gold-600 (the brand gold) — the "lighten on click" the owner asked for.
+     the gesture: ARMED fills green-800, HOVER lifts to green-700, PRESS lifts again
+     to green-600 — the "lighten on click" the owner asked for.
      DISABLED returns to a plain muted outline, so unarmed reads as a different
-     control rather than a dimmer one. */
+     control rather than a dimmer one.
+     ⚠️ CR-102 (owner, 2026-09-01): the three steps were gold-800 / gold-700 /
+     gold-600 (the brand gold). Only the HUE changed — the three-step armed /
+     hover / press design above is untouched. This class is flipped in place
+     rather than scoped under `.flow-green` because its only adopters ARE the
+     signing flow (Onboarding.tsx, ContractPage.tsx). */
   .btn-sign {
     @apply inline-flex items-center justify-center gap-2 px-8 py-3.5 font-sans text-sm font-medium
            tracking-wide uppercase transition-all duration-200
-           border bg-gold-800 border-gold-800 text-white shadow-sm
-           hover:bg-gold-700 hover:border-gold-700 hover:shadow-md
-           active:bg-gold-600 active:border-gold-600 active:shadow-inner
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-800 focus-visible:ring-offset-2
+           border bg-green-800 border-green-800 text-white shadow-sm
+           hover:bg-green-700 hover:border-green-700 hover:shadow-md
+           active:bg-green-600 active:border-green-600 active:shadow-inner
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-800 focus-visible:ring-offset-2
            disabled:bg-transparent disabled:border-green-800/20 disabled:text-green-900/40
            disabled:shadow-none disabled:cursor-not-allowed
            disabled:hover:bg-transparent disabled:hover:border-green-800/20 disabled:hover:shadow-none;
@@ -338,6 +345,57 @@
   .tier-card { @apply selectable-card; }
   .tier-card-unselected { @apply selectable-card-unselected; }
   .tier-card-selected { @apply selectable-card-selected; }
+
+  /* ══ ⚠️ THE SIGNING FLOW RUNS GREEN — `.flow-green` (CR-102, owner 2026-09-01) ══
+     Owner, verbatim, narrowing the change order the day it was specced:
+       "just change the items to green, leave the gold used in the app nav and
+       other accents throughout the app in their light gold color. the signing
+       flow from first page through the last should switch the gold to green for
+       sure. other pages can be evaluated on a case by case basis when i have the
+       opportunity to view them. dont change things in the app arbitrarily."
+
+     🔒 THIS BLOCK EXISTS BECAUSE THE REST OF THE APP STAYS GOLD ON PURPOSE. The
+     shared classes above (`.eyebrow`, `.btn-outline-gold`, `.focus-ring`,
+     `.form-input`, `.text-gold-ink`, and the gold focus ring on `.btn-primary`)
+     paint the signing flow brown and are used in 40–120 files outside it. A
+     global flip would repaint pages the owner has not looked at; a green sibling
+     class for each would be 40+ call-site edits and no answer at all for
+     `.focus-ring` / `.form-input`. So ONE scope class re-declares the gold
+     tokens for its DESCENDANTS ONLY, and is applied at the root of the signing
+     surfaces: Onboarding.tsx · SignStart.tsx (each top-level <section>, it
+     returns a fragment) · ContractPage.tsx · DocumentsContent.tsx · and on
+     AddElementModal's dialog panel, which PORTALS to <body> and is therefore not
+     a DOM descendant of the page root.
+
+     Specificity is what makes it work, and it needs no !important:
+       .flow-green .eyebrow                (0,2,0) > .eyebrow                (0,1,0)
+       .flow-green .focus-ring:focus-visible (0,3,0) > .focus-ring:focus-visible (0,2,0)
+     `.form-input-error` is re-declared here too, AFTER `.form-input`, so a
+     field in its error state keeps its RED focus inside the flow — without it,
+     `.flow-green .form-input:focus` (0,3,0) would out-rank
+     `.form-input-error:focus` (0,2,0) and paint an invalid field green.
+     The two `.btn-outline-gold` disabled:hover lines are there for the same
+     reason: the base `.btn-outline-gold:disabled:hover` (0,3,0) ties with
+     `.flow-green .btn-outline-gold:hover` (0,3,0) and would lose on order.
+
+     TO UNWIND, when the owner evaluates the other pages: flip the base classes
+     above to green and delete this block. Nothing else references it. */
+  .flow-green .eyebrow       { @apply text-green-800; }
+  .flow-green .text-gold-ink { @apply text-green-800; }
+  .flow-green .focus-ring    { @apply focus-visible:ring-green-800; }
+  .flow-green .btn-primary   { @apply focus-visible:ring-green-800; }
+  .flow-green .form-input    { @apply focus:border-green-800 focus:ring-green-800/40; }
+  .flow-green .form-input-error { @apply focus:border-red-600 focus:ring-red-600/40; }
+  .flow-green .btn-outline-gold {
+    @apply border-green-800 text-green-800
+           hover:bg-green-800 hover:text-white
+           focus-visible:ring-green-800
+           disabled:hover:bg-transparent disabled:hover:text-green-800;
+  }
+  /* ExplainTip's dotted underline (`decoration-gold-500/60`, ExplainTip.tsx) is
+     a utility, not a component class, and the file is outside this change
+     order's list — so the scope re-points the utility by its escaped name. */
+  .flow-green .decoration-gold-500\/60 { @apply decoration-green-500/60; }
 }
 
 /* ─── Animations ─────────────────────────────────────────────── */

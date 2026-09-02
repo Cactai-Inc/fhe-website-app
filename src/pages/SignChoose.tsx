@@ -90,7 +90,7 @@ export default function SignChoose() {
         description="Tell us what brings you to French Heritage Equestrian and we’ll set up your account and paperwork."
         path="/sign"
       />
-      <section className="bg-cream pt-32 pb-10">
+      <section className="bg-cream pt-32 pb-10 flow-green">
         <div className="container-site max-w-2xl text-center">
           <p className="eyebrow mb-4">Get started</p>
           <h1 className="heading-display text-green-800 text-[clamp(2rem,4.5vw,3.25rem)]">
@@ -103,7 +103,7 @@ export default function SignChoose() {
         </div>
       </section>
 
-      <section className="bg-cream-50 pb-20">
+      <section className="bg-cream-50 pb-20 flow-green">
         <div className="container-site max-w-2xl">
           <ul className="flex flex-col gap-3">
             {CHOICES.map((c) => (

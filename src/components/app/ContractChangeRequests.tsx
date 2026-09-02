@@ -133,7 +133,7 @@ function UnseenDot({ count }: { count: number }) {
     <span
       role="status"
       aria-label={`${count} unseen change request${count === 1 ? '' : 's'}`}
-      className="shrink-0 inline-block w-2 h-2 rounded-full bg-gold-600 ring-2 ring-gold-200"
+      className="shrink-0 inline-block w-2 h-2 rounded-full bg-green-600 ring-2 ring-green-200"
     />
   );
 }
@@ -157,7 +157,7 @@ function Stamps({ e }: { e: ContractChangeRequestEntry }) {
           </span>
         ))
       ) : (
-        <span className="inline-flex items-center gap-1 text-gold-900">
+        <span className="inline-flex items-center gap-1 text-green-900">
           <Pencil size={10} aria-hidden="true" /> Not yet seen — you can still edit
         </span>
       )}
@@ -188,7 +188,7 @@ function EditableBody({
       <p className="text-[13px] text-green-950 whitespace-pre-line">
         {entry.body}{' '}
         <button type="button" onClick={() => setEditing(true)}
-          className="text-[11px] text-gold-900 underline underline-offset-2 hover:text-gold-800 focus-ring rounded">
+          className="text-[11px] text-green-900 underline underline-offset-2 hover:text-green-800 focus-ring rounded">
           Edit
         </button>
       </p>
@@ -240,7 +240,7 @@ function Thread({
         </p>
       )}
       {!closed && root.reopened_at && (
-        <p className="text-[11px] text-gold-900 mt-0.5">Reopened {when(root.reopened_at)}</p>
+        <p className="text-[11px] text-green-900 mt-0.5">Reopened {when(root.reopened_at)}</p>
       )}
 
       {replies.length > 0 && (
@@ -279,7 +279,7 @@ function Thread({
             )}
             {closed && (
               <button type="button"
-                className="inline-flex items-center gap-1 rounded-lg border border-gold-400/60 px-3 py-1.5 text-xs font-medium text-gold-900 hover:bg-gold-50 focus-ring"
+                className="inline-flex items-center gap-1 rounded-lg border border-green-400/60 px-3 py-1.5 text-xs font-medium text-green-900 hover:bg-green-50 focus-ring"
                 disabled={busy} onClick={() => void onReopen(root.id)}>
                 <RotateCcw size={12} /> Reopen
               </button>
@@ -371,9 +371,10 @@ export function ContractChangeRequests({
         read off `seen_by`; a viewer NEVER sees their OWN authored entry as
         unseen. Expanding the row fires mark_change_request_seen, the reload
         rewrites seen_by, and the dot clears for that viewer only.
-     3. OPEN STATE (border-gold-400/60) is the THIRD signal. It used to be a
+     3. OPEN STATE (border-green-400/60) is the THIRD signal. It used to be a
         separate "selected" concept; now that one click both opens a row and
-        makes it the active input target, open IS selected, so the gold ring is
+        makes it the active input target, open IS selected, so the ring (green
+        since CR-102; it was gold) is
         driven straight off the open set — same styling, one fewer variable. */
 
   /** Requests targeting one exact section/clause key. */
@@ -622,7 +623,7 @@ export function ContractChangeRequests({
                         {s.subsections.length} item{s.subsections.length === 1 ? '' : 's'}
                       </span>
                       <UnseenDot count={sig.unseen} />
-                      {draft && <span className="ml-auto text-[10px] text-gold-900 shrink-0">draft</span>}
+                      {draft && <span className="ml-auto text-[10px] text-green-900 shrink-0">draft</span>}
                     </button>
 
                     {/* OPEN SECTION — its numbered items, and nothing else.
@@ -662,7 +663,7 @@ export function ContractChangeRequests({
                                       subSig.has || subDraft ? (
                                         <span className="inline-flex items-center gap-2">
                                           {subSig.has && <span>{subSig.unseen > 0 ? `${subSig.unseen} unseen` : 'has requests'}</span>}
-                                          {subDraft && <span className="text-gold-900">draft saved</span>}
+                                          {subDraft && <span className="text-green-900">draft saved</span>}
                                         </span>
                                       ) : undefined
                                     }

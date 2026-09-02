@@ -24,8 +24,8 @@ const KIND_LABEL: Record<ContractEventLogRow['kind'], string> = {
 
 const KIND_CLASS: Record<ContractEventLogRow['kind'], string> = {
   STATUS: 'bg-cream-100 text-secondary border-green-800/20',
-  SENT: 'bg-gold-50 text-gold-900 border-gold-400/50',
-  DELIVERED: 'bg-gold-50 text-gold-900 border-gold-400/50',
+  SENT: 'bg-green-50 text-green-900 border-green-400/50',
+  DELIVERED: 'bg-green-50 text-green-900 border-green-400/50',
   SIGNED: 'bg-green-50 text-green-900 border-green-700/30',
   EDITS: 'bg-cream-100 text-secondary border-green-800/20',
   OPENED: 'bg-cream-100 text-secondary border-green-800/20',

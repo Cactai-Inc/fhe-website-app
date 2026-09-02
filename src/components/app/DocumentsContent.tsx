@@ -448,7 +448,9 @@ export function DocumentsContent() {
   const signableById = new Map(signables.map((s) => [s.document.id, s.document] as const));
 
   return (
-    <div className="mt-2.5 mb-1">
+    /* CR-102: scoped green at this component's own root, so it holds on
+       /app/documents AND inside the Account panel — both render this. */
+    <div className="mt-2.5 mb-1 flow-green">
       {loadError && (
         <div role="alert" className="mb-6 border border-red-700/40 bg-red-50 p-4">
           <p className="text-sm font-sans font-medium text-red-800">
@@ -489,11 +491,11 @@ export function DocumentsContent() {
       ) : (
         <div className="flex flex-col gap-3">
           {pendingRows.map((r) => (
-            <div key={r.document_id ?? r.template_key} className="bg-white border border-gold-600/30 p-5 flex items-start gap-3">
+            <div key={r.document_id ?? r.template_key} className="bg-white border border-green-600/30 p-5 flex items-start gap-3">
               <FileText size={18} className="text-gold-ink flex-shrink-0 mt-0.5" aria-hidden="true" />
               <div>
                 <p className="text-sm font-sans font-medium text-green-900">{r.title}</p>
-                <p className="text-xs text-gold-900 mt-1">Awaiting your signature — you'll be prompted at sign-in.</p>
+                <p className="text-xs text-green-900 mt-1">Awaiting your signature — you'll be prompted at sign-in.</p>
               </div>
             </div>
           ))}

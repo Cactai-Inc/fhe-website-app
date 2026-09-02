@@ -117,7 +117,9 @@ type Step =
    thing they do for a lesson, they can purchase more than that but they should
    always purchase this before they can buy anything else... we can gate it so the
    others are not selectable and slightly grayed out but still very readable."
-
+   ⚠️ CR-102 (owner, 2026-09-01): that outline is now GREEN, not gold — the
+   signing flow runs green end to end. The quote stands as the design; only
+   the hue moved.
    Matched on SERVICE + the offering's own name rather than a hardcoded id: an id
    in a function body is a TENANT FACT HARDCODED IN CODE, and this one would silently stop
    gating anything the day the offering is re-priced into a new row. */
@@ -1348,7 +1350,7 @@ export default function Onboarding() {
   // (unsigned paperwork, an unpaid order, an unchosen slot) — so we did NOT
   // redirect. Say the contract is there rather than hiding it behind the wizard.
   const contractBanner = contractsWaiting.length > 0 ? (
-    <section className="bg-gold-50 border border-gold-500/40 rounded-xl p-5 mb-6">
+    <section className="bg-green-50 border border-green-500/40 rounded-xl p-5 mb-6">
       <h2 className="font-serif text-green-900 mb-1">
         {contractsWaiting.length === 1
           ? `${contractsWaiting[0].title?.trim() || 'A contract'} is waiting for you.`
@@ -1414,7 +1416,10 @@ export default function Onboarding() {
   })();
 
   return (
-    <div className="max-w-3xl">
+    /* CR-102: `.flow-green` scopes the shared gold classes (eyebrow, outline
+       button, focus ring, input focus) to green for this page and its
+       descendants — see src/index.css. The rest of the app stays gold. */
+    <div className="max-w-3xl flow-green">
       {/* ⚠️ TOP-LEFT, above everything, on every step. On the first step it leaves
           the flow rather than disappearing — a control that is sometimes absent
           is a control people stop looking for. Nothing is lost either way: the
@@ -1767,7 +1772,7 @@ export default function Onboarding() {
           {/* ── THE CHOICE: add another, or continue ──────────────────────── */}
           {horsePhase === 'collect' && chosenHorseIds.length > 0
             && !reviewHorseId && !showNewHorseForm && (
-            <div className="mb-6 rounded-lg border border-gold-400/40 bg-gold-50/30 p-4">
+            <div className="mb-6 rounded-lg border border-green-400/40 bg-green-50/30 p-4">
               <h3 className="form-label mb-1">
                 {chosenHorseIds.length === 1 ? 'Do you have another horse?' : 'Any more horses?'}
               </h3>
@@ -1798,7 +1803,7 @@ export default function Onboarding() {
 
           {/* ── COMBINED vs SPLIT — only asked when there IS a choice ─────── */}
           {horsePhase === 'decide' && (
-            <div className="mb-6 rounded-lg border border-gold-400/60 bg-white p-5">
+            <div className="mb-6 rounded-lg border border-green-400/60 bg-white p-5">
               <h3 className="font-serif text-green-800 text-lg mb-1">
                 How would you like to sign for {chosenHorseIds.length} horses?
               </h3>
@@ -1809,7 +1814,7 @@ export default function Onboarding() {
               <div className="flex flex-col gap-3">
                 <button type="button" disabled={bindingHorses}
                   onClick={() => void commitHorses(true)}
-                  className="text-left rounded-lg border border-green-800/20 hover:border-gold-400/60 p-4 focus-ring">
+                  className="text-left rounded-lg border border-green-800/20 hover:border-green-400/60 p-4 focus-ring">
                   <p className="text-sm font-medium text-green-900 mb-1">
                     One set of documents covering all {chosenHorseIds.length} horses
                   </p>
@@ -1821,7 +1826,7 @@ export default function Onboarding() {
                 </button>
                 <button type="button" disabled={bindingHorses}
                   onClick={() => void commitHorses(false)}
-                  className="text-left rounded-lg border border-green-800/20 hover:border-gold-400/60 p-4 focus-ring">
+                  className="text-left rounded-lg border border-green-800/20 hover:border-green-400/60 p-4 focus-ring">
                   <p className="text-sm font-medium text-green-900 mb-1">
                     Separate documents for each horse
                   </p>
@@ -1884,7 +1889,7 @@ export default function Onboarding() {
               </div>
               {!showNewHorseForm && (
                 <button type="button" onClick={() => setShowNewHorseForm(true)}
-                  className="text-sm text-gold-800 underline underline-offset-2">
+                  className="text-sm text-green-800 underline underline-offset-2">
                   My horse isn't listed — add a new horse
                 </button>
               )}
@@ -2029,7 +2034,7 @@ export default function Onboarding() {
               {/* 3f re-signer pointer: anchored to the signature box, never
                   obscuring or intercepting the document; does not dismiss
                   until this document's signature completes. */}
-              <div className="pointer-events-none flex items-center gap-2 mb-1 text-gold-900" data-testid="sign-pointer">
+              <div className="pointer-events-none flex items-center gap-2 mb-1 text-green-900" data-testid="sign-pointer">
                 <span aria-hidden="true" className="animate-bounce text-lg leading-none">↓</span>
                 <span className="text-sm font-medium">
                   {currentDoc && priorSigned[currentDoc.template_key]
@@ -2064,7 +2069,7 @@ export default function Onboarding() {
                   not by widening the rule. And the way out is named: the name is
                   editable one step back. */}
               {nameMismatch && (
-                <p id="ob-typed-name-hint" className="text-xs text-gold-900 mt-2">
+                <p id="ob-typed-name-hint" className="text-xs text-green-900 mt-2">
                   That doesn’t match <span className="font-medium">{expectedName}</span> exactly —
                   capitals count. If the printed name is wrong,{' '}
                   <button type="button" className="underline underline-offset-2 focus-ring rounded"
@@ -2092,6 +2097,8 @@ export default function Onboarding() {
           readable, the evaluation lesson is the first purchase and when they
           select it the other options become selectable so it indicates they can
           still add more things."
+          ⚠️ CR-102 (2026-09-01): the outline is GREEN now (`border-green-600`);
+          the signing flow runs green end to end and only the hue moved.
 
           GREYED, NOT HIDDEN, and readable — the point of showing the rest is that
           they can see what they are unlocking. `opacity-60` keeps body text above
@@ -2167,7 +2174,7 @@ export default function Onboarding() {
                           aria-pressed={picked}
                           className={`text-left rounded-lg border p-4 transition-all focus-ring ${
                             picked ? 'border-green-700 bg-green-50'
-                            : isEval ? 'border-2 border-gold-600 bg-gold-50/40 hover:bg-gold-50'
+                            : isEval ? 'border-2 border-green-600 bg-green-50/40 hover:bg-green-50'
                             : disabled ? 'border-green-800/15 bg-white opacity-60 cursor-not-allowed'
                             : 'border-green-800/15 bg-white hover:border-green-800/40'}`}>
                           <span className="flex items-start justify-between gap-3">
@@ -2176,13 +2183,13 @@ export default function Onboarding() {
                                 {o.name}
                                 {isEval && (
                                   <span className="ml-2 align-middle text-[10px] uppercase tracking-wide
-                                                   text-gold-900 bg-gold-200 rounded-full px-2 py-0.5">
+                                                   text-green-900 bg-green-200 rounded-full px-2 py-0.5">
                                     Start here
                                   </span>
                                 )}
                               </span>
                               {isEval ? (
-                                <span className="block text-[12.5px] text-gold-900 mt-1">
+                                <span className="block text-[12.5px] text-green-900 mt-1">
                                   Everyone&apos;s first lesson is an evaluation — it&apos;s how we get
                                   to know your riding. Book this first; everything else opens up once
                                   you do. Allow an extra 30 minutes: arrive 15 minutes early, and the

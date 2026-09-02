@@ -138,7 +138,7 @@ function TokenValue({ token, value, tip }: { token: string; value: string; tip?:
     );
   }
   return (
-    <mark className="bg-gold-100 text-gold-900 rounded px-1.5 border border-gold-400/60 border-dashed text-[13px]">
+    <mark className="bg-green-100 text-green-900 rounded px-1.5 border border-green-400/60 border-dashed text-[13px]">
       ____
     </mark>
   );
@@ -221,7 +221,7 @@ function OwnedField({
     );
   }
   return (
-    <Tag className="rounded-sm bg-gold-100/70 ring-1 ring-gold-300/70 px-0.5">{children}</Tag>
+    <Tag className="rounded-sm bg-green-100/70 ring-1 ring-green-300/70 px-0.5">{children}</Tag>
   );
 }
 
@@ -758,8 +758,8 @@ function PendingCompositionBox({
 
   const btn = 'text-xs px-3 py-1.5 rounded-lg border disabled:opacity-50 disabled:pointer-events-none';
   return (
-    <div className={`rounded-lg border-l-4 p-4 ${rejected ? 'border-gray-300 bg-gray-50' : 'border-gold-400 bg-gold-50/60'}`}>
-      <p className="text-[13px] text-gold-900 mb-2">
+    <div className={`rounded-lg border-l-4 p-4 ${rejected ? 'border-gray-300 bg-gray-50' : 'border-green-400 bg-green-50/60'}`}>
+      <p className="text-[13px] text-green-900 mb-2">
         {rejected
           ? `${who}'s suggestion was not included.`
           : `${who} suggested adding this to the contract, review it carefully and choose one of the options below.`}
@@ -965,7 +965,7 @@ export function ClauseDocument({
     heading: string | null;
     body: string | null;
     conditional_on: import('../../lib/contracts').FieldConditional | null;
-    caption: string | null;      // authored gold-caption override
+    caption: string | null;      // authored caption override (the green caption line)
     ord1: number; ord2: number;
     /** A suggest-tier proposal targeting this header, rendered in place
      *  instead of a normal item — see PendingCompositionBox below. */
@@ -1121,7 +1121,7 @@ export function ClauseDocument({
               <span className="text-green-800 tabular-nums">{secNum}.</span>
               {section.heading}
               {sectionAllOptional && (
-                <span className="text-[11px] text-gold-700/90 font-sans font-medium self-center normal-case tracking-normal">
+                <span className="text-[11px] text-green-700/90 font-sans font-medium self-center normal-case tracking-normal">
                   {describeGate(clausesToShow[0]?.conditional_on, fieldByKey)}
                 </span>
               )}
@@ -1242,7 +1242,7 @@ export function ClauseDocument({
                       </div>
                     )}
                     {gatedOff && !sectionAllOptional && (
-                      <p className="text-[11px] text-gold-700/90 mb-0.5">
+                      <p className="text-[11px] text-green-700/90 mb-0.5">
                         {clause.caption || describeGate(clause.conditional_on, fieldByKey)}
                       </p>
                     )}
@@ -1281,7 +1281,7 @@ export function ClauseDocument({
                             {num ? <span className="text-muted tabular-nums">{num}</span> : null}
                             {showWords ? clause.heading : null}
                             {clauseRequired && (
-                              <ExplainTip text="Needs an answer before signing" underline={false} className="text-gold-700">*</ExplainTip>
+                              <ExplainTip text="Needs an answer before signing" underline={false} className="text-green-700">*</ExplainTip>
                             )}
                             {isHeader && authoredField && (
                               <AuthorItemControls f={authoredField} canEdit={false} isOwnerSide={isOwnerSide}

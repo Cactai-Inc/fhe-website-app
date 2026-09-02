@@ -135,7 +135,7 @@ function HorseGate({ documentId, onAttached }: { documentId: string; onAttached:
   }
 
   return (
-    <section className="bg-gold-50 border border-gold-500/40 rounded-xl p-6 mb-5">
+    <section className="bg-green-50 border border-green-500/40 rounded-xl p-6 mb-5">
       <h2 className="font-serif text-green-900 text-lg mb-1">Which horse is this contract for?</h2>
       <p className="text-[13px] text-green-900/75 mb-4">
         Choose the horse this agreement covers. We'll fill in its details for you. If the right
@@ -155,7 +155,7 @@ function HorseGate({ documentId, onAttached }: { documentId: string; onAttached:
                   {[h.breed, h.sex, h.color].filter(Boolean).join(' · ') || 'Horse record'}
                 </span>
               </span>
-              <span className="text-xs text-gold-800 font-medium shrink-0">
+              <span className="text-xs text-green-800 font-medium shrink-0">
                 {busy === h.id ? 'Attaching…' : 'Use this horse →'}
               </span>
             </button>
@@ -218,14 +218,14 @@ function RedlineSection({
 
       {/* pending edits */}
       {pendingEdits.map((p) => (
-        <div key={p.field_key} className="border-l-4 border-gold-400 bg-gold-50/60 rounded-r-lg p-3 mb-2.5">
-          <p className="text-xs text-gold-900 font-medium mb-1">
+        <div key={p.field_key} className="border-l-4 border-green-400 bg-green-50/60 rounded-r-lg p-3 mb-2.5">
+          <p className="text-xs text-green-900 font-medium mb-1">
             Edit proposed{p.proposed_by ? ` by ${p.proposed_by}` : ''} · {p.label || p.field_key}
           </p>
           <p className="text-sm text-green-900">
             <span className="line-through text-muted">{p.current_value || '—'}</span>
             {' → '}
-            <span className="font-medium bg-gold-100 px-1 rounded">{p.proposed_value || '—'}</span>
+            <span className="font-medium bg-green-100 px-1 rounded">{p.proposed_value || '—'}</span>
           </p>
           <div className="flex gap-2 mt-2">
             {isOwnerSide || (hasPartyRole && !p.mine) ? (
@@ -245,8 +245,8 @@ function RedlineSection({
 
       {/* clauses (open = highlighted pending; accepted = agreed) */}
       {openClauses.map((a) => (
-        <div key={a.id} className="border-l-4 border-gold-400 bg-gold-50/60 rounded-r-lg p-3 mb-2.5">
-          <p className="text-xs text-gold-900 font-medium mb-1">
+        <div key={a.id} className="border-l-4 border-green-400 bg-green-50/60 rounded-r-lg p-3 mb-2.5">
+          <p className="text-xs text-green-900 font-medium mb-1">
             New clause proposed{a.proposed_by ? ` by ${a.proposed_by}` : ''}{a.proposed_by_role ? ` (${a.proposed_by_role})` : ''}
           </p>
           <p className="text-sm text-green-900 whitespace-pre-line">{a.body}</p>
@@ -1278,7 +1278,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
        `horse_medications` rows before free text). Null on a document with no
        horse, which those controls read as "nothing to offer". */
     <ContractHorseProvider horseId={doc?.horse_id ?? null}>
-    <div>
+    {/* CR-102: `.flow-green` re-points the shared gold classes (eyebrow, outline
+        button, focus ring, input focus, text-gold-ink) to green for everything
+        under this root — the contract body, its cards, the drawers and every
+        in-tree modal. The one PORTAL in the flow (AddElementModal) carries the
+        class on its own panel. See src/index.css. */}
+    <div className="flow-green">
       {inSet && (
         <div className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
           <p className="form-label mb-2.5">Document {curIdx + 1} of {signingSet.length} — signed in order</p>
@@ -1292,7 +1297,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   <Link to={`/app/contracts/${s.document_id}`} aria-current={current ? 'step' : undefined}
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
                       s.executed ? 'bg-green-700 text-white border-green-700'
-                        : current ? 'bg-gold-50 text-gold-900 border-gold-400'
+                        : current ? 'bg-green-50 text-green-900 border-green-400'
                           : locked ? 'bg-cream-100 text-muted border-green-800/15'
                             : 'bg-white text-green-800 border-green-800/25 hover:border-green-800/50'}`}>
                     {s.executed ? <CheckCircle2 size={13} aria-hidden="true" />
@@ -1548,9 +1553,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           edit: the edit is refused, and the signer takes their own signature off
           when they choose to. */}
       {sigState?.locked_by_signature && !isExecuted && (
-        <div className="-mx-4 sm:-mx-8 xl:-mx-12 mb-5 bg-gold-50 border-y border-gold-400/50 px-4 sm:px-8 xl:px-12 py-2.5">
+        <div className="-mx-4 sm:-mx-8 xl:-mx-12 mb-5 bg-green-50 border-y border-green-400/50 px-4 sm:px-8 xl:px-12 py-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-gold-900">
+            <p className="text-sm text-green-900">
               Signed by {sigState.signers.map((s) => s.name ?? s.party_role).join(', ')} —
               this document is read-only. {sigState.i_have_signed
                 ? 'Remove your signature to make changes.'
@@ -1586,9 +1591,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {/* A signature came off and there are changes for that party to review. */}
       {!sigState?.locked_by_signature && !isExecuted
         && (doc as { signatures_voided_at?: string | null } | undefined)?.signatures_voided_at && (
-        <div className="-mx-4 sm:-mx-8 xl:-mx-12 mb-5 bg-gold-50 border-y border-gold-400/50 px-4 sm:px-8 xl:px-12 py-2.5">
+        <div className="-mx-4 sm:-mx-8 xl:-mx-12 mb-5 bg-green-50 border-y border-green-400/50 px-4 sm:px-8 xl:px-12 py-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-gold-900">
+            <p className="text-sm text-green-900">
               A signature was removed, so this document can be edited.
               {isOwnerSide
                 ? ' Notify the other party when your changes are ready for review.'
@@ -1627,7 +1632,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         <span className={`text-xs font-sans px-2.5 py-1 rounded-full whitespace-nowrap ${
           isTerminated || isVoid ? 'bg-red-100 text-red-800'
           : state === 'executed' ? 'bg-green-800 text-white'
-          : state === 'locked' ? 'bg-gold-50 text-gold-ink' : 'bg-green-800/10 text-green-800'
+          : state === 'locked' ? 'bg-green-50 text-gold-ink' : 'bg-green-800/10 text-green-800'
         }`}>
           {isTerminated
             ? `Terminated${doc?.terminated_at ? ` · ${new Date(doc.terminated_at).toLocaleDateString()}` : ''}`
@@ -1675,7 +1680,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         />
       )}
       {terminationRequested && !iRequestedTermination && (
-        <div className="mb-3 rounded-lg border border-gold-400/50 bg-gold-50 px-4 py-2.5 text-sm text-gold-900">
+        <div className="mb-3 rounded-lg border border-green-400/50 bg-green-50 px-4 py-2.5 text-sm text-green-900">
           A termination request is pending your response — see Manage above.
         </div>
       )}
@@ -1822,7 +1827,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             )}
             {terminationRequested ? (
               iRequestedTermination ? (
-                <p className="text-[13px] text-gold-800">Termination requested — awaiting the other party's agreement.</p>
+                <p className="text-[13px] text-green-800">Termination requested — awaiting the other party's agreement.</p>
               ) : (
                 <div className="flex flex-col gap-2">
                   <p className="text-[13px] text-green-950">
@@ -1870,7 +1875,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               {/* Rule feedback lands HERE, beside the checkboxes that caused it —
                   the page-level banner sits far below and would be missed. */}
               {controlNote && (
-                <p className="mb-2.5 rounded px-3 py-2 text-[13px] bg-gold-50 border border-gold-400/40 text-gold-900">
+                <p className="mb-2.5 rounded px-3 py-2 text-[13px] bg-green-50 border border-green-400/40 text-green-900">
                   {controlNote}
                 </p>
               )}
@@ -1950,7 +1955,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {allowsCoBuyer && isStaff && editablePhase && !isVoid
         && valueMap['TXN.CO_BUYER_ENABLED'] === 'YES'
         && (partiesSummary?.parties.filter((p) => p.party_role === 'BUYER').length ?? 0) < 2 && (
-        <div className="mb-4 bg-white border border-gold-600/40 rounded-xl px-5 py-4">
+        <div className="mb-4 bg-white border border-green-600/40 rounded-xl px-5 py-4">
           <p className="text-sm font-medium text-green-900 mb-1">Co-Buyer</p>
           <p className="text-[12px] text-muted mb-3">
             A co-buyer is elected on this contract but not yet named. Pick them from
@@ -2058,7 +2063,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           return (
             <button key={section} type="button" disabled={!editablePhase}
               onClick={() => includeSection(true)}
-              className="w-full text-left text-sm text-gold-800 border border-dashed border-gold-400 rounded-xl px-5 py-3 mb-5 hover:bg-gold-50 focus-ring">
+              className="w-full text-left text-sm text-green-800 border border-dashed border-green-400 rounded-xl px-5 py-3 mb-5 hover:bg-green-50 focus-ring">
               ＋ Include “{section}”
             </button>
           );
@@ -2148,7 +2153,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           the two defects. (Verified 2026-08-11: zero change requests exist on any
           document in production, so nothing is stranded today either.) */}
       {(detail.open_change_requests.length > 0) && state !== 'executed' && (
-        <section className="bg-white border border-gold-400/40 rounded-lg p-5 mb-4">
+        <section className="bg-white border border-green-400/40 rounded-lg p-5 mb-4">
           <h2 className="font-serif text-green-800 mb-3">Open change requests</h2>
           <div className="flex flex-col gap-3">
             {detail.open_change_requests.map((cr) => (
@@ -2254,11 +2259,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               a prerequisite, not a secret. */}
           {state === 'locked' && myRoles.length > 0 && !iSigned && docGated && (
             <div className="border-t border-green-800/10 pt-4">
-              <div className="bg-gold-50 border border-gold-600/40 rounded-lg p-4">
-                <p className="text-sm text-gold-900 font-medium mb-1">
+              <div className="bg-green-50 border border-green-600/40 rounded-lg p-4">
+                <p className="text-sm text-green-900 font-medium mb-1">
                   Complete your onboarding documents first
                 </p>
-                <p className="text-sm text-gold-900/90 mb-3">
+                <p className="text-sm text-green-900/90 mb-3">
                   This agreement relies on the information those documents collect, so
                   they have to be signed before it can be executed. You can read this
                   contract now — signing opens as soon as they're done.
@@ -2279,11 +2284,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               time. The contract stays readable throughout. */}
           {state === 'locked' && myRoles.length > 0 && !iSigned && !docGated && nameGated && (
             <div className="border-t border-green-800/10 pt-4">
-              <div className="bg-gold-50 border border-gold-600/40 rounded-lg p-4">
-                <p className="text-sm text-gold-900 font-medium mb-1">
+              <div className="bg-green-50 border border-green-600/40 rounded-lg p-4">
+                <p className="text-sm text-green-900 font-medium mb-1">
                   Confirm your legal name before signing
                 </p>
-                <p className="text-sm text-gold-900/90 mb-3">
+                <p className="text-sm text-green-900/90 mb-3">
                   We want to be certain this agreement carries your name exactly as it
                   should read. It takes a moment, and you only need to do it once.
                 </p>
@@ -2399,7 +2404,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             </div>
           )}
           {templateConfig.show_change_requests && (
-            <div className="rounded-lg border-l-4 border-gold-400 border-y border-r border-green-800/10 bg-cream-100/30 p-4">
+            <div className="rounded-lg border-l-4 border-green-400 border-y border-r border-green-800/10 bg-cream-100/30 p-4">
               <ContractChangeRequests
                 documentId={id}
                 canRequest={editablePhase && !isVoid}
