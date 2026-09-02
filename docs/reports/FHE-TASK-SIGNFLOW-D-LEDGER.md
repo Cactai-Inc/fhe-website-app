@@ -92,3 +92,23 @@ TASK-SIGNFLOW-E.**
 a laminated sign, or a link in a past sent email is invisible from here — and 10 real people reached
 `/docs/release-participant` somehow, so a link exists SOMEWHERE outside the repo. Owner ruled it: a
 retired URL 404s.
+
+### Phase 2 (2026-09-01 → 02)
+- §7.1 `src/App.tsx` — routes `:237/:238/:240` and imports `:31/:32` removed, replaced by a RETIRED
+  comment in the file's own `/inquire`-retired idiom. Commit `1` of the phase.
+- §7.2 `src/lib/reviewSection.ts` — slot D removed, A/B/C NOT renumbered.
+  **DECIDED (spec did not):** the section's `question` said *"Five capture surfaces, three writers"*.
+  It was already off by one (4 entries listed) and is now further off. Rewritten to
+  *"Three capture surfaces, two writers"* — 3 entries listed, and 2 remaining `record_signature`
+  RPC call sites (`src/lib/api.ts:1502`, `src/lib/ops/api-client.ts:143`) once `sign_release`'s
+  door closes.
+- 🔒 §7.3 **THE ANON GRANT IS CLOSED IN PRODUCTION.**
+  `supabase/migrations/20260902T0010_the_retired_kiosk_closes_the_last_anonymous_signing_door.sql`
+  (named 0902 because it was written after midnight; it must sort after `20260901T2330`).
+  Dry-run `BEGIN; \i …; ROLLBACK;` first, then applied.
+  - BEFORE: both `{postgres=X,anon=X,authenticated=X,service_role=X}`
+  - AFTER:  both `{postgres=X,authenticated=X,service_role=X}` · `has_function_privilege('anon',…)=false` ×2
+  - **DECIDED:** re-GRANT to `service_role` ONLY. `authenticated` keeps the direct grant it already
+    had — revoking it is subtractive beyond the spec's letter (§7.3 names anon+PUBLIC) and NOSTRIP's
+    rule applies. **Flagged for follow-up: nothing calls either function as `authenticated`.**
+  - Functions NOT dropped (D32, and DROP+CREATE would re-grant anon via default privileges).
