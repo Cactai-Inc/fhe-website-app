@@ -4,6 +4,8 @@ import QRCode from 'qrcode';
 import { markAwaitingPayment, configValue, reportMyPayment } from '../../lib/api';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { BRAND } from '../../lib/brand';
+import { usePropertyTerm } from '../../contexts/BrandProvider';
+import { withPreposition } from '../../lib/propertyTerm';
 import type { Order, OrderItem, Payment } from '../../lib/types';
 
 const usd = (n: number) =>
@@ -175,6 +177,11 @@ export default function OrderPayment({
      With card gone there is one mode left and it is a constant, kept named rather
      than inlined so the panels below still read as "the Zelle panels". */
   const method = 'zelle' as const;
+  /* "cash at the ranch" is the TENANT saying where cash is taken, so it renders
+     from their own word (U16), not from a fifth hardcoded facility noun. Read at
+     the top of the body — this component's copy is the only consumer and a hook
+     never sits in a branch. */
+  const propertyTerm = usePropertyTerm();
   const [working, setWorking] = useState(false);
   // Zelle's only sanctioned "one tap": the bank-issued receive QR. Its embedded
   // link preselects US as recipient — scannable on desktop, tappable on mobile.
@@ -228,7 +235,8 @@ export default function OrderPayment({
     <div className="bg-white border border-green-800/10 p-8 mb-8">
       <h2 className="font-serif font-medium text-green-800 text-xl mb-2">Payment</h2>
       <p className="body-text text-sm mb-6">
-        We accept Zelle &mdash; instant, no fees, straight from your bank app &mdash; or cash at the barn.
+        We accept Zelle &mdash; instant, no fees, straight from your bank app &mdash; or cash{' '}
+        {withPreposition(propertyTerm)}.
       </p>
 
       {payment?.status === 'review' && (
