@@ -49,7 +49,7 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 |---|---|---|---|
 | `FHE-TASK-SITECOPY-A` | Sonnet · HIGH · thinking OFF | `wt-2` | prompt handed |
 | `FHE-TASK-SITECOPY-B` | Opus · HIGH · thinking ON | `wt-3` | prompt handed |
-| `FHE-TASK-LANDINGSIGNIN` | Opus · HIGH · thinking ON | `wt-1` | ⚠️ HELD until the stray line in wt-1 is ruled (below) |
+| `FHE-TASK-LANDINGSIGNIN` | Opus · HIGH · thinking ON | `wt-1` | prompt handed |
 | `FHE-DSNR-ONERAIL` | Opus · HIGH · thinking ON | — (docs only) | prompt handed — rebase pass, both its gate merges landed today |
 | `FHE-TASK-SITESEO` | Opus · HIGH · thinking ON | after SITECOPY-A merges | 🔒 GATED on ASK-OWNER 2 (301 vs 404) |
 | `FHE-TASK-POLICIESANDFAQ` | — | — | ⛔ BLOCKED: draft + COMPLIANCE-FINDINGS not in repo (ASK-OWNER 1) |
@@ -57,8 +57,8 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 **Sequence:** A ‖ B ‖ LANDINGSIGNIN parallel (file-disjoint per handoff §2) · SITESEO after A
 (shares `src/lib/seo.ts`) · POLICIESANDFAQ after the owner stages the drafts and DSNR specs it.
 ⚠️ **`VISITMENU` merged `c45ee5ea` without ORCH validation — validation owed, queued.**
-⚠️ **wt-1 stray:** 1 uncommitted line in `api/request-received.ts` ("Buying or selling"→"Buying or
-leasing") left after visitmenu merged. Owner rules keep-or-drop; wt-1 unusable until cleared.
+✅ **wt-1 stray RESOLVED:** it was the unshipped half of the owner's leasing correction —
+applied and merged (`61b75a42`); wt-1 back in the pool.
 
 ## ▶ DISPATCHED 2026-09-01 — the SIGNFLOW lane (FHE-DSNR-SIGNFLOW-HANDOFF · CR-100/101/102)
 | Thread | Model/effort/thinking | Worktree | State |
