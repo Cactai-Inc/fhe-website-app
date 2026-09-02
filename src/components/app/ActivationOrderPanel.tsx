@@ -26,6 +26,8 @@ import { getOrder, listOrderBookings, reportOrderIncorrect, type OrderBooking } 
 import type { Order, OrderItem } from '../../lib/types';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { BRAND } from '../../lib/brand';
+import { usePropertyTerm } from '../../contexts/BrandProvider';
+import { withPreposition, type PropertyTerm } from '../../lib/propertyTerm';
 
 const money = (n: number | null | undefined): string => {
   if (n == null) return 'Price on inquiry';
@@ -43,6 +45,25 @@ function whenText(b: OrderBooking): string {
   return d.toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' });
 }
 
+/**
+ * "someone at the ranch has been told" / "3 of us at the stables have been told".
+ *
+ * ⚠️ THE COUNT GOVERNS THE VERB, and this line got that wrong until SITECOPY-B:
+ * it read "{reached} of us at the barn HAS been told" for every count, so any
+ * number above one was ungrammatical. The subject and its verb are therefore
+ * picked in ONE decision here — there is no second ternary that could drift out
+ * of step with the first.
+ *
+ * ⚠️ AND THE PROPERTY TERM DOES NOT GOVERN IT. "at the stables" is a
+ * prepositional phrase, never the subject, so `agree()` is the wrong helper for
+ * this sentence — it would render "someone at the stables have been told".
+ * `withPreposition()` carries the tenant's own preposition + article (U16).
+ */
+function toldSentence(reached: number, term: PropertyTerm): string {
+  const [who, verb] = reached === 1 ? ['someone', 'has'] : [`${reached} of us`, 'have'];
+  return `${who} ${withPreposition(term)} ${verb} been told`;
+}
+
 export interface ActivationOrderPanelProps {
   purchaseId: string;
   /** Runs for BOTH buttons — the correction never blocks the client. */
@@ -50,6 +71,7 @@ export interface ActivationOrderPanelProps {
 }
 
 export function ActivationOrderPanel({ purchaseId, onContinue }: ActivationOrderPanelProps) {
+  const propertyTerm = usePropertyTerm();
   const [order, setOrder] = useState<(Order & { items: OrderItem[] }) | null>(null);
   const [bookings, setBookings] = useState<OrderBooking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,8 +170,8 @@ export function ActivationOrderPanel({ purchaseId, onContinue }: ActivationOrder
           {reached > 0 ? (
             <span className="inline-flex items-start gap-2">
               <Check size={16} className="shrink-0 mt-0.5" aria-hidden="true" />
-              Thank you — {reached === 1 ? 'someone' : `${reached} of us`} at the barn has been told,
-              and it is on your order for us to work through with you.
+              Thank you — {toldSentence(reached, propertyTerm)}, and it is on your
+              order for us to work through with you.
             </span>
           ) : (
             <span className="inline-flex items-start gap-2">

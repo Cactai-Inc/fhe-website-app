@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ArrowRight, AlertTriangle } from 'lucide-react';
 import { BRAND } from '../lib/brand';
+import { usePropertyTerm } from '../contexts/BrandProvider';
+import { withArticle } from '../lib/propertyTerm';
 import { useDocumentTitle } from '../lib/hooks';
 import { formatPrice } from '../lib/pricing';
 import { readInquiryReceipt, type InquiryReceipt } from '../lib/inquiryReceipt';
@@ -38,6 +40,12 @@ const METHOD_PROMISE: Record<string, string> = {
 
 export default function Confirmation() {
   useDocumentTitle('Your Inquiry Is With Us');
+  /* The three SendLine strings below say who the inquiry went TO, and that is the
+     tenant, so it is the tenant's own word — never a hardcoded "barn" beside the
+     mechanism that already holds it (U16 / TASK-FACILITYTERM, D18). Hoisted here
+     rather than read inside SendLine: SendLine is a presentational component that
+     takes finished sentences, and a hook must not sit in a conditional branch. */
+  const propertyTerm = usePropertyTerm();
   const [receipt, setReceipt] = useState<InquiryReceipt | null>(() => readInquiryReceipt());
 
   // The two sends resolve after this screen has already mounted (the visitor is
@@ -145,9 +153,9 @@ export default function Confirmation() {
               <ul className="flex flex-col gap-2.5">
                 <SendLine
                   state={receipt.sends.staff}
-                  okText="Your inquiry has been emailed to the barn."
-                  failText="We could not email the barn just now — but your inquiry is saved and already in our queue."
-                  pendingText="Sending your inquiry to the barn…"
+                  okText={`Your inquiry has been emailed to ${withArticle(propertyTerm)}.`}
+                  failText={`We could not email ${withArticle(propertyTerm)} just now — but your inquiry is saved and already in our queue.`}
+                  pendingText={`Sending your inquiry to ${withArticle(propertyTerm)}…`}
                 />
                 <SendLine
                   state={receipt.sends.buyer}
