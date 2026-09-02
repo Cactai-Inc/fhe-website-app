@@ -60,7 +60,7 @@ export interface RouteSeo {
 export const ROUTE_SEO: RouteSeo[] = [
   {
     path: '/',
-    title: 'French Heritage Equestrian — Hunter/Jumper Lessons & Training | Coastal San Diego',
+    title: 'French Heritage Equestrian — Jumper Lessons & Training | Coastal San Diego',
     description:
       'Join our community of riders, where camaraderie, enjoyment, and a love for horses come together.',
     indexable: true,
@@ -70,7 +70,7 @@ export const ROUTE_SEO: RouteSeo[] = [
     path: '/about',
     title: 'Our Story — A Lifetime of Classical Horsemanship | French Heritage Equestrian',
     description:
-      'A family story that began in Europe and came home to coastal San Diego. Classical hunter/jumper horsemanship, patient teaching, and the horse first — always.',
+      'A family story that began in Europe and came home to coastal San Diego. Classical jumper horsemanship, patient teaching, and the horse first — always.',
     indexable: true,
     priority: 0.7,
   },
@@ -95,7 +95,7 @@ export const ROUTE_SEO: RouteSeo[] = [
     path: '/ride',
     title: 'Come Ride With Us — Lessons & Rider Community | French Heritage Equestrian',
     description:
-      'A community of women who ride for the love of it, in coastal San Diego. Classical hunter/jumper riding — join the rider community or book individual lessons.',
+      'A community of women who ride for the love of it, in coastal San Diego. Classical jumper riding — join the rider community or book individual lessons.',
     indexable: true,
     priority: 0.9,
   },
@@ -139,7 +139,7 @@ export const ROUTE_SEO: RouteSeo[] = [
     path: '/lessons',
     title: 'Riding Lessons — Single & Multi-Pack | French Heritage Equestrian, San Diego',
     description:
-      'Private hunter/jumper riding lessons in coastal San Diego — book a single lesson or a multi-pack. Classical instruction for returning and adult-amateur riders.',
+      'Private jumper riding lessons in coastal San Diego — book a single lesson or a multi-pack. Classical instruction for returning and adult-amateur riders.',
     service: 'Private Riding Lessons',
     indexable: true,
     priority: 0.8,
@@ -157,7 +157,7 @@ export const ROUTE_SEO: RouteSeo[] = [
     path: '/acquisition',
     title: 'Horse Search, Evaluation & Brokering | French Heritage Equestrian, San Diego',
     description:
-      'Expert hunter/jumper horse acquisition: search, pre-purchase and lease evaluation, and full brokering, drawn from years in the discipline. Serving San Diego.',
+      'Expert jumper horse acquisition: search, pre-purchase and lease evaluation, and full brokering, drawn from years in the discipline. Serving San Diego.',
     service: 'Horse Acquisition & Brokering',
     indexable: true,
     priority: 0.8,

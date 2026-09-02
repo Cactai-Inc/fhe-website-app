@@ -73,7 +73,7 @@ export default function About() {
               <p>
                 French Heritage Equestrian is a family story before it is anything else. It began in
                 Europe, with a child who loved horses and never stopped — riding, competing, and
-                learning the classical hunter/jumper tradition from the people who do it best. That
+                learning the classical jumper tradition from the people who do it best. That
                 foundation came with us across an ocean and a few decades, and it is what we bring
                 home to Carmel Creek Ranch every day.
               </p>
