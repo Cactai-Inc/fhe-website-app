@@ -4,7 +4,7 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-01 · **ORCH7 — LIFECYCLE VERIFIED AND MERGED; SIGNBOOK still running**
+**Last updated:** 2026-09-01 · **ORCH7 — public-site lane sequenced from FHE-DSNR-SITE-PUBLIC-HANDOFF**
 
 ## RESUME
 - ✅ **`TASK-LIFECYCLE` — VERIFIED, MERGED, PUSHED** (merge `5b9fed67`, docs `b9aa8b82`).
@@ -44,11 +44,25 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
   `origin/main`, clean, with `node_modules` and the `.env` pair. 🔒 **D36: ORCH assigns; a thread
   never self-selects.**
 
-## ▶ RUNNING — nothing. QUEUE, in order
-1. **`DISCO`** — CR-100/101/102 + the REQCARDS modal option-set lock (prompts handed 2026-09-01).
-2. **`REQCARDS`** — after DISCO's lock and DSNR's spec fold. Worktree assigned at dispatch (D36).
-3. **`CLNR-REPO-STATE`** and **`DSNR-SITE-PUBLIC`** — ORCH6's hold is RELEASED once the owner
-   closes the SIGNBOOK thread and `task/flowalign` is resolved: both builds are merged.
+## ▶ DISPATCHED 2026-09-01 — the public-site lane (FHE-DSNR-SITE-PUBLIC-HANDOFF)
+| Thread | Model/effort/thinking | Worktree | State |
+|---|---|---|---|
+| `FHE-TASK-SITECOPY-A` | Sonnet · HIGH · thinking OFF | `wt-2` | prompt handed |
+| `FHE-TASK-SITECOPY-B` | Opus · HIGH · thinking ON | `wt-3` | prompt handed |
+| `FHE-TASK-LANDINGSIGNIN` | Opus · HIGH · thinking ON | `wt-1` | ⚠️ HELD until the stray line in wt-1 is ruled (below) |
+| `FHE-DSNR-ONERAIL` | Opus · HIGH · thinking ON | — (docs only) | prompt handed — rebase pass, both its gate merges landed today |
+| `FHE-TASK-SITESEO` | Opus · HIGH · thinking ON | after SITECOPY-A merges | 🔒 GATED on ASK-OWNER 2 (301 vs 404) |
+| `FHE-TASK-POLICIESANDFAQ` | — | — | ⛔ BLOCKED: draft + COMPLIANCE-FINDINGS not in repo (ASK-OWNER 1) |
+
+**Sequence:** A ‖ B ‖ LANDINGSIGNIN parallel (file-disjoint per handoff §2) · SITESEO after A
+(shares `src/lib/seo.ts`) · POLICIESANDFAQ after the owner stages the drafts and DSNR specs it.
+⚠️ **`VISITMENU` merged `c45ee5ea` without ORCH validation — validation owed, queued.**
+⚠️ **wt-1 stray:** 1 uncommitted line in `api/request-received.ts` ("Buying or selling"→"Buying or
+leasing") left after visitmenu merged. Owner rules keep-or-drop; wt-1 unusable until cleared.
+
+## QUEUE BEHIND THE LANE
+`REQCARDS` (after DISCO option-set lock + DSNR fold) · `CLNR-REPO-STATE` (hold RELEASED — both
+builds merged; dispatch when no build is mid-flight, it moves files).
 
 ## ⚠️ EXCLUSIVE OWNERSHIP (D35 — a worktree isolates git, NOT the database)
 | Object / file | Owner | State |
@@ -56,6 +70,10 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 | the onboarding wizard · the delivery-hold/submit RPCs · the door (`account_state_for_email`, `api/register-invited.ts`) | — | **free — SIGNBOOK merged `2fa1f7b9`** |
 | the whole booking state machine (`bookings_status_check` · `booking_status_code` · `calendar_free_busy` · `request_open_time` · `request_booking_change` · `decide_booking_change` · `confirm_booking` · `confirm_booking_for_purchase` · `purchases_confirm_bookings` trigger · `_ensure_plan_horizon` · `ensure_standing_slots` · `mint_recurring_allotments` · `plan_horizon_through`) | — | **free — LIFECYCLE merged.** 🔒 SIGNBOOK still may not edit `request_open_time`; it calls it |
 | the staff dashboard cards · the client payment modal | **reserve for `REQCARDS`** | queued |
+| `index.html` · `src/lib/seo.ts` (copy values) · `Services.tsx` · `About.tsx` | **`SITECOPY-A`** | running |
+| `Confirmation.tsx` · `OrderPayment.tsx` · `ActivationOrderPanel.tsx` · `usePropertyTerm` adoption | **`SITECOPY-B`** | running |
+| `src/components/layout/Header.tsx` | **`LANDINGSIGNIN`** | held on wt-1 |
+| `scripts/prerender.mjs` · `scripts/seo-files.mjs` · `seo.ts` route list · `App.tsx` redirects | **reserve for `SITESEO`** | gated |
 | `mark_purchase_paid` · `revenue_summary` · the money columns | — | free — the BACKDATE+BOOKS1 union |
 | `AppLayout.tsx` · `pageRegistry.ts` · `ops/kit/Modal.tsx` | — | free |
 
