@@ -4376,3 +4376,34 @@ a privacy/consent consideration (CA), the admin page, and the dashboard tiles (D
 dashboards — renders what exists") never ran. ⚠️ **The D13 exception ruled out per-zone ARRANGEMENT
 editors; a WHICH-DASHBOARDS-ARE-ACCESSIBLE selector is access control, not arrangement — it is not
 excluded by that ruling.** Routed: revisit the plan against this description before any build.
+
+## CR-108 — the location is the RANCH; rename everywhere (FHE v1 ruling)
+**SAID (owner, 2026-09-02, verbatim):**
+> *"We refer to our location as Ranch not barn. rename everywhere, this is FHE v1 specific and thats
+> ok. For the v2 build the setup onboarding for a tenant will ask them to choose their own
+> terminology for things like this. We technically dont have 'barn ops' we dont own or run the
+> ranch, we board there and rent a tackroom and run our business from there with permission from the
+> owner."*
+Answers the Barn Ops wording question from SITECOPY-B. The seam exists: `usePropertyTerm` already
+renders 'ranch' for FHE. The "Barn Ops" module NAME is held for CR-109's review — the copy sweep
+does not guess its replacement.
+
+## CR-109 — Stable/Tackroom management: dedicated Horses · Gear · Supplies · Business pages, with assignment and consumption
+**SAID (owner, 2026-09-02, verbatim):**
+> *"We have Stable and Tackroom management and tracking needs, if these are bucketed under 'Barn
+> Ops' we need to review the layout, inclusions, capabilities, and access/ui visibility. I've only
+> ever seen My Stable which shows My Horses and My Gear. As a business with a tackroom we have horse
+> specific gear and supplies and general use gear and supplies, logging, tracking, management, and
+> visibility for gear and supplies appears to be split between a single gear page and horse specific
+> supplies section on the horse records. Im not sure this is ideal, it would be better to have
+> dedicated pages for Horses, Gear, Supplies, and Business (boarding, tackroom, signage, insurance,
+> decorative items for the tackroom, furniture, etc...), and then the ability to assign things to
+> eachother. so we would assign gear to the horse(s) that use it, select the feed and bedding from
+> the supplies page on each horses record and input how much they use every month to track
+> consumption on a per horse basis and aggregate so we can see the depletion of the amount on hand
+> shown in the supplies page."*
+Routed to research (DISCO profile) — measured 2026-09-02 before routing: `mod.barnops` is ENABLED
+and registered (hub `/app/ops/barnops` + Resources + Consumption log + Allocation rules,
+`pageRegistry.ts:298-301`), so consumption/attribution machinery ALREADY EXISTS — the review is a
+convergence question (D18), and "I've only ever seen My Stable" despite a live nav row is a
+reachability/visibility question (D17) the research must answer.

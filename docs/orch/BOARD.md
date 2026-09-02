@@ -71,9 +71,11 @@ ORCH) ·
 only, NO removal/merge/convergence; `SIGNFLOW-E` withdrawn)
 
 ### New queue items out of wave 2
-- **OWNER: the Barn Ops wording call** — five rendered "the barn" strings on staff surfaces + the
-  hub is NAMED "Barn Ops"; adopt the tenant word there too, rename the module, or leave staff
-  surfaces as-is? Then a DSNR-profile sweep spec.
+- ~~the Barn Ops wording call~~ ✅ **ANSWERED — D43: Ranch, everywhere (CR-108)**; the module
+  name/bucketing goes through CR-109's review. Queue: `FHE-TASK-RANCHWORD` (DSNR profile → build;
+  sweep copy, hold the hub name) then `FHE-TASK-TACKROOM` (DISCO profile; CR-109 — inventory
+  what barnops/My Stable/gear/horse-supplies hold today, the reachability question, and the
+  Horses·Gear·Supplies·Business + assignment/consumption model against the existing machinery).
 - **Cursive-period defect** (SIGNFLOW-A §5) — remerge appends a period after signature tokens; 3
   unsigned docs incl. the live lease VIEW. DSNR-profile amendment or task; cheapest fix named in §5.
 - **Stale-comment batch grows:** Onboarding.tsx:106-108/:621 (payment step claimed live) joins D's

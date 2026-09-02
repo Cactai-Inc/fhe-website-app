@@ -979,3 +979,11 @@ reporting success.
   5. **Discussion now lives in ORCH's window, which is what DISCO existed to prevent — the accepted
      cost.** The mitigation is THE-RUNNING-RECORD discipline: the board and ledgers stay current so
      an ORCH handoff loses one step, not a session.
+
+- **D43 — THE LOCATION IS THE RANCH, EVERYWHERE (owner, 2026-09-02 — FHE v1 ruling).** *"We refer
+  to our location as Ranch not barn. rename everywhere."* Extends D38 beyond guest/member copy to
+  EVERY surface, staff included. FHE does not own or run the ranch — it boards there and rents a
+  tackroom — so **"Barn Ops" is a misnomer twice over**; the module's name and bucketing are under
+  CR-109 review, and the copy sweep (CR-108) does not invent its replacement. The seam is
+  `usePropertyTerm` (FHE's term is already `ranch`); v2's tenant onboarding will ask each tenant
+  their own terminology, which is what the mechanism was built for.
