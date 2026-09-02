@@ -1,3 +1,20 @@
+> # 🔒 SUPERSEDED 2026-09-01 by `FHE-DSNR-SITE-PUBLIC` — DO NOT BUILD FROM THIS FILE
+> **This is the owner's 2026-08-24 chat-thread draft, kept for its provenance.** It was rebased and
+> split into two chunks, because its two items turned out to need two different mechanisms:
+> - `docs/tasks/TASK-SITECOPY-A-jumper-only-program-not-barn-in-public-marketing-copy.md`
+> - `docs/tasks/TASK-SITECOPY-B-the-app-stops-calling-itself-the-barn.md`
+>
+> ⚠️ **Two of its claims did not survive re-measurement:**
+> 1. *"No other public-copy instance of `barn` found in an identity-claiming context"* — **there are
+>    four**, in `Confirmation.tsx:148-150`, `OrderPayment.tsx:231`, `ActivationOrderPanel.tsx:151`
+>    and `App.tsx:509`. They are `-B`.
+> 2. Its TEST asks for `/ride` and `/shop` to be read in a browser. **Both are `<Navigate>` redirects
+>    and prerender to a blank, titleless page** — see `docs/tasks/TASK-SITESEO-three-indexed-urls-prerender-a-blank-page.md`.
+>
+> **Its "verified accurate, do not touch" list DID survive in full and is carried into `-A` §2.**
+
+---
+
 # TASK-SITECOPY — jumper-only, program-not-barn, across public copy
 
 Scope: public marketing site only (index.html, src/lib/seo.ts, src/pages/Services.tsx,
