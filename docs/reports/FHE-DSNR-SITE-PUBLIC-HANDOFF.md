@@ -249,23 +249,32 @@ question the owner has not been asked yet.**
 **Worktrees at the time of writing:** `wt-1` `task/visitmenu` (dirty), `wt-2` and `wt-3` detached.
 ⚠️ **I do not know what is running — `D36` says you assign them. This is a snapshot, not a claim.**
 
-## ⚠️ AN INCIDENT ON `main` YOU SHOULD KNOW ABOUT — CONCURRENT THREADS, ONE CHECKOUT
-**Commit `9652d1b8`, authored by `FHE-DSNR-SIGNFLOW`, contains 103 lines of
-`docs/tasks/TASK-SITESEO-…md` — a file that thread has nothing to do with.**
-**What happened:** that thread committed while my edits to that file were still unstaged in the same
-working tree, and its `git add` swept them in.
+## 🔒 IT HAPPENED TWICE — CONCURRENT DSNR THREADS ON ONE UNMANAGED CHECKOUT
+**`FHE-DSNR-SIGNFLOW` has now committed MY files, twice, in the space of one session:**
 
-🔒 **No content was lost — `main` is correct and the tree is clean.** ⚠️ **But that file's history
-reads under a `SIGNFLOW` commit message, so `git blame` on the `SITESEO` ruling points at the wrong
-thread.**
+| Its commit | What of mine it swallowed |
+|---|---|
+| `9652d1b8` *"DSNR-SIGNFLOW: retract three wrong claims…"* | **103 lines of `docs/tasks/TASK-SITESEO-…md`** — the whole keep-and-301 ruling |
+| `609895fc` *"DSNR-SIGNFLOW: handoff opens with the inroads hold…"* | **`FHE-DSNR-SITE-PUBLIC-HANDOFF.md` AND `-LEDGER.md`** — the masthead, the three rulings, this section |
 
-**Two things worth carrying, both yours not mine:**
-1. **Two DSNR threads were writing to the canonical checkout at the same time.** `D36` assigns
-   worktrees for build threads; **spec-authoring threads apparently share `main` unmanaged.**
-2. ⚠️ **`git add -A` and `git commit -a` are unsafe in this checkout while any other thread is live.**
-   **Staging explicit paths is already a `DSNR-ROLE.md` §6 non-negotiable — this is what it is for,
-   and I violated it once (`git add -A docs/`) before catching it.** Every later commit of mine names
-   its paths.
+**Both times:** that thread committed while my edits sat unstaged in the same working tree, and its
+`git add` took them. **Once I hit `.git/index.lock` held by its process mid-commit.**
+
+🔒 **NO CONTENT WAS LOST. `main` is correct and the tree is clean — verified by grepping for every
+section marker after each event.** ⚠️ **What IS lost is the commit messages explaining these
+changes, and `git blame` on the `SITESEO` ruling and on this handoff now points at `SIGNFLOW`.**
+
+### ⚠️ THIS IS A PATTERN, NOT TWO ACCIDENTS — and it is ORCH's to fix
+1. 🔒 **`D36` assigns worktrees to BUILD threads. Spec-authoring threads are sharing the canonical
+   checkout with no assignment and no lock**, and there are at least two of us live right now.
+   **The obvious extension: `DSNR` threads get an assigned worktree too, or ORCH serialises them.**
+2. ⚠️ **`git add -A` / `git commit -a` are unsafe in this checkout, for every role.**
+   **`DSNR-ROLE.md` §6 already says stage explicit paths — this is exactly what that rule prevents,
+   and `SIGNFLOW` is evidently not honouring it.** **I violated it once myself (`git add -A docs/`)
+   before catching it; every commit of mine since names its paths, and it happened anyway — because
+   the other thread's `add` is the one that does the damage.**
+3. **Worth a D-rule, on the evidence of two events in one session.** ⚠️ **Mine to report, yours to
+   write.**
 
 ---
 

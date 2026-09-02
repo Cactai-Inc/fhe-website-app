@@ -184,12 +184,20 @@ serve the LANDING page's markup and `<title>` as initial HTML.** Same class as t
 invisible in a browser — which is why `TASK-SITESEO` §8 is `curl`-only. Written into that spec as
 §2.4, and it is why `/services` gets prerendered rather than merely re-flagged.
 
-## ⚠️ INCIDENT — a concurrent thread committed my file
-`9652d1b8`, authored by `FHE-DSNR-SIGNFLOW`, contains 103 lines of `TASK-SITESEO-…md`. That thread
-committed while my edits were unstaged in the same working tree and its `git add` swept them in.
-**No content lost; `main` correct.** ⚠️ **But `git blame` on the SITESEO ruling points at the wrong
-thread.** **Root cause on my side: I used `git add -A docs/` once, against `DSNR-ROLE.md` §6's
-stage-explicit-paths rule. Every later commit names its paths.** Carried to ORCH in handoff §2.
+## ⚠️ INCIDENT, TWICE — a concurrent thread committed my files
+| `FHE-DSNR-SIGNFLOW` commit | What of mine it contains |
+|---|---|
+| `9652d1b8` | 103 lines of `docs/tasks/TASK-SITESEO-…md` (the keep-and-301 ruling) |
+| `609895fc` | `FHE-DSNR-SITE-PUBLIC-HANDOFF.md` + `FHE-DSNR-SITE-PUBLIC-LEDGER.md` (masthead, the three rulings, the incident record itself) |
+
+Both times that thread committed while my edits were unstaged in the shared canonical checkout and
+its `git add` swept them in; once its process held `.git/index.lock` while I tried to commit.
+🔒 **No content lost — every section marker re-grepped and present on `main` after each event.**
+⚠️ **The commit messages explaining these changes never landed, and `git blame` misattributes both
+the `SITESEO` ruling and this handoff to `SIGNFLOW`.**
+**Root cause on my side: one `git add -A docs/`, against `DSNR-ROLE.md` §6. Every commit since names
+explicit paths — and it happened again anyway, because the damaging `add` is the other thread's.**
+**Carried to ORCH in handoff §2 as a pattern needing a rule, not as a complaint.**
 
 # TEARDOWN
 Read-only against production throughout — **no DB connection was opened, nothing was written to
