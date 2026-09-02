@@ -4,7 +4,7 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-01 · **ORCH7 — public-site lane sequenced from FHE-DSNR-SITE-PUBLIC-HANDOFF**
+**Last updated:** 2026-09-02 · **ORCH — D41 consolidation applied: two thread kinds, ORCH holds the conversation**
 
 ## RESUME
 - ✅ **`TASK-LIFECYCLE` — VERIFIED, MERGED, PUSHED** (merge `5b9fed67`, docs `b9aa8b82`).
@@ -63,14 +63,13 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 | `FHE-TASK-SITESEO` | after `SITECOPY-A` merges (shares `seo.ts`). ⚠️ **UNGATED by R2 — keep-and-301 to `/lessons`; `App.tsx` freed, the `<Navigate>` routes stay** |
 | `FHE-TASK-SIGNFLOW-C` | after `SIGNFLOW-A` AND `-B` merge; re-greps its line numbers |
 
-### Docs threads — ONE canonical-checkout writer at a time (D40); run serially or ask ORCH for a tree
-`FHE-DSNR-ONERAIL` (rebase pass — spec describes doors replaced 2026-09-01) ·
-`FHE-DSNR-FUNNELDEBT` (the SIGNBOOK fallout lane) ·
-`FHE-DISCO-SITE-PUBLIC` (POLICIESANDFAQ re-originated — a DISCO pass, NOT a paste; the two owner
-calls are reconstructed in the handoff §0.1) ·
-`FHE-DISCO-SIGNFLOW` (the contract-inroads matrix — `FHE-SIGNFLOW-CONTRACT-INROADS.md` §4; research
-only, NO removal/merge/convergence until the matrix is filled from the database; `SIGNFLOW-E`
-withdrawn)
+### Docs tasks (D41: profiles, not roles) — ONE canonical-checkout writer at a time (D40)
+`FHE-TASK-ONERAIL` (DSNR profile — rebase the stale spec) ·
+`FHE-TASK-FUNNELDEBT` (DSNR profile — the SIGNBOOK fallout lane) ·
+`FHE-TASK-SITEPOLICY` (DISCO profile — the POLICIESANDFAQ research; the two owner calls come to
+ORCH) ·
+`FHE-TASK-INROADS` (DISCO profile — fill the contract-inroads matrix from the database; research
+only, NO removal/merge/convergence; `SIGNFLOW-E` withdrawn)
 
 ### 🔒 HOLDS
 - **Contract entry points (`/sign/deal` alignment, the three-state-door widening)** — HELD for the

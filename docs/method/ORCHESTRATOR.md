@@ -330,6 +330,15 @@ the last orchestrator's context window.**
 
 ---
 
+# 0z. 🔻 D41 SUPERSEDES THE THREAD MODEL BELOW (owner, 2026-09-02)
+**TWO thread kinds now: `ORCH` (standing — and it now HOLDS THE CONVERSATION too) and `TASK`
+(disposable — builds, spec authoring via the DSNR profile, research via the DISCO profile).**
+**DISCO and DSNR are retired as threads; their files remain as the profiles' instructions. GHOST/RNR
+deferred to the product environment.** ⚠️ **Sections below describing DISCO/DSNR as separate threads
+are retained as history and for the checks they define — read them through D41: "send to DISCO" now
+means "dispatch a TASK wearing the DISCO profile", and the discussion those threads held happens in
+ORCH.** **The accepted cost is ORCH's context window; the mitigation is the running record.**
+
 # 0. ⚠️ FOUR ROLES, AND ORCH IS NOT ALL OF THEM — ADDED 2026-08-31
 
 **The owner, on this thread doing too much:**

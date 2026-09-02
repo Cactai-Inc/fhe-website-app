@@ -8,6 +8,13 @@ are not repeated in every spec.** A spec adds what is specific; this file is wha
 threads for one change are lettered `-A`/`-B`/`-C` (never numbers — reserved for future revision
 sets). Your prompt is two lines and your identifier is the first.
 
+🔒 **PROFILES (D41): a task file may declare a PROFILE, and its rules bind you for this task.**
+`CODR` (`docs/method/CODR-PROFILE.md`) · `DSNR` (`docs/method/DSNR-ROLE.md` — spec authoring; your
+deliverable is specs + a handoff, and you take no build worktree) · `DISCO` (`docs/method/DISCO-ROLE.md`
+— research; read-only against production, your deliverable is a handoff). **The profile lives in the
+file, never in the thread name. No profile declared = a plain build task.** ⚠️ **A docs-only task
+(DSNR/DISCO profile) still gets an ORCH assignment before writing anywhere (D40).**
+
 ---
 
 > ## 🔗 WHERE YOU SIT
