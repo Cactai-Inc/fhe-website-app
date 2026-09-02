@@ -1612,6 +1612,7 @@ export default function Onboarding() {
               </label>
               <input id="ob-text-phone" type="tel" inputMode="tel" className="form-input"
                 value={form.text_only_phone} onChange={upd('text_only_phone')}
+                onBlur={normalize('ob-text-phone', 'phone', form.text_only_phone, (v) => setForm((f) => ({ ...f, text_only_phone: v })))}
                 placeholder="A different number for texts" />
             </div>
             <div className="mb-4">
@@ -1629,20 +1630,31 @@ export default function Onboarding() {
           </div>
           <div className="mb-4">
             <label className="form-label" htmlFor="ob-street">Street address</label>
-            <input id="ob-street" required className="form-input" value={form.address_street} onChange={upd('address_street')} />
+            {/* ⚠️ CR-100 — normalised ON BLUR, in front of the person, like every
+                other field on this page. The `key` is the input's own `id`, so the
+                no-refight guard (`normalizeOnBlur`'s `lastOutput`) is unique by
+                construction. Owner: *"it should normalize to capitalize."* */}
+            <input id="ob-street" required className="form-input" value={form.address_street} onChange={upd('address_street')}
+              onBlur={normalize('ob-street', 'street', form.address_street, (v) => setForm((f) => ({ ...f, address_street: v })))} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div>
               <label className="form-label" htmlFor="ob-city">City</label>
-              <input id="ob-city" required className="form-input" value={form.address_city} onChange={upd('address_city')} />
+              <input id="ob-city" required className="form-input" value={form.address_city} onChange={upd('address_city')}
+                onBlur={normalize('ob-city', 'city', form.address_city, (v) => setForm((f) => ({ ...f, address_city: v })))} />
             </div>
             <div>
               <label className="form-label" htmlFor="ob-state">State</label>
-              <input id="ob-state" required className="form-input" value={form.address_state} onChange={upd('address_state')} />
+              {/* ⚠️ `region`, not "uppercase the state box": `ca` becomes `CA`, and
+                  `California` comes back untouched. Formatting what is recognisable
+                  and mangling nothing else is `normalizePhone`'s precedent. */}
+              <input id="ob-state" required className="form-input" value={form.address_state} onChange={upd('address_state')}
+                onBlur={normalize('ob-state', 'region', form.address_state, (v) => setForm((f) => ({ ...f, address_state: v })))} />
             </div>
             <div>
               <label className="form-label" htmlFor="ob-zip">ZIP</label>
-              <input id="ob-zip" required className="form-input" value={form.address_zip} onChange={upd('address_zip')} />
+              <input id="ob-zip" required className="form-input" value={form.address_zip} onChange={upd('address_zip')}
+                onBlur={normalize('ob-zip', 'postal', form.address_zip, (v) => setForm((f) => ({ ...f, address_zip: v })))} />
             </div>
           </div>
 
