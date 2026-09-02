@@ -76,6 +76,10 @@ interface RequestRow {
   entry_location: string | null;
   intent: string | null;
   details: Record<string, string> | null;
+  /** ⚠️ THE CHECKBOXES. Stored since 2026-09-01 and rendered NOWHERE until now —
+   *  the owner's *"if we collect any information from a person it needs to be
+   *  visible somewhere."* */
+  interests: string[] | null;
   notes: string | null;
   created_at: string;
 }
@@ -185,7 +189,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .from('requests')
       .select(
         'id, org_id, contact_name, contact_email, contact_phone, contact_method, ' +
-        'proposed_times, subject, category, channel, entry_location, intent, details, notes, created_at',
+        'proposed_times, subject, category, channel, entry_location, intent, details, interests, notes, created_at',
       )
       .eq('id', requestId)
       .maybeSingle();
@@ -255,6 +259,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         VALUE: esc(String(v)),
       })),
       'REQ.NOTES_HTML': notes ? esc(notes) : '',
+      /* The interests the menu answer revealed, in the barn's own words, minus
+         `visit` — that one is not an interest, it is the flag below. */
+      'REQ.INTERESTS_HTML': esc((r.interests ?? [])
+        .filter((i) => i !== 'visit')
+        .map((i) => CATEGORY_LABEL[i] ?? i)
+        .join(', ')),
+      /* ⚠️ CALLED OUT ON ITS OWN, not folded into the list. Somebody who wants to
+         come and stand on the property is time-bound in a way an enquiry is not,
+         and this email is where the barn finds out. */
+      'REQ.WANTS_VISIT': (r.category === 'visit' || (r.interests ?? []).includes('visit')) ? '1' : '',
       'REQ.SELECTIONS': selections,
       'REQ.ORDER_CODE_HTML': pay?.order?.display_code ? esc(pay.order.display_code) : '',
       'REQ.ORDER_STATUS_HTML': pay?.order
