@@ -5,13 +5,13 @@
 
 ## RESUME
 Role / thread   TASK-SIGNFLOW-C · wt-3 · branch task/signflow-c
-Merge-base      8edfe7fe (origin/main at checkout; re-check before report)
-DONE            worktree guard passed (detached, clean) → branch claimed → clean run; ledger opened
-IN FLIGHT       CLNR pass + spec-premise re-measurement
-NEXT            npm ci; re-grep every §3 count and §4 class count; inspect portal roots (T5)
-DECIDED         worktree = wt-3 per docs/orch/BOARD.md Wave 3 table (prompt omitted it; the hub names it)
+Merge-base      8edfe7fe — origin/main has NOT moved (re-fetched at report time)
+DONE            build commit 9f756570 (13 files) · gates green · T1/T2/gold-survival proofs run on dist CSS · report written
+IN FLIGHT       nothing — complete
+NEXT            ORCH verifies (docs/reports/TASK-SIGNFLOW-C-REPORT.md) and writes TASK-SIGNFLOW-C-VERIFICATION.md; ORCH applies the one-line SignChoose.tsx diff (report §4)
+DECIDED         btn-primary ring + form-input-error + disabled:hover + ExplainTip underline in the scope block; SignStart class on 4 sections; AddElementModal via panelClassName; select placeholder → text-green-800/40; comments corrected; drawer/activity/subheader gold-vs-green semantic pair collapsed to light/deep green per "no keepers" (report §5.9)
 BLOCKED         nothing
-DO NOT          nothing yet
+DO NOT          do not count on 393 — index.css loses 7 refs to the btn-sign flip the spec itself orders (388 is right). Do not grep hex for gold survival — Tailwind emits rgb triplets. The Onboarding:115 comment runs 3 lines past the owner quote; do not close it there.
 
 ## LOG
 - Gate check: `docs/reports/TASK-SIGNFLOW-A-REPORT.md` (21234 B) and `-B-REPORT.md` (18340 B) both exist. Gate OPEN.
@@ -38,3 +38,14 @@ DO NOT          nothing yet
 - Comments corrected so they stay true: ContractChangeRequests:376 · ContractDrawer:32-40 · ContractSubheader:271 · AddElementModal:36,703 · ClauseDocument:968 · Onboarding:115,2089 (owner quotes kept verbatim, note appended).
 - Scope class applied: Onboarding root div · ContractPage root div · DocumentsContent root div · SignStart ×4 sections · AddElementModal `panelClassName="flow-green"`.
 DO NOT: the Onboarding:115 comment does NOT end at the quote — it runs 3 more lines. An inserted `*/` there broke the file once; fixed.
+
+## PROOFS (dist/assets/index-CcSHDESC.css, 108,431 B, build of 9f756570)
+- 44 distinct green classes introduced → 44 rules present, 0 missing (scratchpad/t1proof.mjs).
+- `.flow-green` block emitted: 10 rules (eyebrow+text-gold-ink · focus-ring:focus-visible · btn-primary:focus-visible · form-input:focus · form-input-error:focus · btn-outline-gold ×4 states · decoration-gold-500\/60). Pasted in report §2.3.
+- gold survival: rgb(186 153 53)=8 · rgb(122 100 33)=15 · rgb(92 74 24)=2 · hex #ba9935=16 #7a6421=4 #5c4a18=3.
+- gates: typecheck 0 · typecheck:api 0 · lint 0/45 · build ✓ · test:api 7/7.
+- keepers: AppLayout/Header/Footer/RosterCard 0 lines changed; 7 staff-tooling files 0 lines changed.
+- NEW FINDING: /sign chooser (SignChoose.tsx, outside §3) has 9 .eyebrow → brown. Reported §4 with the one-line diff.
+
+## FINAL STATE
+Report at docs/reports/TASK-SIGNFLOW-C-REPORT.md. Branch task/signflow-c, NOT pushed. Complete, nothing in flight. Next station: ORCH.
