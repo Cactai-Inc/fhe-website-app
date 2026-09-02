@@ -248,7 +248,7 @@ export function ContractSubheader({
                     // Requests treatment) — the open drawer is the same kind of
                     // state whichever one it is. UIO-018: untouched — only the
                     // hover (below) changes.
-                    ? 'border-gold-400 bg-gold-50 text-gold-900 shadow-inner'
+                    ? 'border-green-400 bg-green-50 text-green-900 shadow-inner'
                     // UIO-018: one hover language across both surfaces —
                     // reuses UIO-013's exact underline declaration
                     // (AppLayout.tsx's NAV_ROW_IDLE) rather than hand-tuning a
@@ -258,7 +258,7 @@ export function ContractSubheader({
                     // are full-width touch targets in a 2-column grid, not a
                     // layout hover applies to regardless of input capability,
                     // unlike the nav rail which doesn't change shape by width.
-                    : 'border-green-800/20 bg-white text-green-900 md:hover:underline md:hover:decoration-gold-600 md:hover:decoration-2 md:hover:underline-offset-4'}`}>
+                    : 'border-green-800/20 bg-white text-green-900 md:hover:underline md:hover:decoration-green-600 md:hover:decoration-2 md:hover:underline-offset-4'}`}>
                 {/* No icon while open — see the note above on Undo2/RotateCcw. */}
                 {!isOpen && d.icon}
                 {/* Owner, 2026-08-08: "click" is wrong on a phone. The label is
@@ -268,11 +268,11 @@ export function ContractSubheader({
                 {d.label}
                 {/* UIO-018: text-decoration propagates through descendant
                     boxes by default — without `no-underline` here, hovering
-                    the button would draw the gold underline through this
+                    the button would draw the hover underline through this
                     pill's own digit too. The order names it explicitly as
                     not-interactive; this is what keeps it that way. */}
                 {!isOpen && d.count !== undefined && d.count > 0 && (
-                  <span className="rounded-full bg-gold-400/30 px-1.5 text-[11px] tabular-nums no-underline">{d.count}</span>
+                  <span className="rounded-full bg-green-400/30 px-1.5 text-[11px] tabular-nums no-underline">{d.count}</span>
                 )}
               </button>
             );

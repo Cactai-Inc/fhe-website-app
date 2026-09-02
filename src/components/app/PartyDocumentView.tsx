@@ -158,8 +158,8 @@ export function PartyDocumentView({
   }
 
   const controls = (list: ContractField[], key: string) => (
-    <div key={`c-${key}`} className="bg-gold-50 border border-gold-500/40 rounded-lg px-5 py-4 my-4">
-      <p className="text-[11px] font-sans uppercase tracking-wide text-gold-800 mb-3">
+    <div key={`c-${key}`} className="bg-green-50 border border-green-500/40 rounded-lg px-5 py-4 my-4">
+      <p className="text-[11px] font-sans uppercase tracking-wide text-green-800 mb-3">
         {list.length === 1 ? 'Your answer' : 'Your answers'}
       </p>
       <div className="flex flex-col gap-3">

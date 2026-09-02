@@ -238,7 +238,7 @@ export function InfoDot({ text }: { text: string }) {
   return (
     <span className="relative inline-block mx-1.5 align-middle">
       <button type="button" aria-label="More info" onClick={() => setOpen((v) => !v)}
-        className="inline-grid place-items-center w-[18px] h-[18px] rounded-full border border-gold-500 text-gold-700 hover:bg-gold-50 focus-ring align-middle">
+        className="inline-grid place-items-center w-[18px] h-[18px] rounded-full border border-green-500 text-green-700 hover:bg-green-50 focus-ring align-middle">
         <Info size={11} aria-hidden="true" />
       </button>
       {open && (
@@ -343,7 +343,7 @@ export function ContractBody({
     if (m.index > last) pushText(body.slice(last, m.index));
     nodes.push(
       <ExplainTip key={`n${i++}`} text={`Needs: ${m[1]}`} underline={false} as="mark"
-        className="bg-gold-100 text-gold-900 rounded px-1 border border-gold-400/60 border-dashed">
+        className="bg-green-100 text-green-900 rounded px-1 border border-green-400/60 border-dashed">
         {m[2]}
       </ExplainTip>,
     );
@@ -483,7 +483,7 @@ function RevealText({
       {yes && (
         <span className="inline-flex items-baseline gap-1 w-full mt-1">
           <span className="text-[13.5px] text-green-950 whitespace-nowrap">Lessee is prohibited from using these items:</span>
-          <input className="flex-1 min-w-[8rem] px-1 text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 focus:outline-none focus:border-gold-600 rounded-sm"
+          <input className="flex-1 min-w-[8rem] px-1 text-[13.5px] text-green-900 bg-green-50/70 border-b border-green-400/70 focus:outline-none focus:border-green-600 rounded-sm"
             disabled={disabled} value={text} placeholder="list the prohibited tack / equipment"
             onFocus={() => { editingRef.current = true; }}
             onChange={(e) => setText(e.target.value)}
@@ -525,7 +525,7 @@ function AddText({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; di
       <button type="button" disabled={disabled}
         className="shrink-0 px-1.5 text-[12px] text-muted hover:text-red-700 focus-ring rounded"
         title="Remove" onClick={() => { setText(''); setOpen(false); commit(''); }}>✕</button>
-      <input className="flex-1 min-w-0 px-1 py-0.5 text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 focus:outline-none focus:border-gold-600 rounded-sm"
+      <input className="flex-1 min-w-0 px-1 py-0.5 text-[13.5px] text-green-900 bg-green-50/70 border-b border-green-400/70 focus:outline-none focus:border-green-600 rounded-sm"
         disabled={disabled} value={text} placeholder="list any restrictions"
         onFocus={() => { editingRef.current = true; }}
         onChange={(e) => setText(e.target.value)}
@@ -608,7 +608,7 @@ function ContactsList({
       ))}
       {!disabled && (
         <button type="button" onClick={add}
-          className="self-start text-sm text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">
+          className="self-start text-sm text-green-800 border border-dashed border-green-400 rounded-lg px-3 py-1.5 hover:bg-green-50 focus-ring">
           ＋ {addLabel}
         </button>
       )}
@@ -729,7 +729,7 @@ function MedicationBuilder({
       ))}
       {!disabled && (
         <button type="button" onClick={add}
-          className="self-start text-sm text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">
+          className="self-start text-sm text-green-800 border border-dashed border-green-400 rounded-lg px-3 py-1.5 hover:bg-green-50 focus-ring">
           ＋ Add a medication or supplement
         </button>
       )}
@@ -838,7 +838,7 @@ function LeaseFeeBuilder({
 
       {!locked && selected == null && (
         <button type="button" onClick={addOption}
-          className="self-start text-sm text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">
+          className="self-start text-sm text-green-800 border border-dashed border-green-400 rounded-lg px-3 py-1.5 hover:bg-green-50 focus-ring">
           ＋ Add fee option
         </button>
       )}
@@ -1067,9 +1067,9 @@ function FieldControl({
 // dot. This keeps the document reading like prose while every blank is fillable.
 
 const inlineBase =
-  'inline text-[13.5px] text-green-900 bg-gold-50/70 border-b border-gold-400/70 ' +
-  'focus:outline-none focus:border-gold-600 focus:bg-gold-50 rounded-sm px-1 align-baseline ' +
-  'placeholder:text-gold-700/70 placeholder:italic disabled:bg-transparent disabled:border-dotted disabled:text-green-900';
+  'inline text-[13.5px] text-green-900 bg-green-50/70 border-b border-green-400/70 ' +
+  'focus:outline-none focus:border-green-600 focus:bg-green-50 rounded-sm px-1 align-baseline ' +
+  'placeholder:text-green-800/40 placeholder:italic disabled:bg-transparent disabled:border-dotted disabled:text-green-900';
 
 /** An inline text/date/currency input that grows with its content. A hidden
  *  sizing span mirrors the text (or the placeholder) so the input is exactly as
@@ -1224,7 +1224,7 @@ function InlineSelect({ f, disabled, onSave }: { f: ContractField; disabled: boo
           {shownLabel}
         </span>
         <select
-          className={`${inlineBase} col-start-1 row-start-1 w-full cursor-pointer pr-4 ${stored || otherMode ? '' : 'text-gold-700/80 italic'}`}
+          className={`${inlineBase} col-start-1 row-start-1 w-full cursor-pointer pr-4 ${stored || otherMode ? '' : 'text-green-800/40 italic'}`}
           disabled={disabled}
           value={selectValue}
           onChange={(e) => {
@@ -1353,7 +1353,7 @@ export function InlineFieldControl({
     <>
       {f.required && <span className="text-red-700 align-super text-[9px]">*</span>}
       {srcTip && (
-        <ExplainTip text={srcTip} underline={false} className="ml-1 align-super text-[9px] text-gold-700/80">
+        <ExplainTip text={srcTip} underline={false} className="ml-1 align-super text-[9px] text-muted">
           ⟲
         </ExplainTip>
       )}
@@ -1606,7 +1606,7 @@ function WeekGrid({ f, onSaveStructured, disabled }: { f: ContractField; onSaveS
       </div>
       {!disabled && (
         <button type="button" onClick={addParty}
-          className="mt-1.5 text-[11px] text-gold-800 border border-dashed border-gold-400 rounded px-2 py-1 hover:bg-gold-50 focus-ring">
+          className="mt-1.5 text-[11px] text-green-800 border border-dashed border-green-400 rounded px-2 py-1 hover:bg-green-50 focus-ring">
           ＋ Add party
         </button>
       )}
@@ -1676,7 +1676,7 @@ function FieldNode({
   if (f.is_optional && !included) {
     return (
       <button type="button" disabled={!editable} onClick={() => void onInclude(f.field_key, true)}
-        className="text-sm text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-2 hover:bg-gold-50 focus-ring inline-flex items-center gap-1.5">
+        className="text-sm text-green-800 border border-dashed border-green-400 rounded-lg px-3 py-2 hover:bg-green-50 focus-ring inline-flex items-center gap-1.5">
         ＋ Include: {f.label ?? f.field_key}
       </button>
     );
@@ -1691,10 +1691,10 @@ function FieldNode({
 
   return (
     <div className={`mb-3${electionUnresolved
-      ? ' border-l-2 border-gold-500 bg-gold-50/50 pl-3 py-2 rounded-r' : ''}`}
+      ? ' border-l-2 border-green-500 bg-green-50/50 pl-3 py-2 rounded-r' : ''}`}
       data-testid={election ? `insurance-election-${f.field_key}` : undefined}>
       {electionUnresolved && (
-        <p role="status" className="text-[11px] text-gold-900 mb-1.5 leading-relaxed">
+        <p role="status" className="text-[11px] text-green-900 mb-1.5 leading-relaxed">
           {INSURANCE_TOOLTIP}
         </p>
       )}
@@ -1708,10 +1708,10 @@ function FieldNode({
           </span>
         )}
         {electionUnresolved && (
-          <ExplainTip text={INSURANCE_TOOLTIP} underline={false} className="text-[10px] text-gold-700">ⓘ</ExplainTip>
+          <ExplainTip text={INSURANCE_TOOLTIP} underline={false} className="text-[10px] text-muted">ⓘ</ExplainTip>
         )}
         {fieldSourceTip(f.field_key) && (
-          <ExplainTip text={fieldSourceTip(f.field_key)} underline={false} className="text-[10px] text-gold-700/80">⟲</ExplainTip>
+          <ExplainTip text={fieldSourceTip(f.field_key)} underline={false} className="text-[10px] text-muted">⟲</ExplainTip>
         )}
         {editable && (
           <label className="ml-auto flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
@@ -1742,7 +1742,7 @@ function FieldNode({
         </div>
       )}
       {showKids && kids.length > 0 && (
-        <div className="mt-2 ml-3 pl-3 border-l-2 border-gold-200 flex flex-col gap-1">
+        <div className="mt-2 ml-3 pl-3 border-l-2 border-green-200 flex flex-col gap-1">
           {kids.filter((k) => conditionMet(k, byKey)).map((k) => (
             <FieldNode key={k.field_key} f={k} childrenByParent={childrenByParent} byKey={byKey}
               onSave={onSave} onSaveResponsibility={onSaveResponsibility} onSaveStructured={onSaveStructured} onInclude={onInclude} onNa={onNa}

@@ -29,14 +29,15 @@ const MAGNET_PX = 28;
 export type DrawerAccent = 'requests' | 'history';
 
 const ACCENT: Record<DrawerAccent, { ring: string; bar: string; chip: string; head: string }> = {
-  // change REQUESTS — gold: an open conversation, something is being asked for.
+  // change REQUESTS — the LIGHT green: an open conversation, something is being
+  // asked for. (Gold until CR-102, 2026-09-01: the signing flow runs green.)
   requests: {
-    ring: 'border-gold-400/60',
-    bar:  'bg-gold-400/70',
-    chip: 'bg-gold-50 text-gold-900 border-gold-400/50',
+    ring: 'border-green-400/60',
+    bar:  'bg-green-400/70',
+    chip: 'bg-green-50 text-green-900 border-green-400/50',
     head: 'text-gold-ink',
   },
-  // change HISTORY — green: a settled record of what already happened.
+  // change HISTORY — the DEEP green: a settled record of what already happened.
   history: {
     ring: 'border-green-700/40',
     bar:  'bg-green-700/60',

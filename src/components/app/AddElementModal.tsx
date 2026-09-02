@@ -33,7 +33,7 @@ import { ClauseProse } from './ClauseDocument';
  *   several elements on one line stay unambiguous.
  *
  * • CONDITIONS ARE SEPARATORS, NOT LINE SETTINGS. Inserting a condition drops a
- *   self-contained block that holds its own gate, its own gold caption, and its
+ *   self-contained block that holds its own gate, its own caption line, and its
  *   own content zone. It gates ONLY the lines inside that zone — a line added
  *   after the block at top level is independent, unconditional content.
  *
@@ -286,7 +286,7 @@ function ChipView({ id, chips }: { id: string; chips: ChipApi }) {
     <span className="relative inline-flex">
       <button type="button" onClick={() => chips.setOpenChip(isOpen ? null : id)}
         className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 mx-0.5 text-[12px] whitespace-nowrap focus-ring ${
-          isOpen ? 'border-gold-500 bg-gold-100 text-gold-900' : 'border-gold-400/60 bg-gold-50 text-gold-800 hover:bg-gold-100'}`}>
+          isOpen ? 'border-green-500 bg-green-100 text-green-900' : 'border-green-400/60 bg-green-50 text-green-800 hover:bg-green-100'}`}>
         <Icon size={11} /> {e.label || e.kind}
       </button>
       {isOpen && <ChipPopover e={e} chips={chips} />}
@@ -367,7 +367,7 @@ function ChipPopover({ e, chips }: { e: ElConfig; chips: ChipApi }) {
               </div>
             ))}
           </div>
-          <button type="button" className="text-[12px] text-gold-800 hover:underline focus-ring rounded"
+          <button type="button" className="text-[12px] text-green-800 hover:underline focus-ring rounded"
             onClick={() => set({ items: [...e.items, { value: `OPTION_${e.items.length + 1}`, label: `Option ${e.items.length + 1}` }] })}>
             + {e.kind === 'select' ? 'menu item' : 'button'}
           </button>
@@ -379,7 +379,7 @@ function ChipPopover({ e, chips }: { e: ElConfig; chips: ChipApi }) {
             </label>
           )}
           {hasOther && (
-            <button type="button" className="mt-2 text-[12px] text-gold-800 hover:underline focus-ring rounded"
+            <button type="button" className="mt-2 text-[12px] text-green-800 hover:underline focus-ring rounded"
               onClick={() => { addOtherDetails(e.id); setOpenChip(null); }}>
               + details field for “Other”
             </button>
@@ -440,11 +440,11 @@ export function AddElementButton({
       <button type="button" disabled={disabled} onClick={() => setOpen(true)}
         title={disabled ? disabledReason : hasDraft ? 'You have an unsaved draft on this contract.' : undefined}
         className={className
-          ? `${className} border-gold-400/60 bg-white text-gold-800 hover:bg-gold-50 disabled:opacity-50`
-          : 'inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-gold-800 border border-gold-400/60 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring disabled:opacity-50'}>
+          ? `${className} border-green-400/60 bg-white text-green-800 hover:bg-green-50 disabled:opacity-50`
+          : 'inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-green-800 border border-green-400/60 rounded-lg px-3 py-1.5 hover:bg-green-50 focus-ring disabled:opacity-50'}>
         <Plus size={13} /> {label}
         {hasDraft && !disabled && (
-          <span aria-label="unsaved draft" className="inline-block w-1.5 h-1.5 rounded-full bg-gold-500" />
+          <span aria-label="unsaved draft" className="inline-block w-1.5 h-1.5 rounded-full bg-green-500" />
         )}
       </button>
       {open && (
@@ -700,7 +700,7 @@ function AddElementModal({
       ? { ...e, lines: e.lines.filter((_, k) => k !== i) } : e)));
 
   // ── captions ───────────────────────────────────────────────────────────────
-  /** The gold line the document shows for the gated content. Auto-generated from
+  /** The caption line the document shows for the gated content. Auto-generated from
    *  the condition and kept in step with it; an authored override wins and stops
    *  syncing (it is stored verbatim). */
   function autoCaption(c: Condition): string {
@@ -958,8 +958,12 @@ function AddElementModal({
      ⚠️ TASK-MODAL2 D1: neither the backdrop nor Escape closes it. `Discard draft`
      below is this file's `Clear form`, kept where it already was because it
      carries its own explanation. */
+  /* CR-102 · T5: this dialog PORTALS to <body>, so it is NOT a descendant of
+     ContractPage's `.flow-green` root and would stay gold without this. The
+     scope class rides on the dialog panel itself. */
   return createPortal((
     <Modal open onClose={onClose} size="xl" title="Add to this contract" error={err}
+      panelClassName="flow-green"
       footer={
         <>
           <button type="button" className="btn-secondary text-sm" onClick={onClose}>
@@ -985,7 +989,7 @@ function AddElementModal({
         {/* Only while the restored draft still HAS something in it — emptying it
             (or adding it to the contract) should take the notice with it. */}
         {draftRestored && draftHasContent(draft) && (
-          <div className="flex items-center justify-between gap-3 mb-3 rounded-lg border border-gold-400/50 bg-gold-50/60 p-2.5">
+          <div className="flex items-center justify-between gap-3 mb-3 rounded-lg border border-green-400/50 bg-green-50/60 p-2.5">
             <p className="text-[13px] text-green-950">
               Picked up where you left off — this is your unsaved draft for this contract.
             </p>
@@ -1108,11 +1112,11 @@ function AddElementModal({
               </p>
               {canApplyDirectly && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
-                  <button type="button" className="inline-flex items-center gap-1 text-[12px] border border-gold-400/60 text-gold-800 rounded-lg px-2.5 py-1 hover:bg-gold-50 focus-ring"
+                  <button type="button" className="inline-flex items-center gap-1 text-[12px] border border-green-400/60 text-green-800 rounded-lg px-2.5 py-1 hover:bg-green-50 focus-ring"
                     onClick={() => insertElement('select')}><ListFilter size={12} /> Dropdown</button>
-                  <button type="button" className="inline-flex items-center gap-1 text-[12px] border border-gold-400/60 text-gold-800 rounded-lg px-2.5 py-1 hover:bg-gold-50 focus-ring"
+                  <button type="button" className="inline-flex items-center gap-1 text-[12px] border border-green-400/60 text-green-800 rounded-lg px-2.5 py-1 hover:bg-green-50 focus-ring"
                     onClick={() => insertElement('buttons')}><ToggleLeft size={12} /> Buttons</button>
-                  <button type="button" className="inline-flex items-center gap-1 text-[12px] border border-gold-400/60 text-gold-800 rounded-lg px-2.5 py-1 hover:bg-gold-50 focus-ring"
+                  <button type="button" className="inline-flex items-center gap-1 text-[12px] border border-green-400/60 text-green-800 rounded-lg px-2.5 py-1 hover:bg-green-50 focus-ring"
                     onClick={() => insertElement('text')}><TypeIcon size={12} /> Text field</button>
                 </div>
               )}
@@ -1130,7 +1134,7 @@ function AddElementModal({
                   </div>
                 ) : (
                   <div key={entry.id} className="flex gap-1.5">
-                    <div className="flex-1 min-w-0 rounded-lg border border-gold-400/50 bg-gold-50/40 p-2.5">
+                    <div className="flex-1 min-w-0 rounded-lg border border-green-400/50 bg-green-50/40 p-2.5">
                       <div className="flex flex-wrap items-end gap-2 mb-2">
                         <label className="block">
                           <span className="form-label">Include the content below when</span>
@@ -1183,7 +1187,7 @@ function AddElementModal({
                           </div>
                         ))}
                       </div>
-                      <button type="button" className="mt-2 text-[12px] text-gold-800 hover:underline focus-ring rounded"
+                      <button type="button" className="mt-2 text-[12px] text-green-800 hover:underline focus-ring rounded"
                         onClick={() => setStack((st) => st.map((x) => (x.id === entry.id && x.kind === 'condition'
                           ? { ...x, lines: [...x.lines, newLine()] } : x)))}>
                         + line inside this condition
@@ -1201,7 +1205,7 @@ function AddElementModal({
                   <Plus size={12} /> Add a line
                 </button>
                 <button type="button" onClick={addCondition}
-                  className="inline-flex items-center gap-1 text-[12px] border border-gold-400/60 text-gold-800 rounded-lg px-2.5 py-1 hover:bg-gold-50 focus-ring">
+                  className="inline-flex items-center gap-1 text-[12px] border border-green-400/60 text-green-800 rounded-lg px-2.5 py-1 hover:bg-green-50 focus-ring">
                   <Plus size={12} /> Add a condition
                 </button>
               </div>
@@ -1222,7 +1226,7 @@ function AddElementModal({
                   {allLines.map(({ line, cond }) => (
                     <div key={line.id} className={cond ? 'opacity-60' : ''}>
                       {cond && (
-                        <p className="text-[11px] text-gold-700/90 mb-0.5">{cond.caption ?? autoCaption(cond)}</p>
+                        <p className="text-[11px] text-green-700/90 mb-0.5">{cond.caption ?? autoCaption(cond)}</p>
                       )}
                       <ClauseProse body={previewBody(line)} fieldByKey={previewFields}
                         valueByKey={{}} cb={noopCb as never} />

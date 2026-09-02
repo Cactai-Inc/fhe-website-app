@@ -492,7 +492,7 @@ export default function SignStart() {
 
   if (!path) {
     return (
-      <section className="bg-cream pt-32 pb-20">
+      <section className="bg-cream pt-32 pb-20 flow-green">
         <div className="container-site max-w-xl text-center">
           <p className="body-text mb-6">
             That link isn&apos;t quite right. Pick what brings you to us and we&apos;ll take it
@@ -505,8 +505,13 @@ export default function SignStart() {
   }
 
   return (
+    /* CR-102: this page returns a FRAGMENT, so `.flow-green` sits on each
+       top-level section rather than on a wrapper — no new DOM, no layout
+       change. It is the ONLY thing that greens /sign: every gold here arrives
+       through the shared classes (eyebrow, outline button, focus ring, input
+       focus), not through inline gold-* utilities. See src/index.css. */
     <>
-      <section className="bg-cream pt-32 pb-10">
+      <section className="bg-cream pt-32 pb-10 flow-green">
         <div className="container-site max-w-2xl text-center">
           <p className="eyebrow mb-4">Get started</p>
           <h1 className="heading-display text-green-800 text-[clamp(2rem,4.5vw,3.25rem)]">
@@ -520,7 +525,7 @@ export default function SignStart() {
         </div>
       </section>
 
-      <section className="bg-cream-50 pb-10">
+      <section className="bg-cream-50 pb-10 flow-green">
         <div className="container-site max-w-md">
           {outcome ? (
             <SendStateScreen outcome={outcome} email={email.trim()} isDeal={path === 'deal'} />
@@ -769,7 +774,7 @@ export default function SignStart() {
         </div>
       </section>
 
-      <section className="bg-cream-50 pb-20">
+      <section className="bg-cream-50 pb-20 flow-green">
         <div className="container-site max-w-md">
           <DeliverabilityPanel brand={brand} />
         </div>
