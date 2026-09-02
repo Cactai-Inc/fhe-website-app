@@ -1,15 +1,40 @@
 # FHE-TASK-SITECOPY-B — RUNNING LEDGER
 
 ## RESUME
-Role / thread   TASK-SITECOPY-B · wt-2 · branch `task/sitecopy-b`
-Merge-base      `0ae5855f` (origin/main at claim, 2026-09-02). origin/main has NOT moved since.
-DONE            claim + guard (`fb5c4072` ledger) · CLNR pass: clean · spec premises re-measured · all three files edited and committed (`5875ead5`) · typecheck 0 / typecheck:api 0 / lint 45 (= baseline) / build exit 0
-IN FLIGHT       render proofs (§8 tests 2-6) in a real browser
-NEXT            probe `/confirmation` three states, `/order/:id`, `/app/onboarding`, the activation panel at reached=1 and reached>1, then the plural-override substitution proof
-DECIDED         (1) `agree()` is NOT used on the activation sentence — the property term is in a prepositional phrase and never governs the verb; the COUNT does. Using agree() there would render "someone at the stables have been told". The spec's TRAP 2 says agree() "handles the second" verb; there is no second verb. Its TEST §8.5 is right and TRAP 2's explanation is not.
-                (2) subject+verb picked in ONE expression in a module-scope helper `toldSentence()` — not two ternaries, and not a nested component (TRAP 6).
-BLOCKED         —
-DO NOT          ⚠️ Do NOT "fix" the activation verb with `agree(propertyTerm, 'has', 'have')`. It compiles, it looks like the spec's instruction, and it is grammatically wrong for every plural tenant term.
+Role / thread   TASK-SITECOPY-B · wt-2 · branch `task/sitecopy-b` — **COMPLETE, NOTHING IN FLIGHT**
+Merge-base      `0ae5855f`. ⚠️ **origin/main MOVED to `d6eb5691` mid-task** (ORCH's CR-106/107 ledger
+                entries). `git diff --stat 0ae5855f d6eb5691 -- src/ test/` is EMPTY — no code
+                conflict. ⚠️ **Diff against the MERGE-BASE, not origin/main, or the report lists
+                ORCH's `CHANGE-ORDER-LEDGER.md` as if it were mine.**
+DONE            claim+guard `fb5c4072` · CLNR clean · premises re-measured · three src files edited
+                `5875ead5` · probe `4f01c7c6` + lint fix · report committed. Gates: typecheck 0,
+                typecheck:api 0, lint 45 (= the real baseline), build exit 0. Probe **30/30 ALL PASS**
+                across a singular AND a plural tenant term.
+IN FLIGHT       nothing
+NEXT            ORCH verifies and merges. Report: `docs/reports/TASK-SITECOPY-B-REPORT.md`
+DECIDED         (1) `agree()` deliberately NOT used on the activation sentence — the property term
+                sits in a prepositional phrase and never governs the verb; the COUNT does. TRAP 2's
+                explanation of the mechanism is wrong; its TEST §8.5 is right, and I built to the test.
+                (2) subject+verb picked in ONE expression, module-scope `toldSentence()` — not two
+                ternaries, not a nested component (TRAP 6).
+                (3) `/app/onboarding` NOT faked: the payment step has had no router since SIGNBOOK
+                removed `enterPayment` (`Onboarding.tsx:649-653`). The retired markup is mounted
+                directly and the probe SAYS SO.
+                (4) a NEW harness entry rather than editing SIGNBOOK's `onboarding-flow.tsx` — that
+                lineage is live in `wt-1`/`wt-3`.
+BLOCKED         nothing. Two items belong to DSNR/ORCH, not to me: the §8.1-vs-§5 contradiction (five
+                RENDERED `the barn` strings on staff Barn-Ops surfaces, which §5 forbids me to touch),
+                and `src/App.tsx:509`.
+DO NOT          ⚠️ Do NOT "fix" the activation verb with `agree(propertyTerm, 'has', 'have')`. It
+                compiles, it matches TRAP 2's wording, and it renders "someone at the stables HAVE
+                been told" for every plural tenant.
+                ⚠️ Do NOT trust `git diff --name-only origin/main` in this branch — see Merge-base.
+                ⚠️ Do NOT go looking for the spec's "zero consumers" D17 finding. There were 16,
+                at DSNR's own measured commit. It does not exist.
+                ⚠️ Chromium is NOT at `/opt/pw-browsers` on this machine (the README's path). It is in
+                `~/Library/Caches/ms-playwright`, and leaving `CHROMIUM_PATH` UNSET is what works —
+                setting it to an empty string also works, setting it to a guessed path does not.
+                ⚠️ `npm i -D playwright --no-save` is required per tree; it is NOT in `package.json`.
 
 ---
 
@@ -83,3 +108,32 @@ Everything else in §2 verified true:
 - Gates: typecheck **0** · typecheck:api **0** · lint **45 warnings, 0 errors** — ⚠️ **and 45 is the
   BASELINE on `origin/main`, measured by stashing `src/` and re-running. `BOARD.md` says 46; it is one
   step stale.** My three files produce **zero** eslint output. `npm run build` **exit 0**.
+
+### 2026-09-02 · the probe — 30/30 ALL PASS
+`test/browser/sitecopy-b.{tsx,html}` + `test/browser/probe-sitecopy-b.mjs`, on SIGNBOOK's harness
+(`npx vite --config test/browser/vite.config.ts --port 5199`). Two full runs: FHE's default term, and
+a PLURAL override installed through the real `my_property_term` → `AuthContext` → `BrandProvider` →
+`usePropertyTerm` seam. Every sentence read off the rendered page; the activation one reached by
+CLICKING the real controls. Full transcript in the report §2.
+
+⚠️ **FINDING, recorded before chasing it:** `Onboarding.tsx` mounts `OrderPayment` at `:2256` behind
+`step === 'payment'`, and **no `setStep('payment')` exists anywhere in the file.** `:649-653` says why
+(SIGNBOOK removed `enterPayment`; CR-98 moved payment after approval; the markup is kept under
+NOSTRIP for REQCARDS). **So TRAP 4's "two surfaces" is one live surface + one retired one**, and
+`:106-108` / `:621` still claim otherwise — stale, another thread's file, flagged not fixed.
+
+⚠️ **FINDING:** the spec's §5 claim that every other `barn` is a comment is false. **Five RENDER**
+(`ConsumptionLogPage:210`, `AllocationRulesPage:102`+`:413`, `BarnopsHubPage:88`,
+`ContactsPage:607`) — all staff surfaces, four of them inside a module NAMED "Barn Ops". §5 forbids
+touching them, so §8's test 1 is unpassable as written. Routed to DSNR in the report.
+
+### 2026-09-02 · TEARDOWN — census
+- `pkill -f "vite --config test/browser/vite.config.ts"` → **port 5199 free** (`lsof -i :5199` empty).
+- Chromium/playwright processes: **none** (`ps aux | grep -iE "vite|chromium|playwright"` → no rows).
+- `rm -rf node_modules/playwright node_modules/playwright-core node_modules/.bin/playwright` — the
+  `--no-save` install is OUT of the tree again. **`git status --porcelain -- package.json
+  package-lock.json` is EMPTY**, so neither file was touched (TASK-ROLE §5's `--no-save` trap).
+- `git clean -xdf -e node_modules -e .env -e .env.db` → removed `dist/`, `dist-ssr/`.
+- `git status --porcelain` → **empty**. All work committed on `task/sitecopy-b`. **NOT PUSHED.**
+- Worktrees: `wt-1` `task/landingsignin` · `wt-2` `task/sitecopy-b` (mine) · `wt-3` `task/signflow-a`.
+  **No worktree created or moved by me.**
