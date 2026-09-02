@@ -10,7 +10,32 @@
   `docs/reports/FHE-DSNR-SIGNFLOW-HANDOFF.md`. All committed, none pushed.
 - **Chunks (REVISED, see below):** A=CR-101 five readers · B=CR-100 address kinds · C=CR-102 the
   signing flow only (15 files, 175 refs + a `.flow-green` scope class). **A‖B file-disjoint; C follows both.**
-- **Next station:** `FHE-ORCH-SIGNFLOW`. **Nothing blocks dispatch.** D returns 3 owner questions.
+- **Next station:** `FHE-ORCH-SIGNFLOW`. **Nothing blocks dispatch.** 5 specs: A, B, C, D, E.
+
+## 🔒 REVISION 3 — 2026-09-01, THE SIGNING-ENTRY RULING
+**Owner named the five legitimate doors to a signable document and ruled all five must land in the
+same flow the `/sign/*` email link lands in. And:** *"we dont have a situation where a person without
+an account signs documents on an ipad or any other way."*
+- 🔒 **That last sentence UNBLOCKED `D`** — it answered visit-day and links-in-the-wild. **D's stop
+  conditions dropped from four to one (technical only); Phase 2 now runs.**
+- **Trace of the five doors (code only, not walked):** doors 1/2/3 all call the SAME spine RPC
+  `provision_client_invitation` (`api/request-activation.ts:119`, `api/sign-start.ts:357`,
+  `api/admin-send-invitation.ts:310`) → `/activate?token=`. Door 4
+  (`api/documents-requested.ts:116`) emails `${origin}/app/onboarding` **directly**. Door 5 is **the
+  signing wall** — `myWallState()`, `AppLayout.tsx:1548-1568`/`:1693`, fed by
+  `contract_role_documents.disposition='AT_LOGIN'`, **the column default**
+  (`20260824T1300_offeringdocs_disposition_moves_onto_the_assignment.sql:19`).
+- 🔒 **CONCLUSION: he is describing something largely BUILT.** So `E` is a **WALK**, not a build, and
+  its spec says "all five converge, here is the proof" is a complete result.
+- ⚠️ **THE DIVERGENCE THE TRACE DID FIND:** `src/pages/Register.tsx:40-55` picks FOUR destinations, so
+  `/sign/*` itself has two endings — `/sign/deal` → `/app/contracts/:id`, the rest → `/app/onboarding`.
+  **DSNR's read (NOT a ruling): probably legitimate, and probably converging one step later, because
+  `Onboarding.tsx:907` navigates to `/app/contracts/{id}/start` when a contract is outstanding.**
+  **E must settle it and asks it as Q1.**
+- **Two things E must prove rather than read:** door 4's `has_account = false` case (a bare
+  `/app/onboarding` link to someone with no account = a login wall with no way through), and door 5
+  link by link (it looks right from the SCHEMA, which is the weakest evidence).
+- **New `docs/tasks/TASK-SIGNFLOW-E-five-doors-one-signing-flow.md`. `D` amended.**
 
 ## 🔒 REVISION 2 — 2026-09-01, OWNER RETIRES `/release` AND `/docs/release-participant`
 **Verbatim:** *"we dont use docs/release-participant nor /release, those urls if they are still

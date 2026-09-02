@@ -4,7 +4,7 @@
 **Upstream:** `docs/reports/FHE-DISCO-SIGNFLOW-HANDOFF.md`.
 **Working ledger, with every query behind every number here:** `docs/reports/FHE-DSNR-SIGNFLOW-LEDGER.md`.
 
-**Three change orders and one same-day directive became FOUR task specs.** All three are written, self-sufficient, and ready to
+**Three change orders and two same-day directives became FIVE task specs.** All three are written, self-sufficient, and ready to
 dispatch. 🔒 **Nothing is waiting on the owner.**
 
 > ## ⚠️ REVISED 2026-09-01, AFTER THE OWNER READ THE FIRST VERSION
@@ -36,8 +36,9 @@ dispatch. 🔒 **Nothing is waiting on the owner.**
 | **`FHE-TASK-SIGNFLOW-B`** | `TASK-SIGNFLOW-B-address-inputs-normalize-on-blur.md` | CR-100 | 4 new normalize kinds + 3 doors | — |
 | **`FHE-TASK-SIGNFLOW-C`** | `TASK-SIGNFLOW-C-green-the-signing-flow-end-to-end.md` | CR-102 | **13 files, 175 refs** + one scope class in `src/index.css` | **A, B** |
 | **`FHE-TASK-SIGNFLOW-D`** | `TASK-SIGNFLOW-D-retire-the-two-signing-doors-we-do-not-use.md` | owner directive 2026-09-01 | trace, then retire `/release` + `/docs/release-participant`, **and close the anonymous signing grant** | — |
+| **`FHE-TASK-SIGNFLOW-E`** | `TASK-SIGNFLOW-E-five-doors-one-signing-flow.md` | owner directive 2026-09-01 | **a WALK** — prove the five legitimate doors all land in the same signing flow; repair only what the walk breaks | — |
 
-**`A` ‖ `B` ‖ `D` are file-disjoint and can run at the same time. `C` follows `A` and `B`.**
+**`A` ‖ `B` ‖ `D` ‖ `E` are file-disjoint and can run at the same time. `C` follows `A` and `B`.**
 **175 of the app's 568 gold refs change. The other 393 stay gold — the owner's nav and accents.**
 
 > ## ⚠️ SECOND REVISION, 2026-09-01 — THE OWNER RETIRED TWO SIGNING DOORS
@@ -94,27 +95,40 @@ dispatch. 🔒 **Nothing is waiting on the owner.**
 |---|---|---|
 | `A` | **Opus · thinking ON · HIGH** | the work is a reach hunt across a module boundary. **DISCO missed a reader; the risk is that `A` misses one too.** |
 | `B` | **Opus · thinking ON · HIGH** | the incumbent file argues against this change **in writing** (`normalize.ts:120-126`) and two tests assert the old behaviour. A thread that reads fast will revert itself. |
-| `D` | **Opus · thinking ON · HIGH** | it is a trace with **stop conditions**, a production data question it must attribute correctly, and a `REVOKE` migration on a live signing function. ⚠️ **The failure mode is a thread that wants to finish and talks itself past a stop condition.** |
+| `D` | **Opus · thinking ON · HIGH** | a trace, a production count it must ATTRIBUTE correctly (the same template keys are signed through `/app/onboarding`), and a `REVOKE` migration on a live signing function. |
+| `E` | **Opus · thinking ON · HIGH** | five doors, each proven from the database rather than the code. ⚠️ **The failure mode is a thread that reads the code, finds it correct, and reports convergence it never observed** — which is the failure this whole task exists to catch. |
 | `C` | **Opus · thinking ON · HIGH** | 175 mechanical replacements is the easy half. **The hard half is the `.flow-green` scope class**: CSS specificity, `@apply` inside a descendant selector, and React portals that escape the scope entirely (§7 T5 of its spec). **Those three are where it silently ships half-done.** |
 
-# 4. FOR THE OWNER — nothing blocks a dispatch, but `D` will come back with three questions
+> ## ⚠️ THIRD REVISION, 2026-09-01 — THE SIGNING-ENTRY RULING
+> > *"the ways to get to a signable doc are the self driven account activation via website order
+> > submission, /sign/* url, and manual account creation with docs required, and then the manual
+> > provisioning of the docs being required is another way and then if an account places an initial
+> > order for something that requires docs to be signed and they dont have them signed and linked to
+> > their account the system generates the flow for them to sign them on the next app login. all of
+> > those should result in the user being taken to the same flow that a person clicking the email link
+> > that comes from using the /sign/* flow. the others can be removed. **we dont have a situation where
+> > a person without an account signs documents on an ipad or any other way.**"*
+>
+> 🔒 **The last sentence UNBLOCKED `D`.** It answered the two questions that were going to hold its
+> Phase 2 — visit-day, and a printed QR code in the wild. **Both struck. `D` now has ONE stop
+> condition and it is technical.** ⚠️ **Its Phase 1 still runs — he asked for a trace — but it measures
+> for the record, not to decide.**
+> 🔒 **And the rest of it produced `E`, which is a WALK, not a build — because all five doors appear
+> to be BUILT already. See §5c.**
 
-**CR-102's four earlier calls are all gone** — his narrowing answered every one. **Dispatch A, B, C
-and D without waiting on him.**
+# 4. FOR THE OWNER — nothing blocks a dispatch, and `D`'s questions are answered
 
-⚠️ **But `D` is a two-phase task and Phase 1 ends in questions only he can answer.** **Expect them,
-and expect Phase 2 to stop** — its spec says stopping is a successful outcome:
-1. **Usage** — how many documents and deliveries actually went through those flows, and when.
-   ⚠️ **DSNR could not measure this: the repo's `.env` holds only the anon key.** `FLOW-MAP.md:24`
-   claims 35 delivery rows; **that is a document, not a measurement, and `D` must re-count it.**
-2. 🔒 **VISIT-DAY, and this is the real one.** `/release` **signs on the spot with no account**;
-   `/sign/` **captures a request and the person signs later in their own account.** **Retiring the
-   kiosk is not a redirect — it removes same-moment signing.** A walk-in goes from *"sign here on the
-   iPad"* to *"give us your email, open it on your phone, make an account, then sign."* **He may well
-   be fine with that — his "different ways of getting there" says the entry points are the answer —
-   but nobody has said it out loud, so `D` asks rather than assumes.**
-3. **A link in the wild** — a printed QR code or a sign at the property. ⚠️ **Invisible from a git
-   repository. This one alone will probably hold Phase 2, and correctly.**
+**CR-102's four calls are gone — his narrowing answered them. `D`'s three questions are gone — the
+signing-entry ruling answered them.** 🔒 **Dispatch all five without waiting on him.**
+
+**Two things will come back to him, both from `E`, both AFTER its walk rather than before:**
+1. **The deal ending.** `/sign/deal` lands on `/app/contracts/:id`; the other three `/sign/` funnels
+   land on `/app/onboarding` (`src/pages/Register.tsx:40-55`). ⚠️ **So `/sign/*` — the thing he named
+   as the canon — already has TWO endings.** **DSNR's read: probably legitimate and probably
+   converging one step later** (`Onboarding.tsx:907` navigates to `/app/contracts/{id}/start` when a
+   contract is what is outstanding) — **but that is a read, not a proof, and `E` must settle it.**
+2. **Anything the walk finds landing nowhere usable**, with the smallest fix, **not built until he
+   answers.**
 
 # 5. 🔒 WHAT I DECIDED THAT DISCO DID NOT — and where DISCO was wrong
 
@@ -207,6 +221,34 @@ the kiosks needed it. ⚠️ **`D`'s spec makes it prove the result from `pg_pro
 - **A 404 for a stranger with an old link is flagged, not solved.** `D` recommends whether a redirect
   to `/sign` is wanted; **it does not build one, because that is the same product decision as Q2.**
 
+## 🔒 5c. WHAT THE SIGNING-ENTRY TRACE FOUND — the five doors are already built
+**Traced by DSNR from the code, 2026-09-01. ⚠️ Read, not walked — which is exactly why `E` is a walk.**
+
+| # | The owner's door | Where it is |
+|---|---|---|
+| 1 | website order submission | `src/lib/api.ts:143` `submitRequest` → `POST /api/request-activation` → `provision_client_invitation` (`:119`). Its own header says *"a website order submission gets the SAME"* |
+| 2 | `/sign/*` | `POST /api/sign-start` → same RPC (`:357`) → `/activate?token=` (`:410`) |
+| 3 | manual account creation with docs | `ProvisionClientForm.tsx` → `POST /api/admin-send-invitation` → same RPC (`:310`) |
+| 4 | manual doc provisioning | `ClientRecordActions.tsx:718` → `POST /api/documents-requested` → ⚠️ emails `${origin}/app/onboarding` **directly**, not `/activate` (`:116`) |
+| 5 | order requires docs → the flow appears at next login | 🔒 **THE SIGNING WALL** — `myWallState()`, `AppLayout.tsx:1548-1568`, `:1693`, fed by `contract_role_documents.disposition = 'AT_LOGIN'`, **which is the column default** |
+
+🔒 **Doors 1, 2 and 3 already share ONE spine RPC. Door 5's mechanism exists and defaults ON.**
+**So the owner is describing something largely BUILT, and the honest task is to PROVE it reaches —
+not to build it again.** ⚠️ **`E` is written as a walk for that reason, and it says in as many words
+that "all five converge, here is the proof" is a complete and likely result.**
+
+**The two things the trace could not settle, both now `E`'s job:**
+- **Door 4 emails a bare `/app/onboarding` to someone who may have no account** (`has_account` is in
+  its result shape at `:35`). ⚠️ **If the no-account case is unhandled, that person meets a login wall
+  with no way through.** **In scope for `E`.**
+- **Door 5 looks correct from the SCHEMA, which is the weakest possible evidence.** `AT_LOGIN` being
+  the default makes the wall look wired whether or not anything writes the rows. 🔒 **`E` must prove
+  it link by link** — this repo's dominant failure is code that works and nothing reaches.
+
+⚠️ **AND THE TRAP `E` IS WARNED ABOUT HARDEST:** `FLOW-MAP.md:159` records the guest flow being
+declared unbuilt *"reasoned from production emptiness."* **It existed.** **A door with no rows is not
+a broken door.**
+
 # 6. ⚠️ WHAT I DID NOT DO, SO YOU ARE NOT SURPRISED
 - **I did not run the app or a browser.** Every number here is `grep`, `git` or a file read. **No
   render in this batch is verified by anyone until the owner walks it** — which is why all four specs
@@ -227,9 +269,9 @@ the kiosks needed it. ⚠️ **`D`'s spec makes it prove the result from `pg_pro
 FHE-ORCH-SIGNFLOW
 
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
-Read docs/reports/FHE-DSNR-SIGNFLOW-HANDOFF.md and sequence TASK-SIGNFLOW-A, B, C and D.
-A, B and D are file-disjoint and can run together; C follows A and B.
-D is two-phase and will come back with three questions for the owner — that is expected.
+Read docs/reports/FHE-DSNR-SIGNFLOW-HANDOFF.md and sequence TASK-SIGNFLOW-A, B, C, D and E.
+A, B, D and E are file-disjoint and can run together; C follows A and B.
+E is a walk, not a build — "all five doors already converge" is a complete result.
 ```
 
 ⚠️ **When you dispatch, each build thread's prompt is two lines and ONE absolute path to its spec —
