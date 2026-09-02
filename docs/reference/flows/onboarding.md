@@ -151,7 +151,32 @@ BREAKS
 
 ---
 
-## F3 — Visit-day release kiosk (`/release`) and the guided participant flow
+## F3 — ~~Visit-day release kiosk (`/release`) and the guided participant flow~~ · 🔒 RETIRED
+
+> 🔒 **RETIRED 2026-09-01 — TASK-SIGNFLOW-D. THE TRACE BELOW IS HISTORY, NOT CURRENT BEHAVIOUR.**
+> Owner: *"we dont use docs/release-participant nor /release, those urls if they are still operational
+> should be traced and most likely anything associated with them should be decommissioned and the
+> /sign/ flow should be the single pathway we use"*, and — the ruling that settled it —
+> *"we dont have a situation where a person without an account signs documents on an ipad or any
+> other way."*
+> **REMOVED:** the three routes from `src/App.tsx`; `api/sign-release.ts`; `src/pages/Release.tsx`;
+> `src/pages/DocsParticipantFlow.tsx`; the release seams in `src/lib/ops/api-public.ts`; the Review
+> page's slot D. **`anon` EXECUTE revoked on `sign_release` and `sign_general_release`
+> (`20260902T0010`) — this flow was the ONLY reason an unauthenticated caller could write an
+> executed document.**
+> **KEPT (D32):** every executed document, signature, contact, client and delivery row this flow
+> created, and both function bodies.
+> ⚠️ **MEASURED BEFORE REMOVAL, from production:** 40 signatures (`signatures.method='KIOSK_TYPED'`,
+> and `sign_release` is its only writer), **10 real signers**, 2026-07-13 → **2026-08-15**, four
+> documents each — **every one of them through `/docs/release-participant`. The single-document
+> `/release` kiosk produced NOTHING, ever.** The delivery rows number **28**, not the 35 the
+> flow register claimed.
+> 🔒 **THE INCUMBENT IS `/sign/rider`**, whose `sign_path_document_requirements` set is EXACTLY the
+> four documents this flow produced (RELEASE_PARTICIPANT · FACILITY_RULES · COMPANY_POLICIES ·
+> HUMAN_EMERGENCY_MEDICAL). ⚠️ **What is genuinely GONE is same-moment, no-account signing** — a
+> walk-in now gives an email, activates an account and signs there.
+> ⚠️ **BREAKS 1 and 2 below are moot: the surface they describe no longer exists.**
+
 
 TRIGGER      `/release` (QR/typed URL; only in-app link is the ⚠-flagged Review nav row —
              SURFACE-INVENTORY §1 `/release` row) · `/docs/release-participant`
