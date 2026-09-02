@@ -7,9 +7,30 @@
 
 **Three drafts were handed to me. Two became four specs. One I cannot write.**
 
+> # 🔒 ORCH — START HERE. THE WHOLE STATE, BEFORE ANY DETAIL.
+> **4 specs ready to dispatch. 1 chunk blocked. 3 owner rulings to record. 0 shapes waiting.**
+>
+> | | |
+> |---|---|
+> | ✅ **Dispatch now, in parallel** | `SITECOPY-A` · `SITECOPY-B` · `LANDINGSIGNIN` — **file-disjoint** |
+> | ✅ **Dispatch after `SITECOPY-A`** | `SITESEO` — ruled keep-and-301; shares `src/lib/seo.ts` with `A` |
+> | ⚠️ **Release back to `DSNR`, not to a build thread** | `ONERAIL` — gate satisfied, **spec stale** (§6) |
+> | ⛔ **Cannot be specced yet** | `POLICIESANDFAQ` — **needs a `DISCO` pass**, not a paste (§0.1) |
+> | 📋 **Owner's own to-do, blocking nothing** | 2 diagnostics + 1 input (§0.3 A and B) |
+> | 📌 **Record these** | 3 owner rulings, §0.2 — one of them narrows `D37` |
+>
+> ⚠️ **THREE THINGS I GOT WRONG AND CORRECTED IN THIS FILE — do not carry the earlier versions:**
+> **(a)** I said the app has no analytics. **Vercel Web Analytics is live** (§0.3). **(b)** I asked the
+> owner to paste in a lost document. **Withdrawn** (§0.1). **(c)** I put MODEL·EFFORT·THINKING on a
+> prompt for a standing thread. **He struck it** (§0.2, §8).
+>
+> 🔒 **This file is self-sufficient. §8 lists every path it points to.**
+
 ---
 
-# 0. ⚠️ ASK-OWNER — MOST BLOCKING FIRST
+# 0. ⚠️ WHAT NEEDS THE OWNER, WHAT HE HAS ALREADY RULED, AND THE FOLLOW-THROUGH
+
+## 0.1 — ⚠️ THE ONE THING STILL BLOCKING WORK
 
 ## ASK-OWNER 1 — 🔒 `TASK-POLICIESANDFAQ` DOES NOT EXIST IN THIS REPO. I CANNOT WRITE IT.
 
@@ -71,7 +92,19 @@ ranking question above** — the profile is where the local-search data lives.
 | **`/faq` is prerendered but has NO `ROUTE_SEO` entry and is NOT in the sitemap.** | in `scripts/prerender.mjs:21`; absent from `ROUTE_SEO` (`src/lib/seo.ts:60`) and from `dist/sitemap.xml` |
 | **Business Profile URL — the field it would land in exists and is empty.** | `src/lib/seo.ts:44`, `sameAs: [] as string[], // add social profile URLs when available`. It feeds `ORG_JSONLD`. **That is almost certainly the second pending call.** |
 
-## ✅ RULED — three indexed URLs serve a blank page. **KEEP AND REDIRECT.**
+## 0.2 — 🔒 OWNER RULINGS RECEIVED IN THIS THREAD. **ORCH RECORDS THESE; THEY ARE NOT RE-LITIGATED.**
+
+**All three landed after the first version of this handoff. Each is quoted verbatim where it applies.**
+
+| # | Ruling, verbatim | What it settled | Where it is built in |
+|---|---|---|---|
+| **R1** | *"thats correct, a person with things in their cart needs to go to the cart not the say hello contact us form page."* | **The landing shape is APPROVED.** The full-cart corner is `[cart glyph] + [Sign In]`, and the cart — not Say Hello — is the way onward. ⚠️ **He named the reason I had not.** | `TASK-LANDINGSIGNIN` TRAP 2 and test §8.3, which now **fails if the cart is not in the frame**. Handoff §5. |
+| **R2** | *"either way, keep and redirect to the booking page the CTA links to."* | **`SITESEO`'s fork is closed: keep and 301.** Retire-to-404 is struck. **Target verified `/lessons`** on all three CTAs. | `TASK-SITESEO` §4, ungated. Handoff §0.2 below and §0.3. |
+| **R3** | *"you dont need to specify the settings for an ORCH thread, that thread runs continuously. if you want to specify a suggested thread setting for the TASK thread ORCH will be queuing up you can do that inside of a file ORCH will read from you."* | 🔒 **Narrows `D37`.** MODEL·EFFORT·THINKING on a handed prompt applies to a **thread being launched**, not to a **standing** one. Per-TASK settings go in the file, not the prompt. | Handoff §3 and §8. ⚠️ **`ORCH`: `D37` and `DSNR-ROLE.md` §7 both still read as universal. Amending them is yours.** |
+
+---
+
+## ✅ R2 IN DETAIL — three indexed URLs serve a blank page. **KEEP AND REDIRECT.**
 > *"either way, keep and redirect to the booking page the CTA links to."* — owner, 2026-09-01
 
 🔒 **`TASK-SITESEO` IS UNGATED AND READY TO DISPATCH.** The fork in its §4 is resolved to
@@ -89,7 +122,7 @@ the spec as §4a.
 **`/services` I resolved myself** (spec §4d): once the three route lists converge on `ROUTE_SEO`, its
 `indexable: true` puts it in the prerender list and the sitemap automatically. **No owner call.**
 
-## 🔒 THE SITESEO FOLLOW-THROUGH — WHAT ACTUALLY HAS TO HAPPEN, AND WHO DOES IT
+## 0.3 — 🔒 THE SITESEO FOLLOW-THROUGH: WHAT HAS TO HAPPEN, AND WHO DOES IT
 *(Owner asked for this written up, 2026-09-01. Full detail in
 `docs/tasks/TASK-SITESEO-three-indexed-urls-prerender-a-blank-page.md` §4a–§4d and §8.)*
 
@@ -157,7 +190,7 @@ it.**
 **`SITECOPY-A` must merge first** — both edit `src/lib/seo.ts`, and `SITESEO`'s own report fails if
 its diff touches a `title` or `description` value.
 
-## ASK-OWNER 3 — not blocking, but he should know
+## 0.4 — not blocking, but he should know
 **The two wording rulings `TASK-SITECOPY-A/B` enforce are not D-rules.** *"FHE is jumper-only"* and
 *"a program … not a barn"* live **only** at `CHAT-THREAD-ADMIN-REFACTOR-2026-08-26.md:104-112`.
 `grep -n -i "jumper" CLAUDE.md` → **zero hits.** ⚠️ **Nothing stops the words coming back the next
@@ -173,7 +206,7 @@ time someone writes marketing copy.** **Promoting them is ORCH's or his call, no
 | **`FHE-TASK-SITECOPY-B`** | `TASK-SITECOPY-B-the-app-stops-calling-itself-the-barn.md` | 5 strings in `src/pages/Confirmation.tsx`, `src/components/order/OrderPayment.tsx`, `src/components/app/ActivationOrderPanel.tsx`, rebuilt through `usePropertyTerm()` | — | ✅ **ready** |
 | **`FHE-TASK-LANDINGSIGNIN`** | `TASK-LANDINGSIGNIN-a-sign-in-path-on-the-landing-page.md` | `src/components/layout/Header.tsx`, one link | — | ✅ **ready** |
 | **`FHE-TASK-SITESEO`** | `TASK-SITESEO-three-indexed-urls-prerender-a-blank-page.md` | `vercel.json` 301s, `scripts/prerender.mjs`, `scripts/seo-files.mjs`, route list + `indexable` flags in `src/lib/seo.ts` | **`SITECOPY-A`** | ✅ **ready — RULED 2026-09-01** |
-| **`FHE-TASK-POLICIESANDFAQ`** | — | — | — | ⛔ **needs a `DISCO` pass first — ASK-OWNER 1** |
+| **`FHE-TASK-POLICIESANDFAQ`** | — | — | — | ⛔ **needs a `DISCO` pass first — §0.1** |
 
 **`A` ‖ `B` ‖ `LANDINGSIGNIN` are file-disjoint and can all run at the same time.**
 **`SITESEO` follows `A` — they share `src/lib/seo.ts`.**
@@ -210,11 +243,29 @@ question the owner has not been asked yet.**
 |---|---|---|
 | `src/lib/seo.ts` | **`SITECOPY-A`** (10 `title`/`description` values) and **`SITESEO`** (route list, `indexable` flags) | 🔒 **Sequence: `A` merges first.** Both specs say so, and `SITESEO` §8.8 fails its own report if its diff touches a copy value. |
 | `src/pages/app/Onboarding.tsx` | **nobody here** — but `SITECOPY-B` renders through it | ⚠️ **`SIGNDOOR` (`0ac49e61`) and `SIGNBOOK` (`2fa1f7b9`) both rewrote it TODAY.** `B` edits `OrderPayment.tsx` and `ActivationOrderPanel.tsx` only, and its §5 forbids opening `Onboarding.tsx`. **Flagging the adjacency, not a collision.** |
-| `src/App.tsx` | **`SITESEO`** only | I deliberately kept `App.tsx:509`'s *"how the barn runs"* **out of `B`** — it is a prop in the router tree and cannot call a hook. **Recorded as an open item in `B` §5**, not silently dropped. |
+| `src/App.tsx` | ⚠️ **NOBODY — corrected.** An earlier version of this table claimed `SITESEO`. | **`R2` changed this:** the `<Navigate>` routes at `:173,179,192` now **STAY** (the host 301 catches a cold hit, the client route catches an in-app link), so `SITESEO` does not open `App.tsx` at all. **And I kept `App.tsx:509`'s *"how the barn runs"* out of `B`** — it is a prop in the router tree and cannot call a hook. **Open item in `B` §5**, not silently dropped. 🔒 **`src/App.tsx` is free.** |
 | `api/request-received.ts` | **live in `wt-1`** (`task/visitmenu`, uncommitted) | **No overlap** with any chunk here. |
 
 **Worktrees at the time of writing:** `wt-1` `task/visitmenu` (dirty), `wt-2` and `wt-3` detached.
 ⚠️ **I do not know what is running — `D36` says you assign them. This is a snapshot, not a claim.**
+
+## ⚠️ AN INCIDENT ON `main` YOU SHOULD KNOW ABOUT — CONCURRENT THREADS, ONE CHECKOUT
+**Commit `9652d1b8`, authored by `FHE-DSNR-SIGNFLOW`, contains 103 lines of
+`docs/tasks/TASK-SITESEO-…md` — a file that thread has nothing to do with.**
+**What happened:** that thread committed while my edits to that file were still unstaged in the same
+working tree, and its `git add` swept them in.
+
+🔒 **No content was lost — `main` is correct and the tree is clean.** ⚠️ **But that file's history
+reads under a `SIGNFLOW` commit message, so `git blame` on the `SITESEO` ruling points at the wrong
+thread.**
+
+**Two things worth carrying, both yours not mine:**
+1. **Two DSNR threads were writing to the canonical checkout at the same time.** `D36` assigns
+   worktrees for build threads; **spec-authoring threads apparently share `main` unmanaged.**
+2. ⚠️ **`git add -A` and `git commit -a` are unsafe in this checkout while any other thread is live.**
+   **Staging explicit paths is already a `DSNR-ROLE.md` §6 non-negotiable — this is what it is for,
+   and I violated it once (`git add -A docs/`) before catching it.** Every later commit of mine names
+   its paths.
 
 ---
 
@@ -328,7 +379,7 @@ appendix to a copy task, so I did not rush it into this thread.** **I have not t
 ---
 
 # 7. WHAT I DID NOT DO
-- ⚠️ **I did not author `TASK-POLICIESANDFAQ`**, or guess at the two owner calls inside it. §0.
+- ⚠️ **I did not author `TASK-POLICIESANDFAQ`**, or guess at the two owner calls inside it. §0.1.
 - **I did not spawn a subagent** (`CLAUDE.md`, `DSNR-ROLE.md` §6). Every measurement here is mine.
 - **I wrote nothing to production and read nothing from it.** All measurements are against the repo
   at `main` `4297345a` and the committed `dist/` built 2026-09-01 17:19.
@@ -358,10 +409,14 @@ Read docs/reports/FHE-DSNR-SITE-PUBLIC-HANDOFF.md and sequence the public-site l
 
 ## 🔒 EVERYTHING ORCH NEEDS IS REACHABLE FROM THAT ONE PATH. THE CHAIN, EXPLICITLY:
 
-**This file carries, in full:** the chunks and their order (§1) · the contention (§2) · model and
-effort per TASK thread (§3) · what I decided that the drafts did not (§4) · the ruled landing shape
-(§5) · the `SITESEO` follow-through, including the two owner diagnostics and the one owner input
-(§0) · the `ONERAIL` gate status (§6).
+**This file carries, in full:** the whole state at a glance (masthead) · the one blocker and why a
+paste will not fix it (§0.1) · **the three owner rulings to record, verbatim, including the one that
+narrows `D37`** (§0.2) · the `SITESEO` follow-through — two owner diagnostics, one owner input, the
+seven-item build list and the curl-only proof (§0.3) · the chunks and their order (§1) · the
+contention **and the concurrent-commit incident on `main`** (§2) · model and effort per TASK thread
+(§3) · what I decided that the drafts did not (§4) · the ruled landing shape (§5) · the `ONERAIL`
+gate status and why it goes back to `DSNR` (§6) · what I did not do (§7).
+🔒 **Nothing in the owner's conversation with me is missing from this file.**
 
 **And these are the files it points to. ORCH does not need anything else, and no context travels in a
 prompt:**
@@ -381,5 +436,5 @@ prompt:**
 - ⚠️ **`ONERAIL`** — hold condition satisfied (`0ac49e61`, `2fa1f7b9` both in `main`), but both
   merges rewrote the files its traces describe. **Release it back to `DSNR` for a rebase, not
   straight to a build thread.**
-- ⛔ **`POLICIESANDFAQ`** — **needs a `DISCO` pass**, not a paste. §0, ASK-OWNER 1.
-- 📋 **Owner diagnostics `A1`/`A2` and input `B1`** — §0. **None of them block anything.**
+- ⛔ **`POLICIESANDFAQ`** — **needs a `DISCO` pass**, not a paste. §0.1.
+- 📋 **Owner diagnostics `A1`/`A2` and input `B1`** — §0.3. **None of them block anything.**

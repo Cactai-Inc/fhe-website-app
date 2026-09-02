@@ -202,3 +202,36 @@ it *"the OLD two-email path"*, **and two endpoints still send it**: `api/contrac
 twenty lines earlier — **one file, both paths, choosing between them.** **D18, and exactly *"the
 others can be removed."*** **`E` §2a + §7 now own it, unconditionally, with a STOP if the unified send
 does not cover the already-signed counterparty `Register.tsx:104-116` rescues.**
+
+## 🔒 REVISION 5 — 2026-09-01, OWNER HOLDS ALL CONTRACT-INROAD WORK
+**His words:** *"this needs more research because there is a set of inroads to contracts that
+accommodate both when there is an account and when the signer doesnt have their account activated with
+auth yet. dont want to bungle the whole thing and multiple entry points to the same document doesnt
+make sense the way youve said they exist, so we need to fully understand what we are looking at before
+taking action."*
+
+🔒 **HE WAS RIGHT A FOURTH TIME. `?kind=contract` IS NOT LEGACY.** `api/contract-invite.ts:5-25` is the
+design: **branch on `hasAccount`** — has account → `invite_contract_counterparty` + `&kind=contract`,
+*"This is a real case and that path serves it well"*; no account → `invite_contract_party_account`,
+plain `/activate`, document read off the invitation row. *"Neither `redeem_contract_invitation` nor the
+CONTRACT kind is removed."* **The word "OLD" in `Register.tsx:35` means "the path that used to take TWO
+emails", not "deprecated" — I misread it.**
+
+**THE STRUCTURAL FACT I SHOULD HAVE FOUND FIRST:** `redeem_contract_invitation` raises
+*'sign in before redeeming an invitation'* when `auth.uid()` IS NULL
+(`20260820T0940_partyemail_p4b_regenerate_on_open_and_redemption.sql:172`, and two earlier migrations).
+**That is WHY there are two branches.**
+
+**ACTIONS:**
+- **`TASK-SIGNFLOW-E` WITHDRAWN** → `docs/archive/TASK-SIGNFLOW-E-…-WITHDRAWN-2026-09-01.md`, banner on line 1.
+- **NEW `docs/reports/FHE-SIGNFLOW-CONTRACT-INROADS.md`** — owner's concerns verbatim, four
+  retractions, what is established, the open matrix, and §5 "what must not happen". **Authorises no change.**
+- **Handoff now opens with a pointer to it** so ORCH reads it before sequencing.
+- **DSNR RECOMMENDS `FHE-DISCO-INROADS`, not a TASK thread** — understanding is DISCO's step.
+- **A, B, C, D unaffected** — none touches a file in the inroads matrix.
+
+⚠️ **THE OPEN HYPOTHESIS, EXPLICITLY NOT A FINDING (research file §4a):** `api/sign-start.ts`'s
+`isDeal` branch is evaluated FIRST and never consults `accountStateForEmail`, so `/sign/deal` emits
+`&kind=contract` regardless of account state — while `contract-invite.ts`, minting the same invitation,
+branches on exactly that. **Three innocent explanations are listed and none has been checked.** **One
+walk settles it.**

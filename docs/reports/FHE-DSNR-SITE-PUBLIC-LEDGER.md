@@ -5,10 +5,14 @@ Opened and closed 2026-09-01. Role: `docs/method/DSNR-ROLE.md`. Binding: `docs/m
 
 ## RESUME
 **State: CLOSED.** Three drafts in, **four specs out**, one chunk refused for lack of source.
-Everything committed. **Next stop is `ORCH`** — the prompt is §8 of the handoff.
-**If this thread is resumed:** the only open work owned by DSNR is (a) `TASK-POLICIESANDFAQ`, which
-needs the owner's draft staged before a line can be written, and (b) a `TASK-ONERAIL` rebase, which
-is a fresh DSNR run, not a continuation of this one.
+**Three owner rulings received after the first handoff and built in** — see §0.2 of the handoff:
+`R1` the landing shape approved (the cart is the way onward), `R2` `SITESEO` keep-and-301 to
+`/lessons`, `R3` a standing thread's prompt carries no model/effort line (**narrows `D37`**).
+Everything committed with explicit paths. **Next stop is `ORCH`** — the prompt is §8 of the handoff.
+**If this thread is resumed:** the only open DSNR work is (a) `TASK-POLICIESANDFAQ`, which now needs a
+**`DISCO` pass** rather than the lost draft, and (b) a `TASK-ONERAIL` rebase, which is a fresh DSNR
+run. ⚠️ **Three claims of mine were corrected in-thread — analytics, the paste ask, the ORCH prompt
+settings — all fixed in the handoff masthead. Do not carry the earlier versions.**
 
 ## THE ASK (owner, 2026-09-01, verbatim)
 > Read docs/method/DSNR-ROLE.md, then rebase and chunk TASK-SITECOPY, TASK-POLICIESANDFAQ and
@@ -149,6 +153,43 @@ not D-rules; they exist only at `CHAT-THREAD-ADMIN-REFACTOR-2026-08-26.md:104-11
 ASK-OWNER 3.**
 
 ---
+
+## THE THREE RULINGS, AND WHAT EACH CHANGED IN A FILE
+| | Ruling | Files changed |
+|---|---|---|
+| `R1` | the full-cart landing corner is correct; the cart is the way onward | `TASK-LANDINGSIGNIN` TRAP 2 + test §8.3 (now fails if the cart is absent from the frame); handoff §5 |
+| `R2` | keep `/ride` `/shop` `/membership`, 301 to the CTA's booking page | `TASK-SITESEO` §4 rewritten, Option B struck, gate removed; handoff §0.2/§0.3 |
+| `R3` | no model/effort line on a standing thread's prompt | handoff §3 + §8 |
+
+**`R2` target verified before it was written in:** `Landing.tsx:138`, `Header.tsx:47`, `Footer.tsx:76`
+all → `/lessons`. **`R1` rationale verified:** `Header.tsx:156-171`, `cart()` gates on `itemCount > 0`
+alone — no breakpoint, no route test — so it is present on landing at every width.
+
+## THREE CLAIMS OF MINE THAT WERE WRONG, AND THE CORRECTION
+1. ⚠️ **"there is no analytics or Search Console integration."** **FALSE.** `src/main.tsx:6,16` —
+   `@vercel/analytics/react`, `<Analytics />` rendered on every page, `package.json:24` `^2.0.1`.
+   **Vercel Web Analytics answers "does anyone land on these URLs" today.** Only the search-position
+   half needs GSC. Corrected in `TASK-SITESEO` §4a and handoff §0.3.
+2. ⚠️ **I asked the owner to paste in a document from a planning thread that may not exist.**
+   **Withdrawn** — `POLICIESANDFAQ` needs a `DISCO` pass. The two owner calls inside it were
+   reconstructed from `COMPANY_POLICIES.md`'s 16 sections and `seo.ts:44`.
+3. ⚠️ **I put MODEL · EFFORT · THINKING on a prompt for `ORCH`.** He struck it — `R3`.
+
+## LATE FINDING — the SPA fallback serves the landing page to crawlers
+`vercel.json`'s catch-all rewrite is `{"source": "/((?!api/).*)", "destination": "/index.html"}`.
+Vercel checks the filesystem first, so prerendered directories win — but **any public route with no
+prerendered directory falls through to `dist/index.html`, which IS the prerender of `/`.**
+`dist/services/` does not exist. **So `/services`, `/contact`, `/visit`, `/gift` and `/questions` all
+serve the LANDING page's markup and `<title>` as initial HTML.** Same class as the three blank pages,
+invisible in a browser — which is why `TASK-SITESEO` §8 is `curl`-only. Written into that spec as
+§2.4, and it is why `/services` gets prerendered rather than merely re-flagged.
+
+## ⚠️ INCIDENT — a concurrent thread committed my file
+`9652d1b8`, authored by `FHE-DSNR-SIGNFLOW`, contains 103 lines of `TASK-SITESEO-…md`. That thread
+committed while my edits were unstaged in the same working tree and its `git add` swept them in.
+**No content lost; `main` correct.** ⚠️ **But `git blame` on the SITESEO ruling points at the wrong
+thread.** **Root cause on my side: I used `git add -A docs/` once, against `DSNR-ROLE.md` §6's
+stage-explicit-paths rule. Every later commit names its paths.** Carried to ORCH in handoff §2.
 
 # TEARDOWN
 Read-only against production throughout — **no DB connection was opened, nothing was written to

@@ -4,7 +4,28 @@
 **Upstream:** `docs/reports/FHE-DISCO-SIGNFLOW-HANDOFF.md`.
 **Working ledger, with every query behind every number here:** `docs/reports/FHE-DSNR-SIGNFLOW-LEDGER.md`.
 
-**Three change orders and two same-day directives became FIVE task specs.** All three are written, self-sufficient, and ready to
+**Three change orders and two same-day directives became FOUR task specs — plus one research file.**
+
+> # 🔒 ORCH — READ THIS FIRST: `docs/reports/FHE-SIGNFLOW-CONTRACT-INROADS.md`
+> **The owner has HELD all work on contract entry points pending research.** His words, 2026-09-01:
+> > *"this needs more research because there is a set of inroads to contracts that accommodate both
+> > when there is an account and when the signer doesnt have their account activated with auth yet.
+> > dont want to bungle the whole thing and multiple entry points to the same document doesnt make
+> > sense the way youve said they exist, so we need to fully understand what we are looking at before
+> > taking action."*
+>
+> 🔒 **`TASK-SIGNFLOW-E` IS WITHDRAWN** (`docs/archive/TASK-SIGNFLOW-E-…-WITHDRAWN-2026-09-01.md`).
+> **Its premise — that `?kind=contract` is a legacy duplicate to retire — was WRONG.** It is the
+> **has-an-account branch of a deliberate two-branch design**; `api/contract-invite.ts:17-25` says so
+> in terms: *"This is a real case and that path serves it well … Neither `redeem_contract_invitation`
+> nor the CONTRACT kind is removed."*
+> ⚠️ **That file carries the owner's concerns verbatim, everything DSNR measured, FOUR retracted
+> claims, and the open matrix. It authorises no change.**
+> 🔒 **DSNR's recommendation, in §6 of it: this is `DISCO` work, not `TASK` work** — a build thread
+> handed it will produce a change, because that is what build threads do.
+> ⚠️ **`A`, `B`, `C` and `D` are UNAFFECTED and remain dispatchable — none touches a file in that
+> file's §4 table.**
+ All three are written, self-sufficient, and ready to
 dispatch. 🔒 **Nothing is waiting on the owner.**
 
 > ## ⚠️ REVISED 2026-09-01, AFTER THE OWNER READ THE FIRST VERSION
@@ -36,9 +57,9 @@ dispatch. 🔒 **Nothing is waiting on the owner.**
 | **`FHE-TASK-SIGNFLOW-B`** | `TASK-SIGNFLOW-B-address-inputs-normalize-on-blur.md` | CR-100 | 4 new normalize kinds + 3 doors | — |
 | **`FHE-TASK-SIGNFLOW-C`** | `TASK-SIGNFLOW-C-green-the-signing-flow-end-to-end.md` | CR-102 | **13 files, 175 refs** + one scope class in `src/index.css` | **A, B** |
 | **`FHE-TASK-SIGNFLOW-D`** | `TASK-SIGNFLOW-D-retire-the-two-signing-doors-we-do-not-use.md` | owner directive 2026-09-01 | trace, then retire `/release` + `/docs/release-participant`, **and close the anonymous signing grant** | — |
-| **`FHE-TASK-SIGNFLOW-E`** | `TASK-SIGNFLOW-E-five-doors-one-signing-flow.md` | owner directive 2026-09-01 | **a WALK** — prove the five legitimate doors all land in the same signing flow; repair only what the walk breaks | — |
+| ~~`FHE-TASK-SIGNFLOW-E`~~ | 🔻 **WITHDRAWN** → `docs/reports/FHE-SIGNFLOW-CONTRACT-INROADS.md` | owner directive 2026-09-01 | **research, not a build.** DSNR recommends `FHE-DISCO-INROADS` | **held by the owner** |
 
-**`A` ‖ `B` ‖ `D` ‖ `E` are file-disjoint and can run at the same time. `C` follows `A` and `B`.**
+**`A` ‖ `B` ‖ `D` are file-disjoint and can run at the same time. `C` follows `A` and `B`.**
 **175 of the app's 568 gold refs change. The other 393 stay gold — the owner's nav and accents.**
 
 > ## ⚠️ SECOND REVISION, 2026-09-01 — THE OWNER RETIRED TWO SIGNING DOORS
@@ -96,7 +117,7 @@ dispatch. 🔒 **Nothing is waiting on the owner.**
 | `A` | **Opus · thinking ON · HIGH** | the work is a reach hunt across a module boundary. **DISCO missed a reader; the risk is that `A` misses one too.** |
 | `B` | **Opus · thinking ON · HIGH** | the incumbent file argues against this change **in writing** (`normalize.ts:120-126`) and two tests assert the old behaviour. A thread that reads fast will revert itself. |
 | `D` | **Opus · thinking ON · HIGH** | a trace, a production count it must ATTRIBUTE correctly (the same template keys are signed through `/app/onboarding`), and a `REVOKE` migration on a live signing function. |
-| `E` | **Opus · thinking ON · HIGH** | five doors proven from the DATABASE, plus retiring the legacy `?kind=contract` path. ⚠️ **The failure mode is a thread that reads the code, finds it correct, and reports convergence it never observed — which is precisely what DSNR did on its first pass and had to retract.** |
+| ~~`E`~~ | 🔻 **withdrawn** | see `docs/reports/FHE-SIGNFLOW-CONTRACT-INROADS.md` §6 — **`DISCO`, and DSNR does not set its effort.** |
 | `C` | **Opus · thinking ON · HIGH** | 175 mechanical replacements is the easy half. **The hard half is the `.flow-green` scope class**: CSS specificity, `@apply` inside a descendant selector, and React portals that escape the scope entirely (§7 T5 of its spec). **Those three are where it silently ships half-done.** |
 
 > ## ⚠️ THIRD REVISION, 2026-09-01 — THE SIGNING-ENTRY RULING
@@ -121,11 +142,8 @@ dispatch. 🔒 **Nothing is waiting on the owner.**
 **CR-102's four calls are gone — his narrowing answered them. `D`'s three questions are gone — the
 signing-entry ruling answered them.** 🔒 **Dispatch all five without waiting on him.**
 
-**One thing may come back, from `E`, and only if it hits it:**
-- **If `?kind=contract` (§5c) cannot be retired cleanly** — i.e. the unified send does not cover a
-  counterparty who already has an account, including the already-signed rescue at
-  `Register.tsx:104-116`. ⚠️ **`E` asks rather than removing a rescue path for someone whose signature
-  is already on file.**
+**Nothing comes back from `A`–`D` that needs him.** 🔒 **The contract-inroads question is HELD by him
+already and is the subject of the research file above — it does not ride on any of the four.**
 
 > ## ⚠️ CORRECTION, 2026-09-01 — THREE CLAIMS IN THE PREVIOUS VERSION OF THIS HANDOFF WERE WRONG
 > **The owner pushed back on §5c's findings. He was right. All three were reads reported as findings,
@@ -290,7 +308,7 @@ FHE-ORCH-SIGNFLOW
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
 Read docs/reports/FHE-DSNR-SIGNFLOW-HANDOFF.md and sequence TASK-SIGNFLOW-A, B, C, D and E.
 A, B, D and E are file-disjoint and can run together; C follows A and B.
-E is a walk plus one removal (the legacy ?kind=contract path); its earlier "findings" were retracted.
+Contract entry points are HELD for research — read docs/reports/FHE-SIGNFLOW-CONTRACT-INROADS.md.
 ```
 
 ⚠️ **When you dispatch, each build thread's prompt is two lines and ONE absolute path to its spec —
