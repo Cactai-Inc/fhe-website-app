@@ -2,13 +2,32 @@
 
 ## RESUME
 Role / thread   TASK-SIGNFLOW-D · wt-1 · branch task/signflow-d
-Merge-base      c23dc022 (origin/main at checkout) — origin/main not moved since fetch
-DONE            worktree claimed, ledger opened, CLNR pass run, spec §2 re-verified, §4.2 measured against prod
-IN FLIGHT       Phase 1 COMPLETE, stop condition did not fire. Starting Phase 2 step 1 (routes)
-NEXT            §7.1 remove the 3 routes + 2 imports from src/App.tsx
-DECIDED         —
-BLOCKED         —
-DO NOT          —
+Merge-base      c23dc022 — origin/main HAS MOVED to a65243ad (D41/D42 role-model commits; no file overlap)
+DONE            COMPLETE. Phase 1 (all 5 measurements) + Phase 2 (all 6 steps). 8 commits.
+                f7173415 ledger · 1c1b0bf0 + bf482116 Phase 1 · cb008c52 routes+slot D ·
+                58dfbfab the REVOKE (applied to prod) · e6d58cb6 file deletions ·
+                6c341118 docs RETIRED markers · + the report
+IN FLIGHT       nothing
+NEXT            ORCH verifies and writes docs/reports/TASK-SIGNFLOW-D-VERIFICATION.md. THREAD IS DONE.
+DECIDED         (1) migration re-GRANTs service_role only; `authenticated`'s existing grant LEFT
+                    standing — subtractive beyond the spec's letter, flagged for follow-up instead.
+                (2) migration dated 20260902T0010 (written after midnight; must sort after T2330).
+                (3) reviewSection's "Five capture surfaces, three writers" → "Three … two writers".
+                (4) 3 stale comments in files I do not own (MergedBodyView.tsx:28, contact.ts:184,
+                    deliver-document.ts:10) LEFT for ORCH, with exact replacement text in the report.
+BLOCKED         nothing
+DO NOT          - DO NOT test the retirement with `curl -I`. The site is an SPA: EVERY path returns
+                  HTTP 200 with the same 9,474-byte shell. Prove routes from the built bundle or the
+                  rendered screen. The spec's §4.1/§10.7 asked for a status code that cannot mean this.
+                - DO NOT look for `origin`/`channel` on `documents` to attribute a kiosk signing —
+                  the columns do not exist. `signatures.method='KIOSK_TYPED'` is the attributor and
+                  `sign_release` is its ONLY writer anywhere in the DB.
+                - DO NOT believe `.env` is all there is. `.env.db` in a pool worktree is a FULL
+                  PRODUCTION POSTGRES URL. The spec said these counts were unmeasurable; they were not.
+                - DO NOT trust FLOW-MAP F3's "35 delivery rows" — it is 28.
+                - DO NOT expect `/release` to have signed anything. It never did, not once.
+                - The migration is LIVE IN PRODUCTION and the code is NOT (TASK does not push):
+                  until ORCH merges, an old participant link errors rather than 404s.
 
 ---
 
@@ -112,3 +131,20 @@ retired URL 404s.
     had — revoking it is subtractive beyond the spec's letter (§7.3 names anon+PUBLIC) and NOSTRIP's
     rule applies. **Flagged for follow-up: nothing calls either function as `authenticated`.**
   - Functions NOT dropped (D32, and DROP+CREATE would re-grant anon via default privileges).
+
+### Close (2026-09-02, ~00:30)
+- §7.4/§7.5 — `api/sign-release.ts`, `src/pages/Release.tsx`, `src/pages/DocsParticipantFlow.tsx`
+  deleted; `src/lib/ops/api-public.ts` trimmed to `fetchIntakeRequirements` only (the two
+  `PublicIntakeForm`/`InquiryForm` consumers keep the file alive). `types.ts` re-exported NONE of
+  the release symbols — the spec's §7.5 warning checked and negative.
+- §7.6 — FLOW-MAP F3, both SURFACE-INVENTORY rows and `flows/onboarding.md` F3 marked RETIRED with
+  the owner's words and the measured usage. **Rows kept, not deleted.**
+- **A JSX comment I added to App.tsx was missing its closing `}` — caught by `npm run typecheck`,
+  NOT by `npx tsc --noEmit` (which resolves a different project and reported nothing). Use the
+  npm scripts.**
+- typecheck 0 · typecheck:api 0 · lint 0 errors / 45 warnings · build ✓ 4.11s.
+- **Built-bundle proof:** `docs/release-participant` 0 · `release/:releaseKey` 0 · `api/sign-release` 0
+  · `sign/guest` **1**.
+- D35 re-verify immediately before reporting: `anon=false` on `sign_release`, `sign_general_release`,
+  `record_signature`, `open_document_delivery_hold`; `authenticated`/`service_role` intact.
+- Report at `docs/reports/TASK-SIGNFLOW-D-REPORT.md`. **Complete, nothing in flight.**
