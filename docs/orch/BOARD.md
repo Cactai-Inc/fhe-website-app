@@ -60,6 +60,19 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 ⚠️ **wt-1 stray:** 1 uncommitted line in `api/request-received.ts` ("Buying or selling"→"Buying or
 leasing") left after visitmenu merged. Owner rules keep-or-drop; wt-1 unusable until cleared.
 
+## ▶ DISPATCHED 2026-09-01 — the SIGNFLOW lane (FHE-DSNR-SIGNFLOW-HANDOFF · CR-100/101/102)
+| Thread | Model/effort/thinking | Worktree | State |
+|---|---|---|---|
+| `FHE-TASK-SIGNFLOW-A` | Opus · HIGH · thinking ON | ⚠️ **`wt-4` — CREATE IT** (pool full; TASK-ROLE §5 fallback, copy `.env`+`.env.db`) | prompt handed |
+| `FHE-TASK-SIGNFLOW-B` | Opus · HIGH · thinking ON | ⚠️ **`wt-5` — CREATE IT** (same) | prompt handed |
+| `FHE-TASK-SIGNFLOW-C` | Opus · HIGH · thinking ON | assigned at dispatch | 🔒 **GATED: dispatches only after A AND B merge** — 3 shared files, re-greps line numbers per its §7 T3 |
+
+**Cross-lane check run by ORCH7:** SIGNFLOW-C's 15-file list contains NONE of SITECOPY-B's three
+files and not `Header.tsx` — the two lanes are file-disjoint. The one shared file across lanes is
+`Onboarding.tsx`: SIGNFLOW-B edits it; SITECOPY-B is forbidden from opening it by its own §5.
+**D35 does not apply to this batch — none of the three touches the database** (handoff §2).
+D/E/F are void — the owner narrowed CR-102; archived with his ruling on line one.
+
 ## QUEUE BEHIND THE LANE
 `REQCARDS` (after DISCO option-set lock + DSNR fold) · `CLNR-REPO-STATE` (hold RELEASED — both
 builds merged; dispatch when no build is mid-flight, it moves files).
@@ -74,6 +87,9 @@ builds merged; dispatch when no build is mid-flight, it moves files).
 | `Confirmation.tsx` · `OrderPayment.tsx` · `ActivationOrderPanel.tsx` · `usePropertyTerm` adoption | **`SITECOPY-B`** | running |
 | `src/components/layout/Header.tsx` | **`LANDINGSIGNIN`** | held on wt-1 |
 | `scripts/prerender.mjs` · `scripts/seo-files.mjs` · `seo.ts` route list · `App.tsx` redirects | **reserve for `SITESEO`** | gated |
+| `src/lib/documentBody.ts` (new) · `MergedBodyView.tsx` · `ContractCascade.tsx` · `DocumentsContent.tsx` · `DocsParticipantFlow.tsx` · `PaperViewer` | **`SIGNFLOW-A`** | running |
+| `src/lib/normalize.ts` · `SignStart.tsx` · `Onboarding.tsx` (inputs) | **`SIGNFLOW-B`** | running |
+| the 15-file green list + `src/index.css` `.flow-green` | **reserve for `SIGNFLOW-C`** | gated on A+B |
 | `mark_purchase_paid` · `revenue_summary` · the money columns | — | free — the BACKDATE+BOOKS1 union |
 | `AppLayout.tsx` · `pageRegistry.ts` · `ops/kit/Modal.tsx` | — | free |
 
