@@ -10,7 +10,46 @@
   `docs/reports/FHE-DSNR-SIGNFLOW-HANDOFF.md`. All committed, none pushed.
 - **Chunks (REVISED, see below):** A=CR-101 five readers · B=CR-100 address kinds · C=CR-102 the
   signing flow only (15 files, 175 refs + a `.flow-green` scope class). **A‖B file-disjoint; C follows both.**
-- **Next station:** `FHE-ORCH-SIGNFLOW`. **Nothing waits on the owner.**
+- **Next station:** `FHE-ORCH-SIGNFLOW`. **Nothing blocks dispatch.** D returns 3 owner questions.
+
+## 🔒 REVISION 2 — 2026-09-01, OWNER RETIRES `/release` AND `/docs/release-participant`
+**Verbatim:** *"we dont use docs/release-participant nor /release, those urls if they are still
+operational should be traced and most likely anything associated with them should be decommissioned
+and the /sign/ flow should be the single pathway we use and just have different ways of getting there
+to accommodate the various scenarios/places/events a client would be served with the link to it."*
+
+**Trace run by DSNR 2026-09-01 (code only — no production access, see below):**
+- Routes live and unguarded: `src/App.tsx:237`, `:238`, `:240`.
+- 🔒 **Nothing in shipped code links to either**, except `src/lib/reviewSection.ts:283` (the admin
+  Review page's diagnostic slot D, already labelled `DESTRUCTIVE`). **No email template, seed or
+  migration contains either URL** — `grep -rn "release-participant|/release" supabase/` → zero.
+- 🔒 **THE FINDING: `api/sign-release.ts:41-47` builds an ANON client and `:133` calls `sign_release`
+  with it.** So `sign_release` still holds an `anon` grant, and
+  `supabase/migrations/20260831T1200_signing_rpcs_are_not_anonymous.sql:21-23` spared it explicitly
+  *"the public kiosk paths sign through sign_release / sign_general_release, which are untouched
+  here."* **These two pages are the only reason an unauthenticated stranger can still write a contact,
+  an engagement and an EXECUTED document.** Retiring them closes what TASK-AR7, TASK-FIX1 and the
+  ORCH5 audit each flagged and could not close.
+- ⚠️ **`/sign/` does NOT do what they do.** They SIGN on the spot with no account (`signRelease` →
+  `POST /api/sign-release` → `sign_release`); `/sign/` CAPTURES a request (`POST /api/sign-start`,
+  `SignStart.tsx:449`) and the person signs later in their own account. **Retirement removes
+  same-moment signing. Flagged as Q2 to the owner; NOT decided by me.**
+- `/sign/guest` does already exist — `FLOW-MAP.md:159` (X9, withdrawn 2026-08-20), `SignChoose.tsx:40`.
+- ⚠️ **NOT MEASURED: whether anything was ever signed through these flows in production.** The repo's
+  `.env` holds only `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`. `FLOW-MAP.md:24` (F3) claims 35
+  delivery rows — **a document, therefore a hypothesis.** D must re-count it.
+
+**Actions taken:**
+- **New `docs/tasks/TASK-SIGNFLOW-D-retire-the-two-signing-doors-we-do-not-use.md`** — two phases in
+  one thread; Phase 1 measures and deletes nothing, Phase 2 removes only on a clean Phase 1, with four
+  STOP conditions. **No DB row touched (D32); the only migration is a REVOKE/GRANT; the functions are
+  not dropped.**
+- **`A` amended** — readers 3 and 4 (`DocsParticipantFlow.tsx:432`, `Release.tsx:274`) stay on its list
+  because the single shared-renderer edit fixes them at zero cost, but are marked RETIRING: no code
+  aimed at them, no verification, one line in the report.
+- **`C` amended** — both pages CUT from the file list (15→13) and from `.flow-green` (6→4 application
+  points); public-door test narrowed to `/sign/...`. `.btn-sign`'s `Release.tsx:466` adopter is
+  incidental and costs nothing.
 
 ## 🔒 REVISION 2026-09-01 — THE OWNER NARROWED CR-102 AND STRUCK MY PREMISE
 **He read the first handoff and ruled, verbatim:** *"just change the items to green, leave the gold

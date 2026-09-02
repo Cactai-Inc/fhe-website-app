@@ -4,7 +4,7 @@
 **Upstream:** `docs/reports/FHE-DISCO-SIGNFLOW-HANDOFF.md`.
 **Working ledger, with every query behind every number here:** `docs/reports/FHE-DSNR-SIGNFLOW-LEDGER.md`.
 
-**Three change orders became THREE task specs.** All three are written, self-sufficient, and ready to
+**Three change orders and one same-day directive became FOUR task specs.** All three are written, self-sufficient, and ready to
 dispatch. 🔒 **Nothing is waiting on the owner.**
 
 > ## ⚠️ REVISED 2026-09-01, AFTER THE OWNER READ THE FIRST VERSION
@@ -34,10 +34,23 @@ dispatch. 🔒 **Nothing is waiting on the owner.**
 |---|---|---|---|---|
 | **`FHE-TASK-SIGNFLOW-A`** | `TASK-SIGNFLOW-A-an-unsigned-document-shows-no-signature-machinery.md` | CR-101 | the token resolver moves to `src/lib/documentBody.ts`; **5 readers** routed through it | — |
 | **`FHE-TASK-SIGNFLOW-B`** | `TASK-SIGNFLOW-B-address-inputs-normalize-on-blur.md` | CR-100 | 4 new normalize kinds + 3 doors | — |
-| **`FHE-TASK-SIGNFLOW-C`** | `TASK-SIGNFLOW-C-green-the-signing-flow-end-to-end.md` | CR-102 | **15 files, 175 refs** + one scope class in `src/index.css` | **A, B** |
+| **`FHE-TASK-SIGNFLOW-C`** | `TASK-SIGNFLOW-C-green-the-signing-flow-end-to-end.md` | CR-102 | **13 files, 175 refs** + one scope class in `src/index.css` | **A, B** |
+| **`FHE-TASK-SIGNFLOW-D`** | `TASK-SIGNFLOW-D-retire-the-two-signing-doors-we-do-not-use.md` | owner directive 2026-09-01 | trace, then retire `/release` + `/docs/release-participant`, **and close the anonymous signing grant** | — |
 
-**`A` ‖ `B` are file-disjoint and can run at the same time. `C` follows both.**
+**`A` ‖ `B` ‖ `D` are file-disjoint and can run at the same time. `C` follows `A` and `B`.**
 **175 of the app's 568 gold refs change. The other 393 stay gold — the owner's nav and accents.**
+
+> ## ⚠️ SECOND REVISION, 2026-09-01 — THE OWNER RETIRED TWO SIGNING DOORS
+> > *"we dont use docs/release-participant nor /release, those urls if they are still operational
+> > should be traced and most likely anything associated with them should be decommissioned and the
+> > /sign/ flow should be the single pathway we use and just have different ways of getting there to
+> > accommodate the various scenarios/places/events a client would be served with the link to it."*
+>
+> **`A` and `C` were amended, not rewritten.** `A` still fixes both pages **for free** (they share the
+> renderer it edits) but spends nothing on them and does not verify them. `C` **cuts them from its file
+> list and from `.flow-green`** — 6 application points became 4 — because painting a page that is being
+> deleted is waste and would collide with `D`.
+> 🔒 **`D` is new, and §2a of its spec is the finding that makes it matter — see §5 below.**
 
 ## ⚠️ WHY THESE ARE THE CHUNKS AND NOT OTHERS
 
@@ -81,13 +94,27 @@ dispatch. 🔒 **Nothing is waiting on the owner.**
 |---|---|---|
 | `A` | **Opus · thinking ON · HIGH** | the work is a reach hunt across a module boundary. **DISCO missed a reader; the risk is that `A` misses one too.** |
 | `B` | **Opus · thinking ON · HIGH** | the incumbent file argues against this change **in writing** (`normalize.ts:120-126`) and two tests assert the old behaviour. A thread that reads fast will revert itself. |
+| `D` | **Opus · thinking ON · HIGH** | it is a trace with **stop conditions**, a production data question it must attribute correctly, and a `REVOKE` migration on a live signing function. ⚠️ **The failure mode is a thread that wants to finish and talks itself past a stop condition.** |
 | `C` | **Opus · thinking ON · HIGH** | 175 mechanical replacements is the easy half. **The hard half is the `.flow-green` scope class**: CSS specificity, `@apply` inside a descendant selector, and React portals that escape the scope entirely (§7 T5 of its spec). **Those three are where it silently ships half-done.** |
 
-# 4. 🔒 FOR THE OWNER — NOTHING. All four of the calls in the previous version are gone.
-**His narrowing answered every one of them**: the footer icons, the public header CTA, `.eyebrow`
-app-wide and `.rule-gold` are all **outside the signing flow**, so they keep their gold and no longer
-need a ruling. **The affordance question he struck outright.**
-⚠️ **`ORCH`: dispatch all three without waiting on him.**
+# 4. FOR THE OWNER — nothing blocks a dispatch, but `D` will come back with three questions
+
+**CR-102's four earlier calls are all gone** — his narrowing answered every one. **Dispatch A, B, C
+and D without waiting on him.**
+
+⚠️ **But `D` is a two-phase task and Phase 1 ends in questions only he can answer.** **Expect them,
+and expect Phase 2 to stop** — its spec says stopping is a successful outcome:
+1. **Usage** — how many documents and deliveries actually went through those flows, and when.
+   ⚠️ **DSNR could not measure this: the repo's `.env` holds only the anon key.** `FLOW-MAP.md:24`
+   claims 35 delivery rows; **that is a document, not a measurement, and `D` must re-count it.**
+2. 🔒 **VISIT-DAY, and this is the real one.** `/release` **signs on the spot with no account**;
+   `/sign/` **captures a request and the person signs later in their own account.** **Retiring the
+   kiosk is not a redirect — it removes same-moment signing.** A walk-in goes from *"sign here on the
+   iPad"* to *"give us your email, open it on your phone, make an account, then sign."* **He may well
+   be fine with that — his "different ways of getting there" says the entry points are the answer —
+   but nobody has said it out loud, so `D` asks rather than assumes.**
+3. **A link in the wild** — a printed QR code or a sign at the property. ⚠️ **Invisible from a git
+   repository. This one alone will probably hold Phase 2, and correctly.**
 
 # 5. 🔒 WHAT I DECIDED THAT DISCO DID NOT — and where DISCO was wrong
 
@@ -149,10 +176,45 @@ number below was re-measured by me on 2026-09-01; the queries are in the ledger.
   `text-muted line-through`, green-toned, no brown. ⚠️ **`D` is told to REPORT "already correct" and
   explicitly told not to invent a change to have something to show.**
 
+## 🔒 5a. THE FINDING BEHIND `D`, AND IT IS WORTH MORE THAN THE DELETED LINES
+**`api/sign-release.ts:41-47` builds an ANON client and `:133` calls `sign_release` with it.** So that
+function still holds an `anon` EXECUTE grant — **and yesterday's hardening migration spared it on
+purpose.** `supabase/migrations/20260831T1200_signing_rpcs_are_not_anonymous.sql:21-23`, verbatim:
+> *"the public kiosk paths sign through `sign_release` / `sign_general_release`, which are untouched
+> here."*
+
+🔒 **Those two pages are the ONLY reason an unauthenticated stranger can still write a contact, an
+engagement and an EXECUTED document.** **Retiring them is what finally closes that door** — which
+three prior threads (`TASK-AR7`, `TASK-FIX1`, the ORCH5 audit) flagged and could not close because
+the kiosks needed it. ⚠️ **`D`'s spec makes it prove the result from `pg_proc.proacl`, and warns that
+`REVOKE … FROM PUBLIC` alone leaves a direct `anon` grant standing — a trap this repo has hit before.**
+
+## 5b. THE OTHER DECISIONS I MADE ON THE RETIREMENT
+- 🔒 **TRACE FIRST, DELETE SECOND — because he said *"traced and most likely decommissioned."***
+  **Two phases in ONE thread**, so it still ships if it is safe rather than becoming a report nobody
+  actions. **Phase 2 runs only on a clean Phase 1.**
+- 🔒 **NO DATABASE ROW IS TOUCHED** (D32). **Documents signed through those flows are legal records.**
+  The only migration is a `REVOKE`/`GRANT`; **the functions themselves are not dropped**, because a
+  `DROP`+`CREATE` resets the ACL and because executed documents reference the path that made them.
+- **The removal is ordered so each step is separately revertable**, routes first — **removing the three
+  routes alone satisfies the whole of his ask**, and everything after it is cleanup.
+- **`api/deliver-documents` STAYS.** It is shared with `SendCopiesMenu.tsx:39` and the onboarding
+  set-delivery. ⚠️ **The spec makes `D` prove that rather than assume it, and item 9 of its test signs
+  a real onboarding document afterwards** — that is where a shared-delivery regression would show.
+- **The docs are marked RETIRED, not deleted** — `SURFACE-INVENTORY.md:80-81`, `FLOW-MAP.md:24` (F3),
+  `flows/onboarding.md:157`/`:174` — so the next reader does not rediscover a flow that was removed
+  deliberately.
+- **A 404 for a stranger with an old link is flagged, not solved.** `D` recommends whether a redirect
+  to `/sign` is wanted; **it does not build one, because that is the same product decision as Q2.**
+
 # 6. ⚠️ WHAT I DID NOT DO, SO YOU ARE NOT SURPRISED
 - **I did not run the app or a browser.** Every number here is `grep`, `git` or a file read. **No
-  render in this batch is verified by anyone until the owner walks it** — which is why all six specs
+  render in this batch is verified by anyone until the owner walks it** — which is why all four specs
   end in a numbered checklist for him rather than a claim.
+- 🔒 **I DID NOT QUERY PRODUCTION, AND COULD NOT.** The repo's `.env` carries only
+  `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. ⚠️ **So every claim about what has actually been
+  SIGNED through the retiring flows is inherited from `FLOW-MAP.md`, not measured — and `D`'s spec
+  says so in those words.**
 - **I did not touch code.** `git status` shows only my three docs.
 - **I did not re-open anything the owner locked** — the address-lookup answer and the
   decorative/functional ruling are both built on, not revisited.
@@ -165,8 +227,9 @@ number below was re-measured by me on 2026-09-01; the queries are in the ledger.
 FHE-ORCH-SIGNFLOW
 
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
-Read docs/reports/FHE-DSNR-SIGNFLOW-HANDOFF.md and sequence TASK-SIGNFLOW-A, B and C.
-A and B are file-disjoint and can run together; C follows both.
+Read docs/reports/FHE-DSNR-SIGNFLOW-HANDOFF.md and sequence TASK-SIGNFLOW-A, B, C and D.
+A, B and D are file-disjoint and can run together; C follows A and B.
+D is two-phase and will come back with three questions for the owner — that is expected.
 ```
 
 ⚠️ **When you dispatch, each build thread's prompt is two lines and ONE absolute path to its spec —
