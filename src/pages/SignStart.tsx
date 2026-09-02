@@ -638,6 +638,14 @@ export default function SignStart() {
                   required there, because that is the path with a contract behind
                   it. A funnel signup is asked for an address on the first page
                   after auth, where the paperwork that prints it is generated. */}
+              {/* ⚠️ CR-100 — every box below normalises ON BLUR, in front of the
+                  person, and the value they can then see is the value that reaches
+                  the `/api/sign-start` payload. This is the front door: a
+                  counterparty who is usually NOT signed in, typing the address that
+                  becomes the contact record and then the contract's `…ADDRESS`
+                  tokens. Nothing here validates that the address EXISTS — the owner
+                  ruled that out explicitly. The ZIP submit-gate above (`ZIP_RE`,
+                  `:442`) is unchanged; normalisation never rejects. */}
               {isDeal && (<>
               <div className="mb-5">
                 <label className="form-label" htmlFor="sign-address1">
@@ -649,6 +657,7 @@ export default function SignStart() {
                   required={addressRequired}
                   value={line1}
                   onChange={(e) => setLine1(e.target.value)}
+                  onBlur={normalize('sign-address1', 'street', line1, setLine1)}
                   autoComplete="address-line1"
                 />
               </div>
@@ -661,6 +670,7 @@ export default function SignStart() {
                   className="form-input"
                   value={line2}
                   onChange={(e) => setLine2(e.target.value)}
+                  onBlur={normalize('sign-address2', 'street', line2, setLine2)}
                   autoComplete="address-line2"
                 />
               </div>
@@ -675,6 +685,7 @@ export default function SignStart() {
                     required={addressRequired}
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
+                    onBlur={normalize('sign-city', 'city', city, setCity)}
                     autoComplete="address-level2"
                   />
                 </div>
@@ -688,7 +699,15 @@ export default function SignStart() {
                     required={addressRequired}
                     maxLength={2}
                     value={stateV}
-                    onChange={(e) => setStateV(e.target.value.toUpperCase())}
+                    /* 🔒 CR-100/CR-83 — this used to `.toUpperCase()` ON CHANGE, which
+                       rewrote the box under the person's fingers. Correcting a value
+                       while somebody is still typing is the silent correction
+                       `normalize.ts` exists to prevent, so the shaping moved to the
+                       blur below: while they type `ca` the box says `ca`.
+                       `maxLength` and the placeholder shape the input without
+                       rewriting it, so both stay. */
+                    onChange={(e) => setStateV(e.target.value)}
+                    onBlur={normalize('sign-state', 'region', stateV, setStateV)}
                     autoComplete="address-level1"
                     placeholder="CA"
                   />
@@ -704,6 +723,7 @@ export default function SignStart() {
                     inputMode="numeric"
                     value={zip}
                     onChange={(e) => setZip(e.target.value)}
+                    onBlur={normalize('sign-zip', 'postal', zip, setZip)}
                     autoComplete="postal-code"
                     placeholder="92109"
                   />

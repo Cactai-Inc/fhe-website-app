@@ -189,33 +189,51 @@ export function CaptureInfoModal({
             </label>
           )}
 
+          {/* ⚠️ CR-100 — the address boxes normalise ON BLUR, exactly like the name,
+              phone and email boxes above. This modal writes `address_line1 …
+              postal_code` onto the CONTACT record (`captureContactInfo`, :123-127),
+              which is the same D22 source of truth the onboarding and /sign doors
+              write and the same record the contract's `…ADDRESS` tokens compose
+              from — so leaving it unwired would have left one door correcting the
+              address and another not.
+              ⚠️ TASK-SIGNFLOW-B's spec §5 said this file has no address fields.
+              It has five. Reported. */}
           {need('address') && (
             <div className="flex flex-col gap-2.5">
               <label className="block">
                 <span className="form-label">Street address</span>
                 <input className="form-input" value={line1} onChange={(e) => setLine1(e.target.value)}
+                  onBlur={normalize('line1', 'street', line1, setLine1)}
                   aria-invalid={!!errors.line1} placeholder="752 Windemere Ct" />
                 {errors.line1 && <p className="form-error">{errors.line1}</p>}
               </label>
               <label className="block">
                 <span className="form-label">Apt / Suite <span className="text-muted font-normal">(optional)</span></span>
-                <input className="form-input" value={line2} onChange={(e) => setLine2(e.target.value)} />
+                <input className="form-input" value={line2} onChange={(e) => setLine2(e.target.value)}
+                  onBlur={normalize('line2', 'street', line2, setLine2)} />
               </label>
               <div className="grid grid-cols-[1fr_auto_auto] gap-2.5">
                 <label className="block">
                   <span className="form-label">City</span>
                   <input className="form-input" value={city} onChange={(e) => setCity(e.target.value)}
+                    onBlur={normalize('city', 'city', city, setCity)}
                     aria-invalid={!!errors.city} />
                 </label>
                 <label className="block">
                   <span className="form-label">State</span>
+                  {/* 🔒 The `.toUpperCase()` that was on this `onChange` is gone for
+                      the same reason it left `SignStart` — rewriting the box while
+                      somebody is still typing is the silent correction CR-83 named.
+                      `ca` becomes `CA` on blur; `maxLength` and the placeholder stay. */}
                   <input className="form-input w-16" value={stateV} maxLength={2}
-                    onChange={(e) => setStateV(e.target.value.toUpperCase())}
+                    onChange={(e) => setStateV(e.target.value)}
+                    onBlur={normalize('state', 'region', stateV, setStateV)}
                     aria-invalid={!!errors.state} placeholder="CA" />
                 </label>
                 <label className="block">
                   <span className="form-label">ZIP</span>
                   <input className="form-input w-24" value={zip} onChange={(e) => setZip(e.target.value)}
+                    onBlur={normalize('zip', 'postal', zip, setZip)}
                     aria-invalid={!!errors.zip} placeholder="92109" />
                 </label>
               </div>
