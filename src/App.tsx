@@ -28,8 +28,6 @@ import SignStart from './pages/SignStart';
 import SignChoose from './pages/SignChoose';
 import Gift from './pages/Gift';
 import Redeem from './pages/Redeem';
-import Release from './pages/Release';
-import DocsParticipantFlow from './pages/DocsParticipantFlow';
 /* BookRider import removed with the CLOSEOUT §3.6 redirect below; the file
    stays in the repo (redirect, do not delete). */
 import BookHorse from './pages/BookHorse';
@@ -234,10 +232,12 @@ export function AppRoutes() {
             <Route path="/redeem" element={<Redeem />} />
             {/* /inquire retired — the unified intake lives on /contact (Phase 5) */}
             <Route path="/inquire" element={<Navigate to="/contact" replace />} />
-            <Route path="/release" element={<Release />} />
-            <Route path="/release/:releaseKey" element={<Release />} />
-            {/* Guided participant document set — one info form, 4 docs signed in sequence */}
-            <Route path="/docs/release-participant" element={<DocsParticipantFlow />} />
+            {/* /release, /release/:releaseKey and /docs/release-participant RETIRED
+                2026-09-01 (TASK-SIGNFLOW-D). Owner: "we dont use docs/release-participant
+                nor /release … the /sign/ flow should be the single pathway we use".
+                They were the only same-moment, no-account signing doors; /sign/rider
+                assigns the identical four-document set through an account. The routes
+                are gone, so both paths now fall through to the app's 404. */
 
             {/* Email-change verification landing — standalone, no chrome */}
             <Route path="/verify-email" element={<VerifyEmailScreen seams={{ verifyWithPassword, verifyWithGoogle }} />} />
