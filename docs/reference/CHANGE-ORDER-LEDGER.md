@@ -4407,3 +4407,13 @@ and registered (hub `/app/ops/barnops` + Resources + Consumption log + Allocatio
 `pageRegistry.ts:298-301`), so consumption/attribution machinery ALREADY EXISTS — the review is a
 convergence question (D18), and "I've only ever seen My Stable" despite a live nav row is a
 reachability/visibility question (D17) the research must answer.
+
+## CR-101 · A1 — ✅ RULED 2026-09-02: no trailing period on a signature line
+**SAID (owner, verbatim):**
+> *"we dont need a (.) at the end of a line that has a signature in it. that doesnt even make sense
+> to be there in the first place. remove it and the issue you raised is no longer an issue."*
+Closes the cursive-period item from SIGNFLOW-A §5. The fix is in `remerge_contract_from_clauses`
+(the composer that appends the period, :171-174) — a production migration, so it gets a SHORT
+DSNR-profile spec, not a pass-fix. Constraints for that spec: executed bodies are evidence and are
+never rewritten (D32/D33, 0 of 81 affected anyway); the three unsigned bodies (incl. the live
+Pamela lease) re-compose through the normal remerge path only.

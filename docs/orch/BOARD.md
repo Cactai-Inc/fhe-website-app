@@ -77,8 +77,8 @@ only, NO removal/merge/convergence; `SIGNFLOW-E` withdrawn)
   sweep copy, hold the hub name) then `FHE-TASK-TACKROOM` (DISCO profile; CR-109 — inventory
   what barnops/My Stable/gear/horse-supplies hold today, the reachability question, and the
   Horses·Gear·Supplies·Business + assignment/consumption model against the existing machinery).
-- **Cursive-period defect** (SIGNFLOW-A §5) — remerge appends a period after signature tokens; 3
-  unsigned docs incl. the live lease VIEW. DSNR-profile amendment or task; cheapest fix named in §5.
+- ~~Cursive-period defect~~ ✅ **RULED (CR-101·A1): no trailing period on a signature line.** Folds
+  into the SIGNFLOW follow-up spec task with SIGNFLOW-F (one DSNR-profile task writes both specs).
 - **Stale-comment batch grows:** Onboarding.tsx:106-108/:621 (payment step claimed live) joins D's
   three.
 - **Spec corrections for the DSNR profile:** SITECOPY-B's false zero-consumers premise · SIGNFLOW-A's
