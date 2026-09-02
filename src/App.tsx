@@ -237,7 +237,7 @@ export function AppRoutes() {
                 nor /release … the /sign/ flow should be the single pathway we use".
                 They were the only same-moment, no-account signing doors; /sign/rider
                 assigns the identical four-document set through an account. The routes
-                are gone, so both paths now fall through to the app's 404. */
+                are gone, so both paths now fall through to the app's 404. */}
 
             {/* Email-change verification landing — standalone, no chrome */}
             <Route path="/verify-email" element={<VerifyEmailScreen seams={{ verifyWithPassword, verifyWithGoogle }} />} />
