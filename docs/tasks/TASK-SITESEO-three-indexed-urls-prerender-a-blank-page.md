@@ -67,6 +67,17 @@ a titleless page with an empty `<main>` to any crawler that does not execute Jav
 3. **`src/lib/seo.ts`'s `indexable` flag is read by nothing.** `grep -rn "indexable" src/ scripts/`
    → only the interface (`seo.ts:56`) and the twelve literals. **A field that documents an intent no
    code enforces.**
+4. 🔒 **AND THE ONE THAT MAKES `/services` URGENT RATHER THAN TIDY.** `vercel.json`'s catch-all
+   rewrite is `{"source": "/((?!api/).*)", "destination": "/index.html"}`. **Vercel checks the
+   filesystem before applying a rewrite, so prerendered directories are served — but any public route
+   with NO prerendered directory falls through to `dist/index.html`.**
+   ⚠️ **And `dist/index.html` IS the prerender of `/`.** So a crawler hitting **`/services`,
+   `/contact`, `/visit`, `/gift` or `/questions`** receives **the LANDING page's markup and the
+   LANDING page's `<title>`** as the initial HTML, and only sees the right page after executing
+   JavaScript. **Verified: `dist/services/` does not exist; `dist/index.html` carries
+   `<title data-rh="true">French Heritage Equestrian — …Lessons & Training…</title>`.**
+   🔒 **This is the same class of defect as the three blank pages, and it is why §4d prerenders
+   `/services` rather than merely flipping a flag.**
 
 ### What is NOT wrong
 - **`/` is fine.** `dist/index.html` carries the real `/` Helmet title. Its `<main>` is absent because
@@ -91,11 +102,17 @@ of the gate.**
 
 ### 4a. His other question: are they helping our ranking? — 🔒 NOT DETERMINABLE FROM THIS REPO
 
-**Say this plainly in your report rather than guessing.** Nothing in the codebase records impressions,
-clicks or position. `src/lib/seo.ts:44` is `sameAs: []` — **no Google Business Profile is even linked**
-— and there is no analytics or Search Console integration anywhere in `src/` or `api/`.
-**The instrument is Google Search Console → Performance → filter by page**, one query per URL. **That
-is the owner's to run; it is not a build task and it does not block this one.**
+**Say this plainly in your report rather than guessing. There are TWO instruments and they answer
+two different questions — and one of them IS already installed.**
+
+| Question | Instrument | Status, measured 2026-09-01 |
+|---|---|---|
+| **Does anyone actually LAND on these three URLs?** | **Vercel Web Analytics** | 🔒 **ALREADY LIVE.** `src/main.tsx:6` imports `@vercel/analytics/react`, `:16` renders `<Analytics />` inside `HelmetProvider` — **on every page**. `package.json:24`, `@vercel/analytics ^2.0.1`. **The data exists; it is in the Vercel dashboard, not in this repo.** |
+| **Does Google SHOW them, and at what position?** | **Google Search Console → Performance → filter by page** | ⚠️ **No verification meta tag in `index.html`** (`grep -rn "google-site-verification"` → zero). May be verified by DNS or the Vercel integration — **not determinable from the repo.** |
+| **Is the Business Profile even linked?** | `ORG_JSONLD.sameAs` | ⚠️ **`src/lib/seo.ts:44` — `sameAs: []`, empty.** No Business Profile, no socials. |
+
+⚠️ **Both dashboards are the owner's to read. Neither is a build task and neither blocks this one.**
+🔒 **And the answer does not change the build** — see the two determinable facts below.
 
 **But two things ARE determinable from here, and they matter:**
 1. **Whatever those three URLs rank for, they are not ranking on their content — they have none.**
@@ -120,6 +137,11 @@ MECHANISM that is wrong, not the destination.** ⚠️ **Do not change where the
 ### 4c. What that means concretely
 1. **A real `301` at the host** — `vercel.json` — for `/ride`, `/shop`, `/membership` → `/lessons`.
    ⚠️ **Server-side, so it works with no JavaScript.** This is the whole point.
+   **Measured 2026-09-01: `vercel.json` has NO `redirects` key today.** You add one. It has
+   `buildCommand`, `outputDirectory`, `crons` (5), `rewrites` (2) and `git`.
+   ⚠️ **`permanent: true` — that is what makes it a `301` rather than a `308`/`307`.**
+   🔒 **`redirects` are evaluated BEFORE `rewrites` and before the filesystem on Vercel, so the new
+   rules will win over the existing SPA catch-all. Do not remove either `rewrites` entry.**
 2. **All three leave `scripts/prerender.mjs`.** A redirect has nothing to prerender. **This deletes the
    three blank pages.**
 3. **All three leave the sitemap.** ⚠️ **You do not sitemap a redirect** — you let the 301 carry the
@@ -131,6 +153,12 @@ MECHANISM that is wrong, not the destination.** ⚠️ **Do not change where the
    still uses the old path. Belt and braces is correct here.**
 6. **`ROUTE_SEO`'s `/shop` entry stays** even though the flag flips — `src/pages/Shop.tsx:12` calls
    `seoForPath('/shop')!` with a **non-null assertion**, so deleting the entry crashes that page.
+7. ⚠️ **CONDITIONAL, and only if the owner has supplied it by the time you start:** populate
+   `src/lib/seo.ts:44` `sameAs: []` with the **Google Business Profile URL** and any social profiles.
+   It feeds `ORG_JSONLD`, the `LocalBusiness` structured data. **It is one line.**
+   🔒 **If the URLs have NOT arrived, DO NOT invent, guess, or search for them — leave `sameAs` empty
+   and name it as an open item in your report.** **A wrong `sameAs` tells Google the business is a
+   different entity, which is worse than an empty one.**
 
 ### 4d. `/services` — DSNR resolved this, no owner call needed
 The second call I flagged answers itself once §3's convergence lands: **`/services` is
@@ -182,7 +210,10 @@ undone by a revert — say so in the report and name where it lives.**
    ⚠️ **And it got there because `indexable: true` put it there — not because you added it by hand.**
 8. **`TASK-SITECOPY-A`'s ten strings are unchanged.** `git diff src/lib/seo.ts` shows route-list and
    flag changes only. ⚠️ **A diff touching a `title` or `description` value is a failed report.**
-9. **`/services` is disposed of per the owner's §4 answer**, and the report states which way and why.
+9. 🔒 **`/services` no longer serves the landing page.** `curl -s https://…/services | grep -o '<title[^>]*>[^<]*'` returns the **services** title, not the landing one — **with JavaScript never
+   executed.** ⚠️ **This is §2.4's defect and it is the one a browser cannot show you.**
+10. **`sameAs` is either populated with the owner's real URLs or still `[]`** — and the report says
+    which, explicitly. ⚠️ **Never a placeholder.**
 
 ## 9. WHERE THE REPORT GOES
 

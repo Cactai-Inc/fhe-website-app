@@ -89,6 +89,74 @@ the spec as §4a.
 **`/services` I resolved myself** (spec §4d): once the three route lists converge on `ROUTE_SEO`, its
 `indexable: true` puts it in the prerender list and the sitemap automatically. **No owner call.**
 
+## 🔒 THE SITESEO FOLLOW-THROUGH — WHAT ACTUALLY HAS TO HAPPEN, AND WHO DOES IT
+*(Owner asked for this written up, 2026-09-01. Full detail in
+`docs/tasks/TASK-SITESEO-three-indexed-urls-prerender-a-blank-page.md` §4a–§4d and §8.)*
+
+### ⚠️ FIRST, A CORRECTION TO WHAT I TOLD HIM
+**I said there was "no analytics" in the app. That was wrong, and it changes what he should do.**
+**Vercel Web Analytics IS live** — `src/main.tsx:6` imports `@vercel/analytics/react`, `:16` renders
+`<Analytics />` on every page, `package.json:24` `^2.0.1`. 🔒 **So half his question is already
+answerable from a dashboard he owns.** The Search Console half stands as stated.
+
+### A — TWO THINGS ONLY THE OWNER CAN DO. ⚠️ NEITHER BLOCKS THE BUILD.
+| # | Action | What it answers | Why it is his |
+|---|---|---|---|
+| **A1** | **Vercel dashboard → Web Analytics → Top Pages.** Look for `/ride`, `/shop`, `/membership`. | **Does anyone actually land on these URLs?** | The data is already being collected; it just is not in the repo. **~2 minutes.** |
+| **A2** | **Google Search Console → Performance → filter by page**, one pass per URL. Impressions, clicks, average position. | **Does Google show them, and where?** | ⚠️ **No `google-site-verification` tag exists in `index.html`, so we cannot even confirm the property is verified.** If it is not, verifying it is step zero — and it is a prerequisite for ever answering an SEO question about this site. |
+
+🔒 **Both are DIAGNOSTIC, not gating.** **The build is correct whatever they say**, because all three
+URLs currently serve an empty `<title>` and a 29-byte `<main>` — they cannot be ranking on content, so
+a `301` to `/lessons` strictly improves the position either way. **That is why his "either way" was
+the right call.**
+⚠️ **What the numbers WOULD change is priority, not design** — if A1 shows real traffic, `SITESEO`
+moves up the queue; if it shows none, it is still worth doing but it can wait behind the copy chunks.
+
+### B — ONE THING HE CAN HAND OVER THAT SHIPS INSIDE THE BUILD
+| # | Ask | Where it lands |
+|---|---|---|
+| **B1** | **The Google Business Profile URL, plus any social profiles.** | `src/lib/seo.ts:44`, `sameAs: []` — today **empty**. It feeds `ORG_JSONLD`, the `LocalBusiness` structured data. **One line.** |
+
+⚠️ **Specced as CONDITIONAL** (`TASK-SITESEO` §4c.7): if the URLs have arrived when the thread starts,
+they ship; if not, `sameAs` stays empty and the thread reports it as open. 🔒 **The spec forbids
+guessing one — a wrong `sameAs` tells Google this is a different business, which is worse than none.**
+**B1 is also what makes A2 useful**, since the Business Profile is where local-search data lives.
+
+### C — THE BUILD, AND IT IS BIGGER THAN THE THREE REDIRECTS
+**All of this is `TASK-SITESEO`. Nothing here needs another decision.**
+1. **`301`s in `vercel.json`** for `/ride`, `/shop`, `/membership` → `/lessons`, `permanent: true`.
+   **There is no `redirects` key today; it is added.** The two existing `rewrites` stay.
+2. **Those three leave `scripts/prerender.mjs` and the sitemap** — you do not prerender or sitemap a
+   redirect. **This deletes the three blank pages.**
+3. **Their `indexable` flags flip to `false`**, so step 4's convergence keeps them out by rule rather
+   than by a second hardcoded exception. **The `/shop` ROUTE_SEO entry itself stays** —
+   `src/pages/Shop.tsx:12` calls `seoForPath('/shop')!` with a non-null assertion.
+4. 🔒 **The three route lists converge onto `ROUTE_SEO`.** `scripts/prerender.mjs:21`,
+   `scripts/seo-files.mjs:14-24` and `src/lib/seo.ts` currently disagree three ways, and `indexable`
+   is read by **nothing**. **After this it is the single source and the flag finally decides something.**
+5. ⚠️ **`/services` gets prerendered — and this is the item I under-sold.** `vercel.json`'s catch-all
+   rewrite sends any route with no prerendered directory to `dist/index.html`, **which IS the
+   prerender of `/`**. So a crawler asking for **`/services`, `/contact`, `/visit`, `/gift` or
+   `/questions`** is currently served **the LANDING page's HTML and the LANDING page's `<title>`**,
+   and only sees the real page after running JavaScript. 🔒 **Same class of defect as the three blank
+   pages, and invisible in a browser.** `/services` is `indexable: true`, so step 4 fixes it by rule.
+6. **`/faq` gets a `ROUTE_SEO` entry** — it is prerendered today with **no entry at all**, so the
+   convergence would otherwise drop it. **Use the title and description `src/pages/Faq.tsx`'s own
+   `<Seo>` already emits. Do not write new copy and do not touch the questions.**
+7. **`sameAs`** — conditional, per B1.
+
+### D — HOW IT IS PROVEN (`TASK-SITESEO` §8)
+⚠️ **Every test runs `curl` against the built site, never a browser** — a client-side redirect and a
+JavaScript-swapped title are exactly the defects, so anything that executes JS proves nothing.
+`curl -sI` on each of the three → **`301` + `Location: /lessons`**. `curl -s` on `/services` → the
+**services** title, not the landing one. No prerendered file with an empty `<title>` or an empty
+`<main>`. Every sitemap `<loc>` resolving to real content, **and none of the three redirect URLs in
+it.**
+
+### ⚠️ E — SEQUENCE
+**`SITECOPY-A` must merge first** — both edit `src/lib/seo.ts`, and `SITESEO`'s own report fails if
+its diff touches a `title` or `description` value.
+
 ## ASK-OWNER 3 — not blocking, but he should know
 **The two wording rulings `TASK-SITECOPY-A/B` enforce are not D-rules.** *"FHE is jumper-only"* and
 *"a program … not a barn"* live **only** at `CHAT-THREAD-ADMIN-REFACTOR-2026-08-26.md:104-112`.
@@ -278,7 +346,7 @@ appendix to a copy task, so I did not rush it into this thread.** **I have not t
 > **`D37` and `DSNR-ROLE.md` §7 say every prompt any role hands the owner states MODEL · EFFORT ·
 > THINKING. He has narrowed that: it does NOT apply to a STANDING thread.** **A prompt to `ORCH` is a
 > label for a thread that is already running at its own settings, not a launch.**
-> 🔒 **Per-TASK settings belong in this file — §3 above, and now restated at the head of each spec.**
+> 🔒 **Per-TASK settings live in §3 of this file and at the head of each spec.**
 > **ORCH: this is yours to record wherever `D37` lives.**
 
 ```
@@ -288,11 +356,30 @@ cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
 Read docs/reports/FHE-DSNR-SITE-PUBLIC-HANDOFF.md and sequence the public-site lane.
 ```
 
-⚠️ **BEFORE ORCH FIRES ANYTHING: §0 has ONE question left for the owner.**
-**ASK-OWNER 1 blocks `POLICIESANDFAQ` — and the fix is a `DISCO` thread, not a paste.**
-🔒 **`SITESEO` is RULED and no longer gated — dispatch it after `SITECOPY-A`.**
-🔒 **The `LANDINGSIGNIN` shape (§5) is RULED and no longer a gate.**
-⚠️ **ASK-OWNER 1 is the ONLY thing still open, and its recommendation changed: `POLICIESANDFAQ` needs
-a fresh `DISCO` pass, not a lost document.**
-🔒 **Neither blocks `SITECOPY-A`, `SITECOPY-B` or `LANDINGSIGNIN` — those three are ready now and can
-run in parallel.**
+## 🔒 EVERYTHING ORCH NEEDS IS REACHABLE FROM THAT ONE PATH. THE CHAIN, EXPLICITLY:
+
+**This file carries, in full:** the chunks and their order (§1) · the contention (§2) · model and
+effort per TASK thread (§3) · what I decided that the drafts did not (§4) · the ruled landing shape
+(§5) · the `SITESEO` follow-through, including the two owner diagnostics and the one owner input
+(§0) · the `ONERAIL` gate status (§6).
+
+**And these are the files it points to. ORCH does not need anything else, and no context travels in a
+prompt:**
+| Path | What it is |
+|---|---|
+| `docs/tasks/TASK-SITECOPY-A-jumper-only-program-not-barn-in-public-marketing-copy.md` | ready |
+| `docs/tasks/TASK-SITECOPY-B-the-app-stops-calling-itself-the-barn.md` | ready |
+| `docs/tasks/TASK-LANDINGSIGNIN-a-sign-in-path-on-the-landing-page.md` | ready — shape ruled |
+| `docs/tasks/TASK-SITESEO-three-indexed-urls-prerender-a-blank-page.md` | ready — **ruled keep-and-301**; §4a–§4d is the writeup, §8 the proof |
+| `docs/tasks/TASK-ONERAIL-three-entry-paths-one-first-login-rail.md` | gate open, **spec stale — see §6** |
+| `docs/tasks/TASK-SITECOPY-jumper-only-program-not-barn.md` | ⚠️ superseded, retained for provenance. **Do not build from it.** |
+| `docs/reports/FHE-DSNR-SITE-PUBLIC-LEDGER.md` | every query behind every number in this file |
+
+## 🔒 THE STATE, IN ONE LINE EACH
+- ✅ **`SITECOPY-A` · `SITECOPY-B` · `LANDINGSIGNIN`** — ready, file-disjoint, **run in parallel**.
+- ✅ **`SITESEO`** — ready and ruled. **Sequences after `SITECOPY-A`** (shared `src/lib/seo.ts`).
+- ⚠️ **`ONERAIL`** — hold condition satisfied (`0ac49e61`, `2fa1f7b9` both in `main`), but both
+  merges rewrote the files its traces describe. **Release it back to `DSNR` for a rebase, not
+  straight to a build thread.**
+- ⛔ **`POLICIESANDFAQ`** — **needs a `DISCO` pass**, not a paste. §0, ASK-OWNER 1.
+- 📋 **Owner diagnostics `A1`/`A2` and input `B1`** — §0. **None of them block anything.**
