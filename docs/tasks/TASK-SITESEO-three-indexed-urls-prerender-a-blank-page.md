@@ -3,11 +3,15 @@
 **Spec by `FHE-DSNR-SITE-PUBLIC`, 2026-09-01.**
 **Thread name: `FHE-TASK-SITESEO`.**
 
-> # 🔒 DO NOT DISPATCH THIS YET — IT IS GATED ON ONE OWNER RULING
-> ⚠️ **The defect is measured and certain (§2). The FIX is a fork the owner must choose (§4), because
-> it decides whether three public URLs continue to exist.** **DSNR will not invent that answer.**
-> **ORCH: this is ASK-OWNER #2 in `docs/reports/FHE-DSNR-SITE-PUBLIC-HANDOFF.md`. Everything below
-> §4 is written and ready the moment he rules.**
+> # 🔒 RULED 2026-09-01 — THE GATE IS CLOSED. THIS IS READY TO DISPATCH.
+> > *"for site seo, can we determine if any of those three pages are helping seo and our ranking?
+> > either way, keep and redirect to the booking page the CTA links to."* — owner, 2026-09-01
+>
+> 🔒 **KEEP AND REDIRECT. The fork in §4 is resolved to Option A and the alternative is struck.**
+> **His first question is answered in §4a — it cannot be determined from this repo, and it does not
+> change the work.**
+> **Suggested TASK-thread settings: Opus · effort HIGH · thinking ON** — build scripts, three route
+> lists to converge, and a host-level redirect a `git revert` does not undo.
 
 > ## READ THESE, BY PATH — nothing else is handed to you
 > - `docs/method/TASK-ROLE.md` · `docs/method/CLNR-ROLE.md` §3 · `docs/method/THE-RUNNING-RECORD.md`
@@ -78,27 +82,62 @@ a titleless page with an empty `<main>` to any crawler that does not execute Jav
 source, with `indexable` finally meaning something.** **That half is not in question and is not part
 of the gate.**
 
-## 4. 🔒 THE FORK — THE ONE THING THE OWNER MUST RULE
+## 4. 🔒 THE RULING — KEEP AND REDIRECT
 
-**The question: should `/ride`, `/shop` and `/membership` remain public URLs at all?**
-They are linked from **nowhere** in the app (`grep` for `to="/ride"` / `to="/shop"` → 0 hits), so their
-only value is **inbound**: old links, prior indexing, anything printed or shared.
+> *"either way, keep and redirect to the booking page the CTA links to."* — owner, 2026-09-01
 
-| | Option A — **keep them, make them honest** | Option B — **retire them** |
+**`/ride`, `/shop` and `/membership` stay as public URLs and serve a real redirect.**
+⚠️ **The alternative — retiring them to `404` — is STRUCK. Do not build it, do not re-open it.**
+
+### 4a. His other question: are they helping our ranking? — 🔒 NOT DETERMINABLE FROM THIS REPO
+
+**Say this plainly in your report rather than guessing.** Nothing in the codebase records impressions,
+clicks or position. `src/lib/seo.ts:44` is `sameAs: []` — **no Google Business Profile is even linked**
+— and there is no analytics or Search Console integration anywhere in `src/` or `api/`.
+**The instrument is Google Search Console → Performance → filter by page**, one query per URL. **That
+is the owner's to run; it is not a build task and it does not block this one.**
+
+**But two things ARE determinable from here, and they matter:**
+1. **Whatever those three URLs rank for, they are not ranking on their content — they have none.**
+   All three serve an empty `<title>` and a 29-byte `<main>` (§2). **A blank indexed page is the worst
+   of both worlds: it holds the URL without earning anything for it.**
+2. 🔒 **So the 301 strictly improves the position either way.** A redirect passes signal to `/lessons`;
+   a blank page passes none. **This is why his "either way" is right and why the GSC number, whatever
+   it says, would not change the build.**
+
+### 4b. The target, verified — it is `/lessons`
+
+**The CTA he means, measured 2026-09-01:**
+| The CTA | `file:line` | Target |
 |---|---|---|
-| What happens | drop them from `prerender.mjs` and the sitemap; serve a real **301** to `/lessons` at the host (`vercel.json`) instead of a client-side `<Navigate>` | remove the routes, the `ROUTE_SEO` entries, the prerender entries and the sitemap entries; let them `404` into `NotFound.tsx` |
-| Right when | the URLs have history worth preserving | they were never published, or their equity has already transferred to `/lessons` |
-| Cost | one host-config change; the redirect stops depending on the JS bundle | three URLs stop resolving |
+| the big central landing CTA | `src/pages/Landing.tsx:138` | **`/lessons`** |
+| header nav *"Book a Lesson"* | `src/components/layout/Header.tsx:46` | **`/lessons`** |
+| footer nav *"Book a Lesson"* | `src/components/layout/Footer.tsx` nav list | **`/lessons`** |
 
-⚠️ **DSNR's recommendation is A, and DSNR is explicitly NOT ruling it** — a 301 preserves whatever
-equity exists, costs one config block, and removes the blank pages either way. **But "does this URL
-still matter to the business" is not a fact in the repo.**
+🔒 **All three agree: `/lessons`. The existing `<Navigate>` target is already correct — it is the
+MECHANISM that is wrong, not the destination.** ⚠️ **Do not change where they point.**
 
-**A second, smaller call rides with it:** `/services` is `indexable: true`, is **not** prerendered,
-is **not** in the sitemap, and is in **neither nav** — reachable only from `Checkout.tsx:121`,
-`NotFound.tsx:24`, `About.tsx:206`, `Account.tsx:114`. **Is it a page the site is publishing, or an
-internal landing pad?** The answer decides whether it joins the prerender list or loses its
-`indexable` flag.
+### 4c. What that means concretely
+1. **A real `301` at the host** — `vercel.json` — for `/ride`, `/shop`, `/membership` → `/lessons`.
+   ⚠️ **Server-side, so it works with no JavaScript.** This is the whole point.
+2. **All three leave `scripts/prerender.mjs`.** A redirect has nothing to prerender. **This deletes the
+   three blank pages.**
+3. **All three leave the sitemap.** ⚠️ **You do not sitemap a redirect** — you let the 301 carry the
+   old URL's signal and you advertise the destination.
+4. **All three flip to `indexable: false` in `ROUTE_SEO`** — which, once §3's convergence lands, is
+   what removes them from both lists automatically rather than by a second hardcoded exception.
+5. ⚠️ **The `<Navigate>` routes in `src/App.tsx:173,179,192` STAY.** The host 301 catches a cold hit;
+   the client route catches an in-app navigation. **Removing them would break any in-app link that
+   still uses the old path. Belt and braces is correct here.**
+6. **`ROUTE_SEO`'s `/shop` entry stays** even though the flag flips — `src/pages/Shop.tsx:12` calls
+   `seoForPath('/shop')!` with a **non-null assertion**, so deleting the entry crashes that page.
+
+### 4d. `/services` — DSNR resolved this, no owner call needed
+The second call I flagged answers itself once §3's convergence lands: **`/services` is
+`indexable: true`, so deriving the prerender list from `ROUTE_SEO` puts it in.** It is a real page with
+real content, reached from `Checkout.tsx:121`, `NotFound.tsx:24`, `About.tsx:206`, `Account.tsx:114`.
+🔒 **Prerender it. Sitemap it. No flag change.** ⚠️ **This is the convergence working as intended —
+one list, and the exceptions disappear.**
 
 ## 5. OUT OF SCOPE, EXPLICITLY
 
@@ -108,8 +147,10 @@ internal landing pad?** The answer decides whether it joins the prerender list o
 - **`src/pages/Shop.tsx`.** It still exists and `seoForPath('/shop')` is still called from it
   (`Shop.tsx:12`) even though nothing routes to it. **Deleting a page is a separate decision. Record
   it as a finding.**
-- **The `/faq` page's content.** See `TASK-POLICIESANDFAQ` (not yet written — the owner's draft has
-  not reached DSNR).
+- **The `/faq` page's content.** See `TASK-POLICIESANDFAQ`. ⚠️ **But `/faq` has no `ROUTE_SEO` entry
+  at all while being prerendered — so §3's convergence WILL affect it. Give it an entry with the title
+  and description `src/pages/Faq.tsx`'s own `<Seo>` already emits; do not invent new copy, and do not
+  touch the questions.**
 - **Anything behind auth.** `robots.txt` already disallows `/app`, `/admin`, `/checkout`,
   `/confirmation`, `/login`, `/register`, `/account`, `/order` (`scripts/seo-files.mjs:38-48`).
 
@@ -129,16 +170,16 @@ undone by a revert — say so in the report and name where it lives.**
    `<title data-rh="true">` is non-empty. Paste the per-file table.
 2. **No prerendered file has an empty `<main>`.** Every one over 1,000 bytes, or explicitly justified
    (`/` is the one known exception — `Landing.tsx` renders bare).
-3. **Every `<loc>` in `dist/sitemap.xml` resolves to a prerendered file with real content.** Paste the
-   list, matched one-to-one.
+3. **Every `<loc>` in `dist/sitemap.xml` resolves to a prerendered file with real content**, and
+   **none of the three redirect URLs appears in it.** Paste the list, matched one-to-one.
 4. **One list, not three.** `scripts/prerender.mjs` and `scripts/seo-files.mjs` both derive from
    `ROUTE_SEO`. `grep -n` both files in the report showing no hardcoded route array remains.
 5. **`indexable` now decides something.** Flip one route's flag, rebuild, show the sitemap changed.
-6. **Under Option A only:** `curl -sI https://…/ride` returns **`301`** with `Location: /lessons`,
-   with **no JavaScript executed**. ⚠️ **A client-side redirect is exactly the defect; proving it in a
-   browser proves nothing.**
-7. **Under Option B only:** `/ride`, `/shop`, `/membership` return `404`, are absent from the sitemap,
-   and `NotFound.tsx` renders.
+6. 🔒 **`curl -sI` each of `/ride`, `/shop`, `/membership` returns `301` with `Location: /lessons`.**
+   ⚠️ **`curl`, not a browser — a client-side redirect is exactly the defect, so proving it in a
+   browser with JavaScript on proves nothing.** Paste all three response headers.
+7. **`/services` IS prerendered and IS in the sitemap**, with a real title and a non-empty `<main>`.
+   ⚠️ **And it got there because `indexable: true` put it there — not because you added it by hand.**
 8. **`TASK-SITECOPY-A`'s ten strings are unchanged.** `git diff src/lib/seo.ts` shows route-list and
    flag changes only. ⚠️ **A diff touching a `title` or `description` value is a failed report.**
 9. **`/services` is disposed of per the owner's §4 answer**, and the report states which way and why.

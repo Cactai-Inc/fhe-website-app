@@ -183,3 +183,22 @@ four-chunk app-wide split existed to manage a scope he did not want.**
   text and chrome destroys the affordance. This needs the owner's eyes before chunk D builds.
 - T1 trap test is real and cheap: the built CSS carries literal hex —
   `dist/assets/index-*.css` currently holds `#7a6421` ×4, `#5c4a18` ×4, `#ba9935` ×17.
+
+## ⚠️ REVISION 4 — 2026-09-01, DSNR RETRACTS THREE OF ITS OWN CLAIMS
+**The owner pushed back on the three "divergences" reported to him. He was right on all three. They
+were READS reported as FINDINGS, and `E` had been told to "settle" what more careful reading settled.**
+**This is `docs/method/DSNR-ROLE.md`'s "write from the database, not from documents" — applied to me.**
+
+| Claimed | Actually |
+|---|---|
+| `Register.tsx` picks four destinations → `/sign/*` has two endings | `Register.tsx:33-42` states ONE rule: *"THE INVITATION SAYS WHERE TO GO, NOT THE URL."* The contract branch is the owner's own P1 ITEM 2 (`Onboarding.tsx:898-907`, 2026-08-25) and fires **only when `!s.needed`** |
+| "they converge one step later" | **Backwards.** `Onboarding.tsx:902-907` forwards to the contract only when there is NO paperwork. They **divide** by what is outstanding, deliberately |
+| door 4 may strand a no-account person on `/app/onboarding` | **Handled.** `api/documents-requested.ts:98-101` sends nothing — *"No login yet → nothing to send. They meet the documents when they activate."* |
+| door 5 "looks correct from the schema" | **Named end to end, and I cited the wrong table.** `purchases_assign_documents` trigger (`20260824T1600…sql:150-151`) → `trg_documents_when_order_opens()` (`:95`) → `apply_offering_documents()` (`:58`) → `INSERT INTO contact_required_documents` (`:73`) → `my_wall_state()` → hard `<Navigate>` at `AppLayout.tsx:1704-1707` |
+
+🔒 **THE FINDING THAT WAS ACTUALLY THERE AND I MISSED:** `?kind=contract` — `Register.tsx:35-36` calls
+it *"the OLD two-email path"*, **and two endpoints still send it**: `api/contract-invite.ts:191` and
+**`api/sign-start.ts:278` (the `/sign/deal` branch)**. `contract-invite.ts:136` declines to send it
+twenty lines earlier — **one file, both paths, choosing between them.** **D18, and exactly *"the
+others can be removed."*** **`E` §2a + §7 now own it, unconditionally, with a STOP if the unified send
+does not cover the already-signed counterparty `Register.tsx:104-116` rescues.**

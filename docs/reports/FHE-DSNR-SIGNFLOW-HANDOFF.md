@@ -96,7 +96,7 @@ dispatch. 🔒 **Nothing is waiting on the owner.**
 | `A` | **Opus · thinking ON · HIGH** | the work is a reach hunt across a module boundary. **DISCO missed a reader; the risk is that `A` misses one too.** |
 | `B` | **Opus · thinking ON · HIGH** | the incumbent file argues against this change **in writing** (`normalize.ts:120-126`) and two tests assert the old behaviour. A thread that reads fast will revert itself. |
 | `D` | **Opus · thinking ON · HIGH** | a trace, a production count it must ATTRIBUTE correctly (the same template keys are signed through `/app/onboarding`), and a `REVOKE` migration on a live signing function. |
-| `E` | **Opus · thinking ON · HIGH** | five doors, each proven from the database rather than the code. ⚠️ **The failure mode is a thread that reads the code, finds it correct, and reports convergence it never observed** — which is the failure this whole task exists to catch. |
+| `E` | **Opus · thinking ON · HIGH** | five doors proven from the DATABASE, plus retiring the legacy `?kind=contract` path. ⚠️ **The failure mode is a thread that reads the code, finds it correct, and reports convergence it never observed — which is precisely what DSNR did on its first pass and had to retract.** |
 | `C` | **Opus · thinking ON · HIGH** | 175 mechanical replacements is the easy half. **The hard half is the `.flow-green` scope class**: CSS specificity, `@apply` inside a descendant selector, and React portals that escape the scope entirely (§7 T5 of its spec). **Those three are where it silently ships half-done.** |
 
 > ## ⚠️ THIRD REVISION, 2026-09-01 — THE SIGNING-ENTRY RULING
@@ -121,14 +121,24 @@ dispatch. 🔒 **Nothing is waiting on the owner.**
 **CR-102's four calls are gone — his narrowing answered them. `D`'s three questions are gone — the
 signing-entry ruling answered them.** 🔒 **Dispatch all five without waiting on him.**
 
-**Two things will come back to him, both from `E`, both AFTER its walk rather than before:**
-1. **The deal ending.** `/sign/deal` lands on `/app/contracts/:id`; the other three `/sign/` funnels
-   land on `/app/onboarding` (`src/pages/Register.tsx:40-55`). ⚠️ **So `/sign/*` — the thing he named
-   as the canon — already has TWO endings.** **DSNR's read: probably legitimate and probably
-   converging one step later** (`Onboarding.tsx:907` navigates to `/app/contracts/{id}/start` when a
-   contract is what is outstanding) — **but that is a read, not a proof, and `E` must settle it.**
-2. **Anything the walk finds landing nowhere usable**, with the smallest fix, **not built until he
-   answers.**
+**One thing may come back, from `E`, and only if it hits it:**
+- **If `?kind=contract` (§5c) cannot be retired cleanly** — i.e. the unified send does not cover a
+  counterparty who already has an account, including the already-signed rescue at
+  `Register.tsx:104-116`. ⚠️ **`E` asks rather than removing a rescue path for someone whose signature
+  is already on file.**
+
+> ## ⚠️ CORRECTION, 2026-09-01 — THREE CLAIMS IN THE PREVIOUS VERSION OF THIS HANDOFF WERE WRONG
+> **The owner pushed back on §5c's findings. He was right. All three were reads reported as findings,
+> and `E` had been told to "settle" what ten more minutes of reading would have settled.**
+>
+> | I claimed | What the code says |
+> |---|---|
+> | `Register.tsx` "picks four destinations", so `/sign/*` has two endings — a divergence | ⚠️ **WRONG.** `Register.tsx:33-42` states ONE rule: *"THE INVITATION SAYS WHERE TO GO, NOT THE URL."* The contract branch is the owner's own P1 ITEM 2 ruling (`Onboarding.tsx:898-907`, 2026-08-25) and fires **only when `!s.needed`** — **paperwork and a waiting contract never compete** |
+> | they "converge one step later" via `Onboarding.tsx:907` | ⚠️ **WRONG, and backwards.** That forward happens only when there is NO paperwork. **They divide by what is outstanding — deliberately** |
+> | door 4 may email a bare `/app/onboarding` to someone with no account → a login wall | ⚠️ **WRONG. Handled explicitly.** `api/documents-requested.ts:98-101` sends **nothing** — *"No login yet → nothing to send. They meet the documents when they activate."* The requirement and notification are still written in one transaction |
+> | door 5 "looks correct from the schema, the weakest possible evidence" | ⚠️ **WRONG, and I named the wrong table.** The chain is named end to end: trigger `purchases_assign_documents` → `trg_documents_when_order_opens()` → `apply_offering_documents()` → **`INSERT INTO contact_required_documents`** (`20260824T1600…sql:73`, **not** `contract_role_documents`) → `my_wall_state()` → a hard `<Navigate>` at `AppLayout.tsx:1704-1707` |
+>
+> 🔒 **AND THE FINDING THAT WAS ACTUALLY THERE, WHICH I MISSED — see §5c below.**
 
 # 5. 🔒 WHAT I DECIDED THAT DISCO DID NOT — and where DISCO was wrong
 
@@ -237,17 +247,26 @@ the kiosks needed it. ⚠️ **`D`'s spec makes it prove the result from `pg_pro
 not to build it again.** ⚠️ **`E` is written as a walk for that reason, and it says in as many words
 that "all five converge, here is the proof" is a complete and likely result.**
 
-**The two things the trace could not settle, both now `E`'s job:**
-- **Door 4 emails a bare `/app/onboarding` to someone who may have no account** (`has_account` is in
-  its result shape at `:35`). ⚠️ **If the no-account case is unhandled, that person meets a login wall
-  with no way through.** **In scope for `E`.**
-- **Door 5 looks correct from the SCHEMA, which is the weakest possible evidence.** `AT_LOGIN` being
-  the default makes the wall look wired whether or not anything writes the rows. 🔒 **`E` must prove
-  it link by link** — this repo's dominant failure is code that works and nothing reaches.
+### 🔒 THE REAL FINDING — `?kind=contract`, a SIXTH path the code itself calls OLD
+**`src/pages/Register.tsx:35-36`, verbatim:**
+> *"`?kind=contract` is the OLD two-email path (a counterparty who already has an account). The
+> unified send issues an ACCOUNT invitation carrying `document_id`, so after the claim we route on
+> what the invitation carries."*
+
+⚠️ **AND TWO ENDPOINTS ARE STILL SENDING IT:** `api/contract-invite.ts:191` and 🔒 **`api/sign-start.ts:278`
+— the `/sign/deal` branch. A door the owner named as canonical is emitting the path its own successor
+calls OLD.** **And `contract-invite.ts:136` knows better twenty lines earlier:** *"NO `&kind=contract`:
+this is the ACCOUNT claim, and the document it…"* — **so one file contains both paths and chooses
+between them.**
+
+🔒 **That is D18, it is a real second way to reach a signable document, it is not one of the owner's
+five, and it is exactly what *"the others can be removed"* means here.** **`E` §7 retires it — not
+conditionally, and with a STOP if the unified send does not cover the already-signed counterparty
+`Register.tsx:104-116` currently rescues.**
 
 ⚠️ **AND THE TRAP `E` IS WARNED ABOUT HARDEST:** `FLOW-MAP.md:159` records the guest flow being
 declared unbuilt *"reasoned from production emptiness."* **It existed.** **A door with no rows is not
-a broken door.**
+a broken door** — and, on this thread's own showing, **a door you only read is not a finding.**
 
 # 6. ⚠️ WHAT I DID NOT DO, SO YOU ARE NOT SURPRISED
 - **I did not run the app or a browser.** Every number here is `grep`, `git` or a file read. **No
@@ -271,7 +290,7 @@ FHE-ORCH-SIGNFLOW
 cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
 Read docs/reports/FHE-DSNR-SIGNFLOW-HANDOFF.md and sequence TASK-SIGNFLOW-A, B, C, D and E.
 A, B, D and E are file-disjoint and can run together; C follows A and B.
-E is a walk, not a build — "all five doors already converge" is a complete result.
+E is a walk plus one removal (the legacy ?kind=contract path); its earlier "findings" were retracted.
 ```
 
 ⚠️ **When you dispatch, each build thread's prompt is two lines and ONE absolute path to its spec —
