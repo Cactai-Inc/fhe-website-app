@@ -20,7 +20,9 @@ import { useCart } from '../../contexts/CartContext';
  *    rule) and the header height drops ~33% (padding + logo + wordmark shrink).
  *    Because the frost is a translucent green tint, all four combos stay legible
  *    (naked/frosted × over-dark/over-light).
- *  - The nav is identical everywhere.
+ *  - The nav is identical everywhere, with ONE exception: the landing route
+ *    carries a small Sign In link under Say Hello, because it is the only
+ *    page that renders with no footer to hold one. See the right cluster.
  *
  * The landing is 100dvh/no-scroll, so there the header stays naked; the color is
  * still driven by the region behind it (the dark hero → white nav).
@@ -34,7 +36,10 @@ import { useCart } from '../../contexts/CartContext';
 /* Owner, 2026-08-16: Book a Lesson takes Say Hello's place in the main nav —
  * booking is the thing a visitor came to do, so it belongs in the primary row.
  * Say Hello moves to the right corner (below); Member Area and Sign In leave the
- * header entirely and live in the footer only. */
+ * header entirely and live in the footer only.
+ * ⚠️ AMENDED 2026-09-02, and the decision above still stands everywhere it can:
+ * the LANDING route has no footer, so "in the footer only" left it with no way in
+ * at desktop width. It — and only it — regains a subordinate Sign In text link. */
 const NAV_LINKS = [
   // Owner, 2026-08-16: 'Our Community' — bare 'Community' read as the in-app
   // members' community rather than the story of the place. Route stays /story.
@@ -71,6 +76,15 @@ export default function Header() {
   // value defaults to the correct tone per route (landing hero is dark), so the
   // prerendered/first paint has no flash.
   const [overDark, setOverDark] = useState<boolean>(() => location.pathname === '/');
+
+  // ⚠️ PRESENCE IS A ROUTE QUESTION; TONE IS NOT. `overDark` above is a TONE
+  // signal only — it is seeded from the route once and then OVERWRITTEN on every
+  // scroll and resize by the detection effect below, on every page. /story has
+  // two `data-header-tone="dark"` sections, so scrolling it flips `overDark` to
+  // true — anything gated on it would appear there too. The landing-only sign-in
+  // link asks the route directly, and only for WHETHER it renders; it still asks
+  // `overDark` for what COLOUR it is.
+  const isLanding = location.pathname === '/';
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 24);
@@ -331,22 +345,63 @@ export default function Header() {
               conversation, and /contact stays one tap away in the hamburger and
               in the footer. This is what lets the full nav survive down to ~900px
               while shopping instead of collapsing to a menu. */}
-          {itemCount === 0 && (
-          <Link
-            to="/contact"
-            // px-3.5 + nowrap: the box is sized to its label. It looked oversized
-            // because the LABEL was wrapping to two lines inside a fixed
-            // min-height, not because the padding was generous. `tracking-widest`
-            // already puts 0.25em after the final "O", so the optical right
-            // padding runs wider than the left — hence 14px rather than 16.
-            className={`hidden min-[940px]:inline-flex items-center whitespace-nowrap min-h-[40px] px-3.5 border text-[11px] font-sans tracking-[0.14em] xl:tracking-widest uppercase transition-colors duration-300 focus-ring-dark hover:bg-gold-600 hover:text-green-950 hover:border-gold-600 ${heroShadow} ${
-              overDark
-                ? 'border-gold-300/70 text-gold-300'
-                : 'border-gold-700/60 text-gold-800'
-            }`}
-          >
-            Say Hello
-          </Link>
+          {/* ⚠️ A VERTICAL STACK, NOT A FIFTH ITEM IN THE ROW. The row's fit floor
+              is 940px and it got there by losing labels (see the nav comment
+              above); adding Sign In beside Say Hello would spend that budget
+              again. Stacked, the cluster's WIDTH is unchanged whenever Say Hello
+              is present, because Say Hello is the wider of the two.
+              ⚠️ The wrapper carries the 940px breakpoint ITSELF as well as its
+              children: an always-rendered wrapper would still be a flex item
+              below 940px — zero-wide, but the row's `gap-4` would put 16px of
+              dead air where the hamburger's neighbour used to be.
+              ⚠️ And it is rendered only when it has a child, for the same reason:
+              on an inner page with a full cart both children are absent, and an
+              empty div would push the nav and cart 16px off the right rail. */}
+          {(itemCount === 0 || isLanding) && (
+          <div className="hidden min-[940px]:flex flex-col items-center gap-1">
+            {itemCount === 0 && (
+            <Link
+              to="/contact"
+              // px-3.5 + nowrap: the box is sized to its label. It looked oversized
+              // because the LABEL was wrapping to two lines inside a fixed
+              // min-height, not because the padding was generous. `tracking-widest`
+              // already puts 0.25em after the final "O", so the optical right
+              // padding runs wider than the left — hence 14px rather than 16.
+              className={`hidden min-[940px]:inline-flex items-center whitespace-nowrap min-h-[40px] px-3.5 border text-[11px] font-sans tracking-[0.14em] xl:tracking-widest uppercase transition-colors duration-300 focus-ring-dark hover:bg-gold-600 hover:text-green-950 hover:border-gold-600 ${heroShadow} ${
+                overDark
+                  ? 'border-gold-300/70 text-gold-300'
+                  : 'border-gold-700/60 text-gold-800'
+              }`}
+            >
+              Say Hello
+            </Link>
+            )}
+
+            {/* Sign In — THE LANDING PAGE ONLY, and this is not a reversal of the
+                2026-08-16 decision above. Sign-in lives in the FOOTER, and the
+                landing is the one route that renders bare with no footer under it
+                (`Landing.tsx:9-23`), so at desktop width it had ZERO ways in. The
+                hamburger's Sign In (below) already covers every width under 940px
+                on every route including this one — hence the same `min-[940px]`
+                breakpoint Say Hello uses, so exactly one of the two is ever live.
+                ⚠️ IT IS DELIBERATELY OUTSIDE THE `itemCount === 0` GATE ABOVE.
+                Say Hello stands down for a full cart; on every other page the
+                footer still catches that person, and here nothing would. Owner,
+                2026-09-01: *"thats correct, a person with things in their cart
+                needs to go to the cart not the say hello contact us form page"* —
+                the cart glyph is the way ONWARD and this is the way IN.
+                Subordinate to Say Hello by treatment: a small underlined text
+                link in the nav's own ink, never a second button. `/login` is
+                unconditional — it handles an already-signed-in visitor itself. */}
+            {isLanding && (
+            <Link
+              to="/login"
+              className={`hidden min-[940px]:inline-flex items-center whitespace-nowrap py-0.5 text-[10px] font-sans tracking-[0.14em] uppercase underline underline-offset-4 transition-colors duration-[400ms] focus-ring-dark ${navText} ${heroShadow}`}
+            >
+              Sign In
+            </Link>
+            )}
+          </div>
           )}
 
           {/* Mobile menu button (nav links only — the cart is NOT in here). */}
