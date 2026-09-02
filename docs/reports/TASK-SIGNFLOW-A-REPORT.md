@@ -334,3 +334,7 @@ touching none of my files). My merge-base is still `0ae5855f`, so ORCH's audit d
 
 ## VALIDATION
 *(ORCH appends its verdict here — `TASK-SIGNFLOW-A-VERIFICATION.md` beside this file.)*
+
+---
+## VALIDATION — ORCH, 2026-09-02
+Independently verified and merged; see TASK-SIGNFLOW-A-VERIFICATION.md beside this report.

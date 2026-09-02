@@ -4,7 +4,7 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-02 · **ORCH — wave 1 VERIFIED AND MERGED (SITECOPY-A · SIGNFLOW-B · SIGNFLOW-D); wave 2 dispatching**
+**Last updated:** 2026-09-02 · **ORCH — waves 1 AND 2 all VERIFIED AND MERGED; wave 3 (SIGNFLOW-C · SITESEO) dispatching**
 
 ## RESUME
 - ✅ **`TASK-LIFECYCLE` — VERIFIED, MERGED, PUSHED** (merge `5b9fed67`, docs `b9aa8b82`).
@@ -15,13 +15,8 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
   ⚠️ **The 2026-09-01 wt-1 collision is fully resolved** — separation completed, the mixed
   `task/lifecycle` branch is gone, the three stray migrations in `wt-1` are gone. D36 exists
   because of it.
-- ✅ **`TASK-SIGNBOOK` — VERIFIED AFTER THE FACT** (merge `2fa1f7b9`). ⚠️ **The thread merged and
-  PUSHED its own branch before ORCH validation** — the work holds (all post-release checks green,
-  `TASK-SIGNBOOK-VERIFICATION.md`), the sequence was a violation, recorded with two more
-  deviations: **unspecced DOOR scope shipped in the same merge** (verified to the same bar), and
-  **`task/flowalign` self-created in `wt-1`, undispatched, zero commits — NOT a licensed task.**
-  Awaiting owner: close the thread; `wt-1` returns to the pool once `task/flowalign` is resolved.
-- 🔒 **NOTHING IS DISPATCHED-AND-RUNNING as of SIGNBOOK's close.**
+- SIGNBOOK-thread era closed — session-wide verification done, `task/flowalign` deleted, thread closed.
+
 - 🔒 **Every prompt now states MODEL TIER · EFFORT · THINKING on/off when not Fable · worktree
   (owner ruling + D36).**
 - **`REQCARDS` — queued, three preconditions:** ~~LIFECYCLE merged~~ ✅ · the modal
@@ -50,14 +45,16 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 ### Wave 1 — ✅ ALL THREE VERIFIED AND MERGED 2026-09-02 (verification files beside each report)
 SITECOPY-A · SIGNFLOW-B (4th door accepted) · SIGNFLOW-D (anon grants closed; ran with merge priority)
 
-### Wave 2 — DISPATCH NOW, trees are free
+### Wave 2 — ✅ ALL THREE VERIFIED AND MERGED 2026-09-02
+SITECOPY-B (two spec routings + the Barn Ops product question) · SIGNFLOW-A (cursive-period defect
+routed; C's gate OPEN) · LANDINGSIGNIN (two physical deviations accepted by ORCH).
+
+### Wave 3 — DISPATCH NOW
 | Thread | Settings | Worktree |
 |---|---|---|
-| `FHE-TASK-SITECOPY-B` | Opus · HIGH · thinking ON | `wt-2` |
-| `FHE-TASK-SIGNFLOW-A` | Opus · HIGH · thinking ON | `wt-3` |
-| `FHE-TASK-LANDINGSIGNIN` | Opus · HIGH · thinking ON | `wt-1` |
-⚠️ **Pool hygiene (SIGNFLOW-B finding): stale `node_modules` broke the build until `npm ci` — run
-`npm ci` on entering a pool tree if deps changed on main since the tree last built.**
+| `FHE-TASK-SIGNFLOW-C` | Opus · HIGH · thinking ON | `wt-3` (npm ci on entry) |
+| `FHE-TASK-SITESEO` | Opus · HIGH · thinking ON | `wt-2` (npm ci on entry) |
+`wt-1` free for the next docs task or SIGNFLOW-F after C.
 
 ### Wave 3 — gated
 | Thread | Gate |
@@ -72,6 +69,17 @@ SITECOPY-A · SIGNFLOW-B (4th door accepted) · SIGNFLOW-D (anon grants closed; 
 ORCH) ·
 `FHE-TASK-INROADS` (DISCO profile — fill the contract-inroads matrix from the database; research
 only, NO removal/merge/convergence; `SIGNFLOW-E` withdrawn)
+
+### New queue items out of wave 2
+- **OWNER: the Barn Ops wording call** — five rendered "the barn" strings on staff surfaces + the
+  hub is NAMED "Barn Ops"; adopt the tenant word there too, rename the module, or leave staff
+  surfaces as-is? Then a DSNR-profile sweep spec.
+- **Cursive-period defect** (SIGNFLOW-A §5) — remerge appends a period after signature tokens; 3
+  unsigned docs incl. the live lease VIEW. DSNR-profile amendment or task; cheapest fix named in §5.
+- **Stale-comment batch grows:** Onboarding.tsx:106-108/:621 (payment step claimed live) joins D's
+  three.
+- **Spec corrections for the DSNR profile:** SITECOPY-B's false zero-consumers premise · SIGNFLOW-A's
+  three (§7) · LANDINGSIGNIN §8.4's "cart has not moved".
 
 ### New queue items out of wave 1
 - **`FHE-TASK-SIGNFLOW-F`** — the 3 remaining unnormalised address writers (ProvisionClientForm,

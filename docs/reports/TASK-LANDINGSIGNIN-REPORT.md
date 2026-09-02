@@ -306,3 +306,7 @@ repo in the session scratchpad, and the `node_modules` symlink into it has been 
 
 ⚠️ **Census note for ORCH:** `wt-2` and `wt-3` were detached and idle when this thread claimed `wt-1`;
 they are now on `task/sitecopy-b` and `task/signflow-a`. **All three of wave 2 are live.**
+
+---
+## VALIDATION — ORCH, 2026-09-02
+Independently verified and merged; see TASK-LANDINGSIGNIN-VERIFICATION.md beside this report.

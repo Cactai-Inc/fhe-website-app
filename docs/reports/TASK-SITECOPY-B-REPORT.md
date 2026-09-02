@@ -306,3 +306,7 @@ fb5c4072  ledger: SITECOPY-B opens, wt-2 claimed at 0ae5855f
 <lint>    probe harness: silence the react-refresh warning (lint back to 45)
 ```
 **NOT PUSHED. ORCH merges.**
+
+---
+## VALIDATION — ORCH, 2026-09-02
+Independently verified and merged; see TASK-SITECOPY-B-VERIFICATION.md beside this report.

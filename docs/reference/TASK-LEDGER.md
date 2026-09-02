@@ -26,3 +26,6 @@ with a change ORCH made or reversed, named in the report · `REVERTED` · `OPEN`
 | `TASK-SITECOPY-A` | 2026-09-02 | jumper-only + program-not-barn in public copy; spec corrected (3 inert not 4; criterion 1 unmeetable) | **VERIFIED** | `5e7c7c70` |
 | `TASK-SIGNFLOW-D` | 2026-09-02 | /release + /docs/release-participant retired, anon EXECUTE revoked in prod; 10-person usage reported; redirect question OPEN | **VERIFIED** | `e2f3dabf` |
 | `TASK-SIGNFLOW-B` | 2026-09-02 | address normalize-on-blur, 4 kinds, 4 doors (4th accepted by ORCH); SIGNFLOW-F queued for 3 remaining writers | **VERIFIED** | `2c3a0492` |
+| `TASK-SITECOPY-B` | 2026-09-02 | app self-description via usePropertyTerm, 5 strings, plural-proven; spec premise false (16 consumers existed); barnops wording question routed | **VERIFIED** | `870a0607` |
+| `TASK-SIGNFLOW-A` | 2026-09-02 | signature-token resolution centralised, 3 readers wired, executed bodies byte-identical; cursive-period defect routed | **VERIFIED** | `59135079` |
+| `TASK-LANDINGSIGNIN` | 2026-09-02 | landing Sign In, pathname-gated, cart-frame shape; two physical deviations accepted | **VERIFIED** | `9891bcd5` |
