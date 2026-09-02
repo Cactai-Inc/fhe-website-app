@@ -263,7 +263,7 @@ export const REVIEW_GROUPS: ReviewGroup[] = [
   {
     key: 'signing',
     title: 'Signature capture',
-    question: 'Five capture surfaces, three writers. Which is the signing surface?',
+    question: 'Three capture surfaces, two writers. Which is the signing surface?',
     entries: [
       {
         slot: 'A', label: 'Signing A · contract (in use)', to: '/app/contracts/e1052bae-c20c-47e3-8703-7ef64f2bf852', incumbent: true,
@@ -278,11 +278,6 @@ export const REVIEW_GROUPS: ReviewGroup[] = [
         slot: 'C', label: 'Signing C · onboarding', to: '/app/onboarding',
         what: 'The onboarding flow’s signing step.',
         warn: 'Renders its signing step only for an account with pending onboarding documents. On a staff account you will see the flow, not the step.',
-      },
-      {
-        slot: 'D', label: 'Signing D · public kiosk ⚠', to: '/release',
-        what: 'The public kiosk release — the visit-day surface.',
-        warn: 'DESTRUCTIVE. This signs a REAL document. Look at it; do not complete it.',
       },
     ],
   },
