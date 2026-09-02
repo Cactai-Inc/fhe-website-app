@@ -90,8 +90,20 @@ Say Hello stands down once the cart has items — owner, 2026-08-17, quoted at `
 If Sign In shared that condition, a landing visitor with cart items would lose **both at once** and be
 back at zero entry points — the exact gap this task closes.
 🔒 **Sign In renders whenever the route is `/` and the width is ≥940px, regardless of cart state.**
-⚠️ **This was flagged "overridable" in the draft. DSNR is closing it: it is not overridable, because
-overriding it re-opens the defect.**
+⚠️ **This was flagged "overridable" in the draft. DSNR closed it, and then the OWNER RULED ON IT.**
+
+> ## 🔒 OWNER RULING, 2026-09-01 — THE SHAPE IS APPROVED. VERBATIM:
+> > *"thats correct, a person with things in their cart needs to go to the cart not the say hello
+> > contact us form page."*
+>
+> 🔒 **So the full-cart corner is deliberate and complete: the CART is the way onward, and Sign In is
+> the way in. Say Hello is correctly absent — it would send a person mid-selection to a contact form
+> instead of to the inquiry they are already building.**
+> **Verified 2026-09-01 that his rationale holds in the code:** `Header.tsx:156-171`, `cart()` is
+> gated on `itemCount > 0` ONLY — **no breakpoint, no route condition** — and it links to
+> `/checkout` (`:158`). It is rendered in the right cluster at `:314`, **so it is present on the
+> landing page at every width.** ⚠️ **If the cart glyph were NOT on landing, this ruling would not
+> hold. Confirm it renders there before you finish (§8.3).**
 
 **TRAP 3 — the right cluster is a horizontal flex row** (`Header.tsx:258`). **Do not add the link as a
 fifth item in that row** — that row's fit floor is already measured at 940px and the comment at
@@ -137,7 +149,7 @@ live. **Two visible Sign Ins at any width is a failure.**
 | Width | Route | Sign-in entry points BEFORE | AFTER |
 |---|---|---|---|
 | ≥940px | `/` | ⚠️ **0** | **1** — the new link |
-| ≥940px | `/` with items in cart | ⚠️ **0** | **1** — TRAP 2's case |
+| ≥940px | `/` with items in cart | ⚠️ **0** | **1** — TRAP 2's case, **plus the cart glyph → `/checkout`** |
 | <940px | `/` | 1 (hamburger, `:406-411`) | **1 — unchanged** |
 | ≥940px | every other page | 1 (footer, `Footer.tsx:90-94`) | **1 — unchanged** |
 | <940px | every other page | 2 (hamburger + footer) | **2 — unchanged** |
@@ -161,9 +173,11 @@ wrong.
    **Screenshot.**
 2. **Legible over the hero.** Same screenshot: the link reads clearly against the dark image, as Say
    Hello does.
-3. **🔒 TRAP 2's case.** Add an item to the cart on another page, return to `/` at ≥940px:
-   **Say Hello is gone, Sign In is still there.** ⚠️ **Screenshot. This is the acceptance case; a
-   report without it is incomplete.**
+3. **🔒 TRAP 2's case — the owner has ruled on this exact frame.** Add an item to the cart on another
+   page, return to `/` at ≥940px: **Say Hello is gone, Sign In is still there, and the cart glyph is
+   there beside it.** ⚠️ **All three facts in one screenshot.** **The cart is what makes his ruling
+   true — a frame showing Sign In but no cart is a FAIL, not a pass.** A report without this
+   screenshot is incomplete.
 4. **TRAP 4.** In that same state the cart glyph has not moved and no gap remains. Screenshot at
    **940px** and at **1440px**.
 5. **🔒 TRAP 1's regression check — and it requires SCROLLING, not just loading.**

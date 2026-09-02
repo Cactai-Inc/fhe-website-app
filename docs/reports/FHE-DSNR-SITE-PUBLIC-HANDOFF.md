@@ -165,9 +165,17 @@ question the owner has not been asked yet.**
 
 ---
 
-# 5. ANY SHAPE THAT NEEDS HIS EYES BEFORE BUILD (§4 of `DSNR-ROLE.md`)
+# 5. 🔒 THE SHAPE — ASKED, AND RULED. THE GATE IS CLOSED.
 
-**One, and it is small.**
+> ## OWNER, 2026-09-01, on the full-cart landing frame — VERBATIM:
+> > *"thats correct, a person with things in their cart needs to go to the cart not the say hello
+> > contact us form page."*
+>
+> 🔒 **APPROVED AS SPECCED. Nothing in `LANDINGSIGNIN` is waiting on him.** **The ruling is built into
+> the spec at TRAP 2 and into its §8.3 test, which now fails if the cart glyph is not in the frame.**
+> **ORCH: dispatch it.**
+
+**The shape he ruled on, kept below as the record.**
 
 🔒 **`LANDINGSIGNIN` changes the shape of the front door** — the first thing a new visitor sees, and
 the one surface the owner has ruled on twice (2026-08-16, Sign In leaves the header; 2026-08-17, Say
@@ -184,11 +192,13 @@ Hello stands down for the cart). **The spec adds a second element to that corner
 
 **Empty case:** none — the link is unconditional on `/`. **Error case:** none — it is a link.
 
-⚠️ **The specific thing to put to him: at ≥940px with a full cart, the landing page's only header
-affordance becomes a small underlined "Sign In" where a gold button used to be.** **That is the
-correct outcome by his own two rulings, but he has not seen it.** **It is one screenshot, and
-`§8.3` of the spec produces exactly that screenshot — so it can also be reviewed after the build if
-you would rather not hold the chunk.** **Your call; I am naming it, not gating on it.**
+⚠️ **What I put to him: at ≥940px with a full cart, the landing page's header corner loses the gold
+Say Hello button and keeps a small underlined "Sign In".** 🔒 **He ruled it correct, and named the
+reason I had not: the CART is the affordance that matters in that state — a person mid-selection
+needs the inquiry they are already building, not a contact form.**
+**Verified in code after his ruling:** `Header.tsx:156-171` gates `cart()` on `itemCount > 0` alone —
+no breakpoint, no route test — linking to `/checkout`, rendered in the right cluster at `:314`.
+**So the full-cart landing corner is `[cart glyph] + [Sign In]`, and both are reachable.**
 
 ---
 
@@ -240,5 +250,6 @@ Read docs/reports/FHE-DSNR-SITE-PUBLIC-HANDOFF.md and sequence the public-site l
 ⚠️ **AND BEFORE ORCH FIRES ANYTHING: §0 has two questions for the OWNER.**
 **ASK-OWNER 1 blocks `POLICIESANDFAQ` entirely — the draft is not in the repo.**
 **ASK-OWNER 2 blocks `SITESEO`.**
+🔒 **The `LANDINGSIGNIN` shape (§5) is RULED and no longer a gate.**
 🔒 **Neither blocks `SITECOPY-A`, `SITECOPY-B` or `LANDINGSIGNIN` — those three are ready now and can
 run in parallel.**
