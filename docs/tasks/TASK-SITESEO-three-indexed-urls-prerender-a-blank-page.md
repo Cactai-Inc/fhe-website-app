@@ -111,8 +111,8 @@ is the owner's to run; it is not a build task and it does not block this one.**
 | The CTA | `file:line` | Target |
 |---|---|---|
 | the big central landing CTA | `src/pages/Landing.tsx:138` | **`/lessons`** |
-| header nav *"Book a Lesson"* | `src/components/layout/Header.tsx:46` | **`/lessons`** |
-| footer nav *"Book a Lesson"* | `src/components/layout/Footer.tsx` nav list | **`/lessons`** |
+| header nav *"Book a Lesson"* | `src/components/layout/Header.tsx:47` | **`/lessons`** |
+| footer nav *"Book a Lesson"* | `src/components/layout/Footer.tsx:76` | **`/lessons`** |
 
 🔒 **All three agree: `/lessons`. The existing `<Navigate>` target is already correct — it is the
 MECHANISM that is wrong, not the destination.** ⚠️ **Do not change where they point.**

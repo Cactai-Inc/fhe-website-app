@@ -28,9 +28,38 @@ one hit**, and it is the relay saying the draft is elsewhere:
 **And §2 has a second bar this trips:** the two owner calls the draft *"carries inside it"* have never
 been ruled, so there are **no agreed validation criteria** for the chunk. **I cannot invent them.**
 
-**🔒 WHAT I NEED, and it is one paste:** the `TASK-POLICIESANDFAQ` draft and `COMPLIANCE-FINDINGS`
-from the planning thread's outputs, staged into `docs/tasks/` and `docs/reports/`. **With them I can
-turn this into a spec in one pass** — the ground is already measured below.
+**🔒 HE ASKED WHERE HE WOULD EVEN GET IT. FAIR — AND IT CHANGES MY ANSWER.**
+> *"where am i going to get the docs you are asking me to paste in for you?"* — owner, 2026-09-01
+
+⚠️ **I was asking him to go fetch a document from a planning thread that may no longer exist. That is
+not a real ask, and "paste it in" was the wrong recommendation.** **Withdrawn.**
+
+🔒 **REVISED RECOMMENDATION: re-originate it. `POLICIESANDFAQ` needs a `DISCO` pass, not a paste.**
+**The reasons the lost draft mattered were its compliance research and its two owner calls. Both are
+recoverable without it:**
+- **The compliance half is a DISCO job by definition** — what a California equestrian business must
+  publish, measured fresh. ⚠️ **I must not invent it; that is exactly the "wrong premise wearing a
+  spec's authority" `DSNR-ROLE.md` §2 forbids.**
+- **The two owner calls are answerable directly, and I have reconstructed them both** — see below.
+  **Neither needs the lost file.**
+
+### The two owner calls, reconstructed from the code so he can rule without the draft
+**Call 1 — "policy-section keep-vs-cut."** The signable `supabase/contract_templates/COMPANY_POLICIES.md`
+has **16 numbered sections**. The question is which of them belong on a **public** page:
+`1 SCOPE & PRECEDENCE` · `2 PAYMENT METHODS` · `3 ORDERS, APPROVAL & CONTRACT FORMATION` ·
+`4 SERVICE-SPECIFIC TERMS` · `5 NO MONETARY REFUNDS` · `6 RESCHEDULING NOTICE & FEES` ·
+`7 LATE ARRIVAL` · `8 WEATHER & UNSAFE CONDITIONS` · `9 MOBILE SERVICES & TRAVEL` · `10 SERVICE TERMS` ·
+`11 SCHEDULING ABUSE` · `12 GIFT CERTIFICATES` · `13 DISPUTE RESOLUTION` · `14 ATTORNEY'S FEES` ·
+`15 AMENDMENT` · `16 GOVERNING LAW & SEVERABILITY`.
+⚠️ **Several of these are things a buyer is entitled to know BEFORE paying** — §5 *all sales are
+final*, §6's `$10/$20/$30/$75` fee ladder, §4's *90-day package expiry* and *30 days' notice to
+cancel a membership*. **Today they are visible only after a person is already inside a signing flow.**
+**That is the real question the draft was circling, and it is one he can answer in a sentence.**
+
+**Call 2 — "Business Profile URL."** `src/lib/seo.ts:44` — `sameAs: [] as string[], // add social
+profile URLs when available`. It feeds `ORG_JSONLD`. 🔒 **The ask is just: the Google Business Profile
+URL, and any social profiles.** ⚠️ **It is also the thing that would let him answer the SITESEO
+ranking question above** — the profile is where the local-search data lives.
 
 ### The ground, measured 2026-09-01, so nothing is wasted when the draft lands
 | Fact | The measurement |
@@ -42,20 +71,23 @@ turn this into a spec in one pass** — the ground is already measured below.
 | **`/faq` is prerendered but has NO `ROUTE_SEO` entry and is NOT in the sitemap.** | in `scripts/prerender.mjs:21`; absent from `ROUTE_SEO` (`src/lib/seo.ts:60`) and from `dist/sitemap.xml` |
 | **Business Profile URL — the field it would land in exists and is empty.** | `src/lib/seo.ts:44`, `sameAs: [] as string[], // add social profile URLs when available`. It feeds `ORG_JSONLD`. **That is almost certainly the second pending call.** |
 
-## ASK-OWNER 2 — three indexed URLs serve a blank page. The fix is a business fork.
-**Spec written and gated:** `docs/tasks/TASK-SITESEO-three-indexed-urls-prerender-a-blank-page.md` §4.
+## ✅ RULED — three indexed URLs serve a blank page. **KEEP AND REDIRECT.**
+> *"either way, keep and redirect to the booking page the CTA links to."* — owner, 2026-09-01
 
-`/ride`, `/shop` and `/membership` are `<Navigate>` redirects (`src/App.tsx:173,179,192`) that are
-**still prerendered and still in the sitemap**. Measured on the built `dist/`: all three come out with
-`<title data-rh="true"></title>` — **empty** — and a **29-byte empty `<main>`**. `/ride` is in the
-sitemap at **priority 0.9**, the second-highest on the site. **They are linked from nowhere in the
-app**, so their only value is inbound.
-
-🔒 **The question is his, not mine: keep them (301 at the host) or retire them (404)?**
-**My recommendation is keep-and-301** — it costs one config block and preserves whatever equity
-exists. ⚠️ **I am explicitly not ruling it: "does this URL still matter to the business" is not a fact
-in the repo.** A smaller call rides with it — whether `/services` is a published page or an internal
-landing pad (§5 below).
+🔒 **`TASK-SITESEO` IS UNGATED AND READY TO DISPATCH.** The fork in its §4 is resolved to
+keep-and-301; the retire-to-404 alternative is struck from the spec.
+**Target verified as `/lessons`** — `Landing.tsx:138` (the big central CTA), `Header.tsx:47`,
+`Footer.tsx:76` all agree. **The existing redirect destination was already right; only the mechanism
+was wrong.**
+**His other question — are those three URLs helping our ranking?** ⚠️ **Not determinable from this
+repo, and I said so rather than estimating.** No analytics, no Search Console integration, and
+`seo.ts:44` `sameAs: []` means no Business Profile is even linked. **Google Search Console →
+Performance, filtered by page, is the instrument, and it is his to run.** **It would not change the
+build:** all three currently serve an empty `<title>` and a 29-byte `<main>`, so they cannot be
+ranking on content — **a 301 strictly improves the position whatever the number says.** Written into
+the spec as §4a.
+**`/services` I resolved myself** (spec §4d): once the three route lists converge on `ROUTE_SEO`, its
+`indexable: true` puts it in the prerender list and the sitemap automatically. **No owner call.**
 
 ## ASK-OWNER 3 — not blocking, but he should know
 **The two wording rulings `TASK-SITECOPY-A/B` enforce are not D-rules.** *"FHE is jumper-only"* and
@@ -72,8 +104,8 @@ time someone writes marketing copy.** **Promoting them is ORCH's or his call, no
 | **`FHE-TASK-SITECOPY-A`** | `TASK-SITECOPY-A-jumper-only-program-not-barn-in-public-marketing-copy.md` | 10 strings in `index.html`, `src/lib/seo.ts`, `src/pages/Services.tsx`, `src/pages/About.tsx` | — | ✅ **ready** |
 | **`FHE-TASK-SITECOPY-B`** | `TASK-SITECOPY-B-the-app-stops-calling-itself-the-barn.md` | 5 strings in `src/pages/Confirmation.tsx`, `src/components/order/OrderPayment.tsx`, `src/components/app/ActivationOrderPanel.tsx`, rebuilt through `usePropertyTerm()` | — | ✅ **ready** |
 | **`FHE-TASK-LANDINGSIGNIN`** | `TASK-LANDINGSIGNIN-a-sign-in-path-on-the-landing-page.md` | `src/components/layout/Header.tsx`, one link | — | ✅ **ready** |
-| **`FHE-TASK-SITESEO`** | `TASK-SITESEO-three-indexed-urls-prerender-a-blank-page.md` | `scripts/prerender.mjs`, `scripts/seo-files.mjs`, route list + `indexable` flags in `src/lib/seo.ts`, redirects in `src/App.tsx` | **`SITECOPY-A`** | 🔒 **GATED on ASK-OWNER 2** |
-| **`FHE-TASK-POLICIESANDFAQ`** | — | — | — | ⛔ **BLOCKED on ASK-OWNER 1 — no draft** |
+| **`FHE-TASK-SITESEO`** | `TASK-SITESEO-three-indexed-urls-prerender-a-blank-page.md` | `vercel.json` 301s, `scripts/prerender.mjs`, `scripts/seo-files.mjs`, route list + `indexable` flags in `src/lib/seo.ts` | **`SITECOPY-A`** | ✅ **ready — RULED 2026-09-01** |
+| **`FHE-TASK-POLICIESANDFAQ`** | — | — | — | ⛔ **needs a `DISCO` pass first — ASK-OWNER 1** |
 
 **`A` ‖ `B` ‖ `LANDINGSIGNIN` are file-disjoint and can all run at the same time.**
 **`SITESEO` follows `A` — they share `src/lib/seo.ts`.**
@@ -238,7 +270,16 @@ appendix to a copy task, so I did not rush it into this thread.** **I have not t
 
 # 8. 🔒 THE PROMPT — this goes to ORCH
 
-**Opus · effort HIGH · thinking ON.**
+> ⚠️ **PROCESS CORRECTION, owner 2026-09-01, recorded here because it narrows a 🔒 rule:**
+> > *"you dont need to specify the settings for an ORCH thread, that thread runs continuously. if you
+> > want to specify a suggested thread setting for the TASK thread ORCH will be queuing up you can do
+> > that inside of a file ORCH will read from you."*
+>
+> **`D37` and `DSNR-ROLE.md` §7 say every prompt any role hands the owner states MODEL · EFFORT ·
+> THINKING. He has narrowed that: it does NOT apply to a STANDING thread.** **A prompt to `ORCH` is a
+> label for a thread that is already running at its own settings, not a launch.**
+> 🔒 **Per-TASK settings belong in this file — §3 above, and now restated at the head of each spec.**
+> **ORCH: this is yours to record wherever `D37` lives.**
 
 ```
 FHE-ORCH-SITE-PUBLIC
@@ -247,9 +288,11 @@ cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
 Read docs/reports/FHE-DSNR-SITE-PUBLIC-HANDOFF.md and sequence the public-site lane.
 ```
 
-⚠️ **AND BEFORE ORCH FIRES ANYTHING: §0 has two questions for the OWNER.**
-**ASK-OWNER 1 blocks `POLICIESANDFAQ` entirely — the draft is not in the repo.**
-**ASK-OWNER 2 blocks `SITESEO`.**
+⚠️ **BEFORE ORCH FIRES ANYTHING: §0 has ONE question left for the owner.**
+**ASK-OWNER 1 blocks `POLICIESANDFAQ` — and the fix is a `DISCO` thread, not a paste.**
+🔒 **`SITESEO` is RULED and no longer gated — dispatch it after `SITECOPY-A`.**
 🔒 **The `LANDINGSIGNIN` shape (§5) is RULED and no longer a gate.**
+⚠️ **ASK-OWNER 1 is the ONLY thing still open, and its recommendation changed: `POLICIESANDFAQ` needs
+a fresh `DISCO` pass, not a lost document.**
 🔒 **Neither blocks `SITECOPY-A`, `SITECOPY-B` or `LANDINGSIGNIN` — those three are ready now and can
 run in parallel.**
