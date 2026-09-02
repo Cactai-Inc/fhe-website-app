@@ -81,6 +81,44 @@ from which page, to use this — and is that the only way?**
 
 ---
 
+## 2c. ⚠️ THE UNIT OF WORK IS THE OUTCOME, NOT THE INSTRUCTION — added 2026-09-01
+
+**Owner, 2026-09-01, after a thread stored a value nobody could see:**
+> *"its obvious that if we collect any information from a person it needs to be visible somewhere,
+> right? and specifically, if they are communicating something like wanting to visit us, wouldnt we
+> need to see that in a place we can take action on it as quickly as possible? … you seem to really
+> like to build half of something and skip the part where it becomes usable or accessible."*
+
+**What happened:** he asked for *"a new field that records the checkboxes"*. The thread added the
+field, and it was correct. **Nothing rendered it** — not the bell, not the staff email, not the lead.
+A person telling the barn they want to come and visit produced a row nobody would ever see.
+⚠️ **The thread had quoted §2b and D17 back to him earlier the same day.** Knowing the rule is not
+applying it, and the rule was written for FEATURES while this arrived as a one-line instruction —
+which is exactly where it slips.
+
+### 🔒 THE RULE
+**Build for the OUTCOME the instruction serves, not for the instruction's literal noun.**
+**"Add a field" is never the job. The job is the thing the field makes possible.**
+
+⚠️ **AND ANYTHING THE OUTCOME NEEDS THAT YOU WERE NOT ASKED FOR IS PRESENTED TO THE OWNER BEFORE YOU
+CALL THE WORK DONE — not discovered by him afterwards.** *"if there are additional things to be done,
+present them to the user before completing your work."* **A list handed over after he has found the
+gap himself is not a finding, it is an excuse.**
+
+### THE THREE QUESTIONS, ASKED OF EVERY PIECE OF WORK
+🔒 **Answer all three in the report. A "no" that you cannot resolve is a QUESTION you send up.**
+1. **CAPTURE → WHERE IS IT SEEN?** Anything stored is named with the surface that shows it. ⚠️ **A
+   column, a jsonb key or an array with no reader is not "done pending UI" — it is the dominant
+   failure of §2b with a new coat on.**
+2. **SEEN → WHERE IS IT ACTED ON?** ⚠️ **And how fast does it need to be?** Something time-bound —
+   somebody asking to come in person, a payment that must clear before a lesson — belongs on the
+   surface the owner actually watches, not only on a detail page he would have to go looking at.
+3. **WHAT ELSE DOES THIS OUTCOME NEED THAT NOBODY ASKED FOR?** **Say it before you finish.**
+
+⚠️ **URGENCY IS WHEN THIS FAILS HARDEST, NOT WHEN IT IS EXCUSED.** The thread above cut the reach
+question precisely because a customer was waiting. **Shipping half of something to somebody who is
+waiting is how they find the other half in production.**
+
 # 3. STANDING RULES
 - 🔒 **Improve what exists. Never build a second implementation beside it** (D18). **Name the incumbent
   before you add anything.**
@@ -167,6 +205,9 @@ lines, because it is not answerable from a file.**
 1. **The headline, in four lines or fewer.**
 2. **Criterion by criterion against "THE TEST THIS MUST PASS"** — pasted output, not description.
 3. **THE REACH**, with file and line.
+3b. 🔒 **§2c's THREE QUESTIONS, ANSWERED** — for every value this task CAPTURES: **where it is seen**,
+   **where it is acted on**, and **what else the outcome needs that nobody asked for.** ⚠️ **A stored
+   value with no named reader is reported as UNFINISHED, not as shipped.**
 4. ⚠️ **"FLAGGED, NOT FIXED"** — where the real findings live, one line each (§4).
 5. ⚠️ **Anything you decided that the spec did not decide**, and why. **Deciding silently is the
    failure; deciding and saying so is the job.**
