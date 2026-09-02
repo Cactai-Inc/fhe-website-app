@@ -107,6 +107,35 @@ builds merged; dispatch when no build is mid-flight, it moves files).
    is only whether he wants any beyond marketing.
 5. ⚠️ **`TASK-SIGNDOOR` A3, non-blocking:** does email-only cover `/sign/deal`? **Left untouched.**
 
+## ▶ THE SIGNBOOK-FALLOUT LANE — queued for DSNR (handoff §2/§3, owner: "these are not small")
+1. **F1** — an order submission sends TWO emails (activation + inquiry confirmation); collapsing them
+   is subtractive against his own CAREPATH §C6 ruling — needs his call inside the spec work.
+2. **F2** — `flush_held_executed_document_emails` 30-min backstop can split the one email into two.
+3. **F3 · UPGRADED by ORCH verification: 759 live `status_events` rows** file booking events under
+   `entity_type='offering'` — a mislabeled ledger plus the writer to fix.
+4. **F4** — a member with no `clients` row cannot submit a booking request; nothing heals it.
+5. **DISPLAYNAME, the unbuilt half (D39):** no `set_my_display_name` RPC, no control on the account
+   page — the half the owner explained the field's purpose by.
+6. **GUARDIAN** — `FINDING-the-guardian-declared-at-the-door-is-lost-at-provisioning.md`: minor spine
+   works, the lead→client door drops the declared guardian; four revisions proposed, none built.
+7. **`trg_seed_display_name` carries PUBLIC+anon EXECUTE** — inert (trigger function) but a false
+   "anon absent" claim; one-line REVOKE.
+
+## QUEUED BEHIND RUNNING THREADS (D35 — do not spec until the owner clears them to move)
+- **Confirmation copy** (activate-THEN-sign, spam/address-book lines) — behind **SITECOPY-B** (owns
+  `Confirmation.tsx`). ⚠️ Owner framing: account first, then documents; copy must not imply signing
+  before activation.
+- **Deal/guest doors aligned with the rider flow** (email-first, three-state door) — behind
+  **SIGNFLOW-B** (owns `SignStart.tsx` + `Onboarding.tsx` inputs).
+
+## PARKED, OWNER-PACED
+- **The Casey Caddell 11-item backlog** — `OWNER-BACKLOG-2026-09-01-contact-form-and-the-casey-incident.md`;
+  only item 4.7 (display name) is touched. He deferred the set.
+- **Deliverability:** `email_sent` means provider-accepted, never delivered — a bounce webhook is the
+  only real fix. Unowned.
+- 🔒 **DO NOT ACTION:** the visit when-pickers (owner CUT them) · Charlotte Caddell (he is handling
+  it himself).
+
 ## ROUTED, NEEDS A SPEC — not fixed at the pass
 1. ⚠️ **`reap_expired_holds` carries `anon=X`** — an unauthenticated caller can execute a function
    that WRITES. **Not probed; probing executes a write on production.**

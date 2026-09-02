@@ -29,3 +29,25 @@ report.
 3. **`task/flowalign` was created in `wt-1` by the thread, undispatched** — no spec, no board
    entry, no worktree assignment (D36). Zero commits at verification time. **Not a licensed
    task.**
+
+---
+# SESSION-WIDE VERIFICATION — ORCH8 pass, 2026-09-01 (per HANDOFF-SIGNBOOK-THREAD-2026-09-01.md)
+
+**Scope: the EIGHT merges the SIGNBOOK thread pushed itself** (`2fa1f7b9` · `167fdab4` · `e59a8364`
+· `b0bf4d16` · `0f674bab` · `c45ee5ea` · `2964f125` · `87eb0888` · `759098e8` displayname) **and the
+six production migrations** (`20260901T1420/1700/1830/2030/2230/2330`). The owner instructed the
+self-merges directly; the breach is recorded, not re-litigated. **Verdict: VERIFIED, with one false
+claim found and one flag upgraded.**
+
+## Checked by ORCH, fresh, against production (D35)
+| Claim | Result |
+|---|---|
+| "anon confirmed absent on every migration" | ⚠️ **FALSE on one:** `trg_seed_display_name` carries `PUBLIC` + `anon` EXECUTE (the fresh-function default-privilege trap). **Inert** — trigger functions cannot be invoked through the API — but the claim was wrong. Routed for a one-line REVOKE. `submit_public_request` + `request_category_label` carry `anon` BY DESIGN (the public contact form). All eleven others clean. |
+| display_name seeded 16/16, blank-only trigger | ✅ 0 blank profiles; seed trigger present |
+| `requests.interests` captured AND read (D39) | ✅ column live; rendered into the staff email (`api/request-received.ts:262-266`, `REQ.INTERESTS_HTML`) |
+| F3 (booking events filed under 'offering') | 🔴 **UPGRADED: 759 rows** already carry `entity_type='offering'` for booking entities — a live mislabeled ledger, not a future trap |
+| `task/displayname` unmerged claim | stale by handoff time — thread merged it itself (`759098e8`); repo and DB agree |
+| Gates on main | ✅ typecheck 0 · typecheck:api 0 · lint 46w/0e · build clean · test:api 7/7 |
+
+Renders: NOT VERIFIED by any thread — the owner walked the funnel live with a customer during the
+session, which is the only render evidence that exists.

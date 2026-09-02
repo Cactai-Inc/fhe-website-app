@@ -4313,3 +4313,33 @@ twice; the built CSS must be grepped for the emitted value.
 Decorative accents (avatar rings, nav selected state, notification count) keep gold; functional
 action elements, icons and text go green. See `docs/reports/FHE-DISCO-SIGNFLOW-HANDOFF.md` for the inventory
 and the mechanism behind "shows up properly" vs "shit brown."
+
+## CR-98 · A4 — ✅ RULED 2026-09-01: step 9 lands on the COMMUNITY FEED, reversing TASK-ONBOARD §5
+**SAID (owner, verbatim, from TASK-SIGNBOOK-REPORT.md criterion 3):**
+> *"the dashboard route is there to ensure they see notifications, but since this is their first
+> flow, they need to see the community feed as the first thing after closing the modal."*
+Built by the SIGNBOOK thread (`a459273b`); filed late by ORCH8 — it lived only in the report.
+
+## CR-103 — the door knows who is knocking: one email field, three states, three emails, three destinations
+**SAID (owner, verbatim, from SIGNBOOK-FINDING-the-door-does-not-know-who-is-knocking.md §1):**
+> *"yea there is a major fuckup here on two sides. 1) it doesnt check if that email belongs to an
+> account already … 2) a valid form submission creates a lead with an order, when the user does this
+> they should be sent an email with the link to activate their account and that is the exact same
+> flow as this one, same link destination, everything…"*
+Ruling: active account → sign-in email/destination · known-but-unactivated → activation link ·
+new → activation link via the same spine. Built (`bbea98f8`, `26c8b90b`, migration `20260901T1700`);
+filed late by ORCH8.
+
+## CR-104 — the contact form: menu first, checkboxes it reveals, into their own field; visit-when pickers CUT
+**SAID (owner, verbatim, from OWNER-BACKLOG-2026-09-01 §3):**
+> *"their primary interest they select that, then they use checkboxes for any of their interests and
+> they provide us with their information…"*
+⚠️ **The when-pickers half (week/date/timeframe) was CUT by him the same day:** *"lets avoid adding
+the options for selecting when they want to visit when they select visit the ranch from the menu."*
+Built minus the cut (`c92308a8`, `c45ee5ea`, `2964f125` — `requests.interests` + menu-reveals-checkboxes
++ bell/email render); filed late by ORCH8.
+
+## CR-105 — D39: build for the outcome, not the instruction's noun
+Promoted to `CLAUDE.md` D39 + `TASK-ROLE.md` §2c + `DSNR-ROLE.md` §6 by the SIGNBOOK thread
+(`87eb0888`) after the interests field shipped with no reader. Ledger entry: a stored value with no
+named reader is reported as UNFINISHED, not shipped; report §6 item 3b enforces it at verification.
