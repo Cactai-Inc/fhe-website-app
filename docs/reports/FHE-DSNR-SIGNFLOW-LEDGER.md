@@ -8,11 +8,39 @@
   is finished; a new handoff gets a new thread** (`docs/method/DSNR-ROLE.md` LIFECYCLE).
 - **Written:** this ledger · `docs/tasks/TASK-SIGNFLOW-{A,B,C,D,E,F}-*.md` ·
   `docs/reports/FHE-DSNR-SIGNFLOW-HANDOFF.md`. All committed, none pushed.
-- **Chunks:** A=CR-101 five readers · B=CR-100 address kinds · C=CR-102 global classes (34 refs) ·
-  D=CR-102 document/contract surfaces (18 files, 210) · E=CR-102 app shell + every keeper (4 files, 47)
-  · F=CR-102 the sweep (70 files, 277). **A‖B‖C file-disjoint; D needs A+B+C; E and F need C.**
-- **Next station:** `FHE-ORCH-SIGNFLOW`. Nothing waits on the owner; 4 calls flagged for his eyes in
-  handoff §4, none blocking.
+- **Chunks (REVISED, see below):** A=CR-101 five readers · B=CR-100 address kinds · C=CR-102 the
+  signing flow only (15 files, 175 refs + a `.flow-green` scope class). **A‖B file-disjoint; C follows both.**
+- **Next station:** `FHE-ORCH-SIGNFLOW`. **Nothing waits on the owner.**
+
+## 🔒 REVISION 2026-09-01 — THE OWNER NARROWED CR-102 AND STRUCK MY PREMISE
+**He read the first handoff and ruled, verbatim:** *"just change the items to green, leave the gold
+used in the app nav and other accents throughout the app in their light gold color. the signing flow
+from first page through the last should switch the gold to green for sure. other pages can be
+evaluated on a case by case basis when i have the opportunity to view them. dont change things in the
+app arbitrarily."*
+**And on the affordance argument I built the app-wide §4.1 around:** *"the document is set inside a
+contained box that is clearly differentiated from the app surface. and green vs gold would not change
+how the viewer interprets whether or not the content is an app surface."*
+🔒 **He is right. Containment does that work, not hue. There was nothing to preserve, and the whole
+four-chunk app-wide split existed to manage a scope he did not want.**
+- **Archived, never dispatched:** `docs/archive/TASK-SIGNFLOW-{C,D,E,F}-*-SUPERSEDED-2026-09-01.md`,
+  each with his ruling on line 1.
+- **A and B untouched** — CR-101 and CR-100, which he did not comment on.
+- **New C:** `docs/tasks/TASK-SIGNFLOW-C-green-the-signing-flow-end-to-end.md`.
+- 🔒 **THE STRUCTURAL FINDING THAT SHAPES THE NEW C, measured 2026-09-01:** the three PUBLIC signing
+  doors have **ZERO** inline gold — `grep -oE 'gold-[0-9]+'` returns 0 for `SignStart.tsx`,
+  `DocsParticipantFlow.tsx` and `Release.tsx`. **All their brown arrives through five GLOBAL classes**
+  (`.eyebrow` 57 files · `.btn-outline-gold` 44 · `.focus-ring` 122 · `.form-input` 95 ·
+  `.text-gold-ink` 30). **So replacing inline classes alone leaves a third of the signing flow
+  untouched, and flipping the globals repaints the app he said not to touch.**
+  **Resolution: a `.flow-green` scope class, ~6 application points, zero effect outside the flow.**
+- **`.btn-sign` flips outright instead** — verified exactly 3 adopters, all in the flow
+  (`Release.tsx:466`, `Onboarding.tsx:2046`, `ContractPage.tsx:2307`).
+- **Cut from scope:** the staff template/queue tooling (DocumentSurface 13, FormSurface 10,
+  EmailSurface 3, SurfaceVersions 1, TokenPicker 3, DocumentsQueuePage 4, DocumentQueueTable 1 = 35
+  refs) — authoring tools, not the signing flow. **C's test item 10 makes the build CONFIRM they are
+  still brown.**
+- **Totals: 175 of 568 gold refs change; 393 stay gold.**
 
 ## LOG
 - 2026-09-01 — thread opened. Handoff has no open owner questions; all three CRs locked.
