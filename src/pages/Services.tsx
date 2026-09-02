@@ -31,7 +31,7 @@ const PATHS: PathCard[] = [
       "However you like to spend your mornings, there is a place for it here — lessons to find your seat again, a regular weekly ride, or time in the arena with the group. No wrong way in, and no need to know exactly what you want yet.",
     services: [
       'Private riding lessons',
-      'Hunter/jumper training',
+      'Jumper training',
       'Horsemanship classes',
     ],
     cta: 'Book a lesson',
@@ -60,7 +60,7 @@ const PATHS: PathCard[] = [
     heading: 'Find your horse',
     subheading: 'Search, evaluate & broker',
     description:
-      "When you're ready to lease or buy, we help you do it well — drawing on years in the hunter/jumper world to find the right horse, evaluate it honestly, and handle the details from first look to final handshake.",
+      "When you're ready to lease or buy, we help you do it well — drawing on years in the jumper world to find the right horse, evaluate it honestly, and handle the details from first look to final handshake.",
     services: [
       'Horse locator service',
       'Pre-purchase & lease evaluation',
