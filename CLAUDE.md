@@ -955,3 +955,27 @@ reporting success.
   skipped. ⚠️ **It fails hardest under time pressure:** the thread cut the reach question *because* a
   customer was waiting, which is how the customer finds the missing half in production.
   Enforced in `docs/method/TASK-ROLE.md` §2c as three questions every report must answer.
+
+- **D41 — THE FIVE-ROLE MODEL CONSOLIDATES: TWO THREAD KINDS, ROLES BECOME PROFILES (owner,
+  2026-09-02).** Owner: *"its too much sprawl… we consolidate or pair the roles down to profiles and
+  everything is a task that ORCH handles and all discussion happens either with ORCH or through the
+  front door GHOST interface… we dont need GHOST (not the real name) until we have RNR which wont be
+  employable… until we have our own product environment. I wouldnt sit and chat with an assistant in
+  this vscode environment."*
+  **The model from here:**
+  1. **TWO thread kinds: `ORCH` (standing — sequencing, verification, the record, AND the
+     conversation) and `TASK` (disposable — everything else).** Thread names are
+     `FHE-ORCH` / `FHE-TASK-<CHANGE NAME>` (D37's lettering rules stand).
+  2. **`DISCO` and `DSNR` are RETIRED AS THREADS and survive as PROFILES** — the CODR precedent: a
+     profile lives INSIDE the task file, never in the thread name. A research pass is a TASK wearing
+     the DISCO profile; spec authoring is a TASK wearing the DSNR profile. Their role files carry a
+     retirement banner and remain as the profiles' instructions. `CLNR` was never a thread and stays
+     the zeroth act of every task.
+  3. **The checkpoints survive the consolidation.** Specs still re-measure premises; ORCH still
+     verifies every merge independently; a failed build still goes back to a DSNR-profile task, not
+     to ORCH's keyboard. What is deleted is the ceremony BETWEEN stations, not the stations' checks.
+  4. **GHOST (working name) and RNR are DEFERRED, not designed here** — they wait for the Cactai
+     product environment. Nothing in this repo builds toward them.
+  5. **Discussion now lives in ORCH's window, which is what DISCO existed to prevent — the accepted
+     cost.** The mitigation is THE-RUNNING-RECORD discipline: the board and ledgers stay current so
+     an ORCH handoff loses one step, not a session.

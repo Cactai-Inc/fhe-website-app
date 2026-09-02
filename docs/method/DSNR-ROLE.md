@@ -1,3 +1,10 @@
+> # 🔻 RETIRED AS A THREAD — NOW A PROFILE (D41, owner, 2026-09-02)
+> **`DSNR` no longer runs as its own thread.** It is a **PROFILE — spec authoring & chunking — worn by a `TASK`
+> thread whose task file declares it** (the CODR precedent: the profile lives inside the file, never
+> in the thread name). **Everything below binds the task that wears it.** Discussion with the owner
+> is no longer this profile's to hold — that happens with `ORCH`; a task wearing this profile emits
+> questions and reports like any task. GHOST/RNR are deferred to the product environment.
+
 # DSGN — the design role
 
 **Authored 2026-09-01 by ORCH6, at the owner's direction.** ⚠️ **NEW ROLE. It takes the authoring
