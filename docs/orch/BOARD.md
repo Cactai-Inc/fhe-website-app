@@ -44,77 +44,41 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
   `origin/main`, clean, with `node_modules` and the `.env` pair. 🔒 **D36: ORCH assigns; a thread
   never self-selects.**
 
-## ▶ DISPATCHED 2026-09-01 — the public-site lane (FHE-DSNR-SITE-PUBLIC-HANDOFF)
-| Thread | Model/effort/thinking | Worktree | State |
-|---|---|---|---|
-| `FHE-TASK-SITECOPY-A` | Sonnet · HIGH · thinking OFF | `wt-2` | ⚠️ handed, NOT STARTED |
-| `FHE-TASK-SITECOPY-B` | Opus · HIGH · thinking ON | `wt-3` | ⚠️ handed, NOT STARTED |
-| `FHE-TASK-LANDINGSIGNIN` | Opus · HIGH · thinking ON | `wt-1` | ⚠️ handed, NOT STARTED — shape gate closed (`967d983d`) |
-| `FHE-DSNR-ONERAIL` | Opus · HIGH · thinking ON | — (docs only) | ⚠️ handed, NOT STARTED |
-| `FHE-TASK-SITESEO` | Opus · HIGH · thinking ON | after SITECOPY-A merges | 🔒 GATED on ASK-OWNER 2 (301 vs 404) |
-| `FHE-TASK-POLICIESANDFAQ` | — | — | ⛔ BLOCKED: draft + COMPLIANCE-FINDINGS not in repo (ASK-OWNER 1) |
+## ▶ THE PLAN OF RECORD — nothing below has started; the owner launches in this order
+**Canonical-checkout writer (D40): ORCH.** No docs thread is writing it right now.
 
-**Sequence:** A ‖ B ‖ LANDINGSIGNIN parallel (file-disjoint per handoff §2) · SITESEO after A
-(shares `src/lib/seo.ts`) · POLICIESANDFAQ after the owner stages the drafts and DSNR specs it.
-⚠️ **`VISITMENU` merged `c45ee5ea` without ORCH validation — validation owed, queued.**
-✅ **wt-1 stray RESOLVED:** it was the unshipped half of the owner's leasing correction —
-applied and merged (`61b75a42`); wt-1 back in the pool.
-
-## ▶ DISPATCHED 2026-09-01 — the SIGNFLOW lane (FHE-DSNR-SIGNFLOW-HANDOFF · CR-100/101/102)
-| Thread | Model/effort/thinking | Worktree | State |
-|---|---|---|---|
-| `FHE-TASK-SIGNFLOW-A` | Opus · HIGH · thinking ON | `wt-2`* | ⚠️ handed, NOT STARTED |
-| `FHE-TASK-SIGNFLOW-B` | Opus · HIGH · thinking ON | `wt-3`* | ⚠️ handed, NOT STARTED |
-| `FHE-TASK-SIGNFLOW-C` | Opus · HIGH · thinking ON | assigned at dispatch | 🔒 **GATED: dispatches only after A AND B merge** — 3 shared files, re-greps line numbers per its §7 T3. ⚠️ Amended `f139c3b6`: the two retiring doors left its list |
-| `FHE-TASK-SIGNFLOW-D` | Opus · HIGH · thinking ON | `wt-1`* | ⚠️ handed, NOT STARTED — two-phase; §5 questions come up before Phase 2 removes |
-
-**Cross-lane check run by ORCH7:** SIGNFLOW-C's 15-file list contains NONE of SITECOPY-B's three
-files and not `Header.tsx` — the two lanes are file-disjoint. The one shared file across lanes is
-`Onboarding.tsx`: SIGNFLOW-B edits it; SITECOPY-B is forbidden from opening it by its own §5.
-**D35 does not apply to this batch — none of the three touches the database** (handoff §2).
-D/E/F are void — the owner narrowed CR-102; archived with his ruling on line one.
-
-## QUEUE BEHIND THE LANE
-`REQCARDS` (after DISCO option-set lock + DSNR fold) · `CLNR-REPO-STATE` (hold RELEASED — both
-builds merged; dispatch when no build is mid-flight, it moves files).
-
-## ⚠️ EXCLUSIVE OWNERSHIP (D35 — a worktree isolates git, NOT the database)
-| Object / file | Owner | State |
+### Wave 1 — three build threads, three worktrees, file-disjoint
+| Thread | Settings | Worktree |
 |---|---|---|
-| the onboarding wizard · the delivery-hold/submit RPCs · the door (`account_state_for_email`, `api/register-invited.ts`) | — | **free — SIGNBOOK merged `2fa1f7b9`** |
-| the whole booking state machine (`bookings_status_check` · `booking_status_code` · `calendar_free_busy` · `request_open_time` · `request_booking_change` · `decide_booking_change` · `confirm_booking` · `confirm_booking_for_purchase` · `purchases_confirm_bookings` trigger · `_ensure_plan_horizon` · `ensure_standing_slots` · `mint_recurring_allotments` · `plan_horizon_through`) | — | **free — LIFECYCLE merged.** 🔒 SIGNBOOK still may not edit `request_open_time`; it calls it |
-| the staff dashboard cards · the client payment modal | **reserve for `REQCARDS`** | queued |
-| `index.html` · `src/lib/seo.ts` (copy values) · `Services.tsx` · `About.tsx` | **`SITECOPY-A`** | reserved, not started |
-| `Confirmation.tsx` · `OrderPayment.tsx` · `ActivationOrderPanel.tsx` · `usePropertyTerm` adoption | **`SITECOPY-B`** | reserved, not started |
-| `src/components/layout/Header.tsx` | **`LANDINGSIGNIN`** | reserved, not started |
-| `scripts/prerender.mjs` · `scripts/seo-files.mjs` · `seo.ts` route list · `App.tsx` redirects | **reserve for `SITESEO`** | gated |
-| `src/lib/documentBody.ts` (new) · `MergedBodyView.tsx` · `ContractCascade.tsx` · `DocumentsContent.tsx` · `PaperViewer` | **`SIGNFLOW-A`** | reserved, not started |
-| `src/lib/normalize.ts` · `SignStart.tsx` · `Onboarding.tsx` (inputs) | **`SIGNFLOW-B`** | reserved, not started |
-| the 15-file green list + `src/index.css` `.flow-green` | **reserve for `SIGNFLOW-C`** | gated on A+B |
+| `FHE-TASK-SITECOPY-A` | Sonnet · HIGH · thinking OFF | `wt-2` |
+| `FHE-TASK-SIGNFLOW-B` | Opus · HIGH · thinking ON | `wt-3` |
+| `FHE-TASK-SIGNFLOW-D` | Opus · HIGH · thinking ON | `wt-1` — two-phase; its §5 questions come UP before Phase 2 removes |
 
-🔴 **REALITY CHECK 2026-09-01 (owner):** NONE of the handed prompts above has been RUN — not
-SITECOPY-A/B, LANDINGSIGNIN, ONERAIL, SIGNFLOW-A/B/D, FUNNELDEBT, CLNR-REPO-STATE, POLICIESANDFAQ
-or SITESEO. Every "running" on this board was wrong; a handed prompt is NOT a dispatched thread
-until the owner runs it. *Worktree assignments rebalanced to the real idle pool (wt-1/2/3 —
-no wt-4/5/6 exist or are needed yet): SIGNFLOW-A→wt-2 conflicts with SITECOPY-A→wt-2 ONLY if run
-simultaneously — the owner starts threads in his own order, so the FIRST of each pair to start
-takes the tree and ORCH reassigns the other on request. Two more threads are about to report;
-nothing else is live.
-| `Release.tsx` · `DocsParticipantFlow.tsx` · `api/sign-release.ts` · `/release`+`/docs/release-participant` routes in `App.tsx` · 🔒 DB: `sign_release` + `sign_general_release` (the anon-grant close) | **`SIGNFLOW-D`** | queued — ⚠️ `App.tsx` also wanted by gated SITESEO: **D merges before SITESEO dispatches** |
-| `mark_purchase_paid` · `revenue_summary` · the money columns | — | free — the BACKDATE+BOOKS1 union |
-| `AppLayout.tsx` · `pageRegistry.ts` · `ops/kit/Modal.tsx` | — | free |
+### Wave 2 — dispatched by ORCH as each wave-1 thread merges and frees its tree
+`FHE-TASK-SITECOPY-B` · `FHE-TASK-SIGNFLOW-A` · `FHE-TASK-LANDINGSIGNIN` (all Opus · HIGH · ON)
 
-## ⚠️ WAITING ON THE OWNER — four, and two block a dispatch
-1. ⚠️ **The reschedule waitlist shape (CR-97):** notify · first-refusal window · or auto-convert
-   to `requested`. **Blocks the CR-90/CR-97 build.** ⚠️ **No waitlist exists today** — measured.
-2. ⚠️ **The 43 sessions already scheduled beyond 30+30** *(Madeline's November among them)*.
-   **DSNR ruled they are NOT retro-deleted under D32 — his call. Blocks the same build.**
-3. **Confirm DSNR's reading of "availability is the absence of a block"** — that it governs what
-   `cancelled` and a released `moved` BECOME, **not** authority to delete the 594 `Open` chips.
-4. **CR-88:** does a campaign need a budget figure, and **which company-level expense categories**
-   — ⚠️ *"dont put labels on anything"* means **do not invent a chart of accounts;** the question
-   is only whether he wants any beyond marketing.
-5. ⚠️ **`TASK-SIGNDOOR` A3, non-blocking:** does email-only cover `/sign/deal`? **Left untouched.**
+### Wave 3 — gated
+| Thread | Gate |
+|---|---|
+| `FHE-TASK-SITESEO` | after `SITECOPY-A` merges (shares `seo.ts`). ⚠️ **UNGATED by R2 — keep-and-301 to `/lessons`; `App.tsx` freed, the `<Navigate>` routes stay** |
+| `FHE-TASK-SIGNFLOW-C` | after `SIGNFLOW-A` AND `-B` merge; re-greps its line numbers |
+
+### Docs threads — ONE canonical-checkout writer at a time (D40); run serially or ask ORCH for a tree
+`FHE-DSNR-ONERAIL` (rebase pass — spec describes doors replaced 2026-09-01) ·
+`FHE-DSNR-FUNNELDEBT` (the SIGNBOOK fallout lane) ·
+`FHE-DISCO-SITE-PUBLIC` (POLICIESANDFAQ re-originated — a DISCO pass, NOT a paste; the two owner
+calls are reconstructed in the handoff §0.1) ·
+`FHE-DISCO-SIGNFLOW` (the contract-inroads matrix — `FHE-SIGNFLOW-CONTRACT-INROADS.md` §4; research
+only, NO removal/merge/convergence until the matrix is filled from the database; `SIGNFLOW-E`
+withdrawn)
+
+### 🔒 HOLDS
+- **Contract entry points (`/sign/deal` alignment, the three-state-door widening)** — HELD for the
+  inroads research. The two D35-queued items behind SITECOPY-B/SIGNFLOW-B stand.
+- **`CLNR-REPO-STATE`** — dispatch only when NO build thread is mid-flight (it moves files).
+- **Owner's own diagnostics (block nothing):** A1 Vercel top-pages for `/ride`/`/shop`/`/membership` ·
+  A2 GSC verify + performance (no `google-site-verification` tag exists) · B1 the Business Profile
+  URL + socials for `seo.ts` `sameAs`.
 
 ## ▶ THE SIGNBOOK-FALLOUT LANE — queued for DSNR (handoff §2/§3, owner: "these are not small")
 1. **F1** — an order submission sends TWO emails (activation + inquiry confirmation); collapsing them

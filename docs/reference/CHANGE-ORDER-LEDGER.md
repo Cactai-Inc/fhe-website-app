@@ -4343,3 +4343,10 @@ Built minus the cut (`c92308a8`, `c45ee5ea`, `2964f125` — `requests.interests`
 Promoted to `CLAUDE.md` D39 + `TASK-ROLE.md` §2c + `DSNR-ROLE.md` §6 by the SIGNBOOK thread
 (`87eb0888`) after the interests field shipped with no reader. Ledger entry: a stored value with no
 named reader is reported as UNFINISHED, not shipped; report §6 item 3b enforces it at verification.
+
+## SITE-PUBLIC rulings R1–R3 (owner, 2026-09-01) — filed by ORCH from FHE-DSNR-SITE-PUBLIC-HANDOFF §0.2
+**R1** landing shape approved — the full-cart corner is cart glyph + Sign In; *"a person with things
+in their cart needs to go to the cart."* **R2** `/ride`/`/shop`/`/membership`: *"either way, keep and
+redirect to the booking page the CTA links to"* — keep-and-301 to `/lessons`; 404 struck; SITESEO
+ungated. **R3** narrows D37 — tier lines only on prompts that LAUNCH threads (amended in CLAUDE.md,
+ORCHESTRATOR.md, DSNR/DISCO role files).

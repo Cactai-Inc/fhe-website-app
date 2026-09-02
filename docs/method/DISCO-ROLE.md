@@ -11,8 +11,9 @@ take LETTERS — `-A`/`-B`/`-C`, NEVER numbers: numbers are reserved for a futur
 revisits the same change after its context has moved on.** **If the context has NOT changed since the
 last run, future work on that change REVISITS the existing DISCO/DSNR threads — their context is the
 asset — but always gets NEW task threads, lettered continuing after the last that ran.**
-🔒 **AND EVERY PROMPT ANY ROLE HANDS THE OWNER states, outside the code block: MODEL TIER · EFFORT ·
-and THINKING on/off when the model is not Fable.** *(Renamed from `DISO` on 2026-09-01 —
+🔒 **AND EVERY PROMPT THAT LAUNCHES A THREAD states, outside the code block: MODEL TIER · EFFORT ·
+and THINKING on/off when the model is not Fable — never on a prompt for a STANDING thread (owner,
+2026-09-01); suggested TASK settings go inside the handoff file.** *(Renamed from `DISO` on 2026-09-01 —
 the owner consistently calls it DISCO, and one name for one thing beats a tidy letter count.)*
 
 ## ⚠️ DISCO IS OPENED PER SUBJECT — ORCH SAYS WHEN, AND ORCH SAYS WHEN TO CLOSE

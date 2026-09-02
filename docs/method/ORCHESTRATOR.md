@@ -311,10 +311,10 @@ the model line, and the board records the assignment BEFORE the prompt is handed
 thread never self-selects — the wt-1 collision came from a thread choosing from a minutes-stale
 census while another thread was claiming the same tree.**
 
-🔒 **EVERY PROMPT ORCH HANDS THE OWNER — ANY ROLE, NOT JUST TASK — STATES OUTSIDE THE BLOCK:
-MODEL TIER · EFFORT · and, if the model is not Fable, THINKING ON/OFF (owner, 2026-09-01).**
-**Fable needs no thinking line; every other tier gets one.** ⚠️ **A prompt handed over without
-these three is incomplete — the owner sets up the thread from them and should never have to ask.**
+🔒 **EVERY PROMPT THAT LAUNCHES A THREAD STATES OUTSIDE THE BLOCK: MODEL TIER · EFFORT · and, if
+the model is not Fable, THINKING ON/OFF (owner, 2026-09-01; narrowed same day, R3).** **Fable needs
+no thinking line. A STANDING thread (ORCH, a parked DISCO) never gets a tier line — it is already
+running.** **Suggested settings for queued TASK threads travel inside the handoff file.**
 *(Reference for the choice itself: `docs/reference/MODEL-CHOICE-NOTES-2026-09-01.md`.)*
 
 ## 🔒 THE FRONT DOOR IS `DISCO`, AND IT IS THE ONLY ONE

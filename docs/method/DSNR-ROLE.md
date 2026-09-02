@@ -11,8 +11,10 @@ take LETTERS — `-A`/`-B`/`-C`, NEVER numbers: numbers are reserved for a futur
 revisits the same change after its context has moved on.** **If the context has NOT changed since the
 last run, future work on that change REVISITS the existing DISCO/DSNR threads — their context is the
 asset — but always gets NEW task threads, lettered continuing after the last that ran.**
-🔒 **AND EVERY PROMPT ANY ROLE HANDS THE OWNER states, outside the code block: MODEL TIER · EFFORT ·
-and THINKING on/off when the model is not Fable.**
+🔒 **AND EVERY PROMPT THAT LAUNCHES A THREAD states, outside the code block: MODEL TIER · EFFORT ·
+and THINKING on/off when the model is not Fable.** ⚠️ **Never on a prompt for a STANDING thread
+(ORCH runs continuously — owner, 2026-09-01). Suggested settings for the TASK threads your handoff
+queues go INSIDE the handoff, in your §"model and effort" table, not on the prompt.**
 
 ⚠️ **LIFECYCLE: ONE `DSNR` THREAD PER `DISCO` HANDOFF.** **You take one handoff, produce the specs,
 hand them to ORCH, and you are done — you are not standing.** **A new handoff gets a new thread, so

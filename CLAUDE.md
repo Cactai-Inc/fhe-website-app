@@ -910,10 +910,26 @@ reporting success.
   revisits the same change after its context has moved on.** If the context has NOT changed since
   the last run, future work on that change revisits the existing DISCO/DSNR threads (their context
   is the asset) but always gets NEW task threads, lettered continuing after the last that ran.
-  **And every prompt any role hands the owner states, outside the code block: MODEL TIER · EFFORT ·
-  THINKING on/off when the model is not Fable** (Fable needs no thinking line). Recorded in all
-  four role files + `ORCHESTRATOR.md` § THE PROMPT — the role files predated both rules, which is
-  why DISCO's SIGNFLOW handoff shipped without a name or tier line.
+  **And every prompt that LAUNCHES a thread states, outside the code block: MODEL TIER · EFFORT ·
+  THINKING on/off when the model is not Fable** (Fable needs no thinking line).
+  ⚠️ **NARROWED by the owner, 2026-09-01 (R3, SITE-PUBLIC):** *"you dont need to specify the settings
+  for an ORCH thread, that thread runs continuously."* **The tier line applies to threads being
+  LAUNCHED, never to a prompt addressed to a STANDING thread (ORCH, a parked DISCO). Suggested
+  settings for TASK threads a handoff queues up go INSIDE the handoff file ORCH reads, not on the
+  prompt.** Recorded in all four role files + `ORCHESTRATOR.md` § THE PROMPT.
+
+- **D40 — THE CANONICAL CHECKOUT HAS ONE WRITER AT A TIME, AND ORCH TRACKS WHO (2026-09-01).**
+  Two spec-authoring threads (`FHE-DSNR-SIGNFLOW`, `FHE-DSNR-SITE-PUBLIC`) shared the canonical
+  `fhe-website-app` checkout concurrently. **Twice in one session, one thread's `git add` swept the
+  other's unstaged edits into its own commit** — content survived, attribution and the explaining
+  commit messages did not; once the index lock collided mid-commit. Staging explicit paths did not
+  prevent it, because the damaging add is always the OTHER thread's.
+  🔒 **THE RULE:** D36 extends beyond TASK: **any thread that writes files — DSNR, DISCO, anything —
+  gets an ORCH assignment before it starts.** At most ONE assigned writer on the canonical checkout
+  at a time; a second concurrent writer takes a pool worktree like any build thread. **The board
+  names the canonical checkout's current writer the same way it names worktree owners.** ORCH's own
+  record-keeping commits count: while a docs thread holds the checkout, ORCH stages by explicit path
+  and never commits while that thread reports itself mid-write.
 
 - **D38 — PUBLIC-COPY IDENTITY RULINGS: FHE IS JUMPER-ONLY, AND IT IS A PROGRAM, NOT A BARN
   (owner, 2026-08-26, promoted to a D-rule 2026-09-01).** Two wording rulings lived only in
