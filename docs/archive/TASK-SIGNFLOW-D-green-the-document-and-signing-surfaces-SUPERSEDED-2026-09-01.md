@@ -1,3 +1,19 @@
+> # ⚠️ SUPERSEDED 2026-09-01, BEFORE IT WAS EVER DISPATCHED — DO NOT BUILD THIS
+> **The owner narrowed CR-102 the same day it was specced.** Verbatim: *"just change the items to
+> green, leave the gold used in the app nav and other accents throughout the app in their light gold
+> color. the signing flow from first page through the last should switch the gold to green for sure.
+> other pages can be evaluated on a case by case basis when i have the opportunity to view them.
+> dont change things in the app arbitrarily."*
+> 🔒 **The four-chunk app-wide split (C/D/E/F) is void. The live spec is
+> `docs/tasks/TASK-SIGNFLOW-C-green-the-signing-flow-end-to-end.md`.**
+> ⚠️ **He also rejected this spec's central premise** — that gold-vs-green carries the "this is a
+> fillable control, not the document" signal. *"the document is set inside a contained box that is
+> clearly differentiated from the app surface. and green vs gold would not change how the viewer
+> interprets whether or not the content is an app surface."* **He is right; the containment does
+> that work, not the hue.** Kept only for its measurements.
+
+---
+
 # TASK-SIGNFLOW-D — green the document, contract and signing surfaces
 
 **Spec by `FHE-DSNR-SIGNFLOW`, 2026-09-01. Change order: `CR-102`, chunk 2 of 4.**
