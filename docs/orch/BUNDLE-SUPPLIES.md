@@ -4,7 +4,7 @@
 `wt-5`, `wt-6` (ask ORCH for more; the pool grows on demand).
 
 ## Read first, in this order — the design is RULED, not open
-1. `docs/reference/CHANGE-ORDER-LEDGER.md` §CR-109, §CR-112, §CR-112·A1, §CR-112·A2 — the owner's
+1. `docs/reference/CHANGE-ORDER-LEDGER.md` §CR-109, §CR-112, §CR-112·A1 (+ THE PROPOSED LIST), §CR-112·A2, §CR-112·A3 — the owner's
    design, verbatim, and his answers. **These are the requirements.**
 2. `docs/reports/FHE-DISCO-TACKROOM-HANDOFF.md` — the measured inventory of what exists (all
    barnops tables EMPTY; depletion unbuilt; three vendor notions; why the pages are unseen), plus its
@@ -30,7 +30,7 @@
   · `horse_medications` (fold-in) · every NEW table/function the ledger, assignments, audits,
   recurring costs and projections need · `purchases`/`purchase_items` ONLY for the new horse
   attribution column and its writer (declare the exact column before applying).
-- **Files:** `src/pages/app/ops/barnops/**` · `src/pages/app/ops/hubs/BarnopsHubPage.tsx` ·
+- **Files:** the new Admin **Company** and **Accounting** (Assets · Expenses) pages (CR-112·A3) · `src/pages/app/ops/barnops/**` · `src/pages/app/ops/hubs/BarnopsHubPage.tsx` ·
   `/app/stable` pages and `src/lib/stable*` · `src/lib/ops/api-barnops.ts` (+ the dead copy in
   `src/lib/api.ts`, retired not deleted) · `src/pages/app/AccountHub.tsx` (the access-point rows) ·
   the horse record page's new card · `src/lib/propertyTerm.ts` (rename of the internal term) ·
