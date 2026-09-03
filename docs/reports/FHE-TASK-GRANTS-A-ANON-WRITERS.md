@@ -320,3 +320,41 @@ bundle's ownership. Its `anon` grant is harmless and is left exactly as it is.**
 - Proof either way is `proacl` before and after, `has_function_privilege('anon', …)` per function, and
   `md5(pg_get_functiondef(oid))` unchanged for every touched function — **no body is edited by this
   bundle at all** (`DROP`+`CREATE` is what re-grants `anon`; this migration never does either).
+
+---
+
+## RULING — owner, 2026-09-03, via ORCH (CR-116 on `main` at d4036431); recorded by `FHE-MGMT-GRANTS`
+
+**Block A (140 writers, no anonymous caller): REVOKE, as one block.**
+**B1 `submit_public_request`: KEEP anon.** *(the contact form is a true stranger with no email on file yet)*
+**B2 `open_gift`: REVOKE anon.** *"The reveal is an email animation, not an anonymous page."* — this
+OVERRULES this file's KEEP recommendation.
+**B3 `redeem_gift`: REVOKE anon.** *(already refuses anon in its body)*
+
+**The owner's words (verbatim, from CR-116):**
+> *"these are moot if anon is non authenticated user an do these things because everyone has an account
+> now, we changed the account activation and creation process so the user can create and activate an
+> account on their own. and every action like opening and redeeming a gift needs to be updated to follow
+> this flow instead of an outdated one. the reveal of you got a gift is an email animation, the
+> invitation link is an activation link that takes them to a unique url for them to create and activate
+> an account without an friction, they will have already seen the gift but the code is linked to the
+> account activation link they click … by definition of how an account is created, all we need is the
+> email address and the account exists, their clicking of the link is what flows the auth setup and
+> thats the "activation" but the account is already active on our end, the auth is not active yet on
+> their end."*
+
+**The principle ORCH recorded as general:** there is no anonymous user. An account exists the moment we
+have the email address; "activation" is the recipient's auth setup, not the account's creation. The gift
+code is no longer a credential.
+
+**Safety measurement, re-run by MGMT 2026-09-03 10:41:43 PDT (matches ORCH's):**
+`select count(*), count(*) filter (where status='opened'), count(*) filter (where status='redeemed') from gifts;`
+→ **0 | 0 | 0**. No live surface is reached through the anonymous gift path today.
+`proacl` at that moment — `open_gift` and `redeem_gift`:
+`=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres` (anon = t, both).
+
+**Consequence for `TASK-GRANTS-B`:** `open_gift(p_code text)` and `redeem_gift(p_code text)` join group W.
+The KEEP set is `submit_public_request` alone. The spec is amended accordingly by MGMT (the owner's
+ruling left no judgment in the edit).
+**NOT B1's:** the gift flow REBUILD to the activation link (`Redeem.tsx`, `gifts.ts`, `api/register-gift.ts`,
+the gift email, the `open_gift`/`redeem_gift` BODIES) — routed by ORCH to B2 FUNNELDEBT. B1 changes ACLs only.

@@ -165,17 +165,17 @@ address fields left unshaped by design — want them shaped too?
 **Open to ORCH:** ORCH's numbered CR-112 suggestions list (A1 items 1,2,5,6,8; 7 absent) is not on file — record under CR-112·A1. **Gated on B7:** dashboard/projection/deviation/report consumers.
 
 ## BUNDLE GRANTS — FHE-MGMT-GRANTS (D44 trial · opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-GRANTS-LEDGER.md`)
-**Bundle tree `wt-1` · branch `bundle/grants` @ a1c6c105 · merge lane: per task after VRFY · hands back to `FHE-ORCH-7`.**
-**DB objects held by this bundle: the ACL (`proacl`) of every SECURITY DEFINER function in `public` — never a body.**
+**Bundle tree `wt-1` · branch `bundle/grants` (origin/main d4036431 merged in) · merge lane: per task after VRFY — MGMT pushes `bundle/grants`, ORCH merges it to `main` · hands back to `FHE-ORCH`.**
+**DB objects held by this bundle: the ACL (`proacl`) of every SECURITY DEFINER function in `public` — never a body. (`open_gift`/`redeem_gift` BODIES are B2's per CR-116.)**
 | Thread | Profile | Tree | Branch | State |
 |---|---|---|---|---|
-| `FHE-TASK-GRANTS-A` | DSNR | **wt-2** | `task/grants-a-spec` | DISPATCHED 2026-09-03 — `docs/tasks/TASK-GRANTS-A-author-the-acl-sweep-spec.md`; awaiting owner launch |
-| `FHE-TASK-GRANTS-B` | CODR | wt-2 (after -A retires) | `task/grants-b` | waiting on -A's spec |
-| `FHE-TASK-GRANTS-V` | VRFY | **wt-11** (allotted by ORCH 2026-09-03) | — | waiting |
-| `FHE-TASK-GRANTS-W` | WALKR | wt-11 (after -V) | — | at close, on `main` as deployed |
-**Escalations:** 1/1 ✅ **RULED 2026-09-03 — CR-116.** Block A (140) REVOKE as one block · `submit_public_request` KEEP anon · **`open_gift` REVOKE** · `redeem_gift` REVOKE. The owner: there is no anonymous user any more — an account exists the moment we have the email address; the gift reveal is an email animation and the link is an activation link. ORCH's safety measurement: **`gifts` = 0 rows in production**, so no live surface is reached anonymously. -B unblocked. **Item 7** (ledger status headers): last, after ORCH is told.
-*(mirrored by ORCH from `bundle/grants` d5f97724; MGMT keeps editing its copy on the bundle branch — MGMT-ROLE §10.)*
-
+| `FHE-TASK-GRANTS-A` | DSNR | wt-2 (returned) | `task/grants-a-spec` | **DONE — merged 6ed5ff63.** Spec · escalation list (`## RULING` appended by MGMT) · handoff |
+| `FHE-TASK-GRANTS-B` | CODR | **wt-2** | `task/grants-b` | **DISPATCHED 2026-09-03 — Sonnet · MEDIUM · thinking ON.** Spec `docs/tasks/TASK-GRANTS-B-close-the-anon-door-on-every-writer-nothing-anonymous-calls.md` (amended on the ruling). Holds: ONE ACL-only migration (144 writers + 2 previews + 47 inert + 2 `authenticated` revokes) + 4 comment lines (`contact.ts`, `deliver-document.ts`, `Onboarding.tsx` ×2) |
+| `FHE-TASK-GRANTS-V` | VRFY | **wt-11** | — | after -B reports |
+| `FHE-TASK-GRANTS-W` | WALKR | wt-11 (after -V) | — | at close, on `main` as deployed: contact form · sign-start · `/redeem` as a no-account recipient — **expected to fail CLOSED** now (the anonymous reveal is retired; B2 rebuilds it) |
+**Escalations: 1/1 ✅ RULED 2026-09-03 — CR-116 (d4036431).** Block A REVOKE as one block · `submit_public_request` KEEP · **`open_gift` REVOKE** (overrules -A's KEEP) · `redeem_gift` REVOKE. Recorded verbatim in the escalation list's `## RULING`. MGMT re-ran the safety measurement: `gifts` = 0/0/0.
+**For ORCH (routed up, fixed by nobody here):** (1) 14 anon-executable writers with NO in-body guard (-A handoff §5) — a BODY finding for B2. (2) 135 anon-executable definer READERS + 60 invoker non-trigger + 15 invoker trigger fns remain — a read-ACL sweep is a separate bundle. (3) `Onboarding.tsx:632` same stale payment claim, unnamed by the bundle. (4) RECONCILED §8 B1 rows 1.15 · 1.19 · §7.6 not in `BUNDLE-GRANTS.md`. (5) Item 6 is FOUR comments (`MergedBodyView.tsx` fixed by d78d3b3c).
+**Item 7** (CHANGE-ORDER-LEDGER status headers CR-85/89/93/97): last, after ORCH is told.
 ## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-DASHBOARDS-LEDGER.md` on `bundle/dashboards` @ 0ecc662c)
 **Bundle tree `wt-7` · branch `bundle/dashboards` from `a1399848` · task tree `wt-8` · lane: engine contract + config tables + registry FIRST as one unit, then per task after VRFY · escalations 0/6.**
 | Thread | Profile · tier | Tree | State |

@@ -31,8 +31,8 @@ dispatch line. Branch `task/grants-b` from `origin/main`.**
 ## 1. THE ONE SENTENCE
 
 **Three hundred and twenty-six `SECURITY DEFINER` functions in `public` can be executed by `anon`.
-One hundred and forty-five of them WRITE. Two of those are public doors by design. This task revokes
-the rest, in one ACL-only migration, and fixes four comments that describe code that no longer exists.**
+One hundred and forty-five of them WRITE. One of those is a public door by design (`submit_public_request`). This task revokes
+the other 144, in one ACL-only migration, and fixes four comments that describe code that no longer exists.**
 
 ## 2. WHAT WAS MEASURED — 2026-09-03, production, by `FHE-TASK-GRANTS-A`
 
@@ -58,7 +58,7 @@ where n.nspname = 'public' and p.prosecdef;
 | …`anon` can EXECUTE | **326** | — |
 | — trigger functions (inert through the API) | **45** | **revoked**, §4 group T |
 | — `rls_auto_enable()`, an `event_trigger` (equally inert) | **1** | **revoked**, §4 group T |
-| — callable **writers** (the body writes; verified by reading all 326 bodies) | **145** | **142 revoked** · 2 KEEP · 1 gated on the ruling |
+| — callable **writers** (the body writes; verified by reading all 326 bodies) | **145** | **144 revoked** · 1 KEEP — ruled CR-116, see the RULING in the escalation list |
 | — callable **readers** | **135** | **out of scope**, except the 2 in §4 group P |
 
 **Why `provolatile` is not the test:** the bundle's candidate set was the 151 anon-executable volatile
@@ -145,7 +145,7 @@ where n.nspname = 'public'
 order by p.proname;
 ```
 
-### Group W — the writers. 142 functions.
+### Group W — the writers. 144 functions (142 pinned below + `open_gift` + `redeem_gift`, added by the CR-116 ruling — see Section 2).
 Predicate: `p.prosecdef and p.prorettype not in ('trigger'::regtype,'event_trigger'::regtype)
 and p.proname in (<the list below>)`
 
@@ -229,18 +229,22 @@ grant deliberately — *"it is subtractive beyond the spec's letter while three 
 and flagged it. **The bundle is that follow-up.** Confirm with `grep -rn "'sign_release'\|'sign_general_release'" src api`
 (empty on 2026-09-03) before you write these two, and leave the `service_role` grant standing.
 
-### 🔒 KEEP — two functions this migration must NOT touch, and the test proves it
+### 🔒 KEEP — ONE function this migration must NOT touch, and the test proves it
 | function | why |
 |---|---|
-| `submit_public_request(…)` | the public contact form. `src/lib/api.ts:79` ← `InquiryForm.tsx:208`, `PublicIntakeForm.tsx:220`. Revoking it kills every inbound request |
-| `open_gift(p_code text)` | `src/lib/gifts.ts:34` ← `src/pages/Redeem.tsx:34`, **called on mount before the page reads `user`**. The gift code is the credential; `src/lib/gifts.ts:38-40` says so |
+| `submit_public_request(…)` | the public contact form. `src/lib/api.ts:79` ← `InquiryForm.tsx:208`, `PublicIntakeForm.tsx:220`. Revoking it kills every inbound request. **Ruled KEEP, CR-116.** |
 
-### Section 2 — `redeem_gift`, and ONLY if the ruling says so
-**`redeem_gift(p_code text)` is recommended REVOKE with the evidence in the escalation list §B3.**
-🔒 **If MGMT's `## RULING` says REVOKE, add it to group W and say so in your report. If the ruling is
-silent on it, DO NOT include it** — build everything else, and report that one function as outstanding.
-⚠️ **Do not put a commented-out placeholder in the file. An applied migration is immutable; a comment
-saying "fill this in later" can never be filled in.** A later ruling gets its own two-line migration.
+### Section 2 — RULED (owner, 2026-09-03, CR-116 — `## RULING` at the end of the escalation list)
+**`open_gift(p_code text)` and `redeem_gift(p_code text)`: REVOKE anon. Both join group W.** Add both
+names to group W's list when you generate the statements and say so in your report. The owner: *"the
+reveal of you got a gift is an email animation"* — there is no anonymous user; the gift code is no
+longer a credential. **This overrules the DSNR-profile recommendation to KEEP `open_gift`**; the spec
+was amended by `FHE-MGMT-GRANTS` on the ruling, not on judgment.
+**Safety (MGMT re-run 2026-09-03 10:41 PDT, matches ORCH): `gifts` = 0 rows total / 0 opened / 0
+redeemed.** Nothing live is reached through `/redeem` anonymously today — so revoking breaks nothing
+that works, and the rebuild of the gift flow onto the activation link is **B2 FUNNELDEBT's**, not yours.
+You do not touch `Redeem.tsx`, `gifts.ts`, `api/register-gift.ts`, or either function's BODY.
+⚠️ **Do not put a commented-out placeholder in the file. An applied migration is immutable.**
 
 ## 5. THE FOUR COMMENT EDITS — item 6
 
@@ -331,9 +335,9 @@ TO:
    where n.nspname='public' and p.proname in (<every revoked name>)
      and has_function_privilege('anon', p.oid, 'execute');   -- must be 0
    ```
-5. **`anon` still holds EXECUTE on the two KEEPs** — `has_function_privilege('anon', …)` = **t** for
-   `submit_public_request` and `open_gift`. ⚠️ **A revoke that catches one of these is the failure this
-   criterion exists to catch.**
+5. **`anon` still holds EXECUTE on the ONE KEEP** — `has_function_privilege('anon', …)` = **t** for
+   `submit_public_request`. ⚠️ **A revoke that catches it is the failure this criterion exists to catch.**
+   And = **f** for `open_gift` and `redeem_gift` — they are in group W by the CR-116 ruling.
 6. **`authenticated` is gone from the two group-S functions and `service_role` is not:**
    both `has_function_privilege('authenticated', …)` = **f** and
    `has_function_privilege('service_role', …)` = **t**.
