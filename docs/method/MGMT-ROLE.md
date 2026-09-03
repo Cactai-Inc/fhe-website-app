@@ -1,6 +1,6 @@
 # MGMT — the bundle manager
 
-> ⚠️ **NOT IN FORCE.** **Authored 2026-09-02 by `FHE-TASK-METHOD-MGMT` from
+> ⚠️ **IN FORCE (D44, 2026-09-03 — this line used to read NOT IN FORCE).** **Authored 2026-09-02 by `FHE-TASK-METHOD-MGMT` from
 > `docs/method/MGMT-DESIGN-BRIEF-2026-09-02.md` (owner + ORCH, 2026-09-02).** **D41 is the model in
 > force until ORCH records this one as a D-rule in `CLAUDE.md`.** Where this file says "ORCH
 > ratifies", the brief left the HOW open and the authoring task decided it from the repo's own idiom —

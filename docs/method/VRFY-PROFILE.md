@@ -1,6 +1,6 @@
 # VRFY — the independent-verification profile of `TASK`
 
-> ⚠️ **NOT IN FORCE.** Authored 2026-09-02 by `FHE-TASK-METHOD-MGMT` from
+> ⚠️ **IN FORCE (D44, 2026-09-03 — this line used to read NOT IN FORCE).** Authored 2026-09-02 by `FHE-TASK-METHOD-MGMT` from
 > `docs/method/MGMT-DESIGN-BRIEF-2026-09-02.md` §3. **Binding only once ORCH records the MGMT model
 > as a D-rule.** Until then ORCH verifies every merge itself (D41 §3).
 
