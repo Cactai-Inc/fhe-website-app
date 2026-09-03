@@ -139,3 +139,14 @@ address fields left unshaped by design — want them shaped too?
 `FIX1` §8 · `FIX2` §9 · **`FIX4` §11 (13 items, the biggest visual change)** · `CR85` §8 ·
 `MODAL2` · `BACKDATE` §8 · `BOOKS1` §14 · **`LIFECYCLE` §8 (7 items — item 6 is the visible change: next month renders pending/orange)** · **`SIGNDOOR` — ⚠️ load `/sign/rider` and count the boxes;
 "exactly two" is the whole task and only its own probe has tested it.**
+
+## BUNDLE SUPPLIES — FHE-MGMT-SUPPLIES
+*(MGMT edits ONLY this section — MGMT-ROLE §10. Ledger: `docs/reports/FHE-MGMT-SUPPLIES-LEDGER.md`.)*
+**Bundle tree `wt-3` · branch `bundle/supplies` (from `a1c6c105`) · lane: door reshuffle + first sub-pages as ONE unit; spine migrations per task after VRFY · escalations 0/5 reached · last updated 2026-09-03**
+| Tree | Thread | Branch | Profile · tier | Holds (DB objects / files) | State |
+|---|---|---|---|---|---|
+| wt-4 | `FHE-TASK-SUPPLIES-A` | `task/supplies-a` | DSNR · Fable HIGH | docs only: `docs/tasks/TASK-SUPPLIES-*`, `docs/reports/FHE-DSNR-SUPPLIES-HANDOFF.md`, own ledger/report. Read-only on prod. | **FIRED 2026-09-03** — specs + chunk declaration + escalation evidence |
+| wt-5 | — | — | — | held for CODR | idle, detached |
+| wt-6 | — | — | — | held for CODR | idle, detached |
+**DB objects held by the bundle (declared in BUNDLE-SUPPLIES.md; nothing applied yet):** `resources` · `resource_lots` · `consumption_events` · `cost_allocation_rules` · `resolve_consumption_billing` · `billable_lines` (consumption source) · `stable_items` · `vendors` · `horse_medications` · `purchases`/`purchase_items` horse-attribution column only (exact column to be declared by the spec).
+**Open to ORCH:** ORCH's numbered CR-112 suggestions list (A1 items 1,2,5,6,8; 7 absent) is not on file — record under CR-112·A1. **Gated on B7:** dashboard/projection/deviation/report consumers.
