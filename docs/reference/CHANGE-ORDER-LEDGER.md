@@ -4577,6 +4577,53 @@ URL was conditional in SITESEO §4c.7 and never asked for directly — ORCH's mi
 audit + analytics) is raised to the front of the queue**; the owner's input list is in the ORCH
 thread 2026-09-03.
 
+## CR-116 — 2026-09-03: there is no anonymous user any more; the gift flow rides the ACTIVATION LINK, and every "outdated flow" action is updated to it
+**SAID (owner, verbatim, ruling the GRANTS escalation and widening it):**
+> *"these are moot if anon is non authenticated user an do these things because everyone has an
+> account now, we changed the account activation and creation process so the user can create and
+> activate an account on their own. and every action like opening and redeeming a gift needs to be
+> updated to follow this flow instead of an outdated one.*
+> *the reveal of you got a gift is an email animation, the invitation link is an activation link that
+> takes them to a unique url for them to create and activate an account without an friction, they
+> will have already seen the gift but the code is linked to the account activation link they click,
+> the buyer just needs to know what email address to use for them and then they are opening the link
+> from that email address so thats the address linked to the activation flow. by definition of how an
+> account is created, all we need is the email address and the account exists, their clicking of the
+> link is what flows the auth setup and thats the "activation" but the account is already active on
+> our end, the auth is not active yet on their end."*
+
+**THE PRINCIPLE (ORCH records it as the general rule, because the owner stated it as one):**
+**An account exists the moment we have the email address. "Activation" is the RECIPIENT'S auth
+setup, not the account's creation.** A surface that asks an unauthenticated stranger to prove
+themselves with a code, or to pick a password, is the outdated flow. The link in the email is the
+credential, it is unique to that person, and clicking it from that mailbox is the proof.
+
+**RULING on the GRANTS escalation (B1):** the Block B "keep anon" cases are moot.
+- `submit_public_request` — **KEEP anon.** The contact form is a true stranger with no email on file
+  yet; it is what CREATES the address the account is made from.
+- `open_gift` — **REVOKE anon.** The reveal is an email animation, not an anonymous page.
+- `redeem_gift` — **REVOKE anon.** It already refuses anon in its body.
+- Block A (140 writers with no anonymous caller) — **REVOKE, as one block.**
+**ORCH's measurement that makes this safe to do now: `gifts` holds ZERO rows in production**
+(total 0, opened 0, redeemed 0, 2026-09-03). Nothing live is reached through the anonymous gift path.
+
+**THE BUILD CONSEQUENCE (routed, not B1's):** the live gift flow is the outdated one and must be
+rebuilt to the activation link.
+- `src/pages/Redeem.tsx` — anonymous `openGift(code)` reveal, then a PASSWORD form for a recipient
+  with no account.
+- `src/lib/gifts.ts` `registerForGift()` → `api/register-gift.ts` — `auth.admin.createUser` with a
+  password, on its own endpoint, deliberately NOT the invited-registration path. Its own header
+  comment says the gift code is the credential — **that premise is now retired.**
+- The gift email must carry the reveal (the animation) AND a unique activation link with the code
+  bound to it; the recipient's email address is the account.
+**Routed to B2 FUNNELDEBT** — it is the same request→account→activation spine that bundle already
+owns (`provision_client_invitation`, `redeem_invitation`, the activation email). Scope added to that
+bundle by ORCH; `redeem_gift`'s provisioning callees (`_ensure_client_account`,
+`_provision_purchase_for_offerings`) join its DB ownership. **B1 changes ACLs only and never a body.**
+**Open, for the owner, inside B2's batched summons:** does the same retirement apply to
+`api/register-invited.ts` (the other password-path endpoint, which `register-gift` cites as having
+"the same problem")?
+
 ## CR-111 · A1 — 2026-09-03: "My Stable" is an APPROVED use of "stable" — likely the only one
 **SAID (owner):** *"'my stable' (which is an appropriate use of the word stable and likely the only
 one we would allow)."* The BANNEDWORDS audit lists it as approved-by-ruling, not as a finding.

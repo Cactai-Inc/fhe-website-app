@@ -4,7 +4,7 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-03 · **FHE-ORCH-8 in the seat. Four MGMT copies cut: GRANTS (B1) · SUPPLIES (B5) running; DASHBOARDS (B7) · FUNNELDEBT (B2) handed. Pool wt-1…wt-11.**
+**Last updated:** 2026-09-03 · **CR-116 ruled (no anonymous user; the gift flow rides the activation link) — GRANTS unblocked, gift rebuild routed to B2.** **FHE-ORCH-8 in the seat. Four MGMT copies cut: GRANTS (B1) · SUPPLIES (B5) running; DASHBOARDS (B7) · FUNNELDEBT (B2) handed. Pool wt-1…wt-11.**
 
 ## THE PLAN OF RECORD — RECONCILED-2026-09-02.md §8, twelve bundles (ORCH adopts as written)
 | Bundle | Tier | State |
@@ -173,15 +173,18 @@ address fields left unshaped by design — want them shaped too?
 | `FHE-TASK-GRANTS-B` | CODR | wt-2 (after -A retires) | `task/grants-b` | waiting on -A's spec |
 | `FHE-TASK-GRANTS-V` | VRFY | **wt-11** (allotted by ORCH 2026-09-03) | — | waiting |
 | `FHE-TASK-GRANTS-W` | WALKR | wt-11 (after -V) | — | at close, on `main` as deployed |
-**Escalations:** 1/1 RAISED 2026-09-03 — `FHE-TASK-GRANTS-A-ANON-WRITERS.md` (bundle/grants): 145 anon-executable writers; Block A 140 no anonymous caller → revoke; Block B: keep `submit_public_request` + `open_gift` (code is the credential), revoke `redeem_gift` (self-guards on auth.uid()). ORCH verified in production: open_gift anon=t no guard · redeem_gift anon=t self-guard=t. **With the owner.** -B blocked behind the ruling. **Item 7** (ledger status headers): last, after ORCH is told.
+**Escalations:** 1/1 ✅ **RULED 2026-09-03 — CR-116.** Block A (140) REVOKE as one block · `submit_public_request` KEEP anon · **`open_gift` REVOKE** · `redeem_gift` REVOKE. The owner: there is no anonymous user any more — an account exists the moment we have the email address; the gift reveal is an email animation and the link is an activation link. ORCH's safety measurement: **`gifts` = 0 rows in production**, so no live surface is reached anonymously. -B unblocked. **Item 7** (ledger status headers): last, after ORCH is told.
 *(mirrored by ORCH from `bundle/grants` d5f97724; MGMT keeps editing its copy on the bundle branch — MGMT-ROLE §10.)*
 
-## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (cut 2026-09-03 · `docs/orch/BUNDLE-DASHBOARDS.md`)
-*(MGMT edits ONLY this section on its bundle branch.)*
-**Bundle tree `wt-7` · task tree `wt-8` · prompt handed 2026-09-03 · first deliverable: `docs/design/DASHBOARD-ENGINE-CONTRACT.md` UP to ORCH (B5 gates on it) · escalations 0/6.**
-| Tree | Thread | Profile · tier | State |
+## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-DASHBOARDS-LEDGER.md` on `bundle/dashboards` @ 0ecc662c)
+**Bundle tree `wt-7` · branch `bundle/dashboards` from `a1399848` · task tree `wt-8` · lane: engine contract + config tables + registry FIRST as one unit, then per task after VRFY · escalations 0/6.**
+| Thread | Profile · tier | Tree | State |
 |---|---|---|---|
-| wt-8 | `FHE-TASK-DASHBOARDS-A` | DSNR · Fable HIGH | awaiting MGMT dispatch |
+| `FHE-TASK-DASHBOARDS-A` | DSNR · **Fable HIGH** ⚠️ | wt-8 | DISPATCHED 2026-09-03 — contract first (STATUS header → STABLE), then specs + chunk declaration |
+**Its two findings (recorded by ORCH, not re-derived):** (1) `dash_waiting_on_you` / `dash_waiting_on_clients` / `_waiting_items` have **no creating migration on `main`** — they were applied to production from the unmerged `b9bc9edc` branch. (2) Two of DASHFEED's three owner questions are already answered in `04-OPEN`; only the metric list is open, so escalation 3 likely collapses into escalation 2, and escalation 1 may close on evidence if `hello@` and `admin@` are both real owner accounts.
+⚠️ **Tier note (ORCH's own doing):** this MGMT branched from `a1399848`, which still carried my pre-D45 "DSNR: **Fable · HIGH**" suggestion. Under D45 (final) the bundle file now says MGMT decides. **If the Fable allowance is the binding constraint, -A is the thread to move.**
+**Gates B5:** the engine contract goes UP to ORCH the moment -A marks it STABLE.
+*(mirrored by ORCH from `bundle/dashboards`; MGMT keeps editing its copy on the bundle branch.)*
 
 ## BUNDLE FUNNELDEBT — FHE-MGMT-FUNNELDEBT (cut 2026-09-03 · `docs/orch/BUNDLE-FUNNELDEBT.md`)
 *(MGMT edits ONLY this section on its bundle branch.)*
