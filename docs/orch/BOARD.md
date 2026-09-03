@@ -196,12 +196,18 @@ noted to SUPPLIES' ledger.
 distinct logins.
 
 ## FHE-TASK-CR119-A — bill of sale co-buyer stuck election (ORCH direct dispatch, 2026-09-03)
-**Live incident, resolved for the owner directly; a durable fix dispatched behind it.**
+⚠️ **First diagnosis was wrong, caught by the owner ("no such surface exits"), corrected same session
+— see `THE FACT-FINDING STEP` note below and the ledger's corrected CR-119 entry.**
 `docs/tasks/TASK-CR119-A-a-way-out-of-the-co-buyer-election.md` · **wt-13** · Opus · HIGH · ON.
-Write path confirmed NOT broken (`remove_document_co_buyer` exists + fires correctly). The stuck
-document `80537662-7b4e-4adc-9ebc-49ed9d2bed78` unblocks by one field write the owner can do himself
-(§ the ledger entry). Real defect: the co-buyer capture card is add-only with no cancel. No file
-ownership conflict — `ContractPage.tsx` / `ContractCascade.tsx` untouched by any running bundle.
+**Real defect (confirmed against the template's own data, not re-guessed):** `HORSE_SALE_V2` renders
+via `ClauseDocument.tsx` (clause-composed), never `ContractCascade.tsx`. `TXN.CO_BUYER_ENABLED`'s only
+clause (`PARTIES.CO_BUYER_PENDING`) is visible only while the field is blank — answering Yes hides the
+only control that could answer No. A true self-locking control.
+**The live document, `80537662-7b4e-4adc-9ebc-49ed9d2bed78`, fixed DIRECTLY by ORCH** (rehearsed in a
+transaction, rolled back, then applied for real): field cleared, body recomposed. Not the task's to
+touch. **Durable fix target unchanged** — an explicit exit inside the co-buyer capture card
+(`ContractPage.tsx`, not clause-gated). No file ownership conflict — `ContractPage.tsx` /
+`ContractCascade.tsx` / `ClauseDocument.tsx` untouched by any running bundle.
 
 ## BUNDLE GRANTS — FHE-MGMT-GRANTS (D44 trial · opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-GRANTS-LEDGER.md`)
 **Bundle tree `wt-1` · branch `bundle/grants` (origin/main e8bdb372 merged in) · merge lane: per task after VRFY — MGMT pushes `bundle/grants`, ORCH merges it to `main` (ORCH-8 docs-lane ruling) · hands back to `FHE-ORCH`.**

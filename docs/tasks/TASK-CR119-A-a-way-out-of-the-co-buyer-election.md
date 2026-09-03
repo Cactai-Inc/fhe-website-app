@@ -2,30 +2,36 @@
 
 **Owner's words, verbatim — `docs/reference/CHANGE-ORDER-LEDGER.md` CR-119.**
 
-## ORCH's fact-find (the one query + the read — do not re-derive)
-The write path and the DB-side teardown are NOT broken. Production, checked 2026-09-03:
-- The stuck document: `documents.id = 80537662-7b4e-4adc-9ebc-49ed9d2bed78` (template `HORSE_SALE_V2`,
-  `workflow_state='editable'` — not locked, not frozen), `TXN.CO_BUYER_ENABLED='YES'`, one `BUYER`
-  party (the primary buyer only — no co-buyer party was ever added).
-- `remove_document_co_buyer(uuid)` exists in production. `set_contract_field`'s teardown hook
-  (`20260802090001_sale_engine_functions.sql:721-725`) calls it whenever `TXN.CO_BUYER_ENABLED`
-  changes to `NO`. **The write path works.**
-- The field itself (`input_kind='select'`, `format_type='select'`, options `Yes`/`No`, `owner_role='DEAL'`)
-  renders generically via `ContractCascade.tsx`'s `SelectWithOther` (`:387-419`) — a plain `<select>`,
-  wherever `TXN.CO_BUYER_ENABLED` sits in the document's PARTIES section field order. **Selecting "No"
-  there calls `onSave → set_contract_field(doc, 'TXN.CO_BUYER_ENABLED', 'NO')` and DOES tear the
-  election down.**
-**THE ACTUAL DEFECT: not a broken write, a missing exit where the user is looking.** Checking "Yes"
-opens the bespoke co-buyer capture card in `ContractPage.tsx` (`:1955-1990`) — pick-or-hand-enter,
-an "Add co-buyer" button, **and nothing else**. No cancel, no "remove," no restatement of the
-underlying Yes/No. A staff user who elected "Yes" and changed their mind sees a card that only ever
-adds a co-buyer, has to notice a plain, unlabeled-as-a-checkbox `<select>` field elsewhere in the same
-long document body, and is not told that field is the way out. **That is what "stuck" means here.**
+## ORCH's fact-find (the one query + the read — do not re-derive) — CORRECTED once already, read this version
+**A first pass here was wrong and is withdrawn** (it reported a generic dropdown as the way out; the
+owner confirmed "no such surface exits" and the trace was redone against the actual renderer). Do not
+re-derive; the corrected facts:
+- `HORSE_SALE_V2` is one of the six **clause-composed** templates. `ContractPage.tsx:2006-2043` routes
+  these through `ClauseDocument.tsx`, never through `ContractCascade.tsx` — `SelectWithOther` and every
+  other `ContractCascade` control **do not exist for this document**. Ignore any trace that says otherwise.
+- `TXN.CO_BUYER_ENABLED`'s `clause_key` is `PARTIES.CO_BUYER_PENDING`
+  (`20260802090000_sale_and_bos_templates.sql:327`). That clause's OWN visibility is
+  `{"equals":[""],"field_key":"TXN.CO_BUYER_ENABLED"}` — **visible only while the question is
+  unanswered** (`ClauseDocument.tsx:21-22`: "a clause whose conditional_on isn't met is hidden"). No
+  other clause in the template carries this field as its own. **The instant the owner answers Yes,
+  the only clause holding the control hides itself, taking the control with it.** A true self-locking
+  UI defect, not a discoverability gap.
+- The write path itself is fine: `remove_document_co_buyer(uuid)` exists in production, and
+  `set_contract_field`'s teardown hook (`20260802090001_sale_engine_functions.sql:721-725`) calls it
+  correctly whenever `TXN.CO_BUYER_ENABLED` changes to `NO`. **Nothing wrong with the RPC — the bug is
+  that no rendered control ever calls it again once the field is `YES`.**
+- The bespoke co-buyer capture card in `ContractPage.tsx` (`:1955-1990`) is the ONLY surface left once
+  the field is `YES` — pick-or-hand-enter, an "Add co-buyer" button, **and nothing else**. No cancel,
+  no "remove," no restatement of the underlying question. **This card is a plain React conditional,
+  not clause-gated — it is the one place that reliably stays visible, which is why the fix below still
+  targets it.**
 
-## IMMEDIATE UNBLOCK (tell the owner directly, no build needed for this)
-On `80537662-7b4e-4adc-9ebc-49ed9d2bed78`, find "Is there a co-buyer?" in the PARTIES section of the
-document body (a plain dropdown, not inside the co-buyer capture card) and set it to **No**. That
-single write tears the election down — no party was added yet, so nothing else to undo.
+## THE LIVE DOCUMENT — already fixed directly, do not touch it
+`80537662-7b4e-4adc-9ebc-49ed9d2bed78` was unblocked by ORCH on 2026-09-03: rehearsed in a transaction
+(rolled back to prove it), then applied for real — `TXN.CO_BUYER_ENABLED` cleared to `''`,
+`remerge_contract_from_clauses` re-run. No party, signature, or other field touched. **This is not
+your task's to redo or verify against** — build and test against a WALKTEST fixture only (§THE TEST
+below), never this document.
 
 ## The durable fix — narrow, no design ambiguity
 Add an explicit way out **inside the co-buyer capture card itself** (`ContractPage.tsx:1955-1990`,

@@ -4582,18 +4582,30 @@ thread 2026-09-03.
 its checked for adding a co-buyer. my current bill of sale is now stuck because of this."*
 **Live incident — fact-find first, one query, before anything is designed or built.**
 
-**FOUND (ORCH, 2026-09-03, one query + one read):** the write path is not broken.
-`remove_document_co_buyer` exists in production and `set_contract_field`'s teardown hook correctly
-calls it when `TXN.CO_BUYER_ENABLED` flips to `NO`; the field's generic dropdown control
-(`ContractCascade.tsx`'s `SelectWithOther`) can make that write. **The stuck document:**
-`80537662-7b4e-4adc-9ebc-49ed9d2bed78` (`HORSE_SALE_V2`, editable, 1 buyer party — no co-buyer was
-ever added). **The real defect:** checking "Yes" opens a bespoke capture card
-(`ContractPage.tsx:1955-1990`) with an "Add co-buyer" button and no exit — no cancel, no restatement
-of the underlying Yes/No. The actual off-switch is a plain, easy-to-miss dropdown elsewhere in the
-document body. **Immediate unblock:** on that document, set "Is there a co-buyer?" to No directly —
-nothing else needs to undo, since no co-buyer party exists yet. **Durable fix dispatched:**
-`FHE-TASK-CR119-A`, wt-13, Opus · HIGH · ON — one action added inside the capture card itself, no DB
-change needed.
+**FOUND (ORCH, 2026-09-03) — CORRECTED, the first read was wrong.** My first pass traced
+`ContractCascade.tsx`'s generic field renderer and reported a dropdown that would let the owner
+switch the election back to No. **That renderer never mounts for this document.** `HORSE_SALE_V2`
+is one of the six clause-composed templates, which render through `ClauseDocument.tsx` instead
+(`ContractPage.tsx:2006-2043`) — confirmed by the owner: *"no such surface exits."*
+**The real defect, confirmed against the template's own data:** `TXN.CO_BUYER_ENABLED`'s
+`clause_key` is `PARTIES.CO_BUYER_PENDING` (`20260802090000_sale_and_bos_templates.sql:327`), and
+that clause's own visibility is `{"equals":[""],"field_key":"TXN.CO_BUYER_ENABLED"}` — visible only
+while the question is unanswered (`ClauseDocument.tsx:21-22`: "a clause whose conditional_on isn't
+met is hidden"). **The instant the owner answers Yes, the only clause carrying that field's control
+hides itself, taking the control with it.** No other clause in the template holds
+`TXN.CO_BUYER_ENABLED` as its own field. This is a genuine self-locking control, not a
+discoverability gap — the earlier read (a hard-to-find but working dropdown) is withdrawn.
+
+**The stuck document, `80537662-7b4e-4adc-9ebc-49ed9d2bed78` (buyer: French Heritage Equestrian,
+seller: Kamryn Herrera), UNBLOCKED DIRECTLY by ORCH, 2026-09-03:** rehearsed in a transaction and
+rolled back first, then applied for real — `contract_fields.value` for `TXN.CO_BUYER_ENABLED`
+cleared to `''`, `remerge_contract_from_clauses` re-run to recompose the body. No party, signature,
+or other field touched (buyer_count was 1 throughout; no co-buyer party existed to remove). The
+question now reads as unanswered, as it did before it was checked.
+**Durable fix, unchanged in its target:** `FHE-TASK-CR119-A`, wt-13, Opus · HIGH · ON — its planned
+fix (an explicit exit inside the co-buyer capture card, `ContractPage.tsx:1955-1990`, which is a
+plain React conditional and never clause-gated) was already aimed at the one place that reliably
+stays visible. **Its charge file's root-cause section is corrected to this entry, not the withdrawn one.**
 
 ## CR-118 — 2026-09-03: per-staff-account nav visibility, an Admin-nested account link, and a Team-page control surface — with a self-protection rule
 **SAID (owner, verbatim):**
