@@ -128,7 +128,12 @@ sweep shows a body needs a guard, that is a line in your report routed up — ne
 REVOKE ALL ON FUNCTION public.<name>(<identity args>) FROM PUBLIC, anon;
 ```
 
-⚠️ **Never touch `service_role` or `postgres`. Grant nothing new** — with one exception named in group S.
+⚠️ **Never touch `service_role` or `postgres`. Grant nothing new — there is NO exception.**
+*(Corrected by `FHE-MGMT-GRANTS` 2026-09-03 on `TASK-GRANTS-B`'s report §2 Q3: this line used to read
+"with one exception named in group S", and group S contains two REVOKEs and no GRANT. Group S's heading
+names the `authenticated` grant it REMOVES, not one it adds; `service_role` keeps EXECUTE by not being
+revoked. Proven in production 12:20 PDT — `sign_release`/`sign_general_release`: authenticated=f,
+service_role=t. The migration as built contains zero GRANT statements, which is correct.)*
 
 ### 🔒 GENERATE THE STATEMENTS; DO NOT TYPE THEM
 
