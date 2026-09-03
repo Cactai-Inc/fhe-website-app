@@ -417,3 +417,17 @@ or a comment; the six genuinely ambiguous ones (`_restore_contract_template_comp
 | 324 | `trg_status_invitations()` | `v` | **TRIGGER** | `13: INSERT INTO status_events (org_id, entity_type, entity_id, status, detail, actor` |
 | 325 | `trg_status_purchases()` | `v` | **TRIGGER** | `16: INSERT INTO status_events (org_id, entity_type, entity_id, status, actor_user_id` |
 | 326 | `trg_wake_held_orders_on_horse()` | `v` | **TRIGGER** | `24: UPDATE purchases SET status = 'awaiting_payment', updated_at = now() WHERE id = ` |
+---
+
+## CLOSE — 2026-09-03
+
+- `origin/main` MOVED during this session: `2779ca2c` → **`a1399848`** ("CR-112·A1: the fourteen proposed
+  items filed verbatim"). My merge-base is unchanged at `2779ca2c` and nothing I wrote exists on either
+  side of that move. `git diff --stat $(git merge-base HEAD origin/main)` = **4 files, all under `docs/`,
+  1296 insertions, 0 deletions.** ⚠️ Diff against the MERGE-BASE, not `origin/main` — against
+  `origin/main` the same command reads as if this branch deleted `BUNDLE-DASHBOARDS.md`,
+  `BUNDLE-FUNNELDEBT.md` and part of `CHANGE-ORDER-LEDGER.md`, which are ORCH's new commits.
+- Six commits on `task/grants-a-spec`, not pushed. **Merging is MGMT's (`MGMT-ROLE.md` §3).**
+- **Nothing was written to the database.** Every statement this thread ran was `SELECT` /
+  `has_function_privilege` / `pg_get_functiondef`. No function was called to see what it would do.
+- TEARDOWN: no server, no browser, no scratch worktree started. `psql` was one-shot per invocation.
