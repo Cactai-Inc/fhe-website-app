@@ -139,3 +139,14 @@ address fields left unshaped by design — want them shaped too?
 `FIX1` §8 · `FIX2` §9 · **`FIX4` §11 (13 items, the biggest visual change)** · `CR85` §8 ·
 `MODAL2` · `BACKDATE` §8 · `BOOKS1` §14 · **`LIFECYCLE` §8 (7 items — item 6 is the visible change: next month renders pending/orange)** · **`SIGNDOOR` — ⚠️ load `/sign/rider` and count the boxes;
 "exactly two" is the whole task and only its own probe has tested it.**
+
+## BUNDLE GRANTS — FHE-MGMT-GRANTS (D44 trial · opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-GRANTS-LEDGER.md`)
+**Bundle tree `wt-1` · branch `bundle/grants` @ a1c6c105 · merge lane: per task after VRFY · hands back to `FHE-ORCH-7`.**
+**DB objects held by this bundle: the ACL (`proacl`) of every SECURITY DEFINER function in `public` — never a body.**
+| Thread | Profile | Tree | Branch | State |
+|---|---|---|---|---|
+| `FHE-TASK-GRANTS-A` | DSNR | **wt-2** | `task/grants-a-spec` | DISPATCHED 2026-09-03 — `docs/tasks/TASK-GRANTS-A-author-the-acl-sweep-spec.md`; awaiting owner launch |
+| `FHE-TASK-GRANTS-B` | CODR | wt-2 (after -A retires) | `task/grants-b` | waiting on -A's spec |
+| `FHE-TASK-GRANTS-V` | VRFY | **needs a tree from ORCH** (wt-2 will hold -B) | — | waiting |
+| `FHE-TASK-GRANTS-W` | WALKR | needs a tree from ORCH | — | at close, on `main` as deployed |
+**Escalations:** 1 pre-registered (anon-executable writers) — not yet raised; -A produces the list. **Item 7** (ledger status headers): last, after ORCH is told.
