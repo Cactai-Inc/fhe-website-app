@@ -36,3 +36,27 @@ already enough.**
 ## UNCONFIRMED
 **The owner mentioned a "Fable 5.1" release. The reference available on 2026-09-01 does not list
 it** — the guidance above is for the Fable family and should carry.
+
+## 2026-09-03 — Fable 5.1 for SHAPE-BEFORE-FIX work (owner ruling)
+> *"consider using Fable 5.1 for complex tasks from the list, dont use it just to use it, but we
+> should probably be giving it a try anywhere it will genuinely resolve issues that are challenging
+> due to the complexity of the convoluted heap… especially the challenges that are causing half built
+> solutions and fixes being implemented at face value on the surface of something that truly needs a
+> fresh look at its shape and structure before deciding if it needs a fix or a refactor."*
+
+**The rule ORCH applies:** the tier follows the QUESTION the task must answer.
+| The task must answer | Tier |
+|---|---|
+| "what is the right SHAPE here, and is this a fix or a refactor?" — overlapping subsystems, a seam three threads already got wrong, a design that must converge incumbents (D18) | **Fable 5.1 · HIGH** (no thinking line) — DSNR-profile specs on convoluted ground, RECONCILE-class passes, WALKR flow walks, the MGMT threads themselves |
+| "build exactly this, with judgment inside a locked shape" | Opus · HIGH · thinking ON |
+| "apply this idiom N times without drifting" | Sonnet · MEDIUM/HIGH · thinking ON |
+**Not a default:** a Fable spec task is chosen because the ground is convoluted, not because the
+change is large. A large but well-shaped change stays Opus. ⚠️ Prescriptive spec style may work
+against Fable (2026-09-01 note above): give it the outcome, the incumbents, the rulings and the
+traps, and let it draw the route.
+
+**Applied 2026-09-03 to the queue:** SUPPLIES design (CR-109/112 — three overlapping subsystems,
+ledger model) · INROADS (auth-state branching, three failed removal proposals) · FUNNELDEBT (funnel
+seams F1–F4 + guardian) · MODULES access point + admin refactor (CR-110) · CR-106 analytics/SEO
+architecture · the DASHBOARDS revisit (CR-107) → all Fable-tier DSNR-profile tasks. SIGNFLOW-G/H,
+BANNEDWORDS, SITEPOLICY research → unchanged (Sonnet/Opus).
