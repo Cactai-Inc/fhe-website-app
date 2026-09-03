@@ -1,34 +1,28 @@
 /* Generates dist/sitemap.xml and dist/robots.txt from the public route list.
  * Runs after the build + prerender.
+ *
+ * The route list is src/lib/seo.ts ROUTE_SEO, filtered on `indexable` — the same
+ * list prerender.mjs renders — so every sitemap <loc> is a prerendered file and a
+ * redirect (/ride, /shop, /membership) is never advertised (TASK-SITESEO §3, §4c).
  */
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { writeFileSync } from 'node:fs';
+import { loadSeo, indexableRoutes } from './seo-config.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 const distDir = resolve(root, 'dist');
 
-// Mirrors the indexable routes in src/lib/seo.ts (ROUTE_SEO).
-const SITE_URL = 'https://www.frenchheritageequestrian.com';
-const routes = [
-  { path: '/', priority: 1.0 },
-  { path: '/story', priority: 0.9 },
-  { path: '/shop', priority: 0.85 },
-  { path: '/ride', priority: 0.9 },
-  { path: '/membership', priority: 0.8 },
-  { path: '/lessons', priority: 0.8 },
-  { path: '/horse', priority: 0.8 },
-  { path: '/acquisition', priority: 0.8 },
-  { path: '/about', priority: 0.7 },
-];
+const { SITE_URL, ROUTE_SEO } = await loadSeo();
+const routes = indexableRoutes(ROUTE_SEO);
 
 const today = new Date().toISOString().slice(0, 10);
 
 const urls = routes
   .map((r) => {
     const loc = `${SITE_URL}${r.path === '/' ? '' : r.path}`;
-    return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${today}</lastmod>\n    <priority>${r.priority.toFixed(1)}</priority>\n  </url>`;
+    return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${today}</lastmod>\n    <priority>${r.priority.toFixed(2).replace(/0$/, '')}</priority>\n  </url>`;
   })
   .join('\n');
 

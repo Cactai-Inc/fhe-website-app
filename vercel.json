@@ -24,6 +24,11 @@
       "schedule": "20 8 * * *"
     }
   ],
+  "redirects": [
+    { "source": "/ride", "destination": "/lessons", "permanent": true },
+    { "source": "/shop", "destination": "/lessons", "permanent": true },
+    { "source": "/membership", "destination": "/lessons", "permanent": true }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
