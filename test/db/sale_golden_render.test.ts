@@ -92,6 +92,17 @@ const SALE_COMMON = {
   'BUYER.ENTITY_SIGNER_NAME': 'Bo Buyer', 'BUYER.ENTITY_SIGNER_TITLE': 'Manager',
 };
 
+/** CR-101·A1 (TASK-SIGNFLOW-H): the composer never appends "." to a line that
+ *  carries a signature token — the token resolves at signing/display time, so
+ *  the period would surface as "Signature: ." unsigned and "Name." signed.
+ *  Red until fixtures/schema_snapshot.sql is regenerated from production
+ *  (TASK-TESTREPAIR owns that act). */
+function expectNoPeriodAfterSignatureLines(body: string) {
+  const sigLines = body.split('\n').filter(l => /^(Signature|Date): /.test(l));
+  expect(sigLines.length).toBeGreaterThan(0);
+  for (const l of sigLines) expect(l, `signature line ends with a period: ${JSON.stringify(l)}`).not.toMatch(/\.$/);
+}
+
 describe('HORSE_SALE_V2 — golden branch fixtures', () => {
   it('fixture A (co-buyer YES, JTWROS) composes every elected branch', async () => {
     const body = await composeFixture('HORSE_SALE_V2', {
@@ -124,6 +135,7 @@ describe('HORSE_SALE_V2 — golden branch fixtures', () => {
     expect(body).toContain('Signing on behalf of Buyer Holdings LLC');
     // co-buyer signature block
     expect(body).toContain('CO-BUYER');
+    expectNoPeriodAfterSignatureLines(body);
   });
 
   it('fixture B (co-buyer NO) omits the co-buyer branch entirely', async () => {
@@ -135,6 +147,7 @@ describe('HORSE_SALE_V2 — golden branch fixtures', () => {
     expect(body).not.toContain('CO-BUYER');
     expect(body).not.toContain('[Pending');
     expect(body).toContain('due in full at or before delivery of the Horse');
+    expectNoPeriodAfterSignatureLines(body);
   });
 
   it('unset gates render pending placeholders (blocks-signing surface)', async () => {
@@ -144,6 +157,7 @@ describe('HORSE_SALE_V2 — golden branch fixtures', () => {
     expect(body).toContain('[Pending — select whether Seller is an individual or an entity.');
     expect(body).toContain('[Pending — select whether Buyer is an individual or an entity.');
     expect(body).toContain('[Pending — state whether anyone has been seriously injured');
+    expectNoPeriodAfterSignatureLines(body);
   });
 });
 
@@ -179,5 +193,6 @@ describe('HORSE_BILL_OF_SALE — golden fixture', () => {
     expect(body).not.toContain('[Pending');
     // §19525 statement present
     expect(body).toContain('Business and Professions Code Section 19525');
+    expectNoPeriodAfterSignatureLines(body);
   });
 });
