@@ -138,6 +138,15 @@ address fields left unshaped by design — want them shaped too?
    a new name; product question.
 7. **(LIFECYCLE) a client accepting a staff counter-time on an unpaid order lands `scheduled` with
    no payment request** — `request_purchase_payment` is staff-only.
+8. **CR-116 — activate-then-review.** Fact-finding done directly by ORCH in conversation, 2026-09-03:
+   `docs/reports/FHE-DISCO-CR116-HANDOFF.md`. Most of the described flow already exists (`Register.tsx`'s
+   docs-needed routing, Onboarding's `details` review step, contact-wins prefill). The real gap:
+   `promote_contact_to_account` never mirrors name onto `profiles` the way `update_my_onboarding_profile`
+   does, and the no-docs branch skips the one screen that would trigger that mirror — so a lead promoted
+   straight to a docs-free account lands on a dashboard with a blank name/greeting forever. Handoff
+   names the scope question (fix the mirror · make review unconditional · both) for DSNR to settle.
+   **Ready to dispatch as a DSNR-profile task** (`FHE-TASK-CR116-A`, prompt in the handoff's tail) —
+   not contended with any live bundle.
 
 ## OWNER CHECKLISTS UNRUN — the half no thread can prove
 `FIX1` §8 · `FIX2` §9 · **`FIX4` §11 (13 items, the biggest visual change)** · `CR85` §8 ·

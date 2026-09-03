@@ -4756,3 +4756,10 @@ written:**
   bug independent of the flow; the review step is new UX regardless of whether the trigger is fixed.
 
 **Recorded by ORCH as courier; routed for fact-finding before a spec is written.**
+
+**Fact-finding done, same day, directly by ORCH in conversation** (not a separate DISCO thread — the
+owner directed proceeding this way): `docs/reports/FHE-DISCO-CR116-HANDOFF.md`. Most of the described
+flow already exists; the real gap is narrower and precisely located — `promote_contact_to_account`
+never mirrors name onto `profiles`, and the no-docs branch is exactly the one that skips the screen
+that would trigger it. Ready to dispatch as a DSNR-profile task; queued on `docs/orch/BOARD.md` §ROUTED
+item 8, not contended with any live bundle.
