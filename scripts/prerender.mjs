@@ -12,13 +12,11 @@ import { build } from 'vite';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { loadSeo, indexableRoutes } from './seo-config.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 const distDir = resolve(root, 'dist');
-
-// Routes to prerender — must match the indexable paths in src/lib/seo.ts.
-const ROUTES = ['/', '/about', '/story', '/shop', '/faq', '/ride', '/membership', '/lessons', '/horse', '/acquisition'];
 
 async function main() {
   // Build the SSR entry to a temporary out dir. Bundle react-helmet-async (CJS)
@@ -36,6 +34,14 @@ async function main() {
 
   const { render } = await import(resolve(root, 'dist-ssr/entry-server.js'));
   const template = readFileSync(resolve(distDir, 'index.html'), 'utf-8');
+
+  // Routes to prerender = the indexable paths in src/lib/seo.ts, read from the
+  // file itself rather than mirrored here (TASK-SITESEO §3). A route that
+  // redirects (/ride, /shop, /membership → /lessons, served as a host 301 from
+  // vercel.json) is indexable:false and is therefore never rendered — rendering a
+  // <Navigate> produced a titleless page with an empty <main>.
+  const { ROUTE_SEO } = await loadSeo();
+  const ROUTES = indexableRoutes(ROUTE_SEO).map((r) => r.path);
 
   for (const url of ROUTES) {
     const { html, head } = render(url);

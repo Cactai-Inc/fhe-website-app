@@ -52,7 +52,8 @@ export interface RouteSeo {
   description: string;
   /** Optional Service schema name for service pages. */
   service?: string;
-  /** Include in sitemap.xml. */
+  /** Prerendered to dist/<path>/index.html AND listed in sitemap.xml — the build
+   *  scripts derive both lists from this flag (scripts/seo-config.mjs). */
   indexable: boolean;
   priority: number;    // sitemap priority 0..1
 }
@@ -88,7 +89,10 @@ export const ROUTE_SEO: RouteSeo[] = [
     description:
       'Every way to ride with us at Carmel Creek Ranch — riding lessons, jumper training, horsemanship, and horse care. Each service is by appointment, arranged personally. Send your request to begin.',
     service: 'Riding Lessons & Horse Care',
-    indexable: true,
+    // /shop redirects to /lessons (App.tsx) and is a host 301 in vercel.json. The
+    // entry stays because Shop.tsx calls seoForPath('/shop')!; non-indexable so it
+    // is neither prerendered nor sitemapped (TASK-SITESEO §4c).
+    indexable: false,
     priority: 0.85,
   },
   {
@@ -96,7 +100,9 @@ export const ROUTE_SEO: RouteSeo[] = [
     title: 'Come Ride With Us — Lessons & Rider Community | French Heritage Equestrian',
     description:
       'A community of women who ride for the love of it, in coastal San Diego. Classical jumper riding — join the rider community or book individual lessons.',
-    indexable: true,
+    // /ride redirects to /lessons (App.tsx) and is a host 301 in vercel.json;
+    // non-indexable so it is neither prerendered nor sitemapped (TASK-SITESEO §4c).
+    indexable: false,
     priority: 0.9,
   },
   {
@@ -106,6 +112,16 @@ export const ROUTE_SEO: RouteSeo[] = [
       'Every way into French Heritage Equestrian: riding lessons and training for you, care and training for your horse, and expert acquisition support when you are ready for a horse of your own.',
     indexable: true,
     priority: 0.7,
+  },
+  {
+    path: '/faq',
+    // Faq.tsx emits its own <Seo> with exactly these strings; the entry exists so
+    // the prerender + sitemap lists (derived from `indexable`) include the page.
+    title: 'Frequently Asked Questions | French Heritage Equestrian, San Diego',
+    description:
+      'Common questions about riding lessons, first visits, and getting started at French Heritage Equestrian — Carmel Creek Ranch, coastal San Diego.',
+    indexable: true,
+    priority: 0.5,
   },
   {
     path: '/visit',
@@ -131,7 +147,8 @@ export const ROUTE_SEO: RouteSeo[] = [
       'Join the French Heritage Equestrian rider community — group rides, the people, and a regular riding rhythm. Membership is by invitation; reach out to learn how it works.',
     service: 'Rider Community Membership',
     // Public /membership join removed (Slice 4): membership is by invitation via the
-    // app; the route redirects to /lessons. Keep the entry but non-indexable.
+    // app; the route redirects to /lessons (App.tsx) and is a host 301 in
+    // vercel.json. Keep the entry but non-indexable (TASK-SITESEO §4c).
     indexable: false,
     priority: 0.3,
   },
