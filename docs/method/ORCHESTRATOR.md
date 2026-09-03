@@ -1,3 +1,9 @@
+> # 🔻 2026-09-03 — THE RULES MOVED TO `docs/method/ORCH-ROLE.md`. THIS FILE IS LESSONS + HISTORY.
+> Read `ORCH-ROLE.md` for how ORCH operates under D41/D44. Keep reading THIS file for §3/§3b/§3c
+> (the failure-mode tables — the LESSONS tier), §4–§6 (the audit and spec standards the tables came
+> from), and the owner quotations that explain WHY. Sections describing DISCO/DSNR as threads, the
+> five-role model, and the two-line prompt are HISTORY — read them through D41 and ORCH-ROLE §2.
+
 # ORCHESTRATOR — FHE
 
 > **⚠️ THE ROLE ITSELF IS NO LONGER DEFINED HERE.**
