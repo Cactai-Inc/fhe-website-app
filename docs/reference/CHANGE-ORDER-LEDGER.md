@@ -4577,6 +4577,21 @@ URL was conditional in SITESEO §4c.7 and never asked for directly — ORCH's mi
 audit + analytics) is raised to the front of the queue**; the owner's input list is in the ORCH
 thread 2026-09-03.
 
+## CR-120 — 2026-09-03: horse current-location shows "from horse record" instead of the real address; horse intake never normalizes; Barn and Stall "Other" cannot be selected
+**SAID (owner, verbatim):** *"also worth pointing out taht the current location field on the horse
+information section 3 it showing "from horse record" this is a known defect in the way the item
+contract is linked to the source data based on the data shape not matching an explicit expectation
+the contract field carries. this needs to be remediated permenantly. If it can capture the horse's
+name and his microchip it can capture the address i entered into his horse record when i added him to
+the system. also i noticed the intake form for horses doesnt normalize the address, the names, or the
+other information entered, and the location selection drop downs still arent fixed the one for barn
+and other for stall are not able to be selected for the other option each of them show."*
+**Read as three findings — fact-find each before spec, per the CR-119 lesson (confirm the renderer
+that actually mounts, do not re-guess):**
+1. Horse current-location contract field renders a placeholder string instead of the address on file.
+2. The horse intake form does not normalize address, names, or other entered fields.
+3. The Barn and Stall location dropdowns each fail to let "Other" be selected.
+
 ## CR-119 — 2026-09-03: BILL OF SALE co-buyer checkbox has no way OFF once checked — a live document is stuck
 **SAID (owner, verbatim):** *"on the bill of sale contract there is no way to uncheck the option once
 its checked for adding a co-buyer. my current bill of sale is now stuck because of this."*
