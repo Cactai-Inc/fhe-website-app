@@ -60,7 +60,7 @@ two entry points, or the same state machine — is an ARCHITECTURE decision, not
   ownership — that is `ORCH`, and only ORCH holds that state.** **You do not know what is running.**
   ⚠️ **ORCH may split or merge your chunks for operational reasons and will say why. That is not a
   rejection of the design.**
-- **BUILDING.** You write specs. You never open a task worktree.
+- **BUILDING.** You write specs. ⚠️ **You still WORK IN THE WORKTREE ORCH ASSIGNS (D40) — never on the canonical checkout.** (2026-09-02: this line used to say "you never open a task worktree", and two docs tasks wrote on the canonical checkout because of it.)
 - **THE CONVERSATION.** ⚠️ **A question for the owner goes back through `ORCH` as ASK-OWNER, or waits
   for the next `DISCO`.** **You do not open a discussion; that is what burned the orchestrator.**
 - ⚠️ **VERIFICATION.** **ORCH grades the build against your spec — deliberately, because the author of

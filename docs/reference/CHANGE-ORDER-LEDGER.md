@@ -4431,3 +4431,148 @@ point for modules — is PENDING and unspecced.** It belongs with the admin-refa
 (`docs/design/refactor/CHAT-THREAD-ADMIN-REFACTOR-2026-08-26.md`) and is a bundle candidate for
 the MGMT trial. Every "the owner asked for exactly that" framing of the rail removal is corrected
 by this entry: he asked for a move; half of it ran.
+
+## CR-111 — the vocabulary ruling: Ranch, the full org name, and NINE BANNED WORDS (supersedes D38's "program")
+**SAID (owner, 2026-09-03, verbatim):**
+> *"use org name in any such instances, and make sure they read properly and use the full name not
+> FHE. We board our horses and run our business from a property and business that is designated as a
+> Ranch by owner and diversity of the property contents. Since we operate out of Carmel Creek Ranch,
+> all references to the locale or location or property or the operations and ongoings surrounding our
+> business should be referred to as "Ranch", a barn is a building like a stable, the property
+> obviously has those but that reference would only be accurate and acceptable if such a structure was
+> relevant to the sentence where the word is being used. We dont use any of the barns on the
+> property, stables is how the collection of pens are referred to in some cases or a business in
+> others, so using it would be a bit confusing. For FHE, we are located at Carmel Creek Ranch, we
+> board our horses in stalls identified by numbers, and we operate out of Tackroom 11. There is a name
+> or designation for the general area of the property where our stalls and tackroom are located but i
+> dont have the specific information about that to give to you at this time. We do not run a
+> "program" so much as we operate a community and offer services like lessons, horse training, lease
+> and purchase support… Barn, Stable, School, Program, Academy, Hunter, Trailriding, Tours, Western,
+> are all banned words unless specifically instructed to use them, if they are found anywhere
+> publicly facing or internally named, show me them with enough information about their location,
+> surrounding text, and other contextual data so i can best guide a solution, id like suggestions
+> from the thread in hopes that they suggest what i would write down…"*
+**Consequences:** TASK-RANCHWORD-A (which maps business-sense "barn" → "program") is WITHDRAWN before
+dispatch — "program" is now banned. Replaced by a DISCO-profile audit (`FHE-TASK-BANNEDWORDS`): every
+occurrence of the nine words, public or internal, with file:line, surrounding text, sense, and a
+suggested replacement, presented to the owner for ruling. Business-sense references use the FULL org
+name "French Heritage Equestrian", never "FHE". D38/D43 amended.
+
+## CR-112 — the SUPPLIES system: dashboard + list + inventory + usage + status, reports, and the data flowing to the horse record (CR-109 shaped)
+**SAID (owner, 2026-09-03, verbatim):**
+> *"border's arent a thing for us, we dont offer boarding, we are bording at the ranch. we handle
+> other bording client's needs for their horses. Since they have a "my stable" page with their horses
+> and gear, they should have a supplies page. The supplies page should be constructed with pages for
+> managing a supplies list, inventory, usage, and status. The supplies page should have a method for
+> generating reports that are saved in the users documents page that can be viewed, printed, emailed,
+> and downloaded. Reports need to be available as PDF and CSV. They should feature tables, charts,
+> graphs, and notes. The report generator should be a set of elements to select from for inclusion
+> and a space for the user to input text fields, they should be able to set the arrangement of the
+> items and items should use predefined size and spacing parameters so the report layout can auto
+> generate based on the arrangement the user defines.*
+> *1. The main supplies page is a dashboard, it shows all the information available to the user:
+> data, stats, graphs, charts, alerts, notifications, reminders, etc. This page is also the access
+> point to the internal sub pages, using buttons on desktop and a dropdown menu on mobile (this should
+> be the global standard configuration for navigating sub pages from main pages, worth a review pass
+> to see if this is in place and identify any pages needing to be updated to match this requirement).*
+> *2. The supplies list page shows items as rows and it has a button to add a new item, an edit button
+> to change inputs or select rows to remove, removed rows become hidden but remain available to the
+> system so past use history is unaffected when reports are generated and can be unhidden using the
+> edit button to see the hidden items at the bottom of the page in a section titled hidden items. This
+> enables the user to remove an item from the selection menus on the inventory and usage pages
+> without losing it permanently. items need standard columns for basic information: category
+> (required, list of common options plus free text input that is saved and selectable on future
+> rows), brand (optional, only free text input for first row created then its shown as the first
+> option on a selection list that is generated from all past entries in this field, an x to the right
+> of the items on the list removes it from the list but leaves it wherever it was used), product name
+> (optional, same mechanism as brand), unit size (optional, [number]+[measurement unit] needs a preset
+> list of measurement units to select from for the math to work when used in calculations), unit cost
+> (optional, $, field must be formatted for use in calculations), unit price (optional, used when
+> supplies are billed to a client based on usage, $, formatted for calculations), units per order
+> (optional, inherits measurement unit selected for unit size or if no selection was made in that
+> column it shows the same list from that column for the user to select from and then that column
+> inherits this columns selection), order quantity (optional, inherits same measurement unit from
+> prior columns or offers the list and the prior columns inherit the selection), reorder trigger
+> (optional, quantity of inventory units remaining (triggers on ≤ value entered), and options for the
+> user to select with check boxes for what they want to happen on trigger: alert and/or task),
+> checkbox that sets the row as non-inventory item (optional, overrides these fields by making them
+> inactive: units per order, order qty, and reorder trigger), notes (optional, free text field, adds
+> a button to the item wherever its shown that only appears when there is an entry in this field,
+> when the button is clicked it opens the note in a modal). Save button, this saves the item to the
+> supplies list.*
+> *3. The inventory page shows items as rows and it has a button to add a new item, an edit button to
+> change inputs or select rows to remove, removed rows become hidden but available to add again if
+> the item from the supplies list is added back, this ensures it retains a continuous records history
+> for that specific item while enabling the user to not have it cluttering their page when they arent
+> going to reorder it. Add a new item shows a list of items from the supplies list (non-inventory
+> items are not shown on the list of options), selection adds the rows as configured from the list
+> with empty active fields available for the user to enter current values and make desired
+> selections. Save button, this saves the item to their inventory.*
+> *4. The usage page shows usage logs as rows and it has a button to add a new entry, an edit button
+> to change inputs or select rows to remove, removed rows become hidden but available to add again if
+> the item from the supplies list is added back… entries are rows that begin with selection of an
+> item from the supplies list, the date or date range (calendar month by name or raw dates by
+> selection of day 1 and day N, range displayed as dd/mm/yy + day count), an attribution field with
+> list of options that show the actual data if the system has data for the selection or the option as
+> a type + free text space for adding information, the way it would work is a two step selection
+> first pick the category then see and select from available options with "manual entry" being an
+> option. Here is the list of category types: horses, company (if company account), general, client
+> (if company account), location (examples: boarding location by name or the stall (written as "Stall
+> + optional identifier") or tackroom (written as "Tackroom + optional identifier") or
+> competition/other venue by name or activity/event by name), and a free text input for category and
+> information for that category that is added as a linked pair to the list for future use), starting
+> inventory quantity (pulled from current inventory as snapshot not live to prevent recalculation,
+> for non-inventory items "-" is shown), typed number for the quantity used (units inherited from
+> supplies list, if null left blank for text input), calculated cost shown with $ included or if
+> formula elements are missing from the supplies list entry a blank text input field is shown with
+> currency label so the input can be used in cost calculations for reports and other areas, ending
+> inventory quantity (calculated by subtracting quantity used from starting inventory snapshot, this
+> is what the current inventory reading shows wherever its used, including dated snapshots of on-hand
+> inventory on a given date), space for a reorder indicator to be shown if the current quantity is ≤
+> the trigger quantity.*
+> *…The implementation of this needs to be perfect so it feeds the information to places it should
+> go without fail and accurately (ie: supplies attributed to a horse should be visible on the horse
+> record in ways that may or may not exist yet but should definitely be shown on the horse record),
+> calculations are functional, accurate, and idempotent when they need to be and revise automatically
+> when they need to show real-time data. One thing that needs input is the contents of the dashboard
+> and report field options as well as any other data points that should be shown in other locations."*
+**Answers three of TACKROOM §5's rulings:** (1) two tenancies — the business AND each boarding client
+(clients get a Supplies page beside My Stable); (2) money: unit cost AND unit price (billing to a
+client by usage stays in scope); (3) usage granularity: dated entries with a snapshot start → quantity
+used → computed end, per attribution. ORCH's suggestions list requested — delivered in the ORCH
+thread 2026-09-03 and to be folded into the DSNR-profile spec.
+
+## CR-113 — notification preferences: what to email, how (real-time / digest), and reminders
+**SAID (owner, 2026-09-03, verbatim):**
+> *"the preferences section in the account settings page should contain choices for if/what/when the
+> user wants to receive emails for alerts/notifications/tasks. I'm thinking we would ask them what
+> they want to receive emails about, and how they want the emails to arrive (real-time as they occur
+> and/or summary of unresolved sent daily or weekly or monthly at 8 am or noon or 5 pm). And we should
+> have the option for reminders that they can choose if they want them and we send them weekly for
+> the number of weeks they want a reminder and they pick the day of the week they get it and the same
+> time options; 8 am or noon or 5 pm."*
+Depends on a scheduler: the hourly GitHub Actions job is the only cron that has ever fired (AR1).
+
+## CR-114 — the sub-page navigation standard: buttons on desktop, dropdown on mobile — review pass
+**SAID (owner, 2026-09-03):** the supplies dashboard's sub-page access "should be the global standard
+configuration for navigating sub pages from main pages, worth a review pass to see if this is in
+place and identify any pages needing to be updated to match this requirement." Routed as a
+DISCO-profile audit of every main→sub-page navigation in the app.
+
+## CR-115 — SITESEO follow-through: routes in service, the About placeholder, and the analytics/Business-Profile inputs ASAP
+**SAID (owner, 2026-09-03, verbatim):**
+> *"check to make sure all 8 routes are actually accessible and in service, pages like "About" arent
+> in service and havent been updated since they were created with placeholder content at the
+> formation of this project… Increasing traffic will be the focus once we have fully maximized the
+> SEO potential without major changes to the website shape or contents. An about page can be added
+> to a list of items to revisit in the future. I didnt supply, nor was i asked by the thread to
+> supply information related to google business account, or the other things on the list of
+> information needed for SEO and analytics, hopefully that wasnt part of this pass, but it needs to
+> be implemented asap!"*
+**Facts 2026-09-03:** the eight indexable routes are `/` `/about` `/story` `/services` `/faq`
+`/lessons` `/horse` `/acquisition`; `/about` is linked from NO nav surface (only a post-inquiry link);
+`/faq` self-describes as placeholder copy; `/story` carries placeholder bands; **`/visit` and
+`/contact` — the conversion pages — are `indexable: false`** (worth ruling on). The Business Profile
+URL was conditional in SITESEO §4c.7 and never asked for directly — ORCH's miss. **CR-106 (full
+audit + analytics) is raised to the front of the queue**; the owner's input list is in the ORCH
+thread 2026-09-03.

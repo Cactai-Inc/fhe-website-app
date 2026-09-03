@@ -984,6 +984,13 @@ reporting success.
   to our location as Ranch not barn. rename everywhere."* Extends D38 beyond guest/member copy to
   EVERY surface, staff included. FHE does not own or run the ranch — it boards there and rents a
   tackroom — so **"Barn Ops" is a misnomer twice over**; the module's name and bucketing are under
-  CR-109 review, and the copy sweep (CR-108) does not invent its replacement. The seam is
-  `usePropertyTerm` (FHE's term is already `ranch`); v2's tenant onboarding will ask each tenant
-  their own terminology, which is what the mechanism was built for.
+  CR-109 review. The seam is `usePropertyTerm` (FHE's term is already `ranch`); v2's tenant
+  onboarding will ask each tenant their own terminology, which is what the mechanism was built for.
+  ⚠️ **AMENDED 2026-09-03 (CR-111) — and this SUPERSEDES D38's "program":** *"We do not run a
+  'program' so much as we operate a community and offer services."* Business-sense references
+  ("how the ___ runs", "the ___ has requested") use the FULL org name, **French Heritage
+  Equestrian — never "FHE"**. Location/property/operations = **the Ranch** (Carmel Creek Ranch;
+  stalls by number; Tackroom 11). **NINE BANNED WORDS unless specifically instructed: Barn, Stable,
+  School, Program, Academy, Hunter, Trailriding, Tours, Western** — public or internal; found
+  occurrences are SHOWN to the owner with location, surrounding text and a suggested replacement,
+  never silently swapped. "Barn" is acceptable only when an actual building is the subject.

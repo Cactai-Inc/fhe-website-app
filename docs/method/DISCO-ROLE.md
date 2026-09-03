@@ -67,7 +67,7 @@ burn a thread that exists to be thrown away, not the orchestrator that has to ke
 Its entire output is **a locked, researched, decided record handed to ORCH.**
 
 ⚠️ **It may read anything — the repo, the database, production — and it MUST, because step 2 is
-research.** **Read-only against production. It writes documents, nothing else.**
+research.** **Read-only against production. It writes documents, nothing else — IN THE WORKTREE ORCH ASSIGNS (D40), never on the canonical checkout.**
 
 ---
 
