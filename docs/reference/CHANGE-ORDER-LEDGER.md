@@ -4648,3 +4648,42 @@ monthly on the 1st automatically (under property, or better). **Fixed business c
 and car insurance, health insurance, car payment, phone, internet — set figures charged monthly on
 the 1st automatically; car-related ones are stable-attributed; **electricity at HQ and for charging
 the car entered manually**. Better suggestions invited.
+
+## CR-112 · A2 — 2026-09-03: ONE ledger surface per door, two entry types, cost recognized at purchase, the nested structure, and KEEP the billing resolver
+**SAID (owner, verbatim):**
+> *"Im ok with collapsing the inventory and usage into one page with a unified and accurate name like
+> Ledger, it works on every door, the inputs either add units to inventory, remove them, or just
+> record consumption in units and/or $… Add Entry can be a button that adds inventory and in doing
+> so the item becomes part of the list of items we can add or remove qty from in the same operation
+> as it sets the current on-hand qty and the cost/price for those units… when the price changes we
+> dont have to update the inventory items list the new cost/price is associated only with the actual
+> number of units on the entry, the on-hand units carry the old cost until inventory is exhausted…
+> what we need is not 3 pages but 2 entry types, +inventory and +expense, -inventory or +expense;
+> assuming we record the cost of inventory as recognized at the time of purchase not the time of use…
+> we record the cost in the month its spent regardless of when its consumption occurs."*
+> **Structure:** *"My Stable [dashboard + stats card w/ reports] + [inventory list + [item details]] +
+> [activity log + [activity details]] + [horses, tackroom] → 1. My Horses [entry surface for expenses
+> attributed to each horse: purchase/lease, vet, boarding + bedding + hay, shoeing, clipping,
+> training, entry fees for competitions, events, activities] + [stats card w/ reports] + [activity log
+> + [activity details]]. 2. My Tackroom [tackroom dashboard w/ reports] + [tackroom inventory list +
+> [item details]] + [Supplies, Property] → 2-1. My Supplies [entry surface for inventory w/ costs +
+> expenses w/o inventory: feed, cleaners, refreshments, medical/medications, supplements, specialty
+> care products, maintenance products] + [dashboard w/ reports] + [supplies inventory list + [item
+> details]]. 2-2. My Property [entry surface for inventory w/ costs: tack, riding attire, protective
+> gear, furniture, tools, jumps, equipment, signage] + [property dashboard w/ reports] + [property
+> inventory list + [item details]]."*
+> **Benefits:** *"single entry with data roll-up from inner to outer… two clicks to inner surfaces,
+> three clicks to deepest major surface, four clicks to max depth surface (configuration)… accurate
+> accounting of complex cost attribution (eg: the full true cost per lesson for each horse w/ ROI
+> (revenue/$1 spend) total expenditure w/ purchase/lease or ROI against monthly carry cost)."*
+> **Resolver:** *"Keep it! when a horse is leased we have expense sharing. We will be leasing horses
+> with shared expenses, order split payer is not a thing we have implemented and definitely not in a
+> way that an order assigned to a horse (which isnt even possible yet but needs to be it sounds
+> like) can be automatically split based on the contract terms which were designed so they could
+> support exactly this functionality."*
+**Consequences ORCH records:** the name "Property" is the owner's choice for the durable-goods door
+(ORCH's "Equipment" suggestion declined; the internal facility-term collision on the word "property"
+is a rename hazard the spec must handle). `resolve_consumption_billing` + `cost_allocation_rules`
+are KEPT and become the expense-sharing engine for leased horses; orders need a HORSE attribution;
+allocation seeds from lease contract terms. Costing is LOT-LEVEL FIFO (on-hand carries the old
+cost until exhausted), not weighted average.
