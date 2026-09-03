@@ -4,7 +4,13 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-02 · **ORCH — SIGNFLOW-C VERIFIED AND MERGED; SITESEO out in wt-2; wt-3 free; RANCHWORD/TACKROOM queued for wt-1**
+**Last updated:** 2026-09-02 · **ORCH — nothing running; BATCH 1 handed: SITESEO (wt-2) · SIGNFLOW-F specs (wt-3) · RANCHWORD spec (wt-1)**
+
+## RUN ORDER (owner asked 2026-09-02)
+**Batch 1 — concurrent, all three trees:** `SITESEO` wt-2 · `SIGNFLOW-F` (DSNR profile, two specs) wt-3 · `RANCHWORD` (DSNR profile, sweep spec) wt-1.
+**Batch 2 — as each returns:** `TACKROOM` (DISCO research) → wt-1 after RANCHWORD's spec · the two builds F specs produce → wt-3 · RANCHWORD build → wt-1 after TACKROOM.
+**Batch 3 — docs tasks, one per free tree:** `ONERAIL` (DSNR rebase) · `FUNNELDEBT` (DSNR) · `SITEPOLICY` (DISCO) · `INROADS` (DISCO) · CR-106 analytics research (DISCO) · REQCARDS option-set conversation happens HERE, then its DSNR fold.
+**Last:** `CLNR-REPO-STATE` when no build is mid-flight.
 
 ## RESUME
 - ✅ **`TASK-LIFECYCLE` — VERIFIED, MERGED, PUSHED** (merge `5b9fed67`, docs `b9aa8b82`).
@@ -53,7 +59,7 @@ routed; C's gate OPEN) · LANDINGSIGNIN (two physical deviations accepted by ORC
 | Thread | State |
 |---|---|
 | `FHE-TASK-SIGNFLOW-C` | ✅ **VERIFIED AND MERGED 2026-09-02** — chooser diff applied by ORCH; §5.9 to owner checklist |
-| `FHE-TASK-SITESEO` | dispatched · Opus · HIGH · ON · `wt-2` |
+| `FHE-TASK-SITESEO` | ⚠️ NOT STARTED (census 2026-09-02: all trees idle) — batch 1 · Opus · HIGH · ON · `wt-2` |
 `wt-3` FREE. **SIGNFLOW-F's gate (after C) is now OPEN** — DSNR-profile spec next.
 New unruled item: `::selection` renders gold app-wide (`index.css:97`) — owner call whether it joins the green flow.
 
