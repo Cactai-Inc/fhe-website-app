@@ -4,15 +4,20 @@
 **Opened 2026-09-03 · bundle tree `wt-1` · branch `bundle/grants` from `origin/main` @ a1c6c105.** Task tree allotted: `wt-2`.
 
 ## RESUME
-Role / thread   FHE-MGMT-GRANTS · wt-1 · bundle/grants (from a1c6c105; origin/main = a1c6c105 at open)
-DONE            handoff read end to end (all §7 rows present); MGMT-ROLE/VRFY/WALKR read; D36 guard passed in wt-1, bundle/grants claimed; sweep MEASURED once against production (read-only, below); -A dispatch file + board section committed 912d907a; bundle/grants pushed to origin (branch only, not main) so ORCH can read the board section
-IN FLIGHT       nothing — waiting on the owner to launch FHE-TASK-GRANTS-A (prompt handed 2026-09-03)
-NEXT            owner launches FHE-TASK-GRANTS-A; on its handoff, dispatch CODR (-B) to wt-2, then VRFY (-V) — needs a second tree from ORCH if -B still holds wt-2 at VRFY time
-DECIDED         letters: -A = DSNR-profile spec task · -B = CODR build · -V = VRFY · -W = WALKR. DSNR tier kept at Opus·HIGH·ON (handoff's suggestion; the ground is a classification sweep, not convoluted shape). Escalation 1 is MINE to raise: the -A spec must emit the anon-writer list as a file I can put in front of the owner, and chunk so the un-escalated work builds while he rules.
-BLOCKED         nothing yet. Escalation 1 will block only the revokes on functions the owner has not ruled on.
-DO NOT          do not write the canonical checkout (D40); do not touch function BODIES (B2 owns them); do not run the "does anon actually execute it" probe on writers — probing writes production; do not treat provolatile='v' as "writes" — it is the candidate set, the spec defines the writer test
+Role / thread   FHE-MGMT-GRANTS · wt-1 · bundle/grants (origin/main e8bdb372 merged; -A merged 6ed5ff63); bundle branch pushed to origin, NEVER to main (ORCH-8 ruling: ORCH merges bundle branches)
+DONE            handoff §7 check · tree claimed · sweep population measured · -A dispatched, run, handed back · -A output reviewed by MGMT (diff vs merge-base docs-only; 6 claims re-run against prod/main, all hold) · -A merged · board section + ledger corrected · ESCALATION 1 RAISED to the owner
+IN FLIGHT       waiting on the owner's ruling (Block A · KEEP×2 · redeem_gift)
+NEXT            write the ruling VERBATIM into `## RULING` of docs/reports/FHE-TASK-GRANTS-A-ANON-WRITERS.md and this ledger → commit + push bundle/grants → dispatch FHE-TASK-GRANTS-B (Sonnet · MEDIUM · thinking ON · wt-2 · sender FHE-MGMT-GRANTS) → on its report dispatch -V (Opus · HIGH · ON · wt-11) → merge → ask ORCH to merge bundle/grants to main → -W on the deploy → item 7 → bundle report
+DECIDED         -A merged without a VRFY task: docs-only, no DB write, no build — VRFY is for builds (MGMT-ROLE §4); MGMT re-ran the claims itself instead · -B is NOT dispatched before the ruling: its spec stops without `## RULING`, so a pre-ruling dispatch would burn a thread · WALKR gains `/redeem` (a KEEP whose regression only a walk would show)
+BLOCKED         -B, -V, -W all behind escalation 1. Nothing runs meanwhile — the natural boundary.
+DO NOT          do not push bundle/grants to main (D40 + ORCH-8 ruling) · do not touch bodies · do not probe writers by calling them · do not `git checkout <ref> --` with no path in wt-1 — it detaches HEAD off the bundle branch (done once by MGMT 2026-09-03, recovered with `git checkout bundle/grants`, nothing lost) · do not treat provolatile='v' as the writer test (151 candidates ≠ 145 writers)
 
 ## LOG
+- -A handed back 2026-09-03 (10 commits on task/grants-a-spec, docs only). Review by MGMT: diff vs merge-base a1c6c105 = 4 GRANTS-A files + ORCH's own upstream commits (branch cut from 2779ca2c). Re-run against prod/main, all HOLD: trg_seed_display_name prosecdef=f · open_gift no guard, `Redeem.tsx:34` on mount before `user` · redeem_gift body line 19 `IF auth.uid() IS NULL THEN RETURN 'not_authenticated'` · sign-start rides `getSupabaseAdmin()` (`api/sign-start.ts:198`) · zero callers of sign_release/sign_general_release/release_preview/general_release_preview (grep = 0) · MergedBodyView fixed by d78d3b3c. Merged 6ed5ff63.
+- -A's hand-back message told MGMT its "next three acts" (task emitting instruction, not a report). One instance — noted, not a pattern.
+- Bundle corrections from -A §4 accepted: trg_seed is INVOKER · request_category_label is invoker/immutable/no writer/no call site (nothing to rule) · sign-start writers are Block A, not Block B · item 6 is FOUR comments. Bundle row "known-public: request_category_label" was wrong but harmless.
+- ORCH-8 ruled (board PROCESS): MGMT never pushes main; pushes bundle branch; ORCH merges. wt-11 allotted for -V/-W. Adopted.
+- ESCALATION 1 RAISED 2026-09-03 (summons in chat; the file is `docs/reports/FHE-TASK-GRANTS-A-ANON-WRITERS.md`). Recommendation: YES Block A · KEEP submit_public_request + open_gift · REVOKE redeem_gift.
 - 912d907a: ledger + `docs/tasks/TASK-GRANTS-A-author-the-acl-sweep-spec.md` + board section. Prompt for -A handed to the owner: Opus · HIGH · thinking ON · wt-2 · sender FHE-MGMT-GRANTS.
 - Fact for -A, found while dispatching: `request_category_label` is SECURITY INVOKER (not in the definer population) with an explicit `GRANT … TO anon` in `20260901T2230_…sql:37-38` — public by design, as the bundle says. `api/expire-holds.ts` authorizes via `authorizeCronRequest` (cron header / CRON_SECRET); which DB role its client runs as is -A's to establish.
 - 2026-09-03 open. Handoff §7 check: bundle name ✓ · items+state ✓ · ownership (ACLs only, 5 comment lines, ledger headers) ✓ · escalation points (1 pre-registered) ✓ · gates (none guest-facing; proacl table up) ✓ · merge lane (per task after VRFY; migration applied by build task under rehearsal) ✓ · WALKR flows (inbound request flow, sign-start flow; anonymous visitor) ✓ · model/effort ✓ · sender `FHE-ORCH-7` ✓. Nothing missing — no send-back.
@@ -33,7 +38,7 @@ where n.nspname='public' and p.prosecdef order by 1;
 |---|---|
 | SECURITY DEFINER functions in `public` | 675 |
 | of which anon-executable | 326 |
-| anon-executable AND volatile AND not a trigger function (**the writer CANDIDATE set**) | **151** |
+| anon-executable AND volatile AND not a trigger function (the CANDIDATE set — ⚠️ NOT the writer set: -A read all 326 bodies and found **145 writers**, 135 readers; 5 of these 151 only SELECT) | **151** |
 | anon-executable trigger functions (inert via the API; `trg_seed_display_name` is one) | 45 |
 | anon-executable stable/immutable (readers by declaration — but a STABLE mislabel is possible; the spec's writer test must read bodies, not trust `provolatile`) | 130 |
 
@@ -45,7 +50,7 @@ The named ones, `proacl` verbatim:
     sign_general_release(p_full_name text, p_email text, p_phone text, p_typed_name text, p_org uuid, p_esign_consent boolean) | postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres | f | t | f | v | f
     sign_release(p_template_key text, p_first_name text, p_last_name text, p_email text, p_phone text, p_typed_name text, p_is_minor boolean, p_minor_first_name text, p_minor_last_name text, p_minor_dob date, p_guardian_relationship text, p_rules_acknowledged boolean, p_org uuid, p_esign_consent boolean, p_dob date, p_address_line1 text, p_address_line2 text, p_city text, p_state text, p_postal_code text, p_ec1_name text, p_ec1_relationship text, p_ec1_phone text, p_ec2_name text, p_ec2_relationship text, p_ec2_phone text) | postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres | f | t | f | v | f
     submit_public_request(p_first_name text, p_last_name text, p_email text, p_phone text, p_contact_method text, p_notes text, p_proposed_times jsonb, p_category text, p_channel text, p_entry_location text, p_intent text, p_selections jsonb, p_details jsonb, p_interests text[]) | postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres | t | t | f | v | f
-(`trg_seed_display_name` row: see the -A task's own re-run — it is in the 45.)
+⚠️ CORRECTED by -A (handoff §4.1), re-run by MGMT 2026-09-03: `trg_seed_display_name` is **SECURITY INVOKER** (`prosecdef = f`) — it is NOT in the 326 population and NOT one of the 45. It enters the migration BY NAME because the bundle names it. Its `proacl`: `=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres`.
 
 The 151 candidates by name (signatures in the -A task's re-run; this list is so the next MGMT does not re-derive it):
     _restore_contract_template_composition acknowledge_content_block add_contact_location add_deal_document 
