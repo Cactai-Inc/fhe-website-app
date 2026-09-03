@@ -166,17 +166,28 @@ address fields left unshaped by design — want them shaped too?
 
 ## BUNDLE GRANTS — FHE-MGMT-GRANTS (D44 trial · opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-GRANTS-LEDGER.md`)
 **Bundle tree `wt-1` · branch `bundle/grants` · merge lane: per task after VRFY — MGMT pushes the branch, ORCH merges it to `main` · hands back to `FHE-ORCH`.**
-**DB objects held: the ACL (`proacl`) of every SECURITY DEFINER function in `public` — never a body.** (`open_gift`/`redeem_gift` BODIES are B2's per CR-116.)
+**DB objects held: the ACL (`proacl`) of every SECURITY DEFINER function in `public` — never a body.**
 | Thread | Profile | Tree | Branch | State |
 |---|---|---|---|---|
 | `FHE-TASK-GRANTS-A` | DSNR | wt-2 (returned) | `task/grants-a-spec` | **DONE — merged 6ed5ff63** |
-| `FHE-TASK-GRANTS-B` | CODR | wt-2 | `task/grants-b` @ **7f2b36ff** | ⚠️ **BUILT AND APPLIED TO PRODUCTION 11:31 PDT** — `20260903T1130_the_anon_door_closes…sql`, 195 ACL revokes, anon-exec secdef **326 → 134**, anon triggers 45→0, all 196 body md5s identical. **AWAITING VRFY; branch unpushed, unmerged.** |
-| `FHE-TASK-GRANTS-V` | VRFY | **wt-11** | — | **DISPATCHED 2026-09-03 — Opus · HIGH · thinking ON.** `docs/tasks/TASK-GRANTS-V-verify-the-anon-door-closed.md` |
-| `FHE-TASK-GRANTS-W` | WALKR | wt-11 (after -V) | — | at close, on `main` as deployed: contact form · sign-start · `/redeem` **expected to fail CLOSED** |
-**MGMT's own merge-time re-proof (production, 12:20:15 PDT, D35):** anon-exec 134 · anon triggers 0 · `submit_public_request` anon **t** (KEEP survived) · `open_gift`/`redeem_gift` anon **f** (ruling applied) · items 1/2/3/5 all closed · group S `authenticated` f, `service_role` t. **Ten spot-checks, all hold.**
-🔒 **FOR ORCH — MERGE ORDER, and it matters:** the `## RULING` and the amended `-B` spec exist **only on `bundle/grants`**; `origin/main` still carries the pre-ruling spec that says KEEP `open_gift` (975c77bc merged a26cde43, one commit early). **`task/grants-b` merges into `bundle/grants` and ORCH merges that branch WHOLE.** ⚠️ **Never fast-path `task/grants-b` to `main`** — main would then hold a migration that revokes `open_gift` beside a spec saying keep it.
-🔒 **FOR ORCH — NEW, AND THE HIGHEST-VALUE THING IN THIS AREA: THE DOOR FACTORY IS STILL OPEN.** This migration shut 193 doors; **the next `CREATE FUNCTION` in this repo arrives `anon`-executable anyway.** `pg_default_acl` holds **TWO** function-default rows for schema `public` — owner `postgres` AND owner `supabase_admin` — **both granting `anon=X`**. ⚠️ **`ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon` run without `FOR ROLE` touches only one row and reports success** — it needs `FOR ROLE postgres` and `FOR ROLE supabase_admin`. **Outside B1's ownership** (a schema default is not an ACL on a named function), so B1 did not build it. **Sequencing is ORCH's:** landing it mid-flight gives any new function another bundle creates a silent 403 unless that bundle adds an explicit GRANT — best when the bundles quiesce, with a line added to CLAUDE.md's migration convention.
-**Also routed up (fixed by nobody here):** 14 anon-executable writers with NO in-body guard → B2 · 133 anon-executable definer READERS remain (a read-ACL sweep is its own bundle) · **two definer names carry two live overloads each** — `log_request_alert_send` (6-arg reachable by NOBODY: anon=f, authenticated=f) and `claim_request_alert_send` (2-arg orphaned) — MGMT verified and widened `-B`'s version of this finding; dropping an overload is a signature change, not an ACL · `Onboarding.tsx:632` same stale payment claim, unnamed by the bundle · RECONCILED §8 B1 rows 1.15 · 1.19 · §7.6 are not in `BUNDLE-GRANTS.md`.
+| `FHE-TASK-GRANTS-B` | CODR | wt-2 | `task/grants-b` @ **7f2b36ff** | **PAUSED — applied to production 11:31 PDT, real and correct on 195/196 counts, but VRFY found ONE wrong comment.** Not merged. |
+| `FHE-TASK-GRANTS-V` | VRFY | wt-11 (returned) | — | **DONE — DOES NOT HOLD, one row (item 6 edit 4).** Every DB-state claim, the diff and the gates HOLD; not overruled at the pass per `MGMT-ROLE.md` §4. `docs/reports/TASK-GRANTS-B-VERIFICATION.md` |
+| `FHE-TASK-GRANTS-C` | DSNR | 🔒 **NEEDS A TREE FROM ORCH — see below** | `task/grants-c` (docs only) | Spec written (`docs/tasks/TASK-GRANTS-C-…md`), ready to dispatch the moment a tree lands |
+| `FHE-TASK-GRANTS-D` | CODR | **wt-2**, continuing `task/grants-b` | `task/grants-b` | after `-C` — one-hunk comment fix, no new worktree needed |
+| `FHE-TASK-GRANTS-W` | WALKR | wt-11 (after re-merge) | — | at close: contact form · sign-start · `/redeem` expected to fail CLOSED |
+🔒 **ONE-LINE ASK TO ORCH: GRANTS needs one more pool worktree, for `FHE-TASK-GRANTS-C` only** (a tiny
+DSNR spec-amendment, docs-only). `wt-2` is occupied by the paused, real `task/grants-b` that `-D`
+continues; MGMT is not self-selecting an idle-looking tree per D36. Any tree is fine — it's a docs edit.
+**MGMT's own merge-time re-proof (production, 12:20:15 PDT) and VRFY's independent re-proof (15:40 PDT) agree:** anon-exec 134 · `submit_public_request` t · `open_gift`/`redeem_gift` f · items 1/2/3/5 closed · group S correct. **Ten-plus spot-checks, all hold — only the prose is wrong, and only in one place.**
+🔒 **FOR ORCH — MERGE ORDER still stands:** `task/grants-b` (once `-D` lands) merges into `bundle/grants` only; `origin/main` still carries the pre-ruling spec. ORCH merges the bundle branch WHOLE.
+🔒 **FOR ORCH — THE DOOR FACTORY, reconfirmed by VRFY independently:** `pg_default_acl` still holds `anon=X` on both the `postgres`-owned and `supabase_admin`-owned rows for schema `public`. Unchanged priority/recommendation from the last report.
+**NEW, routed by VRFY, confirmed real by MGMT — a product question, not a bug in this bundle's work:**
+the provisioned door (since `f9c66b49`, 2026-09-01) reaches `review`/`slots`/`submit` after signing and
+creates its own order/booking request there, exactly the situation `holdMyDocumentDelivery` exists to
+wait for on the self-serve door — but that hold has ONE call site, gated self-serve-only, and nothing
+holds the provisioned door's document email for its later steps. **Whether that is wanted is undecided.**
+Filed here rather than fixed; not FUNNELDEBT's or B1's without a ruling.
+**Also standing:** 14 anon-executable writers with NO in-body guard → B2 · 133 anon-executable definer READERS remain (separate bundle) · two definer names carry two live overloads (`log_request_alert_send`, `claim_request_alert_send` — neither hit by accident) · `Onboarding.tsx:632` stale payment claim, unnamed by the bundle · RECONCILED §8 B1 rows 1.15 · 1.19 · §7.6 not in `BUNDLE-GRANTS.md`.
 **Escalations: 1/1 ✅ RULED (CR-116, d4036431).** **Item 7** (ledger status headers CR-85/89/93/97): last, with ORCH.
 ## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-DASHBOARDS-LEDGER.md` on `bundle/dashboards` @ 0ecc662c)
 **Bundle tree `wt-7` · branch `bundle/dashboards` from `a1399848` · task tree `wt-8` · lane: engine contract + config tables + registry FIRST as one unit, then per task after VRFY · escalations 0/6.**
