@@ -4587,10 +4587,26 @@ the system. also i noticed the intake form for horses doesnt normalize the addre
 other information entered, and the location selection drop downs still arent fixed the one for barn
 and other for stall are not able to be selected for the other option each of them show."*
 **Read as three findings — fact-find each before spec, per the CR-119 lesson (confirm the renderer
-that actually mounts, do not re-guess):**
-1. Horse current-location contract field renders a placeholder string instead of the address on file.
-2. The horse intake form does not normalize address, names, or other entered fields.
-3. The Barn and Stall location dropdowns each fail to let "Other" be selected.
+that actually mounts, do not re-guess).**
+
+**ORCH's fact-find (2026-09-03) — two confirmed, one open, and a WORSE possibility found:**
+- **Confirmed:** `HorseIntakeForm.tsx` never calls `normalize(` — zero occurrences. Finding 2 stands
+  as stated.
+- **Confirmed, and possibly worse than reported:** the owner's newest horse
+  (`b6a00ca9-b07a-482a-a012-25f6fe0b3ac1`, created 2026-09-03) has **every location column blank** —
+  not the right data in the wrong column, no location data anywhere. The other 3 horses in production
+  all DO carry a location. **This may not be a shape mismatch at all — it may be that nothing was
+  captured for this horse**, possibly because a lighter "add horse" surface (`AddHorseModal.tsx`)
+  was used instead of the full intake form. Untraced which surface the owner actually used.
+- **Open, and the earlier read of finding 3 (barn/stall "Other") does not survive a check:** the only
+  barn/stall control in `HorseIntakeForm.tsx` (`PrefixSelect`) has no "Other" option at all — two
+  fixed words only. The real "Other (enter manually)…" control is the Location-NAME combo (used once
+  for home, once for current location). Whether that is what the owner means, or a third surface this
+  pass has not found, is untraced.
+**Dispatched: `FHE-TASK-CR120-A`** (DISCO profile, fact-find only, wt-14, Opus · HIGH · ON) to settle
+which surface was used, whether the location split (`current_location` text vs `current_location_id`
+FK) is a systemic contract-rendering bug or specific to this one under-captured horse, and what the
+"Other" claim actually points at. No build yet.
 
 ## CR-119 — 2026-09-03: BILL OF SALE co-buyer checkbox has no way OFF once checked — a live document is stuck
 **SAID (owner, verbatim):** *"on the bill of sale contract there is no way to uncheck the option once

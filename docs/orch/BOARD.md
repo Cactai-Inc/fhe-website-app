@@ -209,6 +209,15 @@ touch. **Durable fix target unchanged** — an explicit exit inside the co-buyer
 (`ContractPage.tsx`, not clause-gated). No file ownership conflict — `ContractPage.tsx` /
 `ContractCascade.tsx` / `ClauseDocument.tsx` untouched by any running bundle.
 
+## FHE-TASK-CR120-A — horse location gap, fact-find only (ORCH direct dispatch, 2026-09-03)
+`docs/tasks/TASK-CR120-A-horse-location-facts.md` · **wt-14** · Opus · HIGH · ON · DISCO profile, no
+build. ORCH's own check found something more serious than the owner's report: his newest horse has
+NO location data anywhere in the DB (not a wrong-column problem — nothing captured), while the other
+3 horses in production all carry one. Confirmed separately: `HorseIntakeForm.tsx` never normalizes
+(zero `normalize(` calls). The "Other" dropdown claim does not match the component read so far
+(`PrefixSelect` has no Other option) — routed to the task to trace properly, not re-guessed by ORCH
+after the CR-119 miss. No file ownership conflict.
+
 ## BUNDLE GRANTS — FHE-MGMT-GRANTS (D44 trial · opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-GRANTS-LEDGER.md`)
 **Bundle tree `wt-1` · branch `bundle/grants` (origin/main e8bdb372 merged in) · merge lane: per task after VRFY — MGMT pushes `bundle/grants`, ORCH merges it to `main` (ORCH-8 docs-lane ruling) · hands back to `FHE-ORCH`.**
 **DB objects held by this bundle: the ACL (`proacl`) of every SECURITY DEFINER function in `public` — never a body.**
