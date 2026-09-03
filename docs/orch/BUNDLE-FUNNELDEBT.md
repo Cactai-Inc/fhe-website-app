@@ -27,6 +27,7 @@ allotted: `wt-10` (ask ORCH for more; the pool grows on demand).
 | 5 | **F6 GUARDIAN** — the lead→client door drops the declared guardian; no `guardian` read in `provision_client_invitation` / `redeem_invitation`; the minor spine itself works | choose one of the four revisions (escalation 5) |
 | 6 | **DEPENDENT** — the guardian buys the child's rides: payer/guardian on `purchases`/`bookings` | in item 5's spec (escalation 6) |
 | 7 | **3.2a** — Confirmation copy, HALF built: `Confirmation.tsx:167-190` says the email carries an activation link; MISSING the rules/policies/waiver-after-activation line and `SendStateScreen`'s spam / add-us-to-contacts / contact-us lines (`SignStart.tsx:169-170` — READ them there; do not edit SignStart) | copy; guest-facing (gate) |
+| 8 | **CR-116 — THE GIFT FLOW RIDES THE ACTIVATION LINK (added by ORCH 2026-09-03).** The owner: there is no anonymous user any more; an account exists the moment we have the email address, and "activation" is the recipient's auth setup. Today: `src/pages/Redeem.tsx` reveals anonymously via `openGift(code)` then asks a recipient with no account for a PASSWORD; `src/lib/gifts.ts` `registerForGift()` → `api/register-gift.ts` calls `auth.admin.createUser` on its own endpoint, deliberately not the invited path, on the now-retired premise that "the gift code is the credential". Required: the gift email carries the reveal animation AND a unique activation link with the code bound to it; the recipient's email address IS the account. **`gifts` = 0 rows in production, so nothing live breaks.** B1 is revoking anon on `open_gift` and `redeem_gift` in parallel — ACLs only, never a body. | ruled (CR-116); spec needed (escalation 8) |
 | — | **F5 / 4.7 DISPLAYNAME's control half — NOT in this bundle.** It needs a control on `AccountHub.tsx`, which B5 SUPPLIES holds (access-point rows). Moved to B10 as a one-RPC build after B5's AccountHub merge. | out |
 | — | **F7** (`trg_seed_display_name` anon) — B1 GRANTS. | out |
 
@@ -38,6 +39,9 @@ allotted: `wt-10` (ask ORCH for more; the pool grows on demand).
   (guardian read) · a NEW payer/guardian column on `purchases` and/or `bookings` — **declare the
   exact column name before applying; B5 holds a DIFFERENT new column on `purchases` (horse
   attribution); never share a migration file with B5**.
+- **Files (CR-116):** `src/pages/Redeem.tsx` · `src/lib/gifts.ts` · `api/register-gift.ts` · the gift
+  email template. **Not `src/pages/Gift.tsx`** unless the spec proves it is the same door — report it
+  up if so.
 - **Files:** `api/request-activation.ts` · `api/inquiry-confirmation.ts` · `api/delivery-sweep.ts`
   (the hold parameter) · `src/lib/api.ts` — the ONE call at `:142`, nothing else in that file ·
   `src/pages/Confirmation.tsx` · `src/pages/app/Onboarding.tsx` for the guardian path — EXCEPT the
@@ -62,7 +66,13 @@ allotted: `wt-10` (ask ORCH for more; the pool grows on demand).
 6. **DEPENDENT** — payer on the purchase, or guardian on the booking, or both; prepare with the
    first real minor's records as the worked example (Charlotte Caddell exists — READ ONLY; the owner
    is handling that family himself).
-7. Anything else the spec cannot resolve — in the SAME summons.
+7. **CR-116 · the OTHER password path** — `api/register-invited.ts` is the endpoint `register-gift`
+   cites as having "the same problem". Does the activation-link ruling retire it too, or does the
+   invited path stay password-based? Prepare: what each endpoint does today, who reaches it, the
+   one-flow-for-everyone option, the recommendation.
+8. **CR-116 · the gift email** — the reveal animation and the activation link in one email, or a
+   reveal email followed by an activation email? Prepare both, with the buyer's experience of each.
+9. Anything else the spec cannot resolve — in the SAME summons.
 
 ## Gates to ORCH
 - **Every email text change and `Confirmation.tsx` copy** is guest-facing — render checklist +
@@ -76,7 +86,7 @@ Per task after VRFY. F3 writer + constraint may merge before the relabel; the re
 rehearsal discipline (`BEGIN…ROLLBACK` first, counts before/after in the report).
 
 ## Sequence inside the bundle
-DSNR (Fable · HIGH — the SHAPE of the request→activation→booking spine and the minor/guardian spine;
+DSNR (tier: MGMT evaluates and decides, D45 — the SHAPE of the request→activation→booking spine and the minor/guardian spine;
 the spec set + disjoint chunk declaration + the batched escalation with evidence) → owner rules →
 CODR (Opus · HIGH · ON) → VRFY per merge (Opus · HIGH · ON; production: `status_events` counts by
 `entity_type` before/after; a guardian survives provisioning on a WALKTEST fixture; `proacl` on every
@@ -84,5 +94,5 @@ touched function — a `CREATE OR REPLACE` keeps the ACL, a DROP+CREATE does not
 the inbound request → activation → booking flow and the minor-at-the-door flow (FLOW-MAP names; the
 WALKTEST fixture, never a real client).
 
-## Suggested model/effort
-DSNR: **Fable · HIGH**. CODR: Opus · HIGH · ON. VRFY: Opus · HIGH · ON. WALKR: Opus · HIGH · ON.
+## Suggested model/effort — SUGGESTIONS ONLY (D45): MGMT evaluates each task's work and decides, stating why
+DSNR: MGMT decides (D45). CODR: Opus · HIGH · ON. VRFY: Opus · HIGH · ON. WALKR: Opus · HIGH · ON.

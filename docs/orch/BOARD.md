@@ -4,7 +4,7 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-03 · **FHE-ORCH-8 in the seat. Four MGMT copies cut: GRANTS (B1) · SUPPLIES (B5) running; DASHBOARDS (B7) · FUNNELDEBT (B2) handed. Pool wt-1…wt-11.**
+**Last updated:** 2026-09-03 · **CR-116 ruled (no anonymous user; the gift flow rides the activation link) — GRANTS unblocked, gift rebuild routed to B2.** **FHE-ORCH-8 in the seat. Four MGMT copies cut: GRANTS (B1) · SUPPLIES (B5) running; DASHBOARDS (B7) · FUNNELDEBT (B2) handed. Pool wt-1…wt-11.**
 
 ## THE PLAN OF RECORD — RECONCILED-2026-09-02.md §8, twelve bundles (ORCH adopts as written)
 | Bundle | Tier | State |
@@ -29,6 +29,7 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 - D42 was reverted (never in force); SIGNFLOW-D's citation of it is a dangling reference — CLNR note.
 - ✅ **MGMT IN FORCE — D44 (2026-09-03).** First two bundles cut and handed: `BUNDLE-GRANTS.md` (wt-1 + wt-2) · `BUNDLE-SUPPLIES.md` (wt-3 + wt-4/5/6). Pool grown to wt-8. **Canonical-checkout writer: ORCH.**
 - **FHE-ORCH-8 took over 2026-09-03** (handoff `orchestration/handoffs/active/FHE-ORCH-8.md`). Cut B7 `BUNDLE-DASHBOARDS.md` (wt-7 + wt-8) and B2 `BUNDLE-FUNNELDEBT.md` (wt-9 + wt-10); provisioned wt-9/10/11 (env pair + node_modules). **wt-11 allotted to GRANTS for its VRFY/WALKR** (its ledger asked). Bundle files now say "hand back to `FHE-ORCH`" — the standing thread answers whatever its number.
+- 🔒 **D45 (2026-09-03, final wording): no thread dictates a tier — the spawning thread evaluates the work and decides, Fable when required, the weekly allowance as the constraint.** Seven Fable threads spent 30% in 9h; the owner is stopping and re-spawning the barely-started ones. Bundle 'Suggested model/effort' sections are suggestions only.
 - ⚠️ **MGMT docs lane, loop finding #1:** both MGMT ledgers plan to reach `main` by fast-forward push of the bundle branch. `main` moved (f8b10c99, 2779ca2c) after both branched from a1c6c105 — a fast-forward is no longer possible, and D40 says ORCH is the one writer. **Ruling (ORCH): MGMT never pushes `main`; MGMT pushes its bundle branch; ORCH merges bundle branches into `main` (docs-only merges at each hand-back or on request).** GRANTS' board section is mirrored below by ORCH from `bundle/grants`. → MGMT-ROLE §10 wording to follow (SELF-IMPROVEMENT when the trial closes).
 - **Open to the OWNER from SUPPLIES' ledger:** the numbered CR-112 suggestions list (items 1–8) that FHE-ORCH-7 handed and the owner answered in CR-112·A1 exists only in the owner's chat window. ORCH-8 does not have it. ✅ Owner pasted it; filed verbatim as **CR-112·A1·THE PROPOSED LIST** (this commit). SUPPLIES' INHERITED-UNKNOWN markers resolve against it. **CR-112·A3** (same day): vocabulary confirmed, escalation 5 struck; Admin gains Company + Accounting pages; Headquarters/G&A are Admin-only attributions.
 
@@ -137,6 +138,15 @@ address fields left unshaped by design — want them shaped too?
    a new name; product question.
 7. **(LIFECYCLE) a client accepting a staff counter-time on an unpaid order lands `scheduled` with
    no payment request** — `request_purchase_payment` is staff-only.
+8. **CR-116 — activate-then-review.** Fact-finding done directly by ORCH in conversation, 2026-09-03:
+   `docs/reports/FHE-DISCO-CR116-HANDOFF.md`. Most of the described flow already exists (`Register.tsx`'s
+   docs-needed routing, Onboarding's `details` review step, contact-wins prefill). The real gap:
+   `promote_contact_to_account` never mirrors name onto `profiles` the way `update_my_onboarding_profile`
+   does, and the no-docs branch skips the one screen that would trigger that mirror — so a lead promoted
+   straight to a docs-free account lands on a dashboard with a blank name/greeting forever. Handoff
+   names the scope question (fix the mirror · make review unconditional · both) for DSNR to settle.
+   **Ready to dispatch as a DSNR-profile task** (`FHE-TASK-CR116-A`, prompt in the handoff's tail) —
+   not contended with any live bundle.
 
 ## OWNER CHECKLISTS UNRUN — the half no thread can prove
 `FIX1` §8 · `FIX2` §9 · **`FIX4` §11 (13 items, the biggest visual change)** · `CR85` §8 ·
@@ -155,23 +165,26 @@ address fields left unshaped by design — want them shaped too?
 **Open to ORCH:** ORCH's numbered CR-112 suggestions list (A1 items 1,2,5,6,8; 7 absent) is not on file — record under CR-112·A1. **Gated on B7:** dashboard/projection/deviation/report consumers.
 
 ## BUNDLE GRANTS — FHE-MGMT-GRANTS (D44 trial · opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-GRANTS-LEDGER.md`)
-**Bundle tree `wt-1` · branch `bundle/grants` (origin/main e8bdb372 merged in) · merge lane: per task after VRFY — MGMT pushes `bundle/grants`, ORCH merges it to `main` (ORCH-8 docs-lane ruling) · hands back to `FHE-ORCH`.**
+**Bundle tree `wt-1` · branch `bundle/grants` @ a1c6c105 · merge lane: per task after VRFY · hands back to `FHE-ORCH-7`.**
 **DB objects held by this bundle: the ACL (`proacl`) of every SECURITY DEFINER function in `public` — never a body.**
 | Thread | Profile | Tree | Branch | State |
 |---|---|---|---|---|
-| `FHE-TASK-GRANTS-A` | DSNR | wt-2 (returned, detached, clean) | `task/grants-a-spec` | **DONE — merged into `bundle/grants` 6ed5ff63** (docs only). Spec: `docs/tasks/TASK-GRANTS-B-close-the-anon-door-on-every-writer-nothing-anonymous-calls.md` · escalation list: `docs/reports/FHE-TASK-GRANTS-A-ANON-WRITERS.md` · handoff: `docs/reports/FHE-DSNR-GRANTS-A-HANDOFF.md` |
-| `FHE-TASK-GRANTS-B` | CODR | **wt-2** | `task/grants-b` | **WAITING ON ESCALATION 1** (the Block A ruling). Sonnet · MEDIUM · thinking ON. Holds: the migration file + the four comment lines (`contact.ts`, `deliver-document.ts`, `Onboarding.tsx` ×2) |
-| `FHE-TASK-GRANTS-V` | VRFY | **wt-11** (allotted by ORCH 2026-09-03) | — | after -B reports |
-| `FHE-TASK-GRANTS-W` | WALKR | wt-11 (after -V) | — | at close, on `main` as deployed: the inbound request flow (contact form) · the sign-start flow · **`/redeem` as a recipient with no account** (added by -A's finding) — all as an anonymous visitor |
-**Escalations: 1 of 1 RAISED 2026-09-03** — Block A (140 writers, none with an anonymous caller) as ONE block · confirm KEEP on `submit_public_request` and `open_gift` · `redeem_gift` recommended REVOKE. The ruling lands verbatim in `## RULING` of the ANON-WRITERS file; -B reads it there.
-**For ORCH (routed up, fixed by nobody here):** (1) ⚠️ **14 anon-executable writers have NO in-body guard** (`open_gift` · `reap_expired_holds` · `apply_offering_documents` · `apply_sign_path_documents` · `complete_deal` · `supersede_invitations` · `upsert_content_block` · … full list, -A handoff §5) — revoking `anon` shuts the door; any `authenticated` caller still reaches them unguarded. **A BODY finding for B2 FUNNELDEBT.** (2) 135 anon-executable definer READERS + 60 invoker non-trigger + 15 invoker trigger functions remain; a read-ACL sweep is a separate bundle (classification already in the ANON-WRITERS file). (3) `Onboarding.tsx:632` carries the same stale payment-step claim on a line the bundle does not name. (4) RECONCILED §8 row B1 lists 1.15 · 1.19 · §7.6, which `BUNDLE-GRANTS.md` does not carry. (5) Item 6 is FOUR comments, not five — `MergedBodyView.tsx` was already fixed by d78d3b3c.
-**Item 7** (CHANGE-ORDER-LEDGER status headers CR-85/89/93/97): last, after ORCH is told.
-## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (cut 2026-09-03 · `docs/orch/BUNDLE-DASHBOARDS.md`)
-*(MGMT edits ONLY this section on its bundle branch.)*
-**Bundle tree `wt-7` · task tree `wt-8` · prompt handed 2026-09-03 · first deliverable: `docs/design/DASHBOARD-ENGINE-CONTRACT.md` UP to ORCH (B5 gates on it) · escalations 0/6.**
-| Tree | Thread | Profile · tier | State |
+| `FHE-TASK-GRANTS-A` | DSNR | **wt-2** | `task/grants-a-spec` | DISPATCHED 2026-09-03 — `docs/tasks/TASK-GRANTS-A-author-the-acl-sweep-spec.md`; awaiting owner launch |
+| `FHE-TASK-GRANTS-B` | CODR | wt-2 (after -A retires) | `task/grants-b` | waiting on -A's spec |
+| `FHE-TASK-GRANTS-V` | VRFY | **wt-11** (allotted by ORCH 2026-09-03) | — | waiting |
+| `FHE-TASK-GRANTS-W` | WALKR | wt-11 (after -V) | — | at close, on `main` as deployed |
+**Escalations:** 1/1 ✅ **RULED 2026-09-03 — CR-116.** Block A (140) REVOKE as one block · `submit_public_request` KEEP anon · **`open_gift` REVOKE** · `redeem_gift` REVOKE. The owner: there is no anonymous user any more — an account exists the moment we have the email address; the gift reveal is an email animation and the link is an activation link. ORCH's safety measurement: **`gifts` = 0 rows in production**, so no live surface is reached anonymously. -B unblocked. **Item 7** (ledger status headers): last, after ORCH is told.
+*(mirrored by ORCH from `bundle/grants` d5f97724; MGMT keeps editing its copy on the bundle branch — MGMT-ROLE §10.)*
+
+## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-DASHBOARDS-LEDGER.md` on `bundle/dashboards` @ 0ecc662c)
+**Bundle tree `wt-7` · branch `bundle/dashboards` from `a1399848` · task tree `wt-8` · lane: engine contract + config tables + registry FIRST as one unit, then per task after VRFY · escalations 0/6.**
+| Thread | Profile · tier | Tree | State |
 |---|---|---|---|
-| wt-8 | `FHE-TASK-DASHBOARDS-A` | DSNR · Fable HIGH | awaiting MGMT dispatch |
+| `FHE-TASK-DASHBOARDS-A` | DSNR · **Fable HIGH** ⚠️ | wt-8 | DISPATCHED 2026-09-03 — contract first (STATUS header → STABLE), then specs + chunk declaration |
+**Its two findings (recorded by ORCH, not re-derived):** (1) `dash_waiting_on_you` / `dash_waiting_on_clients` / `_waiting_items` have **no creating migration on `main`** — they were applied to production from the unmerged `b9bc9edc` branch. (2) Two of DASHFEED's three owner questions are already answered in `04-OPEN`; only the metric list is open, so escalation 3 likely collapses into escalation 2, and escalation 1 may close on evidence if `hello@` and `admin@` are both real owner accounts.
+⚠️ **Tier note (ORCH's own doing):** this MGMT branched from `a1399848`, which still carried my pre-D45 "DSNR: **Fable · HIGH**" suggestion. Under D45 (final) the bundle file now says MGMT decides. **If the Fable allowance is the binding constraint, -A is the thread to move.**
+**Gates B5:** the engine contract goes UP to ORCH the moment -A marks it STABLE.
+*(mirrored by ORCH from `bundle/dashboards`; MGMT keeps editing its copy on the bundle branch.)*
 
 ## BUNDLE FUNNELDEBT — FHE-MGMT-FUNNELDEBT (cut 2026-09-03 · `docs/orch/BUNDLE-FUNNELDEBT.md`)
 *(MGMT edits ONLY this section on its bundle branch.)*

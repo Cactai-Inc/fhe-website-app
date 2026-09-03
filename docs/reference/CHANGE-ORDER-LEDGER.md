@@ -4577,6 +4577,53 @@ URL was conditional in SITESEO §4c.7 and never asked for directly — ORCH's mi
 audit + analytics) is raised to the front of the queue**; the owner's input list is in the ORCH
 thread 2026-09-03.
 
+## CR-116 — 2026-09-03: there is no anonymous user any more; the gift flow rides the ACTIVATION LINK, and every "outdated flow" action is updated to it
+**SAID (owner, verbatim, ruling the GRANTS escalation and widening it):**
+> *"these are moot if anon is non authenticated user an do these things because everyone has an
+> account now, we changed the account activation and creation process so the user can create and
+> activate an account on their own. and every action like opening and redeeming a gift needs to be
+> updated to follow this flow instead of an outdated one.*
+> *the reveal of you got a gift is an email animation, the invitation link is an activation link that
+> takes them to a unique url for them to create and activate an account without an friction, they
+> will have already seen the gift but the code is linked to the account activation link they click,
+> the buyer just needs to know what email address to use for them and then they are opening the link
+> from that email address so thats the address linked to the activation flow. by definition of how an
+> account is created, all we need is the email address and the account exists, their clicking of the
+> link is what flows the auth setup and thats the "activation" but the account is already active on
+> our end, the auth is not active yet on their end."*
+
+**THE PRINCIPLE (ORCH records it as the general rule, because the owner stated it as one):**
+**An account exists the moment we have the email address. "Activation" is the RECIPIENT'S auth
+setup, not the account's creation.** A surface that asks an unauthenticated stranger to prove
+themselves with a code, or to pick a password, is the outdated flow. The link in the email is the
+credential, it is unique to that person, and clicking it from that mailbox is the proof.
+
+**RULING on the GRANTS escalation (B1):** the Block B "keep anon" cases are moot.
+- `submit_public_request` — **KEEP anon.** The contact form is a true stranger with no email on file
+  yet; it is what CREATES the address the account is made from.
+- `open_gift` — **REVOKE anon.** The reveal is an email animation, not an anonymous page.
+- `redeem_gift` — **REVOKE anon.** It already refuses anon in its body.
+- Block A (140 writers with no anonymous caller) — **REVOKE, as one block.**
+**ORCH's measurement that makes this safe to do now: `gifts` holds ZERO rows in production**
+(total 0, opened 0, redeemed 0, 2026-09-03). Nothing live is reached through the anonymous gift path.
+
+**THE BUILD CONSEQUENCE (routed, not B1's):** the live gift flow is the outdated one and must be
+rebuilt to the activation link.
+- `src/pages/Redeem.tsx` — anonymous `openGift(code)` reveal, then a PASSWORD form for a recipient
+  with no account.
+- `src/lib/gifts.ts` `registerForGift()` → `api/register-gift.ts` — `auth.admin.createUser` with a
+  password, on its own endpoint, deliberately NOT the invited-registration path. Its own header
+  comment says the gift code is the credential — **that premise is now retired.**
+- The gift email must carry the reveal (the animation) AND a unique activation link with the code
+  bound to it; the recipient's email address is the account.
+**Routed to B2 FUNNELDEBT** — it is the same request→account→activation spine that bundle already
+owns (`provision_client_invitation`, `redeem_invitation`, the activation email). Scope added to that
+bundle by ORCH; `redeem_gift`'s provisioning callees (`_ensure_client_account`,
+`_provision_purchase_for_offerings`) join its DB ownership. **B1 changes ACLs only and never a body.**
+**Open, for the owner, inside B2's batched summons:** does the same retirement apply to
+`api/register-invited.ts` (the other password-path endpoint, which `register-gift` cites as having
+"the same problem")?
+
 ## CR-111 · A1 — 2026-09-03: "My Stable" is an APPROVED use of "stable" — likely the only one
 **SAID (owner):** *"'my stable' (which is an appropriate use of the word stable and likely the only
 one we would allow)."* The BANNEDWORDS audit lists it as approved-by-ruling, not as a finding.
@@ -4710,3 +4757,56 @@ is a rename hazard the spec must handle). `resolve_consumption_billing` + `cost_
 are KEPT and become the expense-sharing engine for leased horses; orders need a HORSE attribution;
 allocation seeds from lease contract terms. Costing is LOT-LEVEL FIFO (on-hand carries the old
 cost until exhausted), not weighted average.
+
+## CR-116 — activate-then-review: an activation link sets up auth only; the account is already
+complete from provisioning; the person reviews/edits it, then signs if there are docs, else proceeds
+straight to the right destination
+
+**SAID (owner, 2026-09-03, verbatim):**
+> *"well thats an issue, i need to be able to setup an account fully and then when the user redeems
+> their activation link they are just setting up their auth and then they see their account
+> information and if they want to change anything they can, if not, they click continue and if they
+> have docs they sign them, if they dont they just proceed right to the appropriate destination."*
+
+**Said in response to a finding surfaced in conversation, not on any bundle's ledger:**
+`promote_contact_to_account` (`supabase/migrations/20260802000001_lead_trust_notifications_part2.sql:192`)
+only ever writes `contact_id` and `org_id` onto the `profiles` row on promotion — never `first_name`,
+`last_name`, or `display_name`. The `profiles_seed_display_name` trigger fires on `INSERT OR UPDATE OF
+first_name, last_name, display_name`, and a statement that only sets `contact_id` never touches those
+columns, so it never fires. A lead promoted with no prior signup name keeps a blank `display_name`
+forever. `redeem_invitation` (same file, line ~344) does the opposite: it `INSERT`s a fresh `profiles`
+row with `first_name`/`last_name` pulled off the invitation, which does fire the trigger correctly — so
+the gap is specific to `promote_contact_to_account`'s branch, not the whole promotion spine. Not
+touched by any live bundle: GRANTS' ownership declaration is ACLs only, never a body.
+
+**Not specced, not discussed at the pass. What fact-finding will need to establish before a spec is
+written:**
+- **The two doors and which this changes.** `Onboarding.tsx`'s STAFF-PROVISIONED door (an order/account
+  already exists at mount) is the one the owner is describing — "setup an account fully" reads as the
+  staff-provisioned path (`provision_client_invitation`), not the self-serve `/sign/*` door. Confirm
+  against the code: does the provisioned door already separate "set up auth" from "review account info"
+  as two steps, or does it currently conflate them? `redeem_invitation` currently does BOTH auth setup
+  and (accidentally, via the INSERT branch) the name write in one RPC call with no review step between.
+- **What "account information" means as a reviewable/editable screen.** Which fields the person sees
+  and can change before continuing — presumably the same fields `promote_contact_to_account` currently
+  fails to carry forward (name), plus whatever else was captured at provisioning (address, phone,
+  emergency contacts — the D22 contact-record fields). Is this a new screen, or does an existing one
+  (Onboarding's `details` step) already do this and just needs to be sequenced correctly?
+- **The branch logic: docs vs no docs.** "if they have docs they sign them, if they dont they just
+  proceed right to the appropriate destination" — what determines "the appropriate destination" per
+  account/offering type, and whether that routing already exists somewhere (the wizard-steps machinery
+  `Onboarding.tsx` already has, per the D39 payment-step comment fix in TASK-GRANTS-B) or needs building.
+- **Whether this folds the `promote_contact_to_account` display-name gap into itself**, i.e. does fixing
+  the sequencing (review screen shows the name, person can correct it, then it saves) make the trigger
+  gap moot, or does the trigger still need its own fix so the name is right BEFORE the review screen
+  renders (so the field isn't blank when first shown)? Likely both: the trigger gap is a data-completeness
+  bug independent of the flow; the review step is new UX regardless of whether the trigger is fixed.
+
+**Recorded by ORCH as courier; routed for fact-finding before a spec is written.**
+
+**Fact-finding done, same day, directly by ORCH in conversation** (not a separate DISCO thread — the
+owner directed proceeding this way): `docs/reports/FHE-DISCO-CR116-HANDOFF.md`. Most of the described
+flow already exists; the real gap is narrower and precisely located — `promote_contact_to_account`
+never mirrors name onto `profiles`, and the no-docs branch is exactly the one that skips the screen
+that would trigger it. Ready to dispatch as a DSNR-profile task; queued on `docs/orch/BOARD.md` §ROUTED
+item 8, not contended with any live bundle.

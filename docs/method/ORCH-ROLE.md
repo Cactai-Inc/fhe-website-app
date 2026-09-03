@@ -29,12 +29,12 @@ cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
 Read <ONE absolute path> and build it.   (or: …and author it / …and research it, naming the profile)
 Worktree: wt-<n> · hand back to FHE-ORCH
 ```
-**MGMT (Fable · HIGH):** `FHE-MGMT-<BUNDLE>` + `Read <abs>/docs/orch/BUNDLE-<NAME>.md and run it.` + the Worktree/hand-back line.
+**MGMT (tier chosen by ORCH per bundle — D45):** `FHE-MGMT-<BUNDLE>` + `Read <abs>/docs/orch/BUNDLE-<NAME>.md and run it.` + the Worktree/hand-back line.
 **ORCH spawn (product contract, two files):** `FHE-ORCH-<n>` + `Read <abs>/docs/method/ORCH-ROLE.md, then <abs>/orchestration/handoffs/active/FHE-ORCH-<n>.md, and take over.`
 **Letters are consumed by the thread that runs under them; a queued item carries none** (D37). Numbers are reserved for future revision sets.
 
 ## 3. TIERING (MODEL-CHOICE-NOTES §2026-09-03)
-Tier follows the question: shape / fix-vs-refactor on convoluted ground → **Fable · HIGH** (DSNR-profile design, RECONCILE-class passes, WALKR, MGMT) · build inside a locked shape → Opus · HIGH · thinking ON · idiom repetition → Sonnet · MEDIUM · thinking ON. Give Fable outcome + incumbents + rulings + traps, not a route.
+**D45 (owner, 2026-09-03): no thread dictates a tier; the spawning thread evaluates the work and decides.** ORCH picks for MGMT copies and its own one-off tasks; MGMT picks for its tasks. Read the work, choose model + effort (+ thinking), state why in one line in the prompt header. Fable when the ground requires shape-before-fix on convoluted seams, never by habit — the weekly Fable allowance is the constraint (seven Fable threads spent 30% in nine hours; when it is gone, nothing runs). Rule of thumb: shape on convoluted ground → Fable · HIGH; build inside a locked shape → Opus · HIGH · ON; idiom repetition → Sonnet · MEDIUM · ON. Give Fable outcome + incumbents + rulings + traps, not a route.
 
 ## 4. VERIFICATION — the camera
 Never a self-reported done. For every merge ORCH makes: diff against the MERGE-BASE (a stale base invents deletions) · dry-run the merge · re-run the headline claim in production with your own query (D35: a green check from an hour ago is not evidence) · `pg_proc.proacl` for every touched function (fresh functions inherit anon via default privileges; `REVOKE FROM PUBLIC` alone is not enough) · reach by rendered element, not import path · gates (typecheck · typecheck:api · lint 0 errors · build · test:api) · `test:db` is red at baseline and proves nothing. A self-merged release is verified AFTER THE FACT and the sequence is recorded as a deviation, once, not chased. The failure-mode tables to check against: `ORCHESTRATOR.md` §3, §3b, §3c.

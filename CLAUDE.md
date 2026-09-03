@@ -1007,3 +1007,10 @@ reporting success.
   points; dumps-and-respawns at 50% context. ORCH keeps the board, the conversation, direct one-off
   tasks, and visibility over every copy. The first trial bundles: GRANTS (small) and SUPPLIES (the
   Fable-tier design).
+
+- **D45 — NO THREAD DICTATES A MODEL TIER; THE SPAWNING THREAD EVALUATES THE WORK AND DECIDES
+  (owner, 2026-09-03).** *"we need to not dictate a model tier, we need to let the authoring thread that is spawning the new one evaluate the work and decide, if fable is required then so be it but if we run out of usage we are sitting with no way to work."*
+  No role file, bundle or spec fixes a tier. The thread that writes a prompt reads the work, picks
+  model + effort (+ thinking) for THAT work, and states why in one line. Fable when the ground
+  requires it, never by habit: the weekly Fable allowance is the constraint (seven Fable threads
+  spent 30% of it in nine hours). When it is gone, nothing runs.
