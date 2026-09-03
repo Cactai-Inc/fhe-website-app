@@ -7,6 +7,8 @@ import {
   History, StickyNote, Check,
 } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
+import { useFieldNormalizer } from '../../lib/formState';
+import { normalizeKindForField } from '../../lib/normalize';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePropertyTerm } from '../../contexts/BrandProvider';
 import { withArticleCapitalized, agree } from '../../lib/propertyTerm';
@@ -391,6 +393,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [coBuyerPick, setCoBuyerPick] = useState('');
   const [coBuyerEntry, setCoBuyerEntry] = useState<Record<string, string>>({});
   const [coBuyerOptions, setCoBuyerOptions] = useState<PartyOption[]>([]);
+  const normalize = useFieldNormalizer();
 
   /* DOCUMENT-BEFORE-CONTRACT — RETIRED 2026-08-22, not deleted (D32).
      Owner: "Lessee paperwork is handled separately and doesnt gate signing nor
@@ -1980,7 +1983,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 <div key={k}>
                   <span className="form-label">{label}</span>
                   <input className="form-input" value={coBuyerEntry[k] ?? ''}
-                    onChange={(e) => setCoBuyerEntry((s) => ({ ...s, [k]: e.target.value }))} />
+                    onChange={(e) => setCoBuyerEntry((s) => ({ ...s, [k]: e.target.value }))}
+                    onBlur={(() => { const kind = normalizeKindForField(k); return kind ? normalize(`cobuyer-${k}`, kind, coBuyerEntry[k] ?? '', (v) => setCoBuyerEntry((s) => ({ ...s, [k]: v }))) : undefined; })()} />
                 </div>
               ))}
             </div>
