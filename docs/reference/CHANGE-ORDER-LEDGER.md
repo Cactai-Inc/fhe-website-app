@@ -4576,3 +4576,75 @@ DISCO-profile audit of every main→sub-page navigation in the app.
 URL was conditional in SITESEO §4c.7 and never asked for directly — ORCH's miss. **CR-106 (full
 audit + analytics) is raised to the front of the queue**; the owner's input list is in the ORCH
 thread 2026-09-03.
+
+## CR-111 · A1 — 2026-09-03: "My Stable" is an APPROVED use of "stable" — likely the only one
+**SAID (owner):** *"'my stable' (which is an appropriate use of the word stable and likely the only
+one we would allow)."* The BANNEDWORDS audit lists it as approved-by-ruling, not as a finding.
+Attribution vocabulary he named for supplies: **Headquarters · Stalls · Tackroom · Horse · Event ·
+Activity · Client** (+ the ranch itself / a specific arena for location retrieval). Tackroom needs no
+number (one tackroom; it is the onsite operating location). The general-area name is irrelevant to
+supplies.
+
+## CR-112 · A1 — 2026-09-03: the owner's answers on the supplies design (verbatim, the spec's source)
+**Structure ruled:** *"FHE Inventory -> Headquarters + My Stable -> My Horses + My Tackroom [gear,
+supplies, property]… Admin is the appropriate app location for a surface that records business
+expenses related to non-onsite related needs and inventory entries attributed to Headquarters, My
+Stable is the appropriate app location for all onsite related inventory tracking and their expense
+information."* My Stable is the main door (light stats at most) to: **Horses · Supplies · Gear ·
+[Property/Equipment — name to be decided]**. The gear page ALREADY EXISTS beside horses (owner,
+stated several times).
+**Ledger answers:** 1 approved · 2 approved · 3 *"yes absolutely… a 50lb bag of feed is received, a
+horse ate 12lb of that feed this month, inventory at month start was 18lbs, so ending inventory
+remaining is 56lbs, trigger is set to 24lbs so no trigger event, cost is $/bag ÷ 50 = $/lb x 12 =
+$X.xx recorded as part of the expenses for that horse for the month and the business for the
+month/year"* · 4 *"run rate, burn rate, months cash on hand… predicted dates in the future for
+purchases"* · 5 approved · 6 agreed · 8 correct.
+**Non-inventory consumables (bedding, hay supplied with boarding, variable qty and cost monthly):**
+recorded as expense + quantity + attribution; they do NOT create inventory entries, no reorder
+alerts; their data points feed trends and composite cost figures.
+**Supplies we give clients:** *"we take it from our stable to give it to theirs… we record the
+revenue as part of an order and the expense as part of a cost for the supplies consumed."* Avoid
+general/G&A entries wherever possible — true cost per transaction/activity.
+**#9 horse record:** the supplies system feeds the horse record; the EXCEPTION is client-supplied
+feed/meds/supplements, entered on the horse record itself; the horse record shows OUR-supplied and
+CLIENT-supplied as ONE unified consumption set; price appears in the horse's feed cost only when
+billed separately; bundled supply shows as part of the care-service cost.
+**#10:** scheduled monthly report run: build it; for clients behind a FEATURE FLAG the owner enables.
+**#11 dashboard:** no category on-hand (specific items only; categories only where a ratio/$ tied
+up/days-supply insight exists); on-hand detail lives one click away in a modal; per-item toggle "show
+on dashboard"; non-inventory consumables never appear as raw usage boxes but their specific values
+(e.g. hay by type over 3 months) do; monthly (not month-to-date) cadence to spare Claire; TWO config
+surfaces — DASHBOARD CONFIG (what is shown, where) and ELEMENT CONFIG (inputs feeding the element +
+display variant: raw total · totals over N months · component matrix · pie · stacked bar · line, all
+vs total); per-ACCOUNT provisioning from a general default, changes saved to the account not the
+tenant; month-over-month, quarter-over-quarter, same-period-last-year, user-defined periods;
+**PROJECTIONS: next 1/3/6/9/12 months and now→year-end, usage and cost, vs same period last year
+and vs prior period**; **UNACCOUNTED DEVIATIONS** surfaced automatically when found (run-out earlier
+than the ledger shows, or an audit) → needs an **AUDIT SURFACE**: start-audit element, guided count
+list with expected vs actual per item, ledger captures the metadata, time-since-last-audit + who as
+an element (manual or surfaced on interval). Top movers and not-counted-in-30-days: irrelevant.
+Recent entries: useful to the owner, useless to Claire (hence per-account).
+**#12 reports — the shape:** REJECTED the field-list shape. **A report is a SNAPSHOT OF THE USER'S
+DASHBOARD as it appears to them + a set of explicit monthly usage and cost figures for items of
+business importance regardless of dashboard + the per-horse statement + a business monthly
+snapshot.** Trigger: a "monthly report" button clicked after the month's usage/received/
+non-inventory entries are added (no gating, no logic); generated into BOTH accounts in their
+variants; defaults to last month; parameters on the primary surface, inclusions (from the dashboard
+element list) in a large modal/page off the generate modal; me/both accounts toggle; email + store
+in documents; PDF/CSV/both; default = digital copy to documents. **Company documents do NOT
+co-mingle with client documents** — a company "my documents" page (shared by both owners; reports
+identifiable by owner variant in the name); shared documents (a lease) appear in both. **The
+dashboard-config, element-config and report machinery is GLOBAL, plug-and-play on every dashboard.**
+Dashboards without manual inputs auto-generate reports, with a reminder the day before and a
+deadline one minute before generation.
+**#13:** backdated data → old report RENAMED with "outdated"; on regeneration the old one is renamed
+"superseded" and ARCHIVED (retrievable); the new report reuses the original name. Non-inventory
+items carry cost.
+**#14:** disagree with "converge on existing" as framed — build the structure as modeled. Name for the
+durable-goods door needed (jumps, desks, cabinets, saddle racks, tack hooks, chairs, umbrella, décor,
+signage, cleaning tools; test: the grill goes here, the propane in supplies). **Boarding fee** → on
+the horse record (one horse, one stall; fixed monthly). **Tackroom rent** → recorded once, injected
+monthly on the 1st automatically (under property, or better). **Fixed business costs** — business
+and car insurance, health insurance, car payment, phone, internet — set figures charged monthly on
+the 1st automatically; car-related ones are stable-attributed; **electricity at HQ and for charging
+the car entered manually**. Better suggestions invited.
