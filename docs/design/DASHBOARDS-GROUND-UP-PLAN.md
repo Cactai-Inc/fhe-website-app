@@ -223,3 +223,26 @@ under its own name later if wanted — it just can't be called revenue.
   `kpi_daily` · goals · B4, B5, B6.
 - **Phase 4 — Stable ops:** supplies/equipment/vendor columns + reach + seeding ·
   C8 full · win-back/upsell rules · C11–C13 polish.
+
+---
+
+## REVISITED 2026-09-03 — against CR-107 and CR-112·A1 #11–#13 (by `FHE-TASK-DASHBOARDS-A`; this plan was never approved as written)
+
+**This plan is SUPERSEDED as the design of record by `docs/design/DASHBOARD-ENGINE-CONTRACT.md`.** It stays as the history of the two Phase-1 boards (what shipped, §2/§3/§6/§7) and as the source of the zone ids (C1…B9) the registry still uses. What survives, what is struck, and where each went:
+
+| Section | Verdict | Where it lives now |
+|---|---|---|
+| §1 principles 1, 2, 3, 5, 6 (zones · action surface · one computation · D25 · reach) | **SURVIVES** | Contract §2 rules 1–5, §3.2 |
+| §1 principle 4 "the app suggests the next thing" (rule-driven suggestions) | **STRUCK** — not in any CR | Proposal only: handoff §5 |
+| §2 Claire's zones C1–C4, C6, C7, C9, C11–C13; §3 CJ's B1, B2, B3, B8, B9 | **SURVIVE as elements** (built 2026-08-22; adapter in contract §3.3). C3/B1 converge into ONE money element (04-OPEN §2) — spec E §4a.1 | Contract §1, spec B §4a.3 |
+| §2 C5, C8, C10; §3 B4, B5, B6, B7, B10 (never built) | C8 → **B5 SUPPLIES's** dashboard (consumer of the engine). B4/B5's beacons → **B4 SITE / CR-106**; the cron dead-man tile → spec E2 `CRON_DEADMAN` (measurable now). B6 → **struck** (removed 2026-08-31, ACTIVITY-LOG doc). C5, C10, B7, B10 → depend on §5 → **struck with §5** | handoff §5 proposals |
+| §4 Lesson Workspace | **Out of this bundle** (a lesson surface, not a dashboard) — stays a named follow-up | DASHBOARDBUILD report §9.2 |
+| §5 tasks/reminders/goals/suggestions substrate (`ops_tasks`, `task_rules`, `suggest_next`, `goals`, `kpi_daily`) | **STRUCK — not in any CR.** Listed as a proposal. `kpi_daily`'s job (trend history) is done by the report SNAPSHOT (contract §6.1) — a report is the frozen month | handoff §5 |
+| §5 `dashboard_prefs` | **RULED OUT** (owner 2026-08-22; already struck here) | D13 exception |
+| §6 revenue | **SHIPPED** (`revenue_summary`) — the Sales lens's core source | spec E §4b |
+| §7 designation (`dashboard_focus`) + zone registry + one reader per zone + landing + reach | **SURVIVES, widened**: `dashboard_focus` = landing preference; the SET an account holds = `dashboard_provisions`; registry = dashboards + elements; landing untouched | Contract §1, §4 |
+| §7 "retire `OpsDashboard`/`InstructorHome` into the new shell" | still half-done (DASHBOARDBUILD §9.2) — **not this bundle's** (module launcher decision; CR-110 Account access point) | B10 / CR-110 |
+| §8 gaps 3–4 (`page_events`, `client_errors`) | **B4 SITE** | RECONCILED 1.4 / 4.11 |
+| §9 phasing | **REPLACED** by the bundle's chunk sequence B → C/D → E1 → STOP → E2 → E3 (+F gated) | handoff §1 |
+
+**What CR-107/CR-112 add that this plan never had:** many dashboards in two families with per-account provisioning (FIX6 §2b → contract §4), per-element config with display variants and periods (contract §3.1, §5), and the report machinery (contract §6–§7). None of it contradicts the surviving principles; it sits on top of the zone framework rather than replacing it.
