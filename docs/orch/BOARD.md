@@ -190,8 +190,12 @@ address fields left unshaped by design — want them shaped too?
 ⚠️ **Tier note (ORCH's own doing):** this MGMT branched from `a1399848`, which still carried ORCH's pre-D45 "DSNR: **Fable · HIGH**" suggestion. Under D45 (final) the bundle file says MGMT decides. **If the Fable allowance is the binding constraint, -A is the thread to move.**
 
 ## BUNDLE FUNNELDEBT — FHE-MGMT-FUNNELDEBT (cut 2026-09-03 · `docs/orch/BUNDLE-FUNNELDEBT.md`)
-*(MGMT edits ONLY this section on its bundle branch.)*
-**Bundle tree `wt-9` · task tree `wt-10` · prompt handed 2026-09-03 · one batched summons after DSNR (7 points) · production data change (F3 relabel) only after the ruling is in the CR ledger.**
-| Tree | Thread | Profile · tier | State |
-|---|---|---|---|
-| wt-10 | `FHE-TASK-FUNNELDEBT-A` | DSNR · Fable HIGH | awaiting MGMT dispatch |
+*(MGMT edits ONLY this section on its bundle branch. Ledger: `docs/reports/FHE-MGMT-FUNNELDEBT-LEDGER.md`.)*
+**Bundle tree `wt-9` · branch `bundle/funneldebt` (from `a1399848`) · lane: per task after VRFY; F3 relabel only after the owner's words are in the CR ledger, under rehearsal · escalations 0/7 reached (ONE batched summons after -A) · MGMT pushes the bundle branch, ORCH merges to `main` · last updated 2026-09-03**
+| Tree | Thread | Branch | Profile · tier | Holds (DB objects / files) | State |
+|---|---|---|---|---|---|
+| wt-10 | `FHE-TASK-FUNNELDEBT-A` | `task/funneldebt-a` | DSNR · Fable HIGH | docs only: `docs/tasks/TASK-FUNNELDEBT-*`, `docs/reports/FHE-DSNR-FUNNELDEBT-HANDOFF.md`, `docs/reports/FHE-TASK-FUNNELDEBT-A-ESCALATIONS.md`, own ledger/report. Read-only on prod. | **DISPATCHED 2026-09-03** — charge `docs/tasks/TASK-FUNNELDEBT-A-shape-the-request-to-booking-spine-and-the-guardian-spine.md`; awaiting owner launch |
+| — | `FHE-TASK-FUNNELDEBT-B…` | — | CODR · Opus HIGH ON | per -A's chunk declaration | waiting on -A; more trees to be asked of ORCH if -A declares >1 disjoint chunk |
+| — | `FHE-TASK-FUNNELDEBT-V` / `-W` | — | VRFY / WALKR · Opus HIGH ON | — | at merge / at close (F4→F1→F5; minor variant of F4→F1; WALKTEST fixture) |
+**DB objects held by the bundle (declared in BUNDLE-FUNNELDEBT.md; nothing applied yet):** `status_events` + `status_events_vocab` `entity_type` CHECK constraints · every writer filing a booking status event (`trg_status_bookings` lineage) · `request_open_time` · `book_open_slot` · the other `'no member profile'` guard sites if healed · `provision_client_invitation` · `redeem_invitation` (bodies only) · a NEW payer/guardian column on `purchases`/`bookings` (name to be declared by the spec before apply; never B5's horse-attribution column).
+**Measured 2026-09-03 (ledger §MEASUREMENT):** `offering` 829 / booking-shaped 781 / `booking` 0; live CHECK is `20260826T1000`'s (includes `payment`), not the `20260821T1500` one the bundle cites; F4 traps 3 profiles, all zz-test fixtures.
