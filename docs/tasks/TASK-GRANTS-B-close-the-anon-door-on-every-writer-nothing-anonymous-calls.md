@@ -69,6 +69,38 @@ deep. **The full classification, function by function with its write targets, it
 call sites, is `docs/reports/FHE-TASK-GRANTS-A-ANON-WRITERS.md`. Do not re-derive it; verify a sample
 and say which you checked.**
 
+## 2b. 🔒 THE FOUR NAMED ITEMS — their `proacl` as `FHE-TASK-GRANTS-A` read it, production, **2026-09-03 07:13:13 PDT**
+
+⚠️ **This is a BEFORE picture from another thread's session. Re-read it yourself (D35) — a grant can
+have moved.** It is here so you can see at a glance whether it did.
+
+```
+item 1  request_purchase_payment(p_purchase_id uuid, p_note text)
+          postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres
+          anon=t  authenticated=t  secdef=t  volatile
+          ⚠️ its OWN migration 20260823T0140_creditgrant_5_…sql:123-124 revokes anon. Production does not
+             reflect it — that is the whole reason this bundle exists.
+          only caller: api/order-request-payment.ts:74, via callerClient(bearer) → `authenticated`
+
+item 2  reap_expired_holds()
+          postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres
+          anon=t  authenticated=t  secdef=t  volatile
+          writes request_selections; NO in-body guard
+          only caller: api/expire-holds.ts:64, via getSupabaseAdmin() → `service_role`
+          → `anon` has no caller at all
+
+item 3  trg_seed_display_name()
+          =X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres
+          anon=t  authenticated=t  **secdef=f (SECURITY INVOKER)**  returns trigger
+          note the leading `=X/postgres` — that is PUBLIC EXECUTE, on top of the direct anon grant.
+          301 of the 326 carry it. `FROM PUBLIC, anon` is why both roles are named in every statement.
+
+item 5  sign_release(26 args)  ·  sign_general_release(text, text, text, text, uuid, boolean)
+          postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres   (both)
+          anon=**f** (already closed by 20260902T0010)  authenticated=**t**  secdef=t  volatile
+          zero callers: grep -rn "'sign_release'\|'sign_general_release'" src api → empty, 2026-09-03
+```
+
 ## 3. 🔒 THE INCUMBENT, NAMED (D18) — this is a REPEAT, not a new mechanism
 
 **`supabase/migrations/20260902T0010_the_retired_kiosk_closes_the_last_anonymous_signing_door.sql`
