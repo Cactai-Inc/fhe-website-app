@@ -4417,3 +4417,17 @@ Closes the cursive-period item from SIGNFLOW-A §5. The fix is in `remerge_contr
 DSNR-profile spec, not a pass-fix. Constraints for that spec: executed bodies are evidence and are
 never rewritten (D32/D33, 0 of 81 affected anyway); the three unsigned bodies (incl. the live
 Pamela lease) re-compose through the normal remerge path only.
+
+## CR-110 — Modules were to MOVE to the account settings page as the access point, not be stripped; the refactor has not run
+**SAID (owner, 2026-09-02, verbatim, correcting TACKROOM handoff §3.1 and the FIX3 framing):**
+> *"I didnt request stripping the modules entirely i asked to move it from the rail to the account
+> settings page as the access point, it required a refactor that hasnt run yet."*
+**State measured 2026-09-02:** TASK-FIX3 (2026-08-31) built only the REMOVAL half — `CARD_PAGE_ONLY`
+filters Settings and Modules from all three nav surfaces (`AppLayout.tsx:784-791`). The
+access-point half exists as a single parked `NavRow` for Barn Ops at the bottom of the Account page
+(`AccountHub.tsx:235`), not as the designed account-settings access point for modules; the other
+module hubs have no row there at all. **The refactor — the account settings page as THE access
+point for modules — is PENDING and unspecced.** It belongs with the admin-refactor design
+(`docs/design/refactor/CHAT-THREAD-ADMIN-REFACTOR-2026-08-26.md`) and is a bundle candidate for
+the MGMT trial. Every "the owner asked for exactly that" framing of the rail removal is corrected
+by this entry: he asked for a move; half of it ran.

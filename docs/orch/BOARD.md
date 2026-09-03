@@ -54,6 +54,11 @@ only, NO removal/merge/convergence; `SIGNFLOW-E` withdrawn)
 - **10 pre-D41 reports carry no VALIDATION block** (SIGNFLOW-B's CLNR finding) — SIGNSTRIP, SIGNDOOR,
   AR4, REAPER, MODAL2, CR85, BOOKS1, BACKDATE, ZELLECLOSE, WALLSYNC. Backfill audit queued.
 
+### CR-110 — the pending MODULES ACCESS-POINT refactor (owner correction 2026-09-02)
+Rail removal (FIX3) was half of a MOVE; the account settings page as THE access point for modules is
+unbuilt and unspecced. **Bundle candidate for the MGMT trial** — it sits at the seam of CR-109 (where
+Stable/Tackroom surfaces live) and the admin-refactor design; RECONCILE's list must carry it.
+
 ### TACKROOM's owner rulings (handoff §5) — needed before CR-109 can be shaped
 See `docs/reports/FHE-DISCO-TACKROOM-HANDOFF.md` §5. Headline facts: every barnops table is EMPTY in
 production; "depletion of on-hand" is implemented NOWHERE (consumption never touches `on_hand`); the

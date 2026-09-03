@@ -245,3 +245,11 @@ default payer); whether page visibility hides them (it is wired to nothing).
 `supabase/migrations-archive/20260630100000_mod_barnops.sql` (schema of record),
 `supabase/migrations/20260815T2100_stable_business_aware.sql` (`owner_kind`),
 `test/db/mod_barnops.test.ts`, `test/db/e2e_consumption.test.ts`.
+
+---
+## ORCH CORRECTION — 2026-09-02, on §3.1 ("not in the rail, by ruling")
+The owner, reading this: *"I didnt request stripping the modules entirely i asked to move it from the
+rail to the account settings page as the access point, it required a refactor that hasnt run yet."*
+§3's facts stand (the filter, the dates, the empty tables); its framing does not. FIX3 built the
+removal half of a MOVE; the access-point half is pending — recorded as **CR-110**. The single Barn Ops
+row at `AccountHub.tsx:235` is a parked stub, not the designed access point.
