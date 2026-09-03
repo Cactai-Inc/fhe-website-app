@@ -9,3 +9,8 @@ exactly the eight indexable routes. Re-confirmed on `main` after merge: zero red
 301 and `/services` for its own cold HTML — ORCH runs them once Vercel deploys `6dbc0471`.
 **Owner:** the Business Profile URL + socials still empty in `seo.ts` `sameAs` (spec §4c.7,
 conditional) — ships the moment he supplies them.
+
+**Post-deploy proofs, run by ORCH 2026-09-02 against production:** `/ride`, `/shop`, `/membership`
+→ **308** (Vercel's permanent-redirect status for `permanent: true`; permanent-class, method-preserving)
+→ `https://www.frenchheritageequestrian.com/lessons`. `/services` cold HTML carries its OWN title
+("Ways to Ride — …"), not the landing page's. Criteria 6 and 9 CLOSED.
