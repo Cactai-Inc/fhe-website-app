@@ -4,24 +4,35 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-02 · **ORCH — batch 1 ALL FIVE landed and merged (`366b0a20`); batch 2 dispatching: RANCHWORD-A · SIGNFLOW-G · SIGNFLOW-H · RECONCILE**
+**Last updated:** 2026-09-03 · **ORCH — batch 2 landed (G · H · BANNEDWORDS · RECONCILE); the MGMT trial is next, pending the owner's in-force word**
 
-## RUN ORDER (owner, 2026-09-02 — revised: pool grows on demand; the rest goes through MGMT)
-**Pool: wt-1…wt-6 provisioned (env pair + node_modules). More on request.**
-**Batch 1 — ✅ ALL FIVE MERGED 2026-09-02:** SITESEO (verified; post-deploy curls owed) · SIGNFLOW-F specs (G+H) · RANCHWORD spec (A) · TACKROOM research handoff · METHOD-MGMT (three files, NOT IN FORCE).
-⚠️ **Deviation recorded, not chased:** RANCHWORD and TACKROOM wrote their docs on the CANONICAL checkout's `main` instead of their assigned trees (wt-1/wt-4) — no damage (docs-only, disjoint), but D36/D40 say assigned tree. Both threads were told a tree; the profile files should say it louder.
-**Batch 2 — concurrent NOW (revised 2026-09-03):** `BANNEDWORDS` (DISCO profile audit, CR-111, Opus·HIGH·ON, wt-1) · `SIGNFLOW-G` (Sonnet·MEDIUM·ON, wt-3) · `SIGNFLOW-H` (Opus·HIGH·ON, wt-5) · `RECONCILE` (DISCO profile, Fable·HIGH, wt-6). ⚠️ **`RANCHWORD-A` WITHDRAWN before dispatch** — its business-sense→"program" mapping is banned by CR-111; the spec is archived by reference, the audit replaces it.
-**Raised to the FRONT of the reconciled queue (owner, 2026-09-03): CR-106 analytics + full SEO audit — "needs to be implemented asap"; the owner's input list (Business Profile URL, socials, GSC verification, analytics-tool choice) is asked for DIRECTLY now.**
-**MGMT: files exist, NOT IN FORCE — goes into force on the owner's word; first spawn when RECONCILE returns.**
-**Tiering (owner, 2026-09-03 — `MODEL-CHOICE-NOTES` §2026-09-03): shape-before-fix design tasks go to FABLE 5.1 — SUPPLIES (CR-109/112) · INROADS · FUNNELDEBT · MODULES access point (CR-110) · CR-106 architecture · DASHBOARDS revisit (CR-107). Builds stay Opus; idiom sweeps Sonnet.**
-**Batch 2 — as gates open:** the two builds F's specs produce · RANCHWORD build (after TACKROOM's handoff, since the hub name depends on it).
-**Then — the MGMT trial:** `RECONCILE` (running in batch 2): every open item — board queues, open CRs, the SIGNBOOK-fallout lane, the Casey backlog, ROUTED, owner checklists, the old docs tasks — checked against post-batch `main`, classified keep/revise/remove with evidence, into ONE reconciled list. ORCH bundles by shared context; disjoint bundles hand to MGMT copies. ONERAIL · FUNNELDEBT · SITEPOLICY · INROADS · CR-106 · REQCARDS dissolve into those bundles rather than running as batch 3.
-**Last:** `CLNR-REPO-STATE` when no build is mid-flight.
+## THE PLAN OF RECORD — RECONCILED-2026-09-02.md §8, twelve bundles (ORCH adopts as written)
+| Bundle | Tier | State |
+|---|---|---|
+| **B1 GRANTS + STALE** — ACL sweep of EVERY SECURITY DEFINER writer (`request_purchase_payment` anon CONFIRMED by ORCH) + stale comments + ledger-status headers | Sonnet · MEDIUM | **dispatch now** (disjoint from everything) |
+| **B2 FUNNELDEBT** — F1–F7 incl. F3's CHECK constraint (781 rows CONFIRMED) + guardian + display-name half | Fable · HIGH design → builds | MGMT |
+| **B3 INROADS** — ONERAIL first, then the contract-entry matrix; research, no removal | Fable · HIGH | MGMT |
+| **B4 SITE (FRONT)** — CR-106 analytics + audit, SITEPOLICY, `/visit` `/contact` indexability | Fable · HIGH architecture → Opus builds | MGMT — owner's stated priority; his inputs finish it, not start it |
+| **B5 SUPPLIES** — CR-109/112 (+A1/A2), CR-110 access point, door naming | Fable · HIGH design | MGMT |
+| **B6 REQUESTS + MONTH** — REQCARDS (§9 struck), MONTHEND, dossier tabs, dashboard inbox | Opus · HIGH | after the pending-bookings measurement (0 today — LIFECYCLE's "4 pending" was a rehearsal; MONTHEND premise must be re-stated) |
+| **B7 DASHBOARDS** — CR-107, FIX6, plan revisit, global dashboard/element/report machinery (CR-112 §11–12) | Fable · HIGH | MGMT |
+| **B8 EDITOR** | Opus · HIGH | after B5/B6 |
+| **B9 RECORD PAGE** | owner decision (M4) → Opus | after M4 |
+| **B10 SMALL, UNCONTENDED** — one thread each | Sonnet/Opus · MEDIUM | dispatch alongside B1 |
+| **B11 NOTIFY** — CR-113 + deliverability | Opus design → build | MGMT |
+| **B12 OWNER** — checklists, inputs, rulings | — | the owner, at his pace |
+| **Held** — CLNR-REPO-STATE (+ RUN-QUEUE retirement, test/db snapshot regen for H's assertion) | CLNR | when no build is mid-flight |
+**Disjointness (ORCH):** B1/B10 share nothing with the design bundles; B5⊥B7; B2⊥B3 except `SignStart.tsx` deal branch (B3 owns it; B2 does not touch it); B4⊥all. **MGMT copies may run B2, B3, B4, B5, B7 concurrently once in force.**
 
-## RESUME — what is true right now
-- **`main` = `0e9ebaf0`, pushed, clean.** Gates: typecheck 0 · typecheck:api 0 · lint 45w/0e · build clean · test:api 7/7 · `test:db` red at baseline (proof of nothing).
+## PROCESS — 2026-09-03
+- ⚠️ **Three of four batch-2 threads ignored their tree** (G in wt-1, H in wt-2, BANNEDWORDS on the canonical checkout). **Root cause found: the worktree rode OUTSIDE the paste block; the owner pastes only the block.** Fixed: the block now carries a third line `Worktree: wt-<n> · hand back to FHE-ORCH-7` (ORCHESTRATOR § THE PROMPT, TASK-ROLE §5).
+- D42 was reverted (never in force); SIGNFLOW-D's citation of it is a dangling reference — CLNR note.
+- MGMT-ROLE/VRFY/WALKR exist, NOT IN FORCE — goes in force as D44 on the owner's word.
+
+## RESUME — what is true right now (2026-09-03)
+- **`main` = `c48be110`, pushed, clean.** Merged and verified since: SITESEO · SIGNFLOW-G · SIGNFLOW-H; docs: SIGNFLOW-F specs · RANCHWORD-A spec (withdrawn) · TACKROOM · METHOD-MGMT · BANNEDWORDS audit · RECONCILED list. Gates: typecheck 0 · typecheck:api 0 · lint 45w/0e · build clean · test:api 7/7 · `test:db` red at baseline (proof of nothing).
 - **Merged and VERIFIED this session (each has a `-VERIFICATION.md`):** LIFECYCLE · SIGNBOOK (after the fact) · SITECOPY-A/B · SIGNFLOW-A/B/C/D · LANDINGSIGNIN · SITESEO. Docs merged: SIGNFLOW-F specs (G+H) · RANCHWORD-A spec · TACKROOM handoff · MGMT-ROLE/VRFY/WALKR (not in force).
-- **Owed by ORCH:** the post-deploy SITESEO curls (301s still read 200 at `0e9ebaf0`+0 min — deploy pending).
+- **Owed:** `test/db` snapshot regen (H's assertion red until then) · the Pamela lease's next open (drops its four periods by the normal path).
 - **Pool:** wt-1…wt-6, all detached at `origin/main`, clean. **Canonical-checkout writer (D40): ORCH.**
 - **REQCARDS** still queued: option-set conversation happens HERE, then its DSNR fold — dissolves into the MGMT bundles.
 - **CLNR-REPO-STATE** hold stands until no build is mid-flight.
