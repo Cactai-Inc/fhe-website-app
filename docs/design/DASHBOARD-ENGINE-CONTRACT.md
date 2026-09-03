@@ -1,6 +1,6 @@
 # DASHBOARD ENGINE CONTRACT — dashboards · elements · per-account provisioning · reports
 
-**STATUS: DRAFT** — flips to `STABLE` in this file's header and in `docs/reports/FHE-TASK-DASHBOARDS-A-LEDGER.md` (`CONTRACT: STABLE @ <commit>`) the moment a consumer could build against it without a name moving. After STABLE, anything that moves is listed under `## CHANGES` at the foot; consumers re-read.
+**STATUS: STABLE** (2026-09-03) — was DRAFT; flips to `STABLE` in this file's header and in `docs/reports/FHE-TASK-DASHBOARDS-A-LEDGER.md` (`CONTRACT: STABLE @ <commit>`) the moment a consumer could build against it without a name moving. After STABLE, anything that moves is listed under `## CHANGES` at the foot; consumers re-read.
 
 **Authored 2026-09-03 by `FHE-TASK-DASHBOARDS-A` (DSNR profile, bundle B7 `docs/orch/BUNDLE-DASHBOARDS.md`).** Requirements: `docs/reference/CHANGE-ORDER-LEDGER.md` §CR-107 and §CR-112·A1 **#11, #12, #13** (verbatim there; this file does not paraphrase them into new requirements). Every number below was measured on production (`lrstswfxfsezdmvkvukc`) on 2026-09-03 by the query shown, read-only.
 
