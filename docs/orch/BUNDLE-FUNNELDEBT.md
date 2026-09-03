@@ -76,7 +76,7 @@ Per task after VRFY. F3 writer + constraint may merge before the relabel; the re
 rehearsal discipline (`BEGIN…ROLLBACK` first, counts before/after in the report).
 
 ## Sequence inside the bundle
-DSNR (Opus · HIGH · thinking ON — D45; Fable only if the owner names it — the SHAPE of the request→activation→booking spine and the minor/guardian spine;
+DSNR (tier: MGMT evaluates and decides, D45 — the SHAPE of the request→activation→booking spine and the minor/guardian spine;
 the spec set + disjoint chunk declaration + the batched escalation with evidence) → owner rules →
 CODR (Opus · HIGH · ON) → VRFY per merge (Opus · HIGH · ON; production: `status_events` counts by
 `entity_type` before/after; a guardian survives provisioning on a WALKTEST fixture; `proacl` on every
@@ -84,5 +84,5 @@ touched function — a `CREATE OR REPLACE` keeps the ACL, a DROP+CREATE does not
 the inbound request → activation → booking flow and the minor-at-the-door flow (FLOW-MAP names; the
 WALKTEST fixture, never a real client).
 
-## Suggested model/effort
-DSNR: **Opus · HIGH · ON** (D45). CODR: Opus · HIGH · ON. VRFY: Opus · HIGH · ON. WALKR: Opus · HIGH · ON.
+## Suggested model/effort — SUGGESTIONS ONLY (D45): MGMT evaluates each task's work and decides, stating why
+DSNR: MGMT decides (D45). CODR: Opus · HIGH · ON. VRFY: Opus · HIGH · ON. WALKR: Opus · HIGH · ON.

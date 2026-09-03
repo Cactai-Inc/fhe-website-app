@@ -73,5 +73,5 @@ derivation, idempotent recompute) → WALKR at close: the horse-record flow, the
 order with a horse attribution, a leased-horse split (FLOW-MAP names; use the WALKTEST fixture
 precedent, never a real client).
 
-## Suggested model/effort
-DSNR: **Fable · HIGH** — the ONE owner-named Fable thread in flight (D45). Every later station Opus. CODR: Opus · HIGH · ON. VRFY: Opus · HIGH · ON. WALKR: Opus · HIGH · ON.
+## Suggested model/effort — SUGGESTIONS ONLY (D45): MGMT evaluates each task's work and decides, stating why
+DSNR: Fable · HIGH suggested (the shape question is real). MGMT decides (D45). CODR: Opus · HIGH · ON. VRFY: Opus · HIGH · ON. WALKR: Opus · HIGH · ON.

@@ -43,5 +43,5 @@ production) → merge → item 7 last → WALKR: **the public contact-form submi
 start** must still work anonymously (FLOW-MAP names: the inbound request flow and the sign-start
 flow) — walked as an anonymous visitor.
 
-## Suggested model/effort
+## Suggested model/effort — SUGGESTIONS ONLY (D45): MGMT evaluates each task's work and decides, stating why
 DSNR: Opus · HIGH · ON. CODR: Sonnet · MEDIUM · ON. VRFY: Opus · HIGH · ON. WALKR: Opus · HIGH · ON.

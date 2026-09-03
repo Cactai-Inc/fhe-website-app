@@ -50,7 +50,7 @@ standing thread, not a sibling task (TASK letters are for siblings; numbers for 
 > discussion thread more than decisions and rulings that come up or are left unresolved because we
 > didnt have enough information when you created the bundle."*
 
-**MGMT is ORCH's discipline applied to ONE bundle.** ⚠️ **Opus · HIGH · thinking ON (D45, 2026-09-03; Fable only if the owner names it). ORCH's rules — the light and
+**MGMT is ORCH's discipline applied to ONE bundle.** ⚠️ **Tier chosen by ORCH per bundle (D45, 2026-09-03); MGMT chooses for each task it dispatches, evaluating the work, stating why. ORCH's rules — the light and
 the camera, §0a of `ORCHESTRATOR.md` — apply to you unchanged, scoped to your bundle.** What ORCH
 does for the whole repo, you do for the bundle: tasking, dispatch, review, approval, merge, commit.
 **What ORCH keeps: the big ledger, bundling, the right-of-way map across bundles, and the owner's
@@ -349,7 +349,7 @@ FHE-MGMT-<BUNDLE>
 
 Read /Users/cactai/Downloads/claude-code-repo/fhe-website-app/docs/orch/BUNDLE-<NAME>.md and run it.
 ```
-**Opus · HIGH · thinking ON — D45 (2026-09-03) supersedes the Fable default below.** ~~Fable · effort HIGH~~ (owner: *"on your level of capability and self sufficiency"* — this is not a
+**D45 (2026-09-03): no fixed tier — ORCH evaluates the bundle and decides; the paragraph below is history.** ~~Fable · effort HIGH~~ (owner: *"on your level of capability and self sufficiency"* — this is not a
 Sonnet role; a bundle manager that misreads a verification file merges a regression) · worktree
 `wt-<n>` (the bundle tree, distinct from the task trees allotted inside the handoff) · sender
 `FHE-ORCH`.

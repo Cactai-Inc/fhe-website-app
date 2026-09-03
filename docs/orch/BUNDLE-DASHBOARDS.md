@@ -91,7 +91,7 @@ Engine contract + config tables + registry changes FIRST, as one unit (so B5 can
 merged interface). Then dashboards / selector / report generator per task after VRFY.
 
 ## Sequence inside the bundle
-DSNR (Opus · HIGH · thinking ON — D45; Fable only if the owner names it — the SHAPE: the engine contract, the plan revisit, the spec set + disjoint chunk
+DSNR (tier: MGMT evaluates and decides, D45 — the SHAPE: the engine contract, the plan revisit, the spec set + disjoint chunk
 declaration) → CODR (Opus · HIGH · ON) in parallel where DSNR declared disjoint → VRFY per merge
 (Opus · HIGH · ON; production: per-account config lands on the ACCOUNT not the tenant; report
 generation is idempotent; outdated/superseded renaming works on regeneration; `proacl` on every new
@@ -99,5 +99,5 @@ function — fresh functions inherit anon via default privileges) → WALKR at c
 dashboards page as each owner account · generate a monthly report · the supersede path (FLOW-MAP
 names where they exist; WALKTEST fixture, never a real client).
 
-## Suggested model/effort
-DSNR: **Opus · HIGH · ON** (D45). CODR: Opus · HIGH · ON. VRFY: Opus · HIGH · ON. WALKR: Opus · HIGH · ON.
+## Suggested model/effort — SUGGESTIONS ONLY (D45): MGMT evaluates each task's work and decides, stating why
+DSNR: MGMT decides (D45). CODR: Opus · HIGH · ON. VRFY: Opus · HIGH · ON. WALKR: Opus · HIGH · ON.
