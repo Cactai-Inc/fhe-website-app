@@ -4,7 +4,7 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-03 · **CR-116 + CR-117 ruled (no anonymous user; the account is complete at provisioning, the gift flow rides the activation link) — GRANTS unblocked, gift rebuild routed to B2.** **FHE-ORCH-8 in the seat. Four MGMT copies cut: GRANTS (B1) · SUPPLIES (B5) running; DASHBOARDS (B7) · FUNNELDEBT (B2) handed. Pool wt-1…wt-11.**
+**Last updated:** 2026-09-03 · **CR-116 + CR-117 ruled (no anonymous user; the account is complete at provisioning, the gift flow rides the activation link) — GRANTS unblocked, gift rebuild routed to B2.** **FHE-ORCH-8 in the seat. Four MGMT copies cut: GRANTS (B1) · SUPPLIES (B5) · DASHBOARDS (B7) · FUNNELDEBT (B2) running/dispatched. CR-118 dispatched direct (wt-12). Pool wt-1…wt-12.**
 
 ## THE PLAN OF RECORD — RECONCILED-2026-09-02.md §8, twelve bundles (ORCH adopts as written)
 | Bundle | Tier | State |
@@ -183,6 +183,17 @@ seam. It costs nothing today — **`wt-10` is still detached at `2779ca2c`, porc
 `promote_contact_to_account`, `Register.tsx` and the name mirror; B2 owns `redeem_invitation`,
 `provision_client_invitation` and `Onboarding.tsx`; neither designs redemption's shape without the other,
 and the two specs come back to ORCH together before either builds.
+
+## FHE-TASK-CR118-A — per-staff-account nav visibility (ORCH direct dispatch, 2026-09-03)
+**Not a bundle.** `docs/tasks/TASK-CR118-A-per-staff-account-nav-visibility.md` · **wt-12** · Opus ·
+HIGH · thinking ON (one line why: in the charge file) · DSNR profile, one thread specs and builds.
+**Pulls R2 and Q7 out of B10** (same file, same axis — `AppLayout.tsx` never reads
+`org_page_visibility`); **B10 SMALL, UNCONTENDED shrinks by three items (R2, Q7, Q11d).**
+**Contends with B5 SUPPLIES (running) on ONE file:** `AccountHub.tsx` — this task adds exactly one new
+row; SUPPLIES holds every other row in that file. Whichever merges second rebases past the other;
+noted to SUPPLIES' ledger.
+**Confirms for B7 DASHBOARDS escalation 1:** `hello@` and `admin@fhequestrian.com` are two real,
+distinct logins.
 
 ## BUNDLE GRANTS — FHE-MGMT-GRANTS (D44 trial · opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-GRANTS-LEDGER.md`)
 **Bundle tree `wt-1` · branch `bundle/grants` (origin/main e8bdb372 merged in) · merge lane: per task after VRFY — MGMT pushes `bundle/grants`, ORCH merges it to `main` (ORCH-8 docs-lane ruling) · hands back to `FHE-ORCH`.**

@@ -30,3 +30,10 @@ DO NOT          · do not author specs or fix at the pass — a returned build g
 
 ## TEARDOWN (running)
 - Census 2026-09-03 at open: no node/vite/vitest/esbuild processes belong to this thread or any worktree; 8 node processes are VS Code helpers. Nothing started by MGMT yet.
+
+
+## NOTE FROM ORCH (2026-09-03) — AccountHub.tsx file contention
+`FHE-TASK-CR118-A` (direct ORCH dispatch, wt-12) is adding ONE new row to `AccountHub.tsx` (a link to
+a new nav-control surface on the Team page). It is not touching your rows (My Stable, Boarding, Barn
+Ops, Employees, or the CR-112·A3 Company/Accounting rows once you build them). Whoever merges second
+rebases past the other — routine, not a hold.
