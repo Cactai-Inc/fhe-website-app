@@ -167,11 +167,15 @@ address fields left unshaped by design — want them shaped too?
 *(mirrored by ORCH from `bundle/grants` d5f97724; MGMT keeps editing its copy on the bundle branch — MGMT-ROLE §10.)*
 
 ## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (cut 2026-09-03 · `docs/orch/BUNDLE-DASHBOARDS.md`)
-*(MGMT edits ONLY this section on its bundle branch.)*
-**Bundle tree `wt-7` · task tree `wt-8` · prompt handed 2026-09-03 · first deliverable: `docs/design/DASHBOARD-ENGINE-CONTRACT.md` UP to ORCH (B5 gates on it) · escalations 0/6.**
-| Tree | Thread | Profile · tier | State |
-|---|---|---|---|
-| wt-8 | `FHE-TASK-DASHBOARDS-A` | DSNR · Fable HIGH | awaiting MGMT dispatch |
+*(MGMT edits ONLY this section on its bundle branch. Ledger: `docs/reports/FHE-MGMT-DASHBOARDS-LEDGER.md`.)*
+**Bundle tree `wt-7` · branch `bundle/dashboards` (from `a1399848`) · lane: engine contract + config tables + registry FIRST as one unit, then per task after VRFY; MGMT pushes the bundle branch, ORCH merges to `main` · first deliverable: `docs/design/DASHBOARD-ENGINE-CONTRACT.md` UP to ORCH the moment A marks it STABLE (B5 gates on it) · escalations 0/6 reached · last updated 2026-09-03**
+| Tree | Thread | Branch | Profile · tier | Holds (DB objects / files) | State |
+|---|---|---|---|---|---|
+| wt-8 | `FHE-TASK-DASHBOARDS-A` | `task/dashboards-a` | DSNR · Fable HIGH | docs only: `docs/design/DASHBOARD-ENGINE-CONTRACT.md`, `docs/design/DASHBOARDS-GROUND-UP-PLAN.md`, `docs/tasks/TASK-DASHBOARDS-*`, `docs/reports/FHE-DSNR-DASHBOARDS-HANDOFF.md`, own ledger/report, DAYSHEET archive move. Read-only on prod. | **DISPATCHED 2026-09-03** — contract first (STATUS header), then specs + chunk declaration + escalation evidence |
+| — | `FHE-TASK-DASHBOARDS-B…` | — | CODR · Opus HIGH ON | per A's chunk declaration (ENGINE chunk first) | waiting on A |
+| — | `FHE-TASK-DASHBOARDS-V` / `-W` | — | VRFY / WALKR · Opus HIGH ON | — | waiting; trees to be asked of ORCH |
+**DB objects held by the bundle (declared in BUNDLE-DASHBOARDS.md; nothing applied yet):** `dash_waiting_on_you` · `dash_waiting_on_clients` · `_waiting_items` · every NEW dashboard-config / element-config / provisioning / report table+function (exact storage objects declared in the contract before applying). ⚠️ `documents` (contract system) is frozen — not touched without ORCH's word.
+**Open to ORCH:** none yet. **Gates B5:** the engine contract (A's first commit).
 
 ## BUNDLE FUNNELDEBT — FHE-MGMT-FUNNELDEBT (cut 2026-09-03 · `docs/orch/BUNDLE-FUNNELDEBT.md`)
 *(MGMT edits ONLY this section on its bundle branch.)*
