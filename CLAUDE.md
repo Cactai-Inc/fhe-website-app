@@ -994,3 +994,16 @@ reporting success.
   School, Program, Academy, Hunter, Trailriding, Tours, Western** — public or internal; found
   occurrences are SHOWN to the owner with location, surrounding text and a suggested replacement,
   never silently swapped. "Barn" is acceptable only when an actual building is the subject.
+
+- **D44 — MGMT IS IN FORCE: THE BUNDLE MANAGER RUNS BETWEEN ORCH AND TASK, MANY COPIES AT ONCE
+  (owner, 2026-09-02/03).** Owner: *"we add mgmt between us and task and that thread can have
+  multiple copies running simultaneously, it needs to be on your level of capability and self
+  sufficiency and it needs to not be a discussion thread more than decisions and rulings… try out
+  MGMT by running everything in there."* `docs/method/MGMT-ROLE.md`, `VRFY-PROFILE.md` and
+  `WALKR-PROFILE.md` are IN FORCE from 2026-09-03; their NOT-IN-FORCE banners are struck by this
+  rule. ORCH cuts bundles into `docs/orch/BUNDLE-<NAME>.md` (the §7 contract), proves them disjoint,
+  and launches `FHE-MGMT-<BUNDLE>` (Fable · HIGH). MGMT does the tasking, dispatch, VRFY-backed
+  approval, merge and push for its bundle; summons the owner only through pre-registered escalation
+  points; dumps-and-respawns at 50% context. ORCH keeps the board, the conversation, direct one-off
+  tasks, and visibility over every copy. The first trial bundles: GRANTS (small) and SUPPLIES (the
+  Fable-tier design).

@@ -27,7 +27,7 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 ## PROCESS — 2026-09-03
 - ⚠️ **Three of four batch-2 threads ignored their tree** (G in wt-1, H in wt-2, BANNEDWORDS on the canonical checkout). **Root cause found: the worktree rode OUTSIDE the paste block; the owner pastes only the block.** Fixed: the block now carries a third line `Worktree: wt-<n> · hand back to FHE-ORCH-7` (ORCHESTRATOR § THE PROMPT, TASK-ROLE §5).
 - D42 was reverted (never in force); SIGNFLOW-D's citation of it is a dangling reference — CLNR note.
-- MGMT-ROLE/VRFY/WALKR exist, NOT IN FORCE — goes in force as D44 on the owner's word.
+- ✅ **MGMT IN FORCE — D44 (2026-09-03).** First two bundles cut and handed: `BUNDLE-GRANTS.md` (wt-1 + wt-2) · `BUNDLE-SUPPLIES.md` (wt-3 + wt-4/5/6). Pool grown to wt-8. **Canonical-checkout writer: ORCH.**
 
 ## RESUME — what is true right now (2026-09-03)
 - **`main` = `c48be110`, pushed, clean.** Merged and verified since: SITESEO · SIGNFLOW-G · SIGNFLOW-H; docs: SIGNFLOW-F specs · RANCHWORD-A spec (withdrawn) · TACKROOM · METHOD-MGMT · BANNEDWORDS audit · RECONCILED list. Gates: typecheck 0 · typecheck:api 0 · lint 45w/0e · build clean · test:api 7/7 · `test:db` red at baseline (proof of nothing).
