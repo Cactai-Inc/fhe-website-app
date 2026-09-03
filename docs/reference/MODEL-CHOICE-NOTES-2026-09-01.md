@@ -60,3 +60,7 @@ ledger model) · INROADS (auth-state branching, three failed removal proposals) 
 seams F1–F4 + guardian) · MODULES access point + admin refactor (CR-110) · CR-106 analytics/SEO
 architecture · the DASHBOARDS revisit (CR-107) → all Fable-tier DSNR-profile tasks. SIGNFLOW-G/H,
 BANNEDWORDS, SITEPOLICY research → unchanged (Sonnet/Opus).
+
+## 2026-09-03 (later) — D45: Fable is never a default (owner)
+> *"i told ORCH-7 its an option but now all of them are running on it and its hammering my usage allowance, were at 50% and we only used 20% of the working hours."* … *"we have used 30% of the fable allowance for the week and its only been 9 hours since it reset. were going to run out"*
+Seven Fable threads were up (four MGMT + three DSNR). **Rule now: MGMT · DSNR · VRFY · WALKR · builds default to Opus · HIGH · thinking ON; Sonnet · MEDIUM · ON for idiom sweeps; Fable · HIGH only when the owner names the thread, one at a time.** ORCH brings the candidate and the reason. Running threads keep their model; a barely-started Fable thread is stopped and re-spawned on Opus from its own ledger.

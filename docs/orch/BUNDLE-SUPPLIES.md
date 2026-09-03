@@ -74,4 +74,4 @@ order with a horse attribution, a leased-horse split (FLOW-MAP names; use the WA
 precedent, never a real client).
 
 ## Suggested model/effort
-DSNR: **Fable · HIGH**. CODR: Opus · HIGH · ON. VRFY: Opus · HIGH · ON. WALKR: Opus · HIGH · ON.
+DSNR: **Fable · HIGH** — the ONE owner-named Fable thread in flight (D45). Every later station Opus. CODR: Opus · HIGH · ON. VRFY: Opus · HIGH · ON. WALKR: Opus · HIGH · ON.

@@ -1007,3 +1007,8 @@ reporting success.
   points; dumps-and-respawns at 50% context. ORCH keeps the board, the conversation, direct one-off
   tasks, and visibility over every copy. The first trial bundles: GRANTS (small) and SUPPLIES (the
   Fable-tier design).
+
+- **D45 — FABLE IS NEVER A DEFAULT (owner, 2026-09-03).** MGMT, DSNR, VRFY, WALKR and build
+  threads default to Opus · HIGH · thinking ON; idiom sweeps to Sonnet · MEDIUM · ON. Fable · HIGH
+  only when the owner names the thread, one at a time. Reason: seven Fable threads spent 30% of the
+  weekly allowance in nine hours. ORCH brings the candidate with why the ground is convoluted.

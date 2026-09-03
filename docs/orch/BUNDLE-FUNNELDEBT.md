@@ -76,7 +76,7 @@ Per task after VRFY. F3 writer + constraint may merge before the relabel; the re
 rehearsal discipline (`BEGIN…ROLLBACK` first, counts before/after in the report).
 
 ## Sequence inside the bundle
-DSNR (Fable · HIGH — the SHAPE of the request→activation→booking spine and the minor/guardian spine;
+DSNR (Opus · HIGH · thinking ON — D45; Fable only if the owner names it — the SHAPE of the request→activation→booking spine and the minor/guardian spine;
 the spec set + disjoint chunk declaration + the batched escalation with evidence) → owner rules →
 CODR (Opus · HIGH · ON) → VRFY per merge (Opus · HIGH · ON; production: `status_events` counts by
 `entity_type` before/after; a guardian survives provisioning on a WALKTEST fixture; `proacl` on every
@@ -85,4 +85,4 @@ the inbound request → activation → booking flow and the minor-at-the-door fl
 WALKTEST fixture, never a real client).
 
 ## Suggested model/effort
-DSNR: **Fable · HIGH**. CODR: Opus · HIGH · ON. VRFY: Opus · HIGH · ON. WALKR: Opus · HIGH · ON.
+DSNR: **Opus · HIGH · ON** (D45). CODR: Opus · HIGH · ON. VRFY: Opus · HIGH · ON. WALKR: Opus · HIGH · ON.
