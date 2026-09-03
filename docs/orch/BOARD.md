@@ -4,36 +4,39 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-03 · **ORCH — batch 2 landed (G · H · BANNEDWORDS · RECONCILE); the MGMT trial is next, pending the owner's in-force word**
+**Last updated:** 2026-09-03 · **FHE-ORCH-8 in the seat. Four MGMT copies cut: GRANTS (B1) · SUPPLIES (B5) running; DASHBOARDS (B7) · FUNNELDEBT (B2) handed. Pool wt-1…wt-11.**
 
 ## THE PLAN OF RECORD — RECONCILED-2026-09-02.md §8, twelve bundles (ORCH adopts as written)
 | Bundle | Tier | State |
 |---|---|---|
-| **B1 GRANTS + STALE** — ACL sweep of EVERY SECURITY DEFINER writer (`request_purchase_payment` anon CONFIRMED by ORCH) + stale comments + ledger-status headers | Sonnet · MEDIUM | **dispatch now** (disjoint from everything) |
-| **B2 FUNNELDEBT** — F1–F7 incl. F3's CHECK constraint (781 rows CONFIRMED) + guardian + display-name half | Fable · HIGH design → builds | MGMT |
+| **B1 GRANTS + STALE** — ACL sweep of EVERY SECURITY DEFINER writer (`request_purchase_payment` anon CONFIRMED by ORCH) + stale comments + ledger-status headers | Sonnet · MEDIUM | **RUNNING** — `FHE-MGMT-GRANTS`, wt-1; section below |
+| **B2 FUNNELDEBT** — F1–F4, F6, 3.2a, DEPENDENT; F3's CHECK constraint (781 rows CONFIRMED) + guardian. **F5/4.7 (display-name control) moved to B10** — its control lives on `AccountHub.tsx`, which B5 holds | Fable · HIGH design → builds | **CUT 2026-09-03 → `BUNDLE-FUNNELDEBT.md`, wt-9 + wt-10; prompt handed** |
 | **B3 INROADS** — ONERAIL first, then the contract-entry matrix; research, no removal | Fable · HIGH | MGMT |
 | **B4 SITE (FRONT)** — CR-106 analytics + audit, SITEPOLICY, `/visit` `/contact` indexability | Fable · HIGH architecture → Opus builds | MGMT — owner's stated priority; his inputs finish it, not start it |
-| **B5 SUPPLIES** — CR-109/112 (+A1/A2), CR-110 access point, door naming | Fable · HIGH design | MGMT |
+| **B5 SUPPLIES** — CR-109/112 (+A1/A2), CR-110 access point, door naming | Fable · HIGH design | **RUNNING** — `FHE-MGMT-SUPPLIES`, wt-3; section below |
 | **B6 REQUESTS + MONTH** — REQCARDS (§9 struck), MONTHEND, dossier tabs, dashboard inbox | Opus · HIGH | after the pending-bookings measurement (0 today — LIFECYCLE's "4 pending" was a rehearsal; MONTHEND premise must be re-stated) |
-| **B7 DASHBOARDS** — CR-107, FIX6, plan revisit, global dashboard/element/report machinery (CR-112 §11–12) | Fable · HIGH | MGMT |
+| **B7 DASHBOARDS** — CR-107, FIX6, plan revisit, global dashboard/element/report machinery (CR-112 §11–13); ENGINE CONTRACT first (B5 gates on it) | Fable · HIGH | **CUT 2026-09-03 → `BUNDLE-DASHBOARDS.md`, wt-7 + wt-8; prompt handed** |
 | **B8 EDITOR** | Opus · HIGH | after B5/B6 |
 | **B9 RECORD PAGE** | owner decision (M4) → Opus | after M4 |
 | **B10 SMALL, UNCONTENDED** — one thread each | Sonnet/Opus · MEDIUM | dispatch alongside B1 |
 | **B11 NOTIFY** — CR-113 + deliverability | Opus design → build | MGMT |
 | **B12 OWNER** — checklists, inputs, rulings | — | the owner, at his pace |
 | **Held** — CLNR-REPO-STATE (+ RUN-QUEUE retirement, test/db snapshot regen for H's assertion) | CLNR | when no build is mid-flight |
-**Disjointness (ORCH):** B1/B10 share nothing with the design bundles; B5⊥B7; B2⊥B3 except `SignStart.tsx` deal branch (B3 owns it; B2 does not touch it); B4⊥all. **MGMT copies may run B2, B3, B4, B5, B7 concurrently once in force.**
+**Disjointness (ORCH):** B1/B10 share nothing with the design bundles; B5⊥B7 (B7 owns the engine, B5 consumes it); B2⊥B3 except `SignStart.tsx` deal branch (B3 owns it; B2 does not touch it); B2⊥B5 at the column level on `purchases` (payer vs horse attribution — separate migrations, names declared before applying); B2⊥B1: B1 holds ACLs + 5 comment lines (incl. `Onboarding.tsx:106-108/:621`), B2 holds bodies + the rest of `Onboarding.tsx`; B4⊥all. **MGMT copies may run B2, B3, B4, B5, B7 concurrently once in force.**
 
 ## PROCESS — 2026-09-03
 - ⚠️ **Three of four batch-2 threads ignored their tree** (G in wt-1, H in wt-2, BANNEDWORDS on the canonical checkout). **Root cause found: the worktree rode OUTSIDE the paste block; the owner pastes only the block.** Fixed: the block now carries a third line `Worktree: wt-<n> · hand back to FHE-ORCH-7` (ORCHESTRATOR § THE PROMPT, TASK-ROLE §5).
 - D42 was reverted (never in force); SIGNFLOW-D's citation of it is a dangling reference — CLNR note.
 - ✅ **MGMT IN FORCE — D44 (2026-09-03).** First two bundles cut and handed: `BUNDLE-GRANTS.md` (wt-1 + wt-2) · `BUNDLE-SUPPLIES.md` (wt-3 + wt-4/5/6). Pool grown to wt-8. **Canonical-checkout writer: ORCH.**
+- **FHE-ORCH-8 took over 2026-09-03** (handoff `orchestration/handoffs/active/FHE-ORCH-8.md`). Cut B7 `BUNDLE-DASHBOARDS.md` (wt-7 + wt-8) and B2 `BUNDLE-FUNNELDEBT.md` (wt-9 + wt-10); provisioned wt-9/10/11 (env pair + node_modules). **wt-11 allotted to GRANTS for its VRFY/WALKR** (its ledger asked). Bundle files now say "hand back to `FHE-ORCH`" — the standing thread answers whatever its number.
+- ⚠️ **MGMT docs lane, loop finding #1:** both MGMT ledgers plan to reach `main` by fast-forward push of the bundle branch. `main` moved (f8b10c99, 2779ca2c) after both branched from a1c6c105 — a fast-forward is no longer possible, and D40 says ORCH is the one writer. **Ruling (ORCH): MGMT never pushes `main`; MGMT pushes its bundle branch; ORCH merges bundle branches into `main` (docs-only merges at each hand-back or on request).** GRANTS' board section is mirrored below by ORCH from `bundle/grants`. → MGMT-ROLE §10 wording to follow (SELF-IMPROVEMENT when the trial closes).
+- **Open to the OWNER from SUPPLIES' ledger:** the numbered CR-112 suggestions list (items 1–8) that FHE-ORCH-7 handed and the owner answered in CR-112·A1 exists only in the owner's chat window. ORCH-8 does not have it. Asked the owner to paste it; filed under CR-112·A1 on receipt.
 
 ## RESUME — what is true right now (2026-09-03)
-- **`main` = `c48be110`, pushed, clean.** Merged and verified since: SITESEO · SIGNFLOW-G · SIGNFLOW-H; docs: SIGNFLOW-F specs · RANCHWORD-A spec (withdrawn) · TACKROOM · METHOD-MGMT · BANNEDWORDS audit · RECONCILED list. Gates: typecheck 0 · typecheck:api 0 · lint 45w/0e · build clean · test:api 7/7 · `test:db` red at baseline (proof of nothing).
+- **`main` = `2779ca2c` at ORCH-8 takeover (this commit moves it), pushed, clean.** Merged and verified since: SITESEO · SIGNFLOW-G · SIGNFLOW-H; docs: SIGNFLOW-F specs · RANCHWORD-A spec (withdrawn) · TACKROOM · METHOD-MGMT · BANNEDWORDS audit · RECONCILED list. Gates: typecheck 0 · typecheck:api 0 · lint 45w/0e · build clean · test:api 7/7 · `test:db` red at baseline (proof of nothing).
 - **Merged and VERIFIED this session (each has a `-VERIFICATION.md`):** LIFECYCLE · SIGNBOOK (after the fact) · SITECOPY-A/B · SIGNFLOW-A/B/C/D · LANDINGSIGNIN · SITESEO. Docs merged: SIGNFLOW-F specs (G+H) · RANCHWORD-A spec · TACKROOM handoff · MGMT-ROLE/VRFY/WALKR (not in force).
 - **Owed:** `test/db` snapshot regen (H's assertion red until then) · the Pamela lease's next open (drops its four periods by the normal path).
-- **Pool:** wt-1…wt-6, all detached at `origin/main`, clean. **Canonical-checkout writer (D40): ORCH.**
+- **Pool:** wt-1 GRANTS (MGMT) · wt-2 GRANTS tasks · wt-3 SUPPLIES (MGMT) · wt-4/5/6 SUPPLIES tasks · wt-7 DASHBOARDS (MGMT) · wt-8 DASHBOARDS tasks · wt-9 FUNNELDEBT (MGMT) · wt-10 FUNNELDEBT tasks · wt-11 GRANTS VRFY/WALKR. **Canonical-checkout writer (D40): ORCH.**
 - **REQCARDS** still queued: option-set conversation happens HERE, then its DSNR fold — dissolves into the MGMT bundles.
 - **CLNR-REPO-STATE** hold stands until no build is mid-flight.
 
@@ -150,3 +153,29 @@ address fields left unshaped by design — want them shaped too?
 | wt-6 | — | — | — | held for CODR | idle, detached |
 **DB objects held by the bundle (declared in BUNDLE-SUPPLIES.md; nothing applied yet):** `resources` · `resource_lots` · `consumption_events` · `cost_allocation_rules` · `resolve_consumption_billing` · `billable_lines` (consumption source) · `stable_items` · `vendors` · `horse_medications` · `purchases`/`purchase_items` horse-attribution column only (exact column to be declared by the spec).
 **Open to ORCH:** ORCH's numbered CR-112 suggestions list (A1 items 1,2,5,6,8; 7 absent) is not on file — record under CR-112·A1. **Gated on B7:** dashboard/projection/deviation/report consumers.
+
+## BUNDLE GRANTS — FHE-MGMT-GRANTS (D44 trial · opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-GRANTS-LEDGER.md`)
+**Bundle tree `wt-1` · branch `bundle/grants` @ a1c6c105 · merge lane: per task after VRFY · hands back to `FHE-ORCH-7`.**
+**DB objects held by this bundle: the ACL (`proacl`) of every SECURITY DEFINER function in `public` — never a body.**
+| Thread | Profile | Tree | Branch | State |
+|---|---|---|---|---|
+| `FHE-TASK-GRANTS-A` | DSNR | **wt-2** | `task/grants-a-spec` | DISPATCHED 2026-09-03 — `docs/tasks/TASK-GRANTS-A-author-the-acl-sweep-spec.md`; awaiting owner launch |
+| `FHE-TASK-GRANTS-B` | CODR | wt-2 (after -A retires) | `task/grants-b` | waiting on -A's spec |
+| `FHE-TASK-GRANTS-V` | VRFY | **wt-11** (allotted by ORCH 2026-09-03) | — | waiting |
+| `FHE-TASK-GRANTS-W` | WALKR | wt-11 (after -V) | — | at close, on `main` as deployed |
+**Escalations:** 1 pre-registered (anon-executable writers) — not yet raised; -A produces the list. **Item 7** (ledger status headers): last, after ORCH is told.
+*(mirrored by ORCH from `bundle/grants` d5f97724; MGMT keeps editing its copy on the bundle branch — MGMT-ROLE §10.)*
+
+## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (cut 2026-09-03 · `docs/orch/BUNDLE-DASHBOARDS.md`)
+*(MGMT edits ONLY this section on its bundle branch.)*
+**Bundle tree `wt-7` · task tree `wt-8` · prompt handed 2026-09-03 · first deliverable: `docs/design/DASHBOARD-ENGINE-CONTRACT.md` UP to ORCH (B5 gates on it) · escalations 0/6.**
+| Tree | Thread | Profile · tier | State |
+|---|---|---|---|
+| wt-8 | `FHE-TASK-DASHBOARDS-A` | DSNR · Fable HIGH | awaiting MGMT dispatch |
+
+## BUNDLE FUNNELDEBT — FHE-MGMT-FUNNELDEBT (cut 2026-09-03 · `docs/orch/BUNDLE-FUNNELDEBT.md`)
+*(MGMT edits ONLY this section on its bundle branch.)*
+**Bundle tree `wt-9` · task tree `wt-10` · prompt handed 2026-09-03 · one batched summons after DSNR (7 points) · production data change (F3 relabel) only after the ruling is in the CR ledger.**
+| Tree | Thread | Profile · tier | State |
+|---|---|---|---|
+| wt-10 | `FHE-TASK-FUNNELDEBT-A` | DSNR · Fable HIGH | awaiting MGMT dispatch |
