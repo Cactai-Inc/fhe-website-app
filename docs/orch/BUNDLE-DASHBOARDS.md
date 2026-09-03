@@ -67,10 +67,12 @@ deliverable of this bundle is therefore the ENGINE CONTRACT, before any dashboar
    provisioning for "Claire and myself" has no second account to provision. Prepare: the accounts
    that exist, the delta, two options (a second owner account · a per-person profile under one
    login), a recommendation.
+   → **CLOSED-BY-EVIDENCE 2026-09-03 (MGMT re-ran):** two distinct tenant ADMIN logins exist (`admin@`→business, `hello@`→trainer). The shared-login gap is that stamps under `hello@` cannot say which PERSON acted; provisioning follows the login. Not raised with the owner.
 2. **The metric list (M2)** — he said he had one in a chat thread; ask for it ONCE with the
    engine's element list as the frame (what each element needs as input).
 3. **DASHFEED's three owner questions** — restate them from `docs/method/04-OPEN*` verbatim; he
    answers or strikes.
+   → **COLLAPSED 2026-09-03:** 04-OPEN §1 (messaging: one store, three views, after T3) and §2 (two boards stay; shared facts on both) are ANSWERED in the file; §3 (the metric list) IS escalation 2. Restated verbatim in `FHE-DSNR-DASHBOARDS-HANDOFF.md` §6.3.
 4. **Element-config vs D13** — CR-112 #11's element config (inputs + display variant per element)
    is a per-element EDITOR. The D13 exception excluded ARRANGEMENT editors. Put the boundary in front
    of him: selector = access (allowed), element config = content/formula (D13 says owner-editable),
