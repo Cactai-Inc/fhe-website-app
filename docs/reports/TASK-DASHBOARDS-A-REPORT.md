@@ -63,5 +63,10 @@ Not run — this task changed no code (docs only, `git diff --stat origin/main..
 ## 10. TEARDOWN CENSUS
 No server, browser, test runner or scratch worktree was started by this thread. `ps` on `vite|vitest|node … wt-8|psql|playwright` → none of mine (the only matches are the owner's own Google Chrome processes). `psql` sessions were one-shot and closed. `wt-8` stays on `task/dashboards-a`, porcelain clean, 9 commits ahead of `origin/main`, not pushed.
 
-## VALIDATION
-_(MGMT/ORCH appends its verdict here.)_
+## VALIDATION — FHE-MGMT-DASHBOARDS, 2026-09-03
+**Verdict: HOLDS (docs-only DSNR output; no VRFY thread — MGMT re-ran the headline claims itself).**
+- **Re-run on production (read-only, MGMT's own queries):** two distinct tenant ADMIN logins with `dashboard_focus` seeded (`admin@`→business, `hello@`→trainer; `admin@cactai.io` SUPER_ADMIN, no org) — escalation 1 CLOSED-BY-EVIDENCE · `_waiting_items`, `dash_waiting_on_you`, `dash_waiting_on_clients` `proacl` = postgres/authenticated/service_role (no anon); no creating migration on `main` (grep) · `my_documents` `proacl` carries `anon=X` — FLAGGED, routed to ORCH (GRANTS/B1 territory) · 12 buckets, `reports` present and empty · `files`: 2 rows, both org-owned · `dashboard_provisions` / `reports` do not exist yet · `profiles_dashboard_focus_chk` present.
+- **Merge audit (ORCHESTRATOR §6):** diff against merge-base `84e3a960` touches no `src/`, `api/`, `supabase/` file; dry-run merge into `bundle/dashboards` clean (0 conflicts); "flagged, not fixed" read — items 1–4 routed to ORCH in MGMT's hand-back, items 5–6 are inside specs E1/E2.
+- **Contract read in full by MGMT before sending UP.** One note for the CODR of B: `UNIQUE … NULLS NOT DISTINCT` needs PG15+ — spec B §5 already carries the fallback.
+- **Merge commit:** `9fcd6e6b` on `bundle/dashboards` (ORCH merges the bundle branch to `main`).
+
