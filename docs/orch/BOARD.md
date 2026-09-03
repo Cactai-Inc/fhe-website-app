@@ -15,62 +15,13 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 **Then — the MGMT trial:** `RECONCILE` (running in batch 2): every open item — board queues, open CRs, the SIGNBOOK-fallout lane, the Casey backlog, ROUTED, owner checklists, the old docs tasks — checked against post-batch `main`, classified keep/revise/remove with evidence, into ONE reconciled list. ORCH bundles by shared context; disjoint bundles hand to MGMT copies. ONERAIL · FUNNELDEBT · SITEPOLICY · INROADS · CR-106 · REQCARDS dissolve into those bundles rather than running as batch 3.
 **Last:** `CLNR-REPO-STATE` when no build is mid-flight.
 
-## RESUME
-- ✅ **`TASK-LIFECYCLE` — VERIFIED, MERGED, PUSHED** (merge `5b9fed67`, docs `b9aa8b82`).
-  Six booking states live in production, 30+30 horizon, viewer-scoped calendar read, transitions
-  on the buttons that already exist. **All migrations were applied to prod by the thread and
-  re-verified by ORCH7 at merge time.** `docs/reports/TASK-LIFECYCLE-VERIFICATION.md` beside the
-  report. Branch deleted; tag `archive/lifecycle-2026-09-01`; `wt-2` back in the pool, idle+clean.
-  ⚠️ **The 2026-09-01 wt-1 collision is fully resolved** — separation completed, the mixed
-  `task/lifecycle` branch is gone, the three stray migrations in `wt-1` are gone. D36 exists
-  because of it.
-- SIGNBOOK-thread era closed — session-wide verification done, `task/flowalign` deleted, thread closed.
-
-- 🔒 **Every prompt now states MODEL TIER · EFFORT · THINKING on/off when not Fable · worktree
-  (owner ruling + D36).**
-- **`REQCARDS` — queued, three preconditions:** ~~LIFECYCLE merged~~ ✅ · the modal
-  full-option-set conversation the owner offered (**`DISCO`'s, next**) · `DSNR` folds the owner's
-  three answers (`TASK-REQCARDS-LEDGER.md`, bottom) plus the option-set lock into the spec.
-  **Then dispatch, with a worktree named per D36.**
-
-- 🔒 **HOLD, AND THIS IS ORCH6's RULING — do not release until BOTH builds merge:**
-  **`CLNR-REPO-STATE`** and **`DSNR-SITE-PUBLIC`**, both queued and ready in the owner's input.
-  ⚠️ **`CLNR` MOVES FILES, and `DSNR-SITE-PUBLIC` WRITES INTO `docs/tasks/` — which CLNR moves.**
-  **"Never move a file under a running thread" is the rule, and ORCH6 broke it once this session
-  by committing docs while `FIX5` was reorganising them.** **The owner asked whether he needed a
-  green light: the answer is yes, and it is NO for now.**
-
-- **Merged this session:** `FIX4` · `FIX5` *(step 8 reversed)* · `BACKDATE` · `CR85` · `MODAL2` ·
-  `REAPER` · `BOOKS1` · `SIGNSTRIP` · `SIGNDOOR` · `ANALYTICS`. **`main` pushed and clean.**
-- **Gates on `main`:** typecheck **0** · typecheck:api **0** · lint **46** · build **clean** ·
-  `test:api` **7/7** · ⚠️ **`test:db` red at baseline and proof of nothing.**
-- **Worktree pool:** `wt-1` = SIGNBOOK (running) · `wt-2` idle · `wt-3` idle — both detached at
-  `origin/main`, clean, with `node_modules` and the `.env` pair. 🔒 **D36: ORCH assigns; a thread
-  never self-selects.**
-
-## ▶ THE PLAN OF RECORD — nothing below has started; the owner launches in this order
-**Canonical-checkout writer (D40): ORCH.** No docs thread is writing it right now.
-
-### Wave 1 — ✅ ALL THREE VERIFIED AND MERGED 2026-09-02 (verification files beside each report)
-SITECOPY-A · SIGNFLOW-B (4th door accepted) · SIGNFLOW-D (anon grants closed; ran with merge priority)
-
-### Wave 2 — ✅ ALL THREE VERIFIED AND MERGED 2026-09-02
-SITECOPY-B (two spec routings + the Barn Ops product question) · SIGNFLOW-A (cursive-period defect
-routed; C's gate OPEN) · LANDINGSIGNIN (two physical deviations accepted by ORCH).
-
-### Wave 3
-| Thread | State |
-|---|---|
-| `FHE-TASK-SIGNFLOW-C` | ✅ **VERIFIED AND MERGED 2026-09-02** — chooser diff applied by ORCH; §5.9 to owner checklist |
-| `FHE-TASK-SITESEO` | ⚠️ NOT STARTED (census 2026-09-02: all trees idle) — batch 1 · Opus · HIGH · ON · `wt-2` |
-`wt-3` FREE. **SIGNFLOW-F's gate (after C) is now OPEN** — DSNR-profile spec next.
-New unruled item: `::selection` renders gold app-wide (`index.css:97`) — owner call whether it joins the green flow.
-
-### Wave 3 — gated
-| Thread | Gate |
-|---|---|
-| `FHE-TASK-SITESEO` | ✅ **DISPATCHABLE NOW** — SITECOPY-A merged; keep-and-301 ruled. Runs in the first tree wave 2 frees (or after LANDINGSIGNIN, smallest of the three) |
-| `FHE-TASK-SIGNFLOW-C` | after `SIGNFLOW-A` AND `-B` merge; re-greps its line numbers |
+## RESUME — what is true right now
+- **`main` = `0e9ebaf0`, pushed, clean.** Gates: typecheck 0 · typecheck:api 0 · lint 45w/0e · build clean · test:api 7/7 · `test:db` red at baseline (proof of nothing).
+- **Merged and VERIFIED this session (each has a `-VERIFICATION.md`):** LIFECYCLE · SIGNBOOK (after the fact) · SITECOPY-A/B · SIGNFLOW-A/B/C/D · LANDINGSIGNIN · SITESEO. Docs merged: SIGNFLOW-F specs (G+H) · RANCHWORD-A spec · TACKROOM handoff · MGMT-ROLE/VRFY/WALKR (not in force).
+- **Owed by ORCH:** the post-deploy SITESEO curls (301s still read 200 at `0e9ebaf0`+0 min — deploy pending).
+- **Pool:** wt-1…wt-6, all detached at `origin/main`, clean. **Canonical-checkout writer (D40): ORCH.**
+- **REQCARDS** still queued: option-set conversation happens HERE, then its DSNR fold — dissolves into the MGMT bundles.
+- **CLNR-REPO-STATE** hold stands until no build is mid-flight.
 
 ### Docs tasks (D41: profiles, not roles) — ONE canonical-checkout writer at a time (D40)
 `FHE-TASK-ONERAIL` (DSNR profile — rebase the stale spec) ·
