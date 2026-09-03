@@ -4577,6 +4577,11 @@ URL was conditional in SITESEO §4c.7 and never asked for directly — ORCH's mi
 audit + analytics) is raised to the front of the queue**; the owner's input list is in the ORCH
 thread 2026-09-03.
 
+## CR-119 — 2026-09-03: BILL OF SALE co-buyer checkbox has no way OFF once checked — a live document is stuck
+**SAID (owner, verbatim):** *"on the bill of sale contract there is no way to uncheck the option once
+its checked for adding a co-buyer. my current bill of sale is now stuck because of this."*
+**Live incident — fact-find first, one query, before anything is designed or built.**
+
 ## CR-118 — 2026-09-03: per-staff-account nav visibility, an Admin-nested account link, and a Team-page control surface — with a self-protection rule
 **SAID (owner, verbatim):**
 > *"the nav link to the account page on the staff acount needs to be nested inside admin. it only
