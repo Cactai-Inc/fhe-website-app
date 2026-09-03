@@ -431,3 +431,9 @@ or a comment; the six genuinely ambiguous ones (`_restore_contract_template_comp
 - **Nothing was written to the database.** Every statement this thread ran was `SELECT` /
   `has_function_privilege` / `pg_get_functiondef`. No function was called to see what it would do.
 - TEARDOWN: no server, no browser, no scratch worktree started. `psql` was one-shot per invocation.
+- **PROCESS CENSUS, 2026-09-03 close:** `ps -Ao pid,ppid,etime,command | grep -Ei "vite|node .*(dev|preview)|psql|playwright|chrome|npm run"` → **no `node`, no `vite`, no dev server, no `psql`, no Playwright.** The only matches are the owner's own Google Chrome (pid 507, uptime 1d 04h — predates this thread by a day). **Nothing to kill.**
+- **Worktree census at close (the pool grew during the session — wt-9/10/11 are new, not mine):**
+  `fhe-website-app` a1399848 [main] · `wt-1` [bundle/grants] · `wt-2` [task/grants-a-spec ← MINE] ·
+  `wt-3` [bundle/supplies] · `wt-4` [task/supplies-a] · `wt-5` detached · `wt-6` detached ·
+  `wt-7` [bundle/dashboards] · `wt-8` detached · `wt-9` [bundle/funneldebt] · `wt-10`/`wt-11` detached.
+  **wt-2 is then returned detached at `origin/main` and clean.**
