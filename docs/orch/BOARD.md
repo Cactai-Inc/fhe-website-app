@@ -164,7 +164,7 @@ address fields left unshaped by design — want them shaped too?
 | `FHE-TASK-GRANTS-B` | CODR | wt-2 (after -A retires) | `task/grants-b` | waiting on -A's spec |
 | `FHE-TASK-GRANTS-V` | VRFY | **wt-11** (allotted by ORCH 2026-09-03) | — | waiting |
 | `FHE-TASK-GRANTS-W` | WALKR | wt-11 (after -V) | — | at close, on `main` as deployed |
-**Escalations:** 1 pre-registered (anon-executable writers) — not yet raised; -A produces the list. **Item 7** (ledger status headers): last, after ORCH is told.
+**Escalations:** 1/1 RAISED 2026-09-03 — `FHE-TASK-GRANTS-A-ANON-WRITERS.md` (bundle/grants): 145 anon-executable writers; Block A 140 no anonymous caller → revoke; Block B: keep `submit_public_request` + `open_gift` (code is the credential), revoke `redeem_gift` (self-guards on auth.uid()). ORCH verified in production: open_gift anon=t no guard · redeem_gift anon=t self-guard=t. **With the owner.** -B blocked behind the ruling. **Item 7** (ledger status headers): last, after ORCH is told.
 *(mirrored by ORCH from `bundle/grants` d5f97724; MGMT keeps editing its copy on the bundle branch — MGMT-ROLE §10.)*
 
 ## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (cut 2026-09-03 · `docs/orch/BUNDLE-DASHBOARDS.md`)
