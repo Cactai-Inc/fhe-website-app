@@ -6,10 +6,11 @@ down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 
 **Last updated:** 2026-09-02 · **ORCH — nothing running; BATCH 1 handed: SITESEO (wt-2) · SIGNFLOW-F specs (wt-3) · RANCHWORD spec (wt-1)**
 
-## RUN ORDER (owner asked 2026-09-02)
-**Batch 1 — concurrent, all three trees:** `SITESEO` wt-2 · `SIGNFLOW-F` (DSNR profile, two specs) wt-3 · `RANCHWORD` (DSNR profile, sweep spec) wt-1.
-**Batch 2 — as each returns:** `TACKROOM` (DISCO research) → wt-1 after RANCHWORD's spec · the two builds F specs produce → wt-3 · RANCHWORD build → wt-1 after TACKROOM.
-**Batch 3 — docs tasks, one per free tree:** `ONERAIL` (DSNR rebase) · `FUNNELDEBT` (DSNR) · `SITEPOLICY` (DISCO) · `INROADS` (DISCO) · CR-106 analytics research (DISCO) · REQCARDS option-set conversation happens HERE, then its DSNR fold.
+## RUN ORDER (owner, 2026-09-02 — revised: pool grows on demand; the rest goes through MGMT)
+**Pool: wt-1…wt-6 provisioned (env pair + node_modules). More on request.**
+**Batch 1 — concurrent NOW:** `SITESEO` wt-2 · `SIGNFLOW-F` (DSNR profile) wt-3 · `RANCHWORD` (DSNR profile) wt-1 · `TACKROOM` (DISCO research) wt-4 · `METHOD-MGMT` (author MGMT-ROLE + VRFY/WALKR profiles from `docs/method/MGMT-DESIGN-BRIEF-2026-09-02.md`) wt-5.
+**Batch 2 — as gates open:** the two builds F's specs produce · RANCHWORD build (after TACKROOM's handoff, since the hub name depends on it).
+**Then — the MGMT trial:** `RECONCILE` (DISCO profile, wt-6): every open item — board queues, open CRs, the SIGNBOOK-fallout lane, the Casey backlog, ROUTED, owner checklists, the old docs tasks — checked against post-batch `main`, classified keep/revise/remove with evidence, into ONE reconciled list. ORCH bundles by shared context; disjoint bundles hand to MGMT copies. ONERAIL · FUNNELDEBT · SITEPOLICY · INROADS · CR-106 · REQCARDS dissolve into those bundles rather than running as batch 3.
 **Last:** `CLNR-REPO-STATE` when no build is mid-flight.
 
 ## RESUME
