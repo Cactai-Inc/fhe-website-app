@@ -5,14 +5,16 @@
 
 ## RESUME
 Role / thread   FHE-MGMT-GRANTS · wt-1 · bundle/grants (from a1c6c105; origin/main = a1c6c105 at open)
-DONE            handoff read end to end (all §7 rows present); MGMT-ROLE/VRFY/WALKR read; D36 guard passed in wt-1, bundle/grants claimed; sweep MEASURED once against production (read-only, below) as input for the DSNR-profile task
-IN FLIGHT       dispatching FHE-TASK-GRANTS-A (DSNR profile) to wt-2
+DONE            handoff read end to end (all §7 rows present); MGMT-ROLE/VRFY/WALKR read; D36 guard passed in wt-1, bundle/grants claimed; sweep MEASURED once against production (read-only, below); -A dispatch file + board section committed 912d907a; bundle/grants pushed to origin (branch only, not main) so ORCH can read the board section
+IN FLIGHT       nothing — waiting on the owner to launch FHE-TASK-GRANTS-A (prompt handed 2026-09-03)
 NEXT            owner launches FHE-TASK-GRANTS-A; on its handoff, dispatch CODR (-B) to wt-2, then VRFY (-V) — needs a second tree from ORCH if -B still holds wt-2 at VRFY time
 DECIDED         letters: -A = DSNR-profile spec task · -B = CODR build · -V = VRFY · -W = WALKR. DSNR tier kept at Opus·HIGH·ON (handoff's suggestion; the ground is a classification sweep, not convoluted shape). Escalation 1 is MINE to raise: the -A spec must emit the anon-writer list as a file I can put in front of the owner, and chunk so the un-escalated work builds while he rules.
 BLOCKED         nothing yet. Escalation 1 will block only the revokes on functions the owner has not ruled on.
 DO NOT          do not write the canonical checkout (D40); do not touch function BODIES (B2 owns them); do not run the "does anon actually execute it" probe on writers — probing writes production; do not treat provolatile='v' as "writes" — it is the candidate set, the spec defines the writer test
 
 ## LOG
+- 912d907a: ledger + `docs/tasks/TASK-GRANTS-A-author-the-acl-sweep-spec.md` + board section. Prompt for -A handed to the owner: Opus · HIGH · thinking ON · wt-2 · sender FHE-MGMT-GRANTS.
+- Fact for -A, found while dispatching: `request_category_label` is SECURITY INVOKER (not in the definer population) with an explicit `GRANT … TO anon` in `20260901T2230_…sql:37-38` — public by design, as the bundle says. `api/expire-holds.ts` authorizes via `authorizeCronRequest` (cron header / CRON_SECRET); which DB role its client runs as is -A's to establish.
 - 2026-09-03 open. Handoff §7 check: bundle name ✓ · items+state ✓ · ownership (ACLs only, 5 comment lines, ledger headers) ✓ · escalation points (1 pre-registered) ✓ · gates (none guest-facing; proacl table up) ✓ · merge lane (per task after VRFY; migration applied by build task under rehearsal) ✓ · WALKR flows (inbound request flow, sign-start flow; anonymous visitor) ✓ · model/effort ✓ · sender `FHE-ORCH-7` ✓. Nothing missing — no send-back.
 - NOTE for ORCH (not a question): RECONCILED §8 row B1 also lists 1.15 (spec corrections for DSNR), 1.19 (5 reports lacking VALIDATION) and §7.6 (D42 gap); `BUNDLE-GRANTS.md` does not carry them. Executing the handoff as cut; the three go up in the bundle report as "not in this bundle".
 - wt-1 guard: detached at c48be110, porcelain empty → `git checkout -b bundle/grants origin/main` (a1c6c105), clean run, .env/.env.db/node_modules present.
