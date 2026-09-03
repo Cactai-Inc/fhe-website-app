@@ -165,17 +165,17 @@ address fields left unshaped by design — want them shaped too?
 **Open to ORCH:** ORCH's numbered CR-112 suggestions list (A1 items 1,2,5,6,8; 7 absent) is not on file — record under CR-112·A1. **Gated on B7:** dashboard/projection/deviation/report consumers.
 
 ## BUNDLE GRANTS — FHE-MGMT-GRANTS (D44 trial · opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-GRANTS-LEDGER.md`)
-**Bundle tree `wt-1` · branch `bundle/grants` @ a1c6c105 · merge lane: per task after VRFY · hands back to `FHE-ORCH-7`.**
+**Bundle tree `wt-1` · branch `bundle/grants` (origin/main e8bdb372 merged in) · merge lane: per task after VRFY — MGMT pushes `bundle/grants`, ORCH merges it to `main` (ORCH-8 docs-lane ruling) · hands back to `FHE-ORCH`.**
 **DB objects held by this bundle: the ACL (`proacl`) of every SECURITY DEFINER function in `public` — never a body.**
 | Thread | Profile | Tree | Branch | State |
 |---|---|---|---|---|
-| `FHE-TASK-GRANTS-A` | DSNR | **wt-2** | `task/grants-a-spec` | DISPATCHED 2026-09-03 — `docs/tasks/TASK-GRANTS-A-author-the-acl-sweep-spec.md`; awaiting owner launch |
-| `FHE-TASK-GRANTS-B` | CODR | wt-2 (after -A retires) | `task/grants-b` | waiting on -A's spec |
-| `FHE-TASK-GRANTS-V` | VRFY | **wt-11** (allotted by ORCH 2026-09-03) | — | waiting |
-| `FHE-TASK-GRANTS-W` | WALKR | wt-11 (after -V) | — | at close, on `main` as deployed |
-**Escalations:** 1/1 ✅ **RULED 2026-09-03 — CR-116.** Block A (140) REVOKE as one block · `submit_public_request` KEEP anon · **`open_gift` REVOKE** · `redeem_gift` REVOKE. The owner: there is no anonymous user any more — an account exists the moment we have the email address; the gift reveal is an email animation and the link is an activation link. ORCH's safety measurement: **`gifts` = 0 rows in production**, so no live surface is reached anonymously. -B unblocked. **Item 7** (ledger status headers): last, after ORCH is told.
-*(mirrored by ORCH from `bundle/grants` d5f97724; MGMT keeps editing its copy on the bundle branch — MGMT-ROLE §10.)*
-
+| `FHE-TASK-GRANTS-A` | DSNR | wt-2 (returned, detached, clean) | `task/grants-a-spec` | **DONE — merged into `bundle/grants` 6ed5ff63** (docs only). Spec: `docs/tasks/TASK-GRANTS-B-close-the-anon-door-on-every-writer-nothing-anonymous-calls.md` · escalation list: `docs/reports/FHE-TASK-GRANTS-A-ANON-WRITERS.md` · handoff: `docs/reports/FHE-DSNR-GRANTS-A-HANDOFF.md` |
+| `FHE-TASK-GRANTS-B` | CODR | **wt-2** | `task/grants-b` | **WAITING ON ESCALATION 1** (the Block A ruling). Sonnet · MEDIUM · thinking ON. Holds: the migration file + the four comment lines (`contact.ts`, `deliver-document.ts`, `Onboarding.tsx` ×2) |
+| `FHE-TASK-GRANTS-V` | VRFY | **wt-11** (allotted by ORCH 2026-09-03) | — | after -B reports |
+| `FHE-TASK-GRANTS-W` | WALKR | wt-11 (after -V) | — | at close, on `main` as deployed: the inbound request flow (contact form) · the sign-start flow · **`/redeem` as a recipient with no account** (added by -A's finding) — all as an anonymous visitor |
+**Escalations: 1 of 1 ✅ RULED 2026-09-03 — CR-117** (ORCH; the owner: there is no anonymous user any more). **Block A REVOKE as one block · `submit_public_request` KEEP · `open_gift` REVOKE (the reveal is an email animation, not an anonymous page) · `redeem_gift` REVOKE.** ORCH's safety measurement: `gifts` = 0 rows in production. -B unblocked. ~~RAISED~~ — Block A (140 writers, none with an anonymous caller) as ONE block · confirm KEEP on `submit_public_request` and `open_gift` · `redeem_gift` recommended REVOKE. The ruling lands verbatim in `## RULING` of the ANON-WRITERS file; -B reads it there.
+**For ORCH (routed up, fixed by nobody here):** (1) ⚠️ **14 anon-executable writers have NO in-body guard** (`open_gift` · `reap_expired_holds` · `apply_offering_documents` · `apply_sign_path_documents` · `complete_deal` · `supersede_invitations` · `upsert_content_block` · … full list, -A handoff §5) — revoking `anon` shuts the door; any `authenticated` caller still reaches them unguarded. **A BODY finding for B2 FUNNELDEBT.** (2) 135 anon-executable definer READERS + 60 invoker non-trigger + 15 invoker trigger functions remain; a read-ACL sweep is a separate bundle (classification already in the ANON-WRITERS file). (3) `Onboarding.tsx:632` carries the same stale payment-step claim on a line the bundle does not name. (4) RECONCILED §8 row B1 lists 1.15 · 1.19 · §7.6, which `BUNDLE-GRANTS.md` does not carry. (5) Item 6 is FOUR comments, not five — `MergedBodyView.tsx` was already fixed by d78d3b3c.
+**Item 7** (CHANGE-ORDER-LEDGER status headers CR-85/89/93/97): last, after ORCH is told.
 ## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-DASHBOARDS-LEDGER.md` on `bundle/dashboards` @ 0ecc662c)
 **Bundle tree `wt-7` · branch `bundle/dashboards` from `a1399848` · task tree `wt-8` · lane: engine contract + config tables + registry FIRST as one unit, then per task after VRFY · escalations 0/6.**
 | Thread | Profile · tier | Tree | State |
