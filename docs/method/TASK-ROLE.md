@@ -158,8 +158,8 @@ no reproduction, no measurement, no third paragraph. ⚠️ **The exception is a
 own task wrong or unsafe — that one you chase.**
 
 # 5. MECHANICS
-- ⚠️ **USE THE POOL WORKTREE YOUR DISPATCH NAMES — `wt-<n>`, stated beside the model line — NOT one
-  you pick and NOT a new one (D36). The pool grows on demand; ORCH provisions (owner, 2026-09-02:
+- ⚠️ **USE THE POOL WORKTREE YOUR DISPATCH NAMES — the `Worktree: wt-<n>` line INSIDE your prompt
+  block (2026-09-03) — NOT one you pick and NOT a new one (D36). The pool grows on demand; ORCH provisions (owner, 2026-09-02:
   tree count is never the limit when work is conflict-free).**
   **Measured 2026-09-01: `git worktree add` is 1.0s and `npm ci` 5.2s, but `node_modules` is 449 MB
   per tree and is NOT hardlinked.** ⚠️ **What reuse really saves is the `.env` / `.env.db` copy** —

@@ -293,8 +293,18 @@ name.** **No spaces; the id must survive as a searchable token and as a truncate
 
 **LINE 2 — ONE FILE, BY ABSOLUTE PATH, and the instruction to read it.**
 🔒 **AND THE DISPATCH NAMES ITS SENDER (owner, 2026-09-02): the thread must know who spawned it, so
-its closing output can say "Hand this back to `<sender>`" — the exact tab name, with "back". State
-the sender beside the model line.** ⚠️ **The absolute path is why
+its closing output can say "Hand this back to `<sender>`" — the exact tab name, with "back".**
+⚠️ **CORRECTED 2026-09-03 — THE WORKTREE AND THE SENDER GO INSIDE THE PASTE BLOCK, AS A THIRD LINE.**
+Three of four batch-2 threads ignored their tree because the assignment rode beside the model line
+OUTSIDE the block, and the owner pastes only the block. The block is now:
+```
+FHE-TASK-<CHANGE>
+
+cd /Users/cactai/Downloads/claude-code-repo/fhe-website-app
+Read <absolute path> and build it.
+Worktree: wt-<n> · hand back to FHE-ORCH-7
+```
+Model · effort · thinking stay outside the block (they configure the tab, not the thread). ⚠️ **The absolute path is why
 there is no `cd` line: a fresh session starts wherever it starts, and an absolute path works from
 there.**
 

@@ -130,3 +130,7 @@ No value is captured. The change is a rule inside the single function that autho
 
 ## TEARDOWN
 No servers, browsers or scratch worktrees started. wt-2 remains on `task/signflow-h` (committed, not pushed). No open transactions against production (dry-run ended in `ROLLBACK`; apply was a single autocommitted `DO`).
+
+---
+## VALIDATION — ORCH, 2026-09-03
+Independently verified and merged; see TASK-SIGNFLOW-H-VERIFICATION.md.

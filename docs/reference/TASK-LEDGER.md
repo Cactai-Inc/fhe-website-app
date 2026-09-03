@@ -35,3 +35,7 @@ with a change ORCH made or reversed, named in the report · `REVERTED` · `OPEN`
 | `TASK-METHOD-MGMT` | 2026-09-02 | MGMT-ROLE + VRFY/WALKR profiles authored — NOT IN FORCE | merged as docs | merge |
 | `TASK-RANCHWORD` (DSNR profile) | 2026-09-02 | spec RANCHWORD-A: two senses of barn, only location-sense takes the ranch word; Barn Ops held whole | merged as docs (⚠️ committed on the canonical checkout, not its assigned tree) | `938bf148` |
 | `TASK-TACKROOM` (DISCO profile) | 2026-09-02 | CR-109 research: barnops inventory (all tables empty), depletion not implemented, three vendor notions, why unseen | merged as docs (⚠️ canonical checkout, not wt-4) | `56a49e78` |
+| `TASK-SIGNFLOW-G` | 2026-09-03 | last three contact writers normalize on blur, every field; vet_* held | **VERIFIED** | `6cd6a57f` |
+| `TASK-SIGNFLOW-H` | 2026-09-03 | no period after a signature line — composer fixed in prod, lease untouched until next open | **VERIFIED** | `57cf8098` |
+| `TASK-BANNEDWORDS` (DISCO profile) | 2026-09-03 | nine-word audit, 9 owner decisions; written on canonical (committed by ORCH) | merged as docs | commit |
+| `TASK-RECONCILE` (DISCO profile, Fable) | 2026-09-03 | every open item classified; 12 bundles; 3 new findings (anon on request_purchase_payment CONFIRMED; F3 at 781 booking rows CONFIRMED; 0 pending bookings CONFIRMED) | merged as docs | merge |

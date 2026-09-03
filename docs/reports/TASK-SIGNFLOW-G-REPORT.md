@@ -147,3 +147,7 @@ claimed `wt-1` (left checked out on `task/signflow-g`, commit `31e8b958`, for OR
 
 ---
 Hand this back to the thread that dispatched `FHE-TASK-SIGNFLOW-G`.
+
+---
+## VALIDATION — ORCH, 2026-09-03
+Independently verified and merged; see TASK-SIGNFLOW-G-VERIFICATION.md.
