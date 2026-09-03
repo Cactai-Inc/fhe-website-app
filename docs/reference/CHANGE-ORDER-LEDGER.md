@@ -4710,3 +4710,49 @@ is a rename hazard the spec must handle). `resolve_consumption_billing` + `cost_
 are KEPT and become the expense-sharing engine for leased horses; orders need a HORSE attribution;
 allocation seeds from lease contract terms. Costing is LOT-LEVEL FIFO (on-hand carries the old
 cost until exhausted), not weighted average.
+
+## CR-116 — activate-then-review: an activation link sets up auth only; the account is already
+complete from provisioning; the person reviews/edits it, then signs if there are docs, else proceeds
+straight to the right destination
+
+**SAID (owner, 2026-09-03, verbatim):**
+> *"well thats an issue, i need to be able to setup an account fully and then when the user redeems
+> their activation link they are just setting up their auth and then they see their account
+> information and if they want to change anything they can, if not, they click continue and if they
+> have docs they sign them, if they dont they just proceed right to the appropriate destination."*
+
+**Said in response to a finding surfaced in conversation, not on any bundle's ledger:**
+`promote_contact_to_account` (`supabase/migrations/20260802000001_lead_trust_notifications_part2.sql:192`)
+only ever writes `contact_id` and `org_id` onto the `profiles` row on promotion — never `first_name`,
+`last_name`, or `display_name`. The `profiles_seed_display_name` trigger fires on `INSERT OR UPDATE OF
+first_name, last_name, display_name`, and a statement that only sets `contact_id` never touches those
+columns, so it never fires. A lead promoted with no prior signup name keeps a blank `display_name`
+forever. `redeem_invitation` (same file, line ~344) does the opposite: it `INSERT`s a fresh `profiles`
+row with `first_name`/`last_name` pulled off the invitation, which does fire the trigger correctly — so
+the gap is specific to `promote_contact_to_account`'s branch, not the whole promotion spine. Not
+touched by any live bundle: GRANTS' ownership declaration is ACLs only, never a body.
+
+**Not specced, not discussed at the pass. What fact-finding will need to establish before a spec is
+written:**
+- **The two doors and which this changes.** `Onboarding.tsx`'s STAFF-PROVISIONED door (an order/account
+  already exists at mount) is the one the owner is describing — "setup an account fully" reads as the
+  staff-provisioned path (`provision_client_invitation`), not the self-serve `/sign/*` door. Confirm
+  against the code: does the provisioned door already separate "set up auth" from "review account info"
+  as two steps, or does it currently conflate them? `redeem_invitation` currently does BOTH auth setup
+  and (accidentally, via the INSERT branch) the name write in one RPC call with no review step between.
+- **What "account information" means as a reviewable/editable screen.** Which fields the person sees
+  and can change before continuing — presumably the same fields `promote_contact_to_account` currently
+  fails to carry forward (name), plus whatever else was captured at provisioning (address, phone,
+  emergency contacts — the D22 contact-record fields). Is this a new screen, or does an existing one
+  (Onboarding's `details` step) already do this and just needs to be sequenced correctly?
+- **The branch logic: docs vs no docs.** "if they have docs they sign them, if they dont they just
+  proceed right to the appropriate destination" — what determines "the appropriate destination" per
+  account/offering type, and whether that routing already exists somewhere (the wizard-steps machinery
+  `Onboarding.tsx` already has, per the D39 payment-step comment fix in TASK-GRANTS-B) or needs building.
+- **Whether this folds the `promote_contact_to_account` display-name gap into itself**, i.e. does fixing
+  the sequencing (review screen shows the name, person can correct it, then it saves) make the trigger
+  gap moot, or does the trigger still need its own fix so the name is right BEFORE the review screen
+  renders (so the field isn't blank when first shown)? Likely both: the trigger gap is a data-completeness
+  bug independent of the flow; the review step is new UX regardless of whether the trigger is fixed.
+
+**Recorded by ORCH as courier; routed for fact-finding before a spec is written.**
