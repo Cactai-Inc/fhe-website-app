@@ -230,6 +230,60 @@ after the CR-119 miss. No file ownership conflict.
 **Escalations: 1 of 1 ✅ RULED 2026-09-03 — CR-117** (ORCH; the owner: there is no anonymous user any more). **Block A REVOKE as one block · `submit_public_request` KEEP · `open_gift` REVOKE (the reveal is an email animation, not an anonymous page) · `redeem_gift` REVOKE.** ORCH's safety measurement: `gifts` = 0 rows in production. -B unblocked. ~~RAISED~~ — Block A (140 writers, none with an anonymous caller) as ONE block · confirm KEEP on `submit_public_request` and `open_gift` · `redeem_gift` recommended REVOKE. The ruling lands verbatim in `## RULING` of the ANON-WRITERS file; -B reads it there.
 **For ORCH (routed up, fixed by nobody here):** (1) ⚠️ **14 anon-executable writers have NO in-body guard** (`open_gift` · `reap_expired_holds` · `apply_offering_documents` · `apply_sign_path_documents` · `complete_deal` · `supersede_invitations` · `upsert_content_block` · … full list, -A handoff §5) — revoking `anon` shuts the door; any `authenticated` caller still reaches them unguarded. **A BODY finding for B2 FUNNELDEBT.** (2) 135 anon-executable definer READERS + 60 invoker non-trigger + 15 invoker trigger functions remain; a read-ACL sweep is a separate bundle (classification already in the ANON-WRITERS file). (3) `Onboarding.tsx:632` carries the same stale payment-step claim on a line the bundle does not name. (4) RECONCILED §8 row B1 lists 1.15 · 1.19 · §7.6, which `BUNDLE-GRANTS.md` does not carry. (5) Item 6 is FOUR comments, not five — `MergedBodyView.tsx` was already fixed by d78d3b3c.
 **Item 7** (CHANGE-ORDER-LEDGER status headers CR-85/89/93/97): last, after ORCH is told.
+## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-DASHBOARDS-LEDGER.md`)
+**✅ HAND-UP PROCESSED 2026-09-03 (`97bd5567`): engine contract STABLE, `bundle/dashboards` merged to
+`main`.** `docs/design/DASHBOARD-ENGINE-CONTRACT.md` §9 is the consumer interface — SUPPLIES told
+directly (its ledger). §9 marks `AWAITING B5 RECONCILE` — `FHE-DSNR-SUPPLIES-HANDOFF.md` §7 does not
+exist yet on `main` or `bundle/supplies`.
+**Routed items disposed:** `my_documents()` anon proacl → GRANTS' ledger (fold into its sweep, not a
+new finding). `AppLayout.tsx` company-docs nav row → folded into `TASK-CR118-A` (§8, still unbuilt,
+safe to amend — do not spec it twice). `api/deliver-report.ts` + `api/reports-monthly.ts` +
+`scheduled-jobs.yml` line → **granted to DASHBOARDS**, added to `BUNDLE-DASHBOARDS.md`'s ownership.
+AdminRegistryPage tenant-editor gap → evidence appended to CR-110 (B10/CR-118 future scope, not built
+here).
+**Trees: two more allotted, as asked — `wt-15` (E1/E2 lane) · `wt-16` (VRFY).** `wt-8` continues its
+own internal sequencing (B → D → C), unchanged by ORCH.
+| Tree | Thread | Profile · tier | State |
+|---|---|---|---|
+| wt-8 | `FHE-TASK-DASHBOARDS-B/D/C` | CODR · Opus HIGH ON | sequenced by MGMT, B then D then C |
+| wt-15 | `FHE-TASK-DASHBOARDS-E1/E2` | CODR · Opus HIGH ON | allotted, awaiting MGMT dispatch |
+| wt-16 | `FHE-TASK-DASHBOARDS-V` | VRFY · Opus HIGH ON | allotted, awaiting MGMT dispatch |
+
+## FHE-TASK-CR119-A — bill of sale co-buyer stuck election (ORCH direct dispatch, 2026-09-03)
+⚠️ **First diagnosis was wrong, caught by the owner ("no such surface exits"), corrected same session
+— see `THE FACT-FINDING STEP` note below and the ledger's corrected CR-119 entry.**
+`docs/tasks/TASK-CR119-A-a-way-out-of-the-co-buyer-election.md` · **wt-13** · Opus · HIGH · ON.
+**Real defect (confirmed against the template's own data, not re-guessed):** `HORSE_SALE_V2` renders
+via `ClauseDocument.tsx` (clause-composed), never `ContractCascade.tsx`. `TXN.CO_BUYER_ENABLED`'s only
+clause (`PARTIES.CO_BUYER_PENDING`) is visible only while the field is blank — answering Yes hides the
+only control that could answer No. A true self-locking control.
+**The live document, `80537662-7b4e-4adc-9ebc-49ed9d2bed78`, fixed DIRECTLY by ORCH** (rehearsed in a
+transaction, rolled back, then applied for real): field cleared, body recomposed. Not the task's to
+touch. **Durable fix target unchanged** — an explicit exit inside the co-buyer capture card
+(`ContractPage.tsx`, not clause-gated). No file ownership conflict — `ContractPage.tsx` /
+`ContractCascade.tsx` / `ClauseDocument.tsx` untouched by any running bundle.
+
+## FHE-TASK-CR120-A — horse location gap, fact-find only (ORCH direct dispatch, 2026-09-03)
+`docs/tasks/TASK-CR120-A-horse-location-facts.md` · **wt-14** · Opus · HIGH · ON · DISCO profile, no
+build. ORCH's own check found something more serious than the owner's report: his newest horse has
+NO location data anywhere in the DB (not a wrong-column problem — nothing captured), while the other
+3 horses in production all carry one. Confirmed separately: `HorseIntakeForm.tsx` never normalizes
+(zero `normalize(` calls). The "Other" dropdown claim does not match the component read so far
+(`PrefixSelect` has no Other option) — routed to the task to trace properly, not re-guessed by ORCH
+after the CR-119 miss. No file ownership conflict.
+
+## BUNDLE GRANTS — FHE-MGMT-GRANTS (D44 trial · opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-GRANTS-LEDGER.md`)
+**Bundle tree `wt-1` · branch `bundle/grants` (origin/main e8bdb372 merged in) · merge lane: per task after VRFY — MGMT pushes `bundle/grants`, ORCH merges it to `main` (ORCH-8 docs-lane ruling) · hands back to `FHE-ORCH`.**
+**DB objects held by this bundle: the ACL (`proacl`) of every SECURITY DEFINER function in `public` — never a body.**
+| Thread | Profile | Tree | Branch | State |
+|---|---|---|---|---|
+| `FHE-TASK-GRANTS-A` | DSNR | wt-2 (returned, detached, clean) | `task/grants-a-spec` | **DONE — merged into `bundle/grants` 6ed5ff63** (docs only). Spec: `docs/tasks/TASK-GRANTS-B-close-the-anon-door-on-every-writer-nothing-anonymous-calls.md` · escalation list: `docs/reports/FHE-TASK-GRANTS-A-ANON-WRITERS.md` · handoff: `docs/reports/FHE-DSNR-GRANTS-A-HANDOFF.md` |
+| `FHE-TASK-GRANTS-B` | CODR | **wt-2** | `task/grants-b` | **WAITING ON ESCALATION 1** (the Block A ruling). Sonnet · MEDIUM · thinking ON. Holds: the migration file + the four comment lines (`contact.ts`, `deliver-document.ts`, `Onboarding.tsx` ×2) |
+| `FHE-TASK-GRANTS-V` | VRFY | **wt-11** (allotted by ORCH 2026-09-03) | — | after -B reports |
+| `FHE-TASK-GRANTS-W` | WALKR | wt-11 (after -V) | — | at close, on `main` as deployed: the inbound request flow (contact form) · the sign-start flow · **`/redeem` as a recipient with no account** (added by -A's finding) — all as an anonymous visitor |
+**Escalations: 1 of 1 ✅ RULED 2026-09-03 — CR-117** (ORCH; the owner: there is no anonymous user any more). **Block A REVOKE as one block · `submit_public_request` KEEP · `open_gift` REVOKE (the reveal is an email animation, not an anonymous page) · `redeem_gift` REVOKE.** ORCH's safety measurement: `gifts` = 0 rows in production. -B unblocked. ~~RAISED~~ — Block A (140 writers, none with an anonymous caller) as ONE block · confirm KEEP on `submit_public_request` and `open_gift` · `redeem_gift` recommended REVOKE. The ruling lands verbatim in `## RULING` of the ANON-WRITERS file; -B reads it there.
+**For ORCH (routed up, fixed by nobody here):** (1) ⚠️ **14 anon-executable writers have NO in-body guard** (`open_gift` · `reap_expired_holds` · `apply_offering_documents` · `apply_sign_path_documents` · `complete_deal` · `supersede_invitations` · `upsert_content_block` · … full list, -A handoff §5) — revoking `anon` shuts the door; any `authenticated` caller still reaches them unguarded. **A BODY finding for B2 FUNNELDEBT.** (2) 135 anon-executable definer READERS + 60 invoker non-trigger + 15 invoker trigger functions remain; a read-ACL sweep is a separate bundle (classification already in the ANON-WRITERS file). (3) `Onboarding.tsx:632` carries the same stale payment-step claim on a line the bundle does not name. (4) RECONCILED §8 row B1 lists 1.15 · 1.19 · §7.6, which `BUNDLE-GRANTS.md` does not carry. (5) Item 6 is FOUR comments, not five — `MergedBodyView.tsx` was already fixed by d78d3b3c.
+**Item 7** (CHANGE-ORDER-LEDGER status headers CR-85/89/93/97): last, after ORCH is told.
 ## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (cut 2026-09-03 · `docs/orch/BUNDLE-DASHBOARDS.md`)
 *(MGMT edits ONLY this section on its bundle branch. Ledger: `docs/reports/FHE-MGMT-DASHBOARDS-LEDGER.md`.)*
 **Bundle tree `wt-7` · branch `bundle/dashboards` · lane: B ENGINE first as one unit, then D→C (header lane) ∥ E1→E2 (registry lane) after VRFY each; STOP after E1 for Claire's Ops list; E3 last; F after escalation 4 · MGMT pushes the bundle branch, ORCH merges to `main` · escalations: 1 closed by evidence, 3 collapsed into 2, the rest SUMMONED 2026-09-03 (rulings pending) · last updated 2026-09-03**
