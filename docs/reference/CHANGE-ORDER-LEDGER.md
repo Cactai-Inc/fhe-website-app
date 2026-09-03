@@ -4577,6 +4577,31 @@ URL was conditional in SITESEO §4c.7 and never asked for directly — ORCH's mi
 audit + analytics) is raised to the front of the queue**; the owner's input list is in the ORCH
 thread 2026-09-03.
 
+## CR-118 — 2026-09-03: per-staff-account nav visibility, an Admin-nested account link, and a Team-page control surface — with a self-protection rule
+**SAID (owner, verbatim):**
+> *"the nav link to the account page on the staff acount needs to be nested inside admin. it only
+> needs to be shown on the admin@fhequestrian.com account login. all of the admin section can be
+> hidden on the hello@fhequestrian.com account login. and on the team page i should have a surface
+> for controlling what nav sections and what nav links the other staff accounts see and their layout
+> on a per account basis including my own. the one thing i should not be able to hide from myself is
+> the access to the surface that changes what i see in the nav, so there should be a link to it from
+> the account page as well and that page should never be hidden from my admin@fhequestrian.com
+> account login."*
+**Read as five requirements, unbundled by ORCH for the spec:**
+1. The account-page nav link nests inside the Admin nav section, staff-side.
+2. It (the account link, nested in Admin) shows ONLY on `admin@fhequestrian.com`'s login.
+3. The entire Admin nav section is hideable, and IS hidden, on `hello@fhequestrian.com`'s login.
+4. Team page gains a per-staff-account nav-visibility + nav-layout control surface — which sections,
+   which links within them, and their order — for every staff account INCLUDING the owner's own
+   `admin@fhequestrian.com`.
+5. **Self-protection invariant:** whatever this control does to `admin@fhequestrian.com`'s own nav,
+   it must never be able to hide (a) the account page, or (b) the account page's link to this same
+   control surface, from `admin@fhequestrian.com`. No configuration state locks the owner out of the
+   control that configures it.
+**Confirms, for CR-107 (B7 DASHBOARDS) escalation 1:** `hello@fhequestrian.com` and
+`admin@fhequestrian.com` are two real, distinct owner logins today — not the shared-login premise the
+board's escalation questioned.
+
 ## CR-117 — 2026-09-03: there is no anonymous user any more; the gift flow rides the ACTIVATION LINK, and every "outdated flow" action is updated to it
 ⚠️ **NUMBERING: this was first written as CR-116 by ORCH-8 while a parallel ORCH thread was independently
 filing the activate-then-review ruling as CR-116 (1d64d78c, 07:51, four minutes earlier). The earlier
