@@ -4582,6 +4582,19 @@ thread 2026-09-03.
 its checked for adding a co-buyer. my current bill of sale is now stuck because of this."*
 **Live incident — fact-find first, one query, before anything is designed or built.**
 
+**FOUND (ORCH, 2026-09-03, one query + one read):** the write path is not broken.
+`remove_document_co_buyer` exists in production and `set_contract_field`'s teardown hook correctly
+calls it when `TXN.CO_BUYER_ENABLED` flips to `NO`; the field's generic dropdown control
+(`ContractCascade.tsx`'s `SelectWithOther`) can make that write. **The stuck document:**
+`80537662-7b4e-4adc-9ebc-49ed9d2bed78` (`HORSE_SALE_V2`, editable, 1 buyer party — no co-buyer was
+ever added). **The real defect:** checking "Yes" opens a bespoke capture card
+(`ContractPage.tsx:1955-1990`) with an "Add co-buyer" button and no exit — no cancel, no restatement
+of the underlying Yes/No. The actual off-switch is a plain, easy-to-miss dropdown elsewhere in the
+document body. **Immediate unblock:** on that document, set "Is there a co-buyer?" to No directly —
+nothing else needs to undo, since no co-buyer party exists yet. **Durable fix dispatched:**
+`FHE-TASK-CR119-A`, wt-13, Opus · HIGH · ON — one action added inside the capture card itself, no DB
+change needed.
+
 ## CR-118 — 2026-09-03: per-staff-account nav visibility, an Admin-nested account link, and a Team-page control surface — with a self-protection rule
 **SAID (owner, verbatim):**
 > *"the nav link to the account page on the staff acount needs to be nested inside admin. it only

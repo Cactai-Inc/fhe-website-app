@@ -195,6 +195,14 @@ noted to SUPPLIES' ledger.
 **Confirms for B7 DASHBOARDS escalation 1:** `hello@` and `admin@fhequestrian.com` are two real,
 distinct logins.
 
+## FHE-TASK-CR119-A — bill of sale co-buyer stuck election (ORCH direct dispatch, 2026-09-03)
+**Live incident, resolved for the owner directly; a durable fix dispatched behind it.**
+`docs/tasks/TASK-CR119-A-a-way-out-of-the-co-buyer-election.md` · **wt-13** · Opus · HIGH · ON.
+Write path confirmed NOT broken (`remove_document_co_buyer` exists + fires correctly). The stuck
+document `80537662-7b4e-4adc-9ebc-49ed9d2bed78` unblocks by one field write the owner can do himself
+(§ the ledger entry). Real defect: the co-buyer capture card is add-only with no cancel. No file
+ownership conflict — `ContractPage.tsx` / `ContractCascade.tsx` untouched by any running bundle.
+
 ## BUNDLE GRANTS — FHE-MGMT-GRANTS (D44 trial · opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-GRANTS-LEDGER.md`)
 **Bundle tree `wt-1` · branch `bundle/grants` (origin/main e8bdb372 merged in) · merge lane: per task after VRFY — MGMT pushes `bundle/grants`, ORCH merges it to `main` (ORCH-8 docs-lane ruling) · hands back to `FHE-ORCH`.**
 **DB objects held by this bundle: the ACL (`proacl`) of every SECURITY DEFINER function in `public` — never a body.**
