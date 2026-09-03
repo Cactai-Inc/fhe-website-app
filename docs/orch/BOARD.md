@@ -164,6 +164,26 @@ address fields left unshaped by design — want them shaped too?
 **DB objects held by the bundle (declared in BUNDLE-SUPPLIES.md; nothing applied yet):** `resources` · `resource_lots` · `consumption_events` · `cost_allocation_rules` · `resolve_consumption_billing` · `billable_lines` (consumption source) · `stable_items` · `vendors` · `horse_medications` · `purchases`/`purchase_items` horse-attribution column only (exact column to be declared by the spec).
 **Open to ORCH:** ORCH's numbered CR-112 suggestions list (A1 items 1,2,5,6,8; 7 absent) is not on file — record under CR-112·A1. **Gated on B7:** dashboard/projection/deviation/report consumers.
 
+## ⚠️ CR-116 (activate-then-review) vs B2 FUNNELDEBT — ORCH's disjointness finding, 2026-09-03
+`FHE-DISCO-CR116-HANDOFF.md` §5 says "not blocked on anything running — worth a fresh branch-diff check
+at dispatch time (D35/D36), not assumed here." **ORCH ran that check. It IS contended.**
+| CR-116-A would need | B2 FUNNELDEBT already holds |
+|---|---|
+| `promote_contact_to_account` body (the name mirror) | `redeem_invitation` body — **which calls `promote_contact_to_account`** (`20260802000001…sql:380`) |
+| `Onboarding.tsx` `wizardSteps()` / routing | `Onboarding.tsx` "for the guardian path" (its charge file §8 names `:157-169`, `:488`) |
+| `Register.tsx` `redeemByKind()` routing | — (uncontended) |
+| `update_my_onboarding_profile` (reuse as the idiom) | — (uncontended) |
+**They are the same defect class at the same seam:** *a value declared at the door is lost at
+promotion.* B2's F6 is the guardian; CR-116 is the name. Both are fixed in the same call chain, in the
+same migration file, on the same act. B2's own chunk **(G)** is literally "F6 guardian at the door
+(`provision_client_invitation`, `redeem_invitation`, `Onboarding.tsx` guardian path)".
+**ORCH's recommendation: FOLD CR-116 into B2 as item 9** rather than run a second DSNR thread on the
+seam. It costs nothing today — **`wt-10` is still detached at `2779ca2c`, porcelain empty: `FHE-TASK-FUNNELDEBT-A` has NOT been launched.** MGMT re-issues one charge file.
+**Owner's call.** If he dispatches CR116-A standalone anyway, the boundary is: CR116-A owns
+`promote_contact_to_account`, `Register.tsx` and the name mirror; B2 owns `redeem_invitation`,
+`provision_client_invitation` and `Onboarding.tsx`; neither designs redemption's shape without the other,
+and the two specs come back to ORCH together before either builds.
+
 ## BUNDLE GRANTS — FHE-MGMT-GRANTS (D44 trial · opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-GRANTS-LEDGER.md`)
 **Bundle tree `wt-1` · branch `bundle/grants` (origin/main e8bdb372 merged in) · merge lane: per task after VRFY — MGMT pushes `bundle/grants`, ORCH merges it to `main` (ORCH-8 docs-lane ruling) · hands back to `FHE-ORCH`.**
 **DB objects held by this bundle: the ACL (`proacl`) of every SECURITY DEFINER function in `public` — never a body.**
