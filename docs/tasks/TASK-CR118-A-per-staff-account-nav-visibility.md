@@ -44,6 +44,12 @@ not the cross-subsystem shape confusion Fable is reserved for (D45, MODEL-CHOICE
 7. `CLAUDE.md` D17 (a nav row is a table row, not hand-written JSX — the CR85/FIX3 lesson `AppLayout.tsx`
    already carries scars from), D18 (converge on the incumbent), D35/D36 (ownership + disjointness),
    D45 (this file's own tier line is the model).
+8. **Added by ORCH 2026-09-03, from B7 DASHBOARDS' hand-up (routed, not fixed there):** B7 is building
+   an owner-only "company documents" page (separate from client documents, per CR-112·A1 #12) and needs
+   a nav row for it. `AppLayout.tsx`'s `MANAGEMENT_GROUP` is still hand-written for a few rows (D17's
+   own scar) — add the company-documents row as a proper `NavItem` while you are already reshaping this
+   file's Admin section, not hand-written JSX. Confirm the exact route/label with B7 before adding it
+   (`docs/reports/FHE-MGMT-DASHBOARDS-LEDGER.md`) rather than inventing one.
 
 ## The five requirements (from CR-118 — the spec's THE TEST is built from these)
 1. The account-page nav link nests inside Admin, staff-side, in the persistent left rail (today it is

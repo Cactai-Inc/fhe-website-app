@@ -37,3 +37,15 @@ DO NOT          · do not author specs or fix at the pass — a returned build g
 a new nav-control surface on the Team page). It is not touching your rows (My Stable, Boarding, Barn
 Ops, Employees, or the CR-112·A3 Company/Accounting rows once you build them). Whoever merges second
 rebases past the other — routine, not a hold.
+
+
+## NOTE FROM ORCH (2026-09-03) — DASHBOARD-ENGINE-CONTRACT is STABLE, merged to main
+`docs/design/DASHBOARD-ENGINE-CONTRACT.md` §9 is your consumer interface: registry.ts takes ONE
+fenced, additive block per bundle (`DASHBOARDS`/`ELEMENTS`/`REPORT_FIGURES`/`ENTITY_STATEMENTS`
+pushes), your own reader RPCs, your own zone renderer under
+`src/components/app/dashboard/supplies/`. You never touch the engine tables' shape, `generate_report`,
+`my_dashboards`, `my_element_config`, `period_bounds`, `DashboardChrome.tsx`, or the chart renderers.
+Your gated dashboard/projection/deviation/report tasks (BUNDLE-SUPPLIES.md's "NOT this bundle's")
+build against §9 now. **DASHBOARDS is waiting on your `FHE-DSNR-SUPPLIES-HANDOFF.md` §7 to RECONCILE**
+— it does not exist on `main` or `bundle/supplies` as of this note. Land it and tell DASHBOARDS (via
+ORCH) when it's ready to reconcile.

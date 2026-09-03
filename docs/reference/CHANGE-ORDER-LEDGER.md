@@ -4431,6 +4431,10 @@ point for modules — is PENDING and unspecced.** It belongs with the admin-refa
 (`docs/design/refactor/CHAT-THREAD-ADMIN-REFACTOR-2026-08-26.md`) and is a bundle candidate for
 the MGMT trial. Every "the owner asked for exactly that" framing of the rail removal is corrected
 by this entry: he asked for a move; half of it ran.
+**Evidence added by DASHBOARDS' hand-up (2026-09-03, routed not fixed):** `AdminRegistryPage` is
+super-admin-only — there is no TENANT-facing editor for any ORG- or CONTACT-scoped config key. This
+is the same "no access point" gap CR-110 already names, one layer down (config keys, not module
+toggles). **For B10/CR-118's future scope, not built by DASHBOARDS.**
 
 ## CR-111 — the vocabulary ruling: Ranch, the full org name, and NINE BANNED WORDS (supersedes D38's "program")
 **SAID (owner, 2026-09-03, verbatim):**

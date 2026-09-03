@@ -49,7 +49,10 @@ deliverable of this bundle is therefore the ENGINE CONTRACT, before any dashboar
   and report storage. Reports are "stored in documents" (CR-112 #12) — **declare the exact storage
   objects before applying** (the `files`/`file_links` spine exists; the contract-system `documents`
   table is under the signing freeze — do not add columns to it without ORCH's word).
-- **Files:** `src/lib/dashboard/**` · `src/components/app/dashboard/**` (`DashboardChrome`,
+- **Files:** `api/deliver-report.ts` · `api/reports-monthly.ts` (both NEW — report email delivery and
+  monthly auto-generation, CR-112·A1 #10/#12, CR-113's digest scheduler; unowned until now — ORCH
+  grants them to this bundle 2026-09-03) + the matching `.github/workflows/scheduled-jobs.yml` line ·
+  `src/lib/dashboard/**` · `src/components/app/dashboard/**` (`DashboardChrome`,
   `TrainerZones`, `BusinessZones`, new zones) · `src/pages/app/ops/OwnerDashboard.tsx` · the
   dashboards page + selector (new) · the company "my documents" page (new) · `api/calendar-reminders.ts`
   ONLY if item 7 finds a residual · `docs/design/DASHBOARDS-GROUND-UP-PLAN.md` (revise or supersede)

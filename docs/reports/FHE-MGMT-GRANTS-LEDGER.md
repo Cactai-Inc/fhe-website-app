@@ -88,3 +88,10 @@ The 151 candidates by name (signatures in the -A task's re-run; this list is so 
     submit_support_request supersede_invitations transfer_payment_responsibility update_contact_record 
     update_deal update_horse_record update_purchase_payment_method upsert_change_request upsert_content_block 
     void_deal void_document 
+
+
+## NOTE FROM ORCH (2026-09-03) — routed finding from DASHBOARDS, not fixed there
+DASHBOARDS' hand-up flags `my_documents()` carrying `anon=X` in its `proacl` — same class as your
+sweep's Block A/B (a writer or reader reachable by anon with no anonymous caller, or one that needs a
+ruling). Fold it into your sweep's candidate set if not already caught (it may already be one of the
+151/145 — confirm by name) rather than treat as a new finding.
