@@ -186,3 +186,7 @@ No dev server, browser, or scratch worktree was started by this thread. `ps` mat
 processes belonging to the IDE, all older than this thread. `git worktree list` → `wt-2 [task/siteseo]`
 occupied by this branch, for ORCH to merge and release. `dist/`, `dist-ssr/` left in wt-2 (gitignored;
 ORCH's `git clean` on the next claim removes them).
+
+---
+## VALIDATION — ORCH, 2026-09-02
+Independently verified and merged; post-deploy 301/cold-HTML proofs owed by ORCH. See TASK-SITESEO-VERIFICATION.md.

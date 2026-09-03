@@ -30,3 +30,8 @@ with a change ORCH made or reversed, named in the report · `REVERTED` · `OPEN`
 | `TASK-SIGNFLOW-A` | 2026-09-02 | signature-token resolution centralised, 3 readers wired, executed bodies byte-identical; cursive-period defect routed | **VERIFIED** | `59135079` |
 | `TASK-LANDINGSIGNIN` | 2026-09-02 | landing Sign In, pathname-gated, cart-frame shape; two physical deviations accepted | **VERIFIED** | `9891bcd5` |
 | `TASK-SIGNFLOW-C` | 2026-09-02 | signing flow green end-to-end (175 refs, .flow-green scope, .btn-sign flip); chooser diff applied by ORCH; semantic-pair collapse to owner checklist | **VERIFIED** | `56be160a` |
+| `TASK-SITESEO` | 2026-09-02 | one route list from ROUTE_SEO.indexable; 3 blank URLs 301→/lessons; /services + /faq prerendered | **VERIFIED** (post-deploy curls owed) | `6dbc0471` |
+| `TASK-SIGNFLOW-F` (DSNR profile) | 2026-09-02 | specs G (last three contact writers) + H (no period after a signature line) | merged as docs | merge |
+| `TASK-METHOD-MGMT` | 2026-09-02 | MGMT-ROLE + VRFY/WALKR profiles authored — NOT IN FORCE | merged as docs | merge |
+| `TASK-RANCHWORD` (DSNR profile) | 2026-09-02 | spec RANCHWORD-A: two senses of barn, only location-sense takes the ranch word; Barn Ops held whole | merged as docs (⚠️ committed on the canonical checkout, not its assigned tree) | `938bf148` |
+| `TASK-TACKROOM` (DISCO profile) | 2026-09-02 | CR-109 research: barnops inventory (all tables empty), depletion not implemented, three vendor notions, why unseen | merged as docs (⚠️ canonical checkout, not wt-4) | `56a49e78` |

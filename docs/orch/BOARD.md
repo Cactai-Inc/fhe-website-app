@@ -4,13 +4,15 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-02 · **ORCH — nothing running; BATCH 1 handed: SITESEO (wt-2) · SIGNFLOW-F specs (wt-3) · RANCHWORD spec (wt-1)**
+**Last updated:** 2026-09-02 · **ORCH — batch 1 ALL FIVE landed and merged (`366b0a20`); batch 2 dispatching: RANCHWORD-A · SIGNFLOW-G · SIGNFLOW-H · RECONCILE**
 
 ## RUN ORDER (owner, 2026-09-02 — revised: pool grows on demand; the rest goes through MGMT)
 **Pool: wt-1…wt-6 provisioned (env pair + node_modules). More on request.**
-**Batch 1 — concurrent NOW:** `SITESEO` wt-2 · `SIGNFLOW-F` (DSNR profile) wt-3 · `RANCHWORD` (DSNR profile) wt-1 · `TACKROOM` (DISCO research) wt-4 · `METHOD-MGMT` (author MGMT-ROLE + VRFY/WALKR profiles from `docs/method/MGMT-DESIGN-BRIEF-2026-09-02.md`) wt-5.
+**Batch 1 — ✅ ALL FIVE MERGED 2026-09-02:** SITESEO (verified; post-deploy curls owed) · SIGNFLOW-F specs (G+H) · RANCHWORD spec (A) · TACKROOM research handoff · METHOD-MGMT (three files, NOT IN FORCE).
+⚠️ **Deviation recorded, not chased:** RANCHWORD and TACKROOM wrote their docs on the CANONICAL checkout's `main` instead of their assigned trees (wt-1/wt-4) — no damage (docs-only, disjoint), but D36/D40 say assigned tree. Both threads were told a tree; the profile files should say it louder.
+**Batch 2 — concurrent NOW:** `RANCHWORD-A` build (Opus·HIGH·ON, wt-1) · `SIGNFLOW-G` (Sonnet·MEDIUM·ON, wt-3) · `SIGNFLOW-H` (Opus·HIGH·ON, wt-5) · `RECONCILE` (DISCO profile, Fable·HIGH, wt-6). ⚠️ G and RANCHWORD-A both touch `ContractPage.tsx` line-level — whichever merges second re-greps (handoff §2).
 **Batch 2 — as gates open:** the two builds F's specs produce · RANCHWORD build (after TACKROOM's handoff, since the hub name depends on it).
-**Then — the MGMT trial:** `RECONCILE` (DISCO profile, wt-6): every open item — board queues, open CRs, the SIGNBOOK-fallout lane, the Casey backlog, ROUTED, owner checklists, the old docs tasks — checked against post-batch `main`, classified keep/revise/remove with evidence, into ONE reconciled list. ORCH bundles by shared context; disjoint bundles hand to MGMT copies. ONERAIL · FUNNELDEBT · SITEPOLICY · INROADS · CR-106 · REQCARDS dissolve into those bundles rather than running as batch 3.
+**Then — the MGMT trial:** `RECONCILE` (running in batch 2): every open item — board queues, open CRs, the SIGNBOOK-fallout lane, the Casey backlog, ROUTED, owner checklists, the old docs tasks — checked against post-batch `main`, classified keep/revise/remove with evidence, into ONE reconciled list. ORCH bundles by shared context; disjoint bundles hand to MGMT copies. ONERAIL · FUNNELDEBT · SITEPOLICY · INROADS · CR-106 · REQCARDS dissolve into those bundles rather than running as batch 3.
 **Last:** `CLNR-REPO-STATE` when no build is mid-flight.
 
 ## RESUME
@@ -100,6 +102,16 @@ only, NO removal/merge/convergence; `SIGNFLOW-E` withdrawn)
   used the old link from something outside the repo; (b) render checklists for all three merges.
 - **10 pre-D41 reports carry no VALIDATION block** (SIGNFLOW-B's CLNR finding) — SIGNSTRIP, SIGNDOOR,
   AR4, REAPER, MODAL2, CR85, BOOKS1, BACKDATE, ZELLECLOSE, WALLSYNC. Backfill audit queued.
+
+### TACKROOM's owner rulings (handoff §5) — needed before CR-109 can be shaped
+See `docs/reports/FHE-DISCO-TACKROOM-HANDOFF.md` §5. Headline facts: every barnops table is EMPTY in
+production; "depletion of on-hand" is implemented NOWHERE (consumption never touches `on_hand`); the
+billing resolver cannot run for FHE (no default payer row); three vendor notions exist; My Stable
+shows three empty lists; `horse_medications` is the only populated "supplies" (3 rows). The
+convergence question is about SHAPE, not migrating data.
+Also from RANCHWORD (optional): "affiliated barns" wording on ContactsPage:77 · contracts' "Barn Name:"
+label (owner ruled "Nickname" for Records — follow in contracts?). And from SIGNFLOW-F: vet-premises
+address fields left unshaped by design — want them shaped too?
 
 ### 🔒 HOLDS
 - **Contract entry points (`/sign/deal` alignment, the three-state-door widening)** — HELD for the
