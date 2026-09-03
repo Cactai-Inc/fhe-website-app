@@ -7,6 +7,8 @@ import {
 } from '../../lib/contracts';
 import { toErrorMessage } from '../../lib/ops/errors';
 import { useDocumentTitle } from '../../lib/hooks';
+import { useFieldNormalizer } from '../../lib/formState';
+import { normalizeKindForField } from '../../lib/normalize';
 
 /**
  * P1 ITEM 2 — CLAIM → FILL WHAT IS MISSING → STRAIGHT INTO THE CONTRACT.
@@ -49,6 +51,7 @@ export default function ContractIntake() {
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [k]: e.target.value }));
+  const normalize = useFieldNormalizer();
 
   useEffect(() => {
     if (!id) return;
@@ -164,11 +167,13 @@ export default function ContractIntake() {
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <label className="block">
                   <span className="form-label">First name</span>
-                  <input className="form-input" required value={form.first_name ?? ''} onChange={set('first_name')} />
+                  <input className="form-input" required value={form.first_name ?? ''} onChange={set('first_name')}
+                    onBlur={(() => { const kind = normalizeKindForField('first_name'); return kind ? normalize('intake-first_name', kind, form.first_name ?? '', (v) => setForm((p) => ({ ...p, first_name: v }))) : undefined; })()} />
                 </label>
                 <label className="block">
                   <span className="form-label">Last name</span>
-                  <input className="form-input" required value={form.last_name ?? ''} onChange={set('last_name')} />
+                  <input className="form-input" required value={form.last_name ?? ''} onChange={set('last_name')}
+                    onBlur={(() => { const kind = normalizeKindForField('last_name'); return kind ? normalize('intake-last_name', kind, form.last_name ?? '', (v) => setForm((p) => ({ ...p, last_name: v }))) : undefined; })()} />
                 </label>
               </div>
             )}
@@ -176,14 +181,16 @@ export default function ContractIntake() {
             {needContact('email') && (
               <label className="block mb-4">
                 <span className="form-label">Email address</span>
-                <input className="form-input" type="email" required value={form.email ?? ''} onChange={set('email')} />
+                <input className="form-input" type="email" required value={form.email ?? ''} onChange={set('email')}
+                  onBlur={(() => { const kind = normalizeKindForField('email'); return kind ? normalize('intake-email', kind, form.email ?? '', (v) => setForm((p) => ({ ...p, email: v }))) : undefined; })()} />
               </label>
             )}
 
             {needContact('phone') && (
               <label className="block mb-4">
                 <span className="form-label">Phone number</span>
-                <input className="form-input" type="tel" required value={form.phone ?? ''} onChange={set('phone')} />
+                <input className="form-input" type="tel" required value={form.phone ?? ''} onChange={set('phone')}
+                  onBlur={(() => { const kind = normalizeKindForField('phone'); return kind ? normalize('intake-phone', kind, form.phone ?? '', (v) => setForm((p) => ({ ...p, phone: v }))) : undefined; })()} />
               </label>
             )}
 
@@ -191,17 +198,22 @@ export default function ContractIntake() {
               <fieldset className="mb-1">
                 <legend className="form-label mb-2">Mailing address</legend>
                 <input className="form-input mb-2" required placeholder="Street address"
-                  aria-label="Street address" value={form.address_line1 ?? ''} onChange={set('address_line1')} />
+                  aria-label="Street address" value={form.address_line1 ?? ''} onChange={set('address_line1')}
+                  onBlur={(() => { const kind = normalizeKindForField('address_line1'); return kind ? normalize('intake-address_line1', kind, form.address_line1 ?? '', (v) => setForm((p) => ({ ...p, address_line1: v }))) : undefined; })()} />
                 <input className="form-input mb-2" placeholder="Apartment, suite (optional)"
-                  aria-label="Apartment or suite" value={form.address_line2 ?? ''} onChange={set('address_line2')} />
+                  aria-label="Apartment or suite" value={form.address_line2 ?? ''} onChange={set('address_line2')}
+                  onBlur={(() => { const kind = normalizeKindForField('address_line2'); return kind ? normalize('intake-address_line2', kind, form.address_line2 ?? '', (v) => setForm((p) => ({ ...p, address_line2: v }))) : undefined; })()} />
                 <div className="grid grid-cols-2 gap-3 mb-2">
                   <input className="form-input" required placeholder="City"
-                    aria-label="City" value={form.city ?? ''} onChange={set('city')} />
+                    aria-label="City" value={form.city ?? ''} onChange={set('city')}
+                    onBlur={(() => { const kind = normalizeKindForField('city'); return kind ? normalize('intake-city', kind, form.city ?? '', (v) => setForm((p) => ({ ...p, city: v }))) : undefined; })()} />
                   <input className="form-input" required placeholder="State"
-                    aria-label="State" value={form.state ?? ''} onChange={set('state')} />
+                    aria-label="State" value={form.state ?? ''} onChange={set('state')}
+                    onBlur={(() => { const kind = normalizeKindForField('state'); return kind ? normalize('intake-state', kind, form.state ?? '', (v) => setForm((p) => ({ ...p, state: v }))) : undefined; })()} />
                 </div>
                 <input className="form-input" required placeholder="ZIP code"
-                  aria-label="ZIP code" value={form.postal_code ?? ''} onChange={set('postal_code')} />
+                  aria-label="ZIP code" value={form.postal_code ?? ''} onChange={set('postal_code')}
+                  onBlur={(() => { const kind = normalizeKindForField('postal_code'); return kind ? normalize('intake-postal_code', kind, form.postal_code ?? '', (v) => setForm((p) => ({ ...p, postal_code: v }))) : undefined; })()} />
               </fieldset>
             )}
           </section>

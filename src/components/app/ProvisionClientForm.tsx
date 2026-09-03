@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { toErrorMessage } from '../../lib/ops/errors';
+import { useFieldNormalizer } from '../../lib/formState';
 import {
   adminSendInvitation, categoryDocumentDefaults, suggestedCategoryForContact,
   onboardingTemplateOptions, getContactRequiredDocumentsState,
@@ -160,6 +161,7 @@ export function ProvisionClientForm({
     address_line1: '', city: '', state: '', postal_code: '',
   });
   const setIdentField = (k: keyof typeof ident) => (v: string) => setIdent((p) => ({ ...p, [k]: v }));
+  const normalize = useFieldNormalizer();
   /** The groups already standing on this contact (RIDER / HORSE_OWNER / …). */
   const [standingGroups, setStandingGroups] = useState<string[]>([]);
   /** PAMELA §A — a saved-but-unsent provisioning on this contact, if any. */
@@ -527,6 +529,7 @@ export function ProvisionClientForm({
         {children}
         <Field label="Email">
           <input type="email" required className="form-input" value={email}
+            onBlur={normalize('prov-email', 'email', email, setEmail)}
             disabled={emailLocked}
             onChange={(e) => setEmail(e.target.value)} placeholder="their@email.com" />
         </Field>
@@ -547,23 +550,30 @@ export function ProvisionClientForm({
           </p>
           <div className="grid sm:grid-cols-2 gap-3">
             <input className="form-input" value={ident.first_name} placeholder="First name"
-              aria-label="First name" onChange={(e) => setIdentField('first_name')(e.target.value)} />
+              aria-label="First name" onChange={(e) => setIdentField('first_name')(e.target.value)}
+              onBlur={normalize('prov-first_name', 'name', ident.first_name, setIdentField('first_name'))} />
             <input className="form-input" value={ident.last_name} placeholder="Last name"
-              aria-label="Last name" onChange={(e) => setIdentField('last_name')(e.target.value)} />
+              aria-label="Last name" onChange={(e) => setIdentField('last_name')(e.target.value)}
+              onBlur={normalize('prov-last_name', 'name', ident.last_name, setIdentField('last_name'))} />
             {/* If staff have it now, the onboarding form stops asking — and if
                 they don't, it asks (INTAKE 2026-08-24: my_onboarding_state now
                 surfaces on an incomplete profile, not only on unsigned docs). */}
             <input type="tel" inputMode="tel" className="form-input" value={ident.phone} placeholder="Mobile number"
-              aria-label="Mobile number" onChange={(e) => setIdentField('phone')(e.target.value)} />
+              aria-label="Mobile number" onChange={(e) => setIdentField('phone')(e.target.value)}
+              onBlur={normalize('prov-phone', 'phone', ident.phone, setIdentField('phone'))} />
             <input className="form-input" value={ident.address_line1} placeholder="Street address"
-              aria-label="Street address" onChange={(e) => setIdentField('address_line1')(e.target.value)} />
+              aria-label="Street address" onChange={(e) => setIdentField('address_line1')(e.target.value)}
+              onBlur={normalize('prov-address_line1', 'street', ident.address_line1, setIdentField('address_line1'))} />
             <input className="form-input" value={ident.city} placeholder="City"
-              aria-label="City" onChange={(e) => setIdentField('city')(e.target.value)} />
+              aria-label="City" onChange={(e) => setIdentField('city')(e.target.value)}
+              onBlur={normalize('prov-city', 'city', ident.city, setIdentField('city'))} />
             <div className="grid grid-cols-2 gap-3">
               <input className="form-input" value={ident.state} placeholder="State"
-                aria-label="State" onChange={(e) => setIdentField('state')(e.target.value)} />
+                aria-label="State" onChange={(e) => setIdentField('state')(e.target.value)}
+                onBlur={normalize('prov-state', 'region', ident.state, setIdentField('state'))} />
               <input className="form-input" inputMode="numeric" value={ident.postal_code} placeholder="ZIP"
-                aria-label="ZIP" onChange={(e) => setIdentField('postal_code')(e.target.value)} />
+                aria-label="ZIP" onChange={(e) => setIdentField('postal_code')(e.target.value)}
+                onBlur={normalize('prov-postal_code', 'postal', ident.postal_code, setIdentField('postal_code'))} />
             </div>
           </div>
           {/* D22 §0: a contract prints the address, so say so where it matters
