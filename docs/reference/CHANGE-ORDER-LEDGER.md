@@ -4577,7 +4577,14 @@ URL was conditional in SITESEO §4c.7 and never asked for directly — ORCH's mi
 audit + analytics) is raised to the front of the queue**; the owner's input list is in the ORCH
 thread 2026-09-03.
 
-## CR-116 — 2026-09-03: there is no anonymous user any more; the gift flow rides the ACTIVATION LINK, and every "outdated flow" action is updated to it
+## CR-117 — 2026-09-03: there is no anonymous user any more; the gift flow rides the ACTIVATION LINK, and every "outdated flow" action is updated to it
+⚠️ **NUMBERING: this was first written as CR-116 by ORCH-8 while a parallel ORCH thread was independently
+filing the activate-then-review ruling as CR-116 (1d64d78c, 07:51, four minutes earlier). The earlier
+entry keeps CR-116; this one is CR-117. They are the SAME PRINCIPLE captured from two halves of one
+conversation — CR-116 states it for the account itself ("the account is already complete from
+provisioning; the link sets up auth only"), CR-117 states it for the gift door ("the code is not a
+credential; the link is"). Read them together. Two live ORCH threads on one repo caused this —
+recorded in `orchestration/lessons/LESSONS.md`.**
 **SAID (owner, verbatim, ruling the GRANTS escalation and widening it):**
 > *"these are moot if anon is non authenticated user an do these things because everyone has an
 > account now, we changed the account activation and creation process so the user can create and

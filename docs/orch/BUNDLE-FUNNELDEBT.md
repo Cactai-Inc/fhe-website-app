@@ -27,7 +27,7 @@ allotted: `wt-10` (ask ORCH for more; the pool grows on demand).
 | 5 | **F6 GUARDIAN** — the lead→client door drops the declared guardian; no `guardian` read in `provision_client_invitation` / `redeem_invitation`; the minor spine itself works | choose one of the four revisions (escalation 5) |
 | 6 | **DEPENDENT** — the guardian buys the child's rides: payer/guardian on `purchases`/`bookings` | in item 5's spec (escalation 6) |
 | 7 | **3.2a** — Confirmation copy, HALF built: `Confirmation.tsx:167-190` says the email carries an activation link; MISSING the rules/policies/waiver-after-activation line and `SendStateScreen`'s spam / add-us-to-contacts / contact-us lines (`SignStart.tsx:169-170` — READ them there; do not edit SignStart) | copy; guest-facing (gate) |
-| 8 | **CR-116 — THE GIFT FLOW RIDES THE ACTIVATION LINK (added by ORCH 2026-09-03).** The owner: there is no anonymous user any more; an account exists the moment we have the email address, and "activation" is the recipient's auth setup. Today: `src/pages/Redeem.tsx` reveals anonymously via `openGift(code)` then asks a recipient with no account for a PASSWORD; `src/lib/gifts.ts` `registerForGift()` → `api/register-gift.ts` calls `auth.admin.createUser` on its own endpoint, deliberately not the invited path, on the now-retired premise that "the gift code is the credential". Required: the gift email carries the reveal animation AND a unique activation link with the code bound to it; the recipient's email address IS the account. **`gifts` = 0 rows in production, so nothing live breaks.** B1 is revoking anon on `open_gift` and `redeem_gift` in parallel — ACLs only, never a body. | ruled (CR-116); spec needed (escalation 8) |
+| 8 | **CR-117 — THE GIFT FLOW RIDES THE ACTIVATION LINK (added by ORCH 2026-09-03).** The owner: there is no anonymous user any more; an account exists the moment we have the email address, and "activation" is the recipient's auth setup. Today: `src/pages/Redeem.tsx` reveals anonymously via `openGift(code)` then asks a recipient with no account for a PASSWORD; `src/lib/gifts.ts` `registerForGift()` → `api/register-gift.ts` calls `auth.admin.createUser` on its own endpoint, deliberately not the invited path, on the now-retired premise that "the gift code is the credential". Required: the gift email carries the reveal animation AND a unique activation link with the code bound to it; the recipient's email address IS the account. **`gifts` = 0 rows in production, so nothing live breaks.** B1 is revoking anon on `open_gift` and `redeem_gift` in parallel — ACLs only, never a body. | ruled (CR-117); spec needed (escalation 8) |
 | — | **F5 / 4.7 DISPLAYNAME's control half — NOT in this bundle.** It needs a control on `AccountHub.tsx`, which B5 SUPPLIES holds (access-point rows). Moved to B10 as a one-RPC build after B5's AccountHub merge. | out |
 | — | **F7** (`trg_seed_display_name` anon) — B1 GRANTS. | out |
 
@@ -66,11 +66,11 @@ allotted: `wt-10` (ask ORCH for more; the pool grows on demand).
 6. **DEPENDENT** — payer on the purchase, or guardian on the booking, or both; prepare with the
    first real minor's records as the worked example (Charlotte Caddell exists — READ ONLY; the owner
    is handling that family himself).
-7. **CR-116 · the OTHER password path** — `api/register-invited.ts` is the endpoint `register-gift`
+7. **CR-117 · the OTHER password path** — `api/register-invited.ts` is the endpoint `register-gift`
    cites as having "the same problem". Does the activation-link ruling retire it too, or does the
    invited path stay password-based? Prepare: what each endpoint does today, who reaches it, the
    one-flow-for-everyone option, the recommendation.
-8. **CR-116 · the gift email** — the reveal animation and the activation link in one email, or a
+8. **CR-117 · the gift email** — the reveal animation and the activation link in one email, or a
    reveal email followed by an activation email? Prepare both, with the buyer's experience of each.
 9. Anything else the spec cannot resolve — in the SAME summons.
 
