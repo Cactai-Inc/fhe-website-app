@@ -228,6 +228,16 @@ after the CR-119 miss. No file ownership conflict.
 | `FHE-TASK-GRANTS-V` | VRFY | **wt-11** (allotted by ORCH 2026-09-03) | — | after -B reports |
 | `FHE-TASK-GRANTS-W` | WALKR | wt-11 (after -V) | — | at close, on `main` as deployed: the inbound request flow (contact form) · the sign-start flow · **`/redeem` as a recipient with no account** (added by -A's finding) — all as an anonymous visitor |
 **Escalations: 1 of 1 ✅ RULED 2026-09-03 — CR-117** (ORCH; the owner: there is no anonymous user any more). **Block A REVOKE as one block · `submit_public_request` KEEP · `open_gift` REVOKE (the reveal is an email animation, not an anonymous page) · `redeem_gift` REVOKE.** ORCH's safety measurement: `gifts` = 0 rows in production. -B unblocked. ~~RAISED~~ — Block A (140 writers, none with an anonymous caller) as ONE block · confirm KEEP on `submit_public_request` and `open_gift` · `redeem_gift` recommended REVOKE. The ruling lands verbatim in `## RULING` of the ANON-WRITERS file; -B reads it there.
+**GRANTS status 2026-09-04:** -A merged (6ed5ff63) · -B built (Sonnet, wt-2) · -V ran, verdict
+**DOES NOT HOLD on one row** (item 6 edit 4, `Onboarding.tsx:625-628` — spec text 2 days stale;
+`showShopStep`/`showTimeStep` unconditionally true since `f9c66b49`) · `TASK-GRANTS-C` (DSNR
+amendment, Fable · HIGH — MGMT's own call) authored, **ORCH allots `wt-17`.**
+⚠️ **Routed product question, confirmed real by VRFY + MGMT's own re-check (not resolved here):**
+`holdMyDocumentDelivery` has exactly ONE call site, gated `!selfServe` — **the provisioned door has
+no equivalent hold.** A staff-provisioned account's document-delivery email can go out before its
+booking request exists. **ORCH-9's first act:** bring this to the owner with a recommendation
+(extend the hold to the provisioned door, matching the self-serve gate, OR name why the asymmetry is
+intentional) — see handoff §4.
 **For ORCH (routed up, fixed by nobody here):** (1) ⚠️ **14 anon-executable writers have NO in-body guard** (`open_gift` · `reap_expired_holds` · `apply_offering_documents` · `apply_sign_path_documents` · `complete_deal` · `supersede_invitations` · `upsert_content_block` · … full list, -A handoff §5) — revoking `anon` shuts the door; any `authenticated` caller still reaches them unguarded. **A BODY finding for B2 FUNNELDEBT.** (2) 135 anon-executable definer READERS + 60 invoker non-trigger + 15 invoker trigger functions remain; a read-ACL sweep is a separate bundle (classification already in the ANON-WRITERS file). (3) `Onboarding.tsx:632` carries the same stale payment-step claim on a line the bundle does not name. (4) RECONCILED §8 row B1 lists 1.15 · 1.19 · §7.6, which `BUNDLE-GRANTS.md` does not carry. (5) Item 6 is FOUR comments, not five — `MergedBodyView.tsx` was already fixed by d78d3b3c.
 **Item 7** (CHANGE-ORDER-LEDGER status headers CR-85/89/93/97): last, after ORCH is told.
 ## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-DASHBOARDS-LEDGER.md`)
