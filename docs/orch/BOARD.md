@@ -4,7 +4,7 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-03 · **CR-116 + CR-117 ruled (no anonymous user; the account is complete at provisioning, the gift flow rides the activation link) — GRANTS unblocked, gift rebuild routed to B2.** **FHE-ORCH-8 in the seat. Four MGMT copies cut: GRANTS (B1) · SUPPLIES (B5) · DASHBOARDS (B7) · FUNNELDEBT (B2) running/dispatched. CR-118 dispatched direct (wt-12). Pool wt-1…wt-12.**
+**Last updated:** 2026-09-04 · **FHE-ORCH-9 in the seat (handoff from ORCH-8: `orchestration/handoffs/active/FHE-ORCH-9.md`).** Four MGMT copies running (GRANTS furthest along, VRFY partial DOES-NOT-HOLD) · four ORCH one-off tasks in flight (CR-118/119/120 + GRANTS-C) · one owner product question open (provisioned-door delivery-hold, handoff §4). Pool wt-1…wt-17.
 
 ## THE PLAN OF RECORD — RECONCILED-2026-09-02.md §8, twelve bundles (ORCH adopts as written)
 | Bundle | Tier | State |
