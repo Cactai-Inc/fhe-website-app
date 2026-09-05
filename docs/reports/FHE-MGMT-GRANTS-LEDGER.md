@@ -110,6 +110,6 @@ The 151 candidates by name (signatures in the -A task's re-run; this list is so 
 
 ## NOTE FROM ORCH (2026-09-04) — tree granted, product question carried to the owner
 `wt-17` is yours for `FHE-TASK-GRANTS-C` (D36 — ORCH assigns; do not self-select). The provisioned-door
-delivery-hold asymmetry is real and confirmed — not resolved by ORCH here, carried into the standing
-thread's handoff (`orchestration/handoffs/active/FHE-ORCH-9.md` §4) for the owner's ruling. Proceed
-with -C; you are not blocked on that question.
+delivery-hold asymmetry is real and confirmed — not resolved by ORCH here — carried directly by ORCH (no handoff; the owner is running a second,
+concurrent thread for quick fixes, not a second standing ORCH) for the owner's ruling. Proceed with
+-C; you are not blocked on that question.
