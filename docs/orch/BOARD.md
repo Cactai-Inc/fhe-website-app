@@ -218,6 +218,12 @@ NO location data anywhere in the DB (not a wrong-column problem — nothing capt
 (`PrefixSelect` has no Other option) — routed to the task to trace properly, not re-guessed by ORCH
 after the CR-119 miss. No file ownership conflict.
 
+## TASK-QUICKFIX — standing owner-driven lane, wt-18 (2026-09-04)
+Not a bundle, not a second ORCH — the owner runs this concurrently for small fixes while ORCH works
+the current backlog. `docs/tasks/TASK-QUICKFIX-standing-lane.md`. Guardrails: no CR ledger writes, no
+merges to `main`, no board edits, checks this board for file contention before touching anything not
+directly named. Hands back to `FHE-ORCH` per fix.
+
 ## BUNDLE GRANTS — FHE-MGMT-GRANTS (D44 trial · opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-GRANTS-LEDGER.md`)
 **Bundle tree `wt-1` · branch `bundle/grants` (origin/main e8bdb372 merged in) · merge lane: per task after VRFY — MGMT pushes `bundle/grants`, ORCH merges it to `main` (ORCH-8 docs-lane ruling) · hands back to `FHE-ORCH`.**
 **DB objects held by this bundle: the ACL (`proacl`) of every SECURITY DEFINER function in `public` — never a body.**
