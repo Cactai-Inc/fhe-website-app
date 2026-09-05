@@ -4,7 +4,7 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-04 · **FHE-ORCH-9 in the seat (handoff from ORCH-8: `orchestration/handoffs/active/FHE-ORCH-9.md`).** Four MGMT copies running (GRANTS furthest along, VRFY partial DOES-NOT-HOLD) · four ORCH one-off tasks in flight (CR-118/119/120 + GRANTS-C) · one owner product question open (provisioned-door delivery-hold, handoff §4). Pool wt-1…wt-17.
+**Last updated:** 2026-09-04 · **FHE-ORCH-8 continues (no handoff — the owner is running a second, concurrent quick-fix TASK thread, not a second standing ORCH).** Four MGMT copies running (GRANTS furthest along, VRFY partial DOES-NOT-HOLD) · four ORCH one-off tasks in flight (CR-118/119/120 + GRANTS-C) · one owner product question open (provisioned-door delivery-hold — carried directly by ORCH, not via a handoff file). Pool wt-1…wt-17.
 
 ## THE PLAN OF RECORD — RECONCILED-2026-09-02.md §8, twelve bundles (ORCH adopts as written)
 | Bundle | Tier | State |
@@ -235,9 +235,9 @@ amendment, Fable · HIGH — MGMT's own call) authored, **ORCH allots `wt-17`.**
 ⚠️ **Routed product question, confirmed real by VRFY + MGMT's own re-check (not resolved here):**
 `holdMyDocumentDelivery` has exactly ONE call site, gated `!selfServe` — **the provisioned door has
 no equivalent hold.** A staff-provisioned account's document-delivery email can go out before its
-booking request exists. **ORCH-9's first act:** bring this to the owner with a recommendation
+booking request exists. **Carried directly by ORCH** (no handoff pending): bring this to the owner with a recommendation
 (extend the hold to the provisioned door, matching the self-serve gate, OR name why the asymmetry is
-intentional) — see handoff §4.
+intentional) — not yet formed, needs the provisioned-door flow traced first.
 **For ORCH (routed up, fixed by nobody here):** (1) ⚠️ **14 anon-executable writers have NO in-body guard** (`open_gift` · `reap_expired_holds` · `apply_offering_documents` · `apply_sign_path_documents` · `complete_deal` · `supersede_invitations` · `upsert_content_block` · … full list, -A handoff §5) — revoking `anon` shuts the door; any `authenticated` caller still reaches them unguarded. **A BODY finding for B2 FUNNELDEBT.** (2) 135 anon-executable definer READERS + 60 invoker non-trigger + 15 invoker trigger functions remain; a read-ACL sweep is a separate bundle (classification already in the ANON-WRITERS file). (3) `Onboarding.tsx:632` carries the same stale payment-step claim on a line the bundle does not name. (4) RECONCILED §8 row B1 lists 1.15 · 1.19 · §7.6, which `BUNDLE-GRANTS.md` does not carry. (5) Item 6 is FOUR comments, not five — `MergedBodyView.tsx` was already fixed by d78d3b3c.
 **Item 7** (CHANGE-ORDER-LEDGER status headers CR-85/89/93/97): last, after ORCH is told.
 ## BUNDLE DASHBOARDS — FHE-MGMT-DASHBOARDS (opened 2026-09-03 · ledger `docs/reports/FHE-MGMT-DASHBOARDS-LEDGER.md`)
