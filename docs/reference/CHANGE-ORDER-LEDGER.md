@@ -4581,6 +4581,29 @@ URL was conditional in SITESEO §4c.7 and never asked for directly — ORCH's mi
 audit + analytics) is raised to the front of the queue**; the owner's input list is in the ORCH
 thread 2026-09-03.
 
+## CR-121 — 2026-09-06: Pamela's lease is not signable — vet address blocks it; the field was removed from the horse record; her three onboarding documents sit in Draft; reconstruct exactly what she was shown
+**SAID (owner, verbatim):** *"i need you to look at the contract for pamela and her horse sundance it
+doesnt let her sign, likely issue is the vet address is still showing as a missing field. the issue is
+her vet doesnt have an address. i previously raised this issue and i thought we resolved that
+requirement but what it looks like we did is removed vet address from the horse record as a field
+entirely and so i cant enter one in even if the vet has one to add. and also the vet address doesnt
+need to be on the contract so the simple fix is to remove the field from the contract templates and
+from pamelas contract. verify that it is signable for her after that field is removed. if there is
+something for her to do on the contract that im not seeing and she didnt see tell me what it is and
+also, we need to fix the issues with the records pages, the horse record, and the editing function.
+also i need to know if pamela signed the docs related to horse care services liability release,
+policies, and vet auth. they are showing as "Draft status" and I need to know exactly what she was
+shown when she logged into her account for the first time. every step she took, and where things
+stand now. it sounds like she was presented with the documents to sign first, then taken to the
+contract and it didnt ask her for the vet address at any point and didnt highlight the missing field
+to her when she went to the signature block, and there are numerous issues with all of that if its
+discovered to be the true sequence of events. do the research and the edits to the contract to get
+it signable or surface to me what needs to be done and then we can discuss the full set of updates i
+need you to get done on the things i mentioned and whatever your investigation reveals. do not hand
+this off to another thread i want you to handle it yourself directly"*
+**Handled directly by ORCH on the owner's explicit instruction (overrides ORCH-ROLE §1 "does not
+investigate"). Live client, live lease.**
+
 ## CR-120 — 2026-09-03: horse current-location shows "from horse record" instead of the real address; horse intake never normalizes; Barn and Stall "Other" cannot be selected
 **SAID (owner, verbatim):** *"also worth pointing out taht the current location field on the horse
 information section 3 it showing "from horse record" this is a known defect in the way the item
