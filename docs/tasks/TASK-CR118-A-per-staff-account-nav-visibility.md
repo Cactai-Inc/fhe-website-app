@@ -64,6 +64,10 @@ not the cross-subsystem shape confusion Fable is reserved for (D45, MODEL-CHOICE
    account, by every route the write RPC exposes, and confirm it is refused every time — not merely
    defaulted-around by the read side.
 
+## ⚠️ ORCH edited `AppLayout.tsx` on `main` before you started (2026-09-06, CR-123·A1)
+The wall redirect block (~`:1700-1740`) and its retry/error state were removed by ORCH directly, merged as
+`task/wall-down`. Start from current `origin/main`; nothing of yours conflicts, but do not restore that block.
+
 ## Ownership (D35/D36) — this task holds
 - **Files:** `src/components/app/AppLayout.tsx` (nav filter + Admin-nesting + Admin-section hide +
   R2/Q7's dead-registry-read fix, folded in) · `src/pages/app/ops/TeamPage.tsx` (new control surface +

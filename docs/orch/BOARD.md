@@ -4,7 +4,7 @@
 down, so a fresh ORCH takes the junction without asking anyone what is moving.**
 🔒 **UPDATED ON EVERY DISPATCH AND EVERY MERGE. If it disagrees with `git worktree list`, IT is wrong.**
 
-**Last updated:** 2026-09-04 · **FHE-ORCH-8 continues (no handoff — the owner is running a second, concurrent quick-fix TASK thread, not a second standing ORCH).** Four MGMT copies running (GRANTS furthest along, VRFY partial DOES-NOT-HOLD) · four ORCH one-off tasks in flight (CR-118/119/120 + GRANTS-C) · one owner product question open (provisioned-door delivery-hold — carried directly by ORCH, not via a handoff file). Pool wt-1…wt-17.
+**Last updated:** 2026-09-06 · **CR-121/123 live incident (Pamela Godde) handled directly by ORCH: lease locked, wall redirect removed on `main` (`task/wall-down`), her three documents sequenced as one signing set. Worktree census: all 18 allotted, none free.** **FHE-ORCH-8 continues (no handoff — the owner is running a second, concurrent quick-fix TASK thread, not a second standing ORCH).** Four MGMT copies running (GRANTS furthest along, VRFY partial DOES-NOT-HOLD) · four ORCH one-off tasks in flight (CR-118/119/120 + GRANTS-C) · one owner product question open (provisioned-door delivery-hold — carried directly by ORCH, not via a handoff file). Pool wt-1…wt-17.
 
 ## THE PLAN OF RECORD — RECONCILED-2026-09-02.md §8, twelve bundles (ORCH adopts as written)
 | Bundle | Tier | State |

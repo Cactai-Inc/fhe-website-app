@@ -4782,6 +4782,22 @@ get the contract alone, which CR-123 (3) forbids.
 **SAID (owner, verbatim):** *"wall down, honor the requested flow, and ensure all docs in one email.
 and check for unnecessary worktrees that can be removed, theres a lot inflight right now so might not
 be able to remove any"*
+**DONE by ORCH 2026-09-06:**
+- **Wall down** — `AppLayout.tsx`: the redirect that forced any member with AT_LOGIN paperwork into
+  `/app/onboarding` from every `/app/*` route is removed, and with it the fail-closed "We couldn't check
+  your documents" hold screen. `wall`/`myWallState` still compute; the wizard, the documents page and
+  the staff banner still read them. Built in `wt-12` (`task/wall-down`, `00938672`), typecheck 0,
+  typecheck:api 0, lint 0 errors, build clean; merged to `main` by ORCH.
+- **Her flow honored by data** — lease `sign_sequence = 1`; vet authorization `0e352d00` and care
+  release `3c4f7f10` linked to the lease's contract (`4e200ead`) as sequence 2 and 3; her two
+  `contact_required_documents` rows moved AT_LOGIN → WITH_CONTRACT. Result, re-read: her wall state
+  is `gating 0 / wall false`; the contract page's segmented signing set (lease → vet auth → care
+  release, "Signed. Next: …") now applies to her; `document_delivery_is_held` is true for all three,
+  so no executed email leaves until the set completes, and `deliver_executed_document_set` batches
+  the whole contract's set into one send.
+- **Still a build, not data:** the 1-2-3 tracker at the top of the two documents ending in "copies
+  sent via email" (the contract page's "Next:" note is the embryo); collapsing the two client-record
+  document pages; the approve-button removal (A1). All three ride CR-123's spec.
 
 ## CR-122 — 2026-09-06: date of birth is required only under 18; optional otherwise; month and day welcome for a greeting
 **SAID (owner, verbatim):** *"birthday needs to be asked only when the person is under 18. and for
