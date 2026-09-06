@@ -4718,6 +4718,15 @@ into the wizard; the wizard restarts at the details step on every entry (`Onboar
 no way past it except re-saving each page; the sign step has no exit for AT_LOGIN paperwork. She was
 bounced twice because she tried the contract twice; she got out by leaving the app.
 
+## CR-121 · A2 — 2026-09-06: the wall needs to go
+**SAID (owner, verbatim):** *"yea the wall needs to go, where is that banner you mentioned that is
+telling her she will see it if she clicks the link?"*
+**Where it lives:** the redirect is `src/components/app/AppLayout.tsx:1703` (`if (wall?.wall &&
+location.pathname !== '/app/onboarding') → <Navigate to="/app/onboarding" />`), fed by `my_wall_state`
+(`wall = gating > 0 AND NOT staff`, gating = AT_LOGIN rows on `contact_required_documents` not yet
+executed). The banner is `src/pages/app/Onboarding.tsx:1352-1372`, the sign step's "contract is
+waiting" section, linking to `/app/contracts/<id>/start` — a route inside the walled layout.
+
 ## CR-122 — 2026-09-06: date of birth is required only under 18; optional otherwise; month and day welcome for a greeting
 **SAID (owner, verbatim):** *"birthday needs to be asked only when the person is under 18. and for
 them its a requirement, for other parties we dont need that information so it can be optional. but its
