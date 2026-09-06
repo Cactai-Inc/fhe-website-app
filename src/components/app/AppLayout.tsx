@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { NavLink, Outlet, Link, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { NavLink, Outlet, Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { FEED_VIEWS, FEED_VIEW_META, type FeedView } from '../../lib/seed';
 import { dmUnreadTotal } from '../../lib/community';
 import {
@@ -1546,12 +1546,8 @@ export default function AppLayout() {
   // are never hard-walled (persistent banner instead).
   const location = useLocation();
   const [wall, setWall] = useState<WallState | null>(null);
-  const [wallRetry, setWallRetry] = useState(0);
-  // FAIL CLOSED: myWallState() now throws instead of returning a permissive
-  // default, so a transient failure can no longer silently drop the wall. We
-  // hold the member at an explicit retryable state rather than letting them
-  // through unverified.
-  const [wallError, setWallError] = useState(false);
+  // The FAIL-CLOSED retry state that lived here went with the redirect (CR-123·A1):
+  // a wall read that fails now simply leaves `wall` null, and nothing is held.
   /* OFFERINGDOCS §12 — dismissed for THIS SESSION only. Declared here with the
      other hooks rather than beside the banner it controls: the signing wall
      below returns early, and a hook after an early return is a hook that does
@@ -1560,12 +1556,11 @@ export default function AppLayout() {
     () => sessionStorage.getItem('fhe.docsAskedDismissed') === '1');
   useEffect(() => {
     let active = true;
-    setWallError(false);
     myWallState()
-      .then((w) => { if (active) { setWall(w); setWallError(false); } })
-      .catch(() => { if (active) { setWall(null); setWallError(true); } });
+      .then((w) => { if (active) setWall(w); })
+      .catch(() => { if (active) setWall(null); });
     return () => { active = false; };
-  }, [location.pathname, wallRetry]);
+  }, [location.pathname]);
 
   // A3: the app-overview tour. The desktop and mobile tours are DIFFERENT
   // experiences and persist independently: each keeps auto-opening on ITS form
@@ -1700,35 +1695,25 @@ export default function AppLayout() {
   // member is done here, instead of always landing on the default dashboard/
   // community view. Does not weaken the wall itself: the redirect below is
   // unchanged, this only remembers what it's about to overwrite.
+  /* ⚠️ THE WALL REDIRECT IS DOWN — owner, 2026-09-06 (CR-123·A1: "wall down"). A member
+     who owes paperwork is no longer forced out of every app page into the wizard.
+     Why: Pamela Godde was bounced from her own lease into onboarding by this redirect,
+     re-walked details and horse twice, and never reached the contract (CR-121). The
+     owner's 2026-08-22 ruling already retired the same gate on the contract page; this
+     was the layout-level copy nobody brought into line. The wall STATE is unchanged —
+     `wall`/`myWallState` still compute and the wizard, the documents page and the staff
+     banner still read them; only the forced navigation is gone. The wall-return capture
+     is kept for the wizard's own exit. */
   if (wall?.wall && location.pathname !== '/app/onboarding') {
     captureWallReturnDestination(location.pathname, location.search);
-    return <Navigate to="/app/onboarding" replace />;
   }
 
   // FAIL CLOSED: we could not determine whether this member is walled. Rather
   // than assume they are clear (the old silent behaviour), hold here with a
   // retry. The onboarding route itself stays reachable — it is where a genuinely
   // walled member needs to go, and it re-checks on its own.
-  if (wallError && !wall && location.pathname !== '/app/onboarding') {
-    return (
-      <div className="min-h-screen bg-cream grid place-items-center px-4">
-        <div className="bg-white border border-green-800/10 rounded-xl p-6 max-w-md text-center">
-          <h1 className="font-serif text-xl text-green-800 mb-2">We couldn't check your documents</h1>
-          <p className="body-text text-sm text-muted mb-4">
-            We can't confirm whether you have documents awaiting signature, so we've
-            paused here rather than let you past. This is usually a brief connection
-            problem.
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            <button type="button" className="btn-primary" onClick={() => setWallRetry((n) => n + 1)}>
-              Try again
-            </button>
-            <Link to="/app/onboarding" className="btn-outline-gold">Go to my documents</Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Same ruling (CR-123·A1): a failed wall check no longer holds the whole app either — it fails
+  // open to the requested page. The retry/"Go to my documents" hold screen that stood here is gone.
 
   /* ⚠️ OFFERINGDOCS §12 — ASKED FOR, NOT DEMANDED.
      Owner, 2026-08-24: "on their login the docs are shown to them and they can
