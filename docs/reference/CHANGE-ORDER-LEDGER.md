@@ -4778,6 +4778,11 @@ email would NOT be held for her two documents today: `document_delivery_is_held`
 document's `contact_id` (the lease's is FHE) or on `sign_sequence` (NULL for all three) — she would
 get the contract alone, which CR-123 (3) forbids.
 
+## CR-123 · A1 — 2026-09-06: wall down, honor the requested flow, all documents in one email; worktree census
+**SAID (owner, verbatim):** *"wall down, honor the requested flow, and ensure all docs in one email.
+and check for unnecessary worktrees that can be removed, theres a lot inflight right now so might not
+be able to remove any"*
+
 ## CR-122 — 2026-09-06: date of birth is required only under 18; optional otherwise; month and day welcome for a greeting
 **SAID (owner, verbatim):** *"birthday needs to be asked only when the person is under 18. and for
 them its a requirement, for other parties we dont need that information so it can be optional. but its
