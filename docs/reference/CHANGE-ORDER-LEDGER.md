@@ -4727,6 +4727,47 @@ location.pathname !== '/app/onboarding') → <Navigate to="/app/onboarding" />`)
 executed). The banner is `src/pages/app/Onboarding.tsx:1352-1372`, the sign step's "contract is
 waiting" section, linking to `/app/contracts/<id>/start` — a route inside the walled layout.
 
+## CR-123 — 2026-09-06: sign-in shows the contract first; the two documents follow with a 1-2-3 tracker; one email with all three; the client-record document pages collapse to one; single conditional flows in the refactor
+**SAID (owner, verbatim):** *"she would have had the normal activation flow if i used option B but
+since i chose option A it sent her to a page she shouldnt have seen if she had a wall and she saw it
+and then the wall was there so she was sent to a place she didnt recognize, saw documents she didnt
+expect, and even though she told me on the phone she will sign them, she didnt sign them so she didnt
+get to the contract page. So we need to fix all of this. We need to make it so when she signs in she
+sees the contract. after signing it, she sees the two documents, these need to show the tracker at the
+top with the 1-2-3-copies sent via email. so she knows she has to do them to get her copy of the
+contract. and then she wont bail on signing the documents after signing the contract. and then we need
+to include this flow fiasco as part of the full refactor we need to undertake for the app to make
+everything have single conditional flows. because even from the account creation i had issues with
+this, there are two pages in the client record that allow me to configure which documents she needs
+to sign and i think only one of them lets me select the signing sequence, and i think both have a
+button for sending the invite. this is why i opted to send her the contract link because i didnt know
+which invite link to send, i sent her one originally and it was expired and she couldnt use it, then i
+sent her the contract link and she has this experience. and to top it all off she is claiming that the
+horse liability release is not a dual party release and since she hasnt seen the contract yet she
+doesnt know what that contains so she might be worried about something that isnt an issue but we need
+to review the docs shes signing to understand if she is released of liability from us as a business
+who is leasing and riding the horse, and if she is released from liability by the clients who rider
+her horse for lessons (participant liability release). i need this information before i go back to
+her with instructions on what to do next. and what i want her to do next is know that the documents
+have her fully release of liability by us as the lessee and by the clients who ride her horse in a
+lesson, and i want her to login, see the contract, read it, verify what i told her is true (ill need
+the sections in the contract and in the participant lease, a copy of the participant lease, and the
+exact text snippets that release her from liability by both parties) and then sign the contract and
+the two additional documents. and while its true that the lease agreement doesnt obligate us to vet
+care responsibilities the horse care service of putting the horse in turnout on days we dont use it
+for lessons does require the vet auth and the her to release us of liability for horse handling.
+after she has signed all three documents i want her to get her copy of the email and all three
+documents in one email, if she gets just the contract immediately after signing it she may not sign
+the other two."*
+**Requirements ORCH reads out of it (the spec's source is the quote):** (1) sign-in lands on the
+contract. (2) After the contract, the two horse documents, with a 1-2-3 tracker at the top ending in
+"copies sent via email". (3) One email carrying all three executed documents, sent only when all
+three are signed — never the contract alone. (4) The two client-record pages that both configure
+required documents and both send an invitation collapse to one; the signing sequence lives there.
+(5) This flow is a named test article for the single-conditional-flow refactor. (6) Before the owner
+goes back to her: the exact contract sections and the participant-release text that release the horse
+owner from liability by FHE (lessee) and by riders, plus a copy of the participant release.
+
 ## CR-122 — 2026-09-06: date of birth is required only under 18; optional otherwise; month and day welcome for a greeting
 **SAID (owner, verbatim):** *"birthday needs to be asked only when the person is under 18. and for
 them its a requirement, for other parties we dont need that information so it can be optional. but its
