@@ -4679,6 +4679,52 @@ signable; her wall shows `gating: 2` and bounces her the same way.
 - (e) Record editors and `staff_update_horse` lack vet business/address (§4); vet phone unnormalised.
 - (f) `contacts.date_of_birth = 0001-01-01` for Pamela — a sentinel written for an N/A answer.
 
+## CR-121 · A1 — 2026-09-06: lock it; remove the approve button (or move it beside the signature block); documents sign AFTER the contract; the owner must be able to see what she will see and whether it is signable
+**SAID (owner, verbatim):** *"why did she get bounced into the horse docs flow twice? how did she get out
+of it without signing and yes lock it so she can sign. we need to remove the "approve button" and just
+make the document signable once all required fields are filled. and i had configured her flow to be
+contract first after showing her the account and horse intake forms for her to edit or accept and
+proceed, that would put her in the contract for signature only since the vet was the only thing and
+after requesting this sequence (which i requested because i thought she would have to input the vet
+address so i wanted to capture that on her first login before the contract was viewed so it would be
+signable and prevent exactly this scenario from happening, after it was found that the vet doesnt have
+one i requested the removal of it as a requirement but i didnt know it wasnt even going to be in the
+contract because of the selection that the lessor is responsible for vet care so that nullified my
+ask anyway) there is a side issue to address here and that is my inability to know what she will see
+and also my inability to know whether a contract is signable by the other party. and i already
+mentioned removing the button that locks it for signing or if you cant do that gracefully, we move the
+button to be right next to the signature block so they see it and click it and then they can input
+their name to generate the signature. so tell me how pam was able to do all of what she did, and why
+the flow is so rigid that if she got out of it she was forced to go back through reviewing pages with
+her content on them that she already accepted instead of just seeing the documents to sign, also tell
+me why we dont tell her that the contract cant be signed until the documents are signed and also tell
+me why my setting the sequence to be documents get signed after contract since a person who doesnt end
+up wanting to sign the contract doesnt need to sign the documents..."*
+**DONE by ORCH 2026-09-06 13:10 PDT:** the lease `7adcd08f` locked via `advance_document_workflow(…,
+'locked')` running as `admin@` (rehearsed in a transaction first, then committed). State now
+`locked / AWAITING_SIGNATURE`, two signature seats seeded (LESSEE, LESSOR), blockers `[]`. The
+signature box will be on the page the moment she reaches it.
+**RULINGS recorded:** (1) no approve/lock click for the counterparty — a contract is signable once
+every required field is filled; if that cannot be done gracefully, the control moves beside the
+signature block. (2) The intended order is contract first, then the horse documents; a person who
+does not sign the contract never needs the documents. (3) The owner needs a way to see exactly what
+the counterparty will see and whether the contract is signable by her before he sends it.
+**ANSWERS (evidence in the CR-121 findings above):** her two horse-document requirements are
+`AT_LOGIN` rows on `contact_required_documents`; the "documents after the contract" machinery
+(`WITH_CONTRACT` disposition, `sign_sequence`, `contract_signing_set`) exists but nothing put her
+lease or her documents into it — the lease's `sign_sequence` is NULL and the documents carry no
+`contract_id`. The layout-level wall reads only the AT_LOGIN rows, so it bounced her from the contract
+into the wizard; the wizard restarts at the details step on every entry (`Onboarding.tsx:409`) with
+no way past it except re-saving each page; the sign step has no exit for AT_LOGIN paperwork. She was
+bounced twice because she tried the contract twice; she got out by leaving the app.
+
+## CR-122 — 2026-09-06: date of birth is required only under 18; optional otherwise; month and day welcome for a greeting
+**SAID (owner, verbatim):** *"birthday needs to be asked only when the person is under 18. and for
+them its a requirement, for other parties we dont need that information so it can be optional. but its
+nice to have at least the month and day so we can send them a birthday greeting."*
+**Context:** Pamela's contact carries `date_of_birth = 0001-01-01`, a sentinel written for an N/A
+answer at the onboarding details step (CR-121 findings §7f).
+
 ## CR-120 — 2026-09-03: horse current-location shows "from horse record" instead of the real address; horse intake never normalizes; Barn and Stall "Other" cannot be selected
 **SAID (owner, verbatim):** *"also worth pointing out taht the current location field on the horse
 information section 3 it showing "from horse record" this is a known defect in the way the item
