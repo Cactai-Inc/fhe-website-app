@@ -4767,6 +4767,16 @@ required documents and both send an invitation collapse to one; the signing sequ
 (5) This flow is a named test article for the single-conditional-flow refactor. (6) Before the owner
 goes back to her: the exact contract sections and the participant-release text that release the horse
 owner from liability by FHE (lessee) and by riders, plus a copy of the participant release.
+**LIABILITY REVIEW (ORCH, 2026-09-06, from the live texts):** released BY FHE — lease §13.9 (Lessee
+releases the Lessor Parties, ordinary negligence included), §13.14 mutual indemnity; her release of
+FHE is §13.10. Released BY RIDERS — the Participant Liability Release defines Released Parties to
+include "the owners, lessors, and lessees of any horse used in or present during COMPANY's
+activities"; §9 releases, §10 indemnifies; the lease's Releases-Required-for-Authorized-Riders clause
+obliges FHE to collect that release before anyone rides. The horse-care release is ONE-WAY (she
+releases FHE for handling/turnout); her own protection does not come from it. Her lease's executed
+email would NOT be held for her two documents today: `document_delivery_is_held` keys the hold on the
+document's `contact_id` (the lease's is FHE) or on `sign_sequence` (NULL for all three) — she would
+get the contract alone, which CR-123 (3) forbids.
 
 ## CR-122 — 2026-09-06: date of birth is required only under 18; optional otherwise; month and day welcome for a greeting
 **SAID (owner, verbatim):** *"birthday needs to be asked only when the person is under 18. and for
