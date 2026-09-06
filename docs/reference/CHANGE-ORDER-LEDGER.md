@@ -4604,6 +4604,81 @@ this off to another thread i want you to handle it yourself directly"*
 **Handled directly by ORCH on the owner's explicit instruction (overrides ORCH-ROLE §1 "does not
 investigate"). Live client, live lease.**
 
+**FINDINGS (ORCH, 2026-09-06, from production — audit_logs, status_events, document_opened,
+contract_lock_blockers, the wall function, and the code that routes her):**
+
+**1. The lease is NOT blocked by anything on the server.** `contract_lock_blockers('7adcd08f…')` returns
+`[]`. `HORSE.VET_ADDRESS` on her document is `required = false`, `is_optional = true`, and every
+HORSE.VET_* field is gated on `TXN.VET_ARRANGE = LESSEE` while hers is `LESSOR` — so the composed text
+of her lease (§12.3 Veterinary Care) carries only the two "Party responsible" lines; no vet name,
+practice, or address line is in what she reads. **The "from horse record" placeholder the owner sees
+is the AUTHOR view's hint for an empty import (`ClauseDocument.tsx:132`), not a blocker and not in her
+text.** Removing the field from the templates changes nothing about signability.
+
+**2. She never opened the lease.** `document_opened` has zero rows for her; `ContractPage` writes one
+on every load (`:588`). Her invitation (`2735fd45`, kind COMMUNITY, `document_id` = the lease) routes
+`Register → /app/contracts/7adcd08f/start`. But `contact_required_documents` already held two
+AT_LOGIN requirements for her (HORSE_EMERGENCY_VET, RELEASE_HORSE_CARE), so `my_wall_state.wall` was
+true and `AppLayout.tsx:1703` redirects every walled member to `/app/onboarding` from any `/app/*`
+route — the contract's `/start` gate and the contract page are both inside that layout. **She was
+bounced into the onboarding wizard before the lease could render.**
+
+**3. What she actually did (actor `267dc327`, all times PDT, 2026-09-06):**
+- 11:37:37 auth user created, confirmed, first sign-in; 11:37:38 invitation redeemed, profile row
+  created, `clients` activated.
+- 11:39:20 onboarding DETAILS step saved (`update_my_onboarding_profile`: address, DOB, riding
+  background, emergency contacts). 0.3s later `generate_my_onboarding_documents` (called by
+  `Onboarding.tsx:1093` on every details save) created HORSE_EMERGENCY_VET + RELEASE_HORSE_CARE.
+- 11:40:13 HORSE step saved — **no field changed** (audit diff = `updated_at` only). 11:40:18 the two
+  documents were swept (`deleted_at`) and regenerated.
+- 11:47:25 DETAILS saved again — nothing changed. 11:47:26 swept + regenerated again.
+- 11:48:13 HORSE saved again — nothing changed. 11:48:18 swept + regenerated a fourth time (the live
+  pair: `3c4f7f10` care release, `0e352d00` vet authorization).
+- Then nothing. No signature on any document, no approval on the lease. Her wall still shows
+  `gating: 2`. Both live documents are `DRAFT/editable`, 0 fields, bodies fully resolved (no
+  unresolved tokens) — **they are signable right now from the onboarding sign step** (type name +
+  consent; Rachel Page signed two of this exact shape from an iPhone on 09-01).
+- 12:23:26 the OWNER (`admin@`, `b45a5503`) opened the lease; it recomposed on open (CR-101 rule).
+  That is the only open of the lease today.
+
+**4. The vet address was never asked of her, and the horse record edit surfaces can't take it.**
+The intake gate (`contract_intake_requirements`) lists `vet_address` as **optional** and cannot hold
+a contract open on it — but she never reached that gate (§2). The onboarding HORSE step mounts
+`HorseIntakeForm`, whose vet block DOES carry business + address (`:294-319`); she saved it twice
+without touching it. The RECORD editors do not: `HorsePage.tsx` `RecordEditor` (`:440-467`) and
+`HorseRecordsPage.tsx` (`:169-170`) expose only `vet_name`/`vet_phone`; `staff_update_horse` does not
+accept vet-address keys at all (`update_horse_record` does). **So "removed from the horse record"
+is true of the staff/record editing surfaces, not of intake.** Her vet phone is stored as
+`619-922-927` (nine digits) — nothing normalised it.
+
+**5. "Assisted signing — No signature parties" (also on Rachel Page's two drafts).** The staff
+`SigningPanel` roster is `listSignatures()` = rows of the `signatures` table (`api.ts:1506`). Rows are
+only created at lock (`advance_document_workflow`) or on signing. A DRAFT document has none, so the
+panel says there is no roster even though `document_parties` carries the signer. **Not a regression
+from the token-visibility edit — this has been true for every unsigned draft;** ContractPage already
+fixed the same mistake for itself (`counterpartyRoles` derives from `party_controls ∪ signatures`).
+
+**6. Rachel Page:** four AT_LOGIN docs. She signed COMPANY_POLICIES (09-01 20:41) and FACILITY_RULES
+(20:46) from her iPhone through the onboarding sign step, then stopped. RELEASE_PARTICIPANT and
+HUMAN_EMERGENCY_MEDICAL have sat in DRAFT since 20:40 that night — 0 fields, bodies resolved,
+signable; her wall shows `gating: 2` and bounces her the same way.
+
+**7. Defects surfaced (not fixed at the pass — each is its own item):**
+- (a) The global wall (`AppLayout`) still bounces a contract counterparty away from her contract
+  while ANY AT_LOGIN document is pending — the owner's 2026-08-22 ruling retired that gate on the
+  contract page itself (`CONTRACT_ONBOARDING_GATE_RETIRED`), but the layout-level redirect was never
+  brought into line. The "contract is waiting… read and sign it now" banner links straight into the
+  bounce.
+- (b) `generate_my_onboarding_documents` sweeps and regenerates every unsigned document on EVERY
+  details/horse save, even when nothing changed — four regenerations in nine minutes, each a new
+  document id. A partially-signed set would lose its unsigned members' identity mid-flow.
+- (c) The party's only way to open signing on a negotiated contract is the subheader "Accept & sign"
+  (approve → lock); the signature card renders only at `locked` (`ContractPage.tsx:868`). Nothing
+  on the page says the field-level "signature block" is inert until that click.
+- (d) SigningPanel roster from `signatures` only (§5).
+- (e) Record editors and `staff_update_horse` lack vet business/address (§4); vet phone unnormalised.
+- (f) `contacts.date_of_birth = 0001-01-01` for Pamela — a sentinel written for an N/A answer.
+
 ## CR-120 — 2026-09-03: horse current-location shows "from horse record" instead of the real address; horse intake never normalizes; Barn and Stall "Other" cannot be selected
 **SAID (owner, verbatim):** *"also worth pointing out taht the current location field on the horse
 information section 3 it showing "from horse record" this is a known defect in the way the item
