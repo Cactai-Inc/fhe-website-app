@@ -4581,6 +4581,36 @@ URL was conditional in SITESEO §4c.7 and never asked for directly — ORCH's mi
 audit + analytics) is raised to the front of the queue**; the owner's input list is in the ORCH
 thread 2026-09-03.
 
+## CR-121 · A3 — 2026-09-06: the approve button is not the model — a contract locks on the SECOND signature; the only blocker is an unresolved field belonging to the signing party
+**SAID (owner, verbatim, correcting ORCH's framing that this needed a fresh decision):** *"I also
+answered you about the approve button. this was ruled on a month ago and the agreed process for
+contracts is that it locks when the second signature hits. until then its fully editable but it needs
+to be resigned if the party that makes the change is not the party that already signed. otherwise it
+can take an edit and stay signed and when the other party signs its locked. the only blocker on
+signing is an unresolved field that belongs to the party trying to sign"*
+**THE RULED MODEL, stated as four rules:**
+1. A contract locks when the SECOND (final) signature lands. No button, no approve step, no `locked`
+   workflow state reached by a click.
+2. Until then the document is fully editable.
+3. An edit by a party who has NOT already signed voids the signed party's signature — that party
+   re-signs. An edit by the party who HAS already signed keeps their signature intact.
+4. The only thing that may block a party from signing is an unresolved field **owned by that party**.
+   Another party's empty field is not their problem.
+**MEASURED GAP (ORCH, same session) — what is built today contradicts all four:**
+- **Rule 1:** `advance_document_workflow(…,'locked')` is what seeds the signature rows, and
+  `ContractPage.tsx:868` renders the signature card only when `state === 'locked'`. A click is
+  currently load-bearing; ORCH used exactly that click to unblock Pamela.
+- **Rule 2:** editing is blocked the moment ANY signature exists — `assert_not_signature_locked`
+  raises *"this document is signed by X and is read-only — ask them to remove their signature"* for
+  any signed party, so rule 3's "takes an edit and stays signed" cannot happen at all.
+- **Rule 3:** the void-on-edit machinery was DROPPED (`void_signatures_on_edit` is absent from
+  production; `20260810T1500` names it as dropped by TASK-NOGUARD2). `documents.signatures_voided_at`
+  exists and is NULL on all 91 live documents. Nothing scopes voiding by who edited.
+- **Rule 4:** `contract_lock_blockers` does not look at `owner_role` at all — it blocks on every
+  required empty field on the document regardless of whose it is.
+**Consequence for the remaining-fixes list:** item B2 is not an open decision and never was; it is a
+build against a month-old ruling the code does not implement. Reclassified.
+
 ## CR-124 — 2026-09-06: delete the "We couldn't activate your account" page; a signed-in stranger goes to /sign and activates themselves
 **SAID (owner, verbatim, with a screenshot of the page on a phone):** *"why are people still seeing this
 page? I told you a million fucking times to delete this fucking page it serves no purpose and people

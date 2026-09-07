@@ -20,7 +20,7 @@ Carries one migration and one test file. Needs a verification pass and a merge d
 
 **B1. ~~Fair market value~~ — CLOSED 2026-09-06, owner: "it stays at 0." No change to the horse record, no template change. Original note:** Section 13.15 caps each party's aggregate liability at the horse's fair market value, and hers renders as zero dollars because she answered N/A and the field only takes a number. Options: get a real figure; change the clause so the cap sentence doesn't render when there's no figure (affects future leases); or leave it. Hers is the only live document with it.
 
-**B2. The approve button.** Your ruling: remove it and make a contract signable once required fields are filled — or, if that can't be done gracefully, move it beside the signature block. Needs someone to look at the lock mechanics before choosing, because locking is also what seeds the signature rows.
+**B2. ~~The approve button~~ — NOT a decision. Moved to section A/D as a build.** Ruled a month ago (recorded 2026-09-06 as CR-121·A3): a contract locks when the second signature lands; it is fully editable until then; an edit by a party who has not signed voids the signed party's signature while an edit by the party who did sign keeps it; the only blocker on signing is an unresolved field owned by the signing party. **All four rules are contradicted by what is built** — the lock is a button click that seeds the signature rows, any signature makes the whole document read-only, the void-on-edit function was dropped and never replaced, and the blocker ignores field ownership. This is the largest single build on the list.
 
 ## C. Specced and dispatched, never started
 
