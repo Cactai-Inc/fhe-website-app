@@ -4625,14 +4625,24 @@ history is three states, not two:**
    `approve_contract_review` are both still live, and `ContractPage.tsx` gates on
    `state === 'locked'` in 19 places. `docs/reference/flows/contracts.md:37` still teaches locking as
    step 4 of the flow.
-3. **Later (owner, date not recorded) — the refinement, never captured anywhere:** *"then we changed
-   it to wipe the signature and inform them to sign again. but that was only the case if the editing
-   party is not the one that already signed."* This is rules 3 and 4 above. No file in the repo
-   records it; the search covered the CR ledger, all of `docs/` including `docs/archive/`, and git
-   history for deleted files and for the phrasing.
+3. **THE SAME DAY, THE SAME DISCUSSION — the refinement, never captured anywhere** (owner,
+   2026-09-06: *"it was refined in the thread same day same discussion"*): *"then we changed it to
+   wipe the signature and inform them to sign again. but that was only the case if the editing party
+   is not the one that already signed."* This is rules 3 and 4 above. No file records it; the search
+   covered the CR ledger, all of `docs/` including `docs/archive/`, and git history for deleted files
+   and for the phrasing.
+   ⚠️ **THE THREAD WAS IN THAT CONVERSATION.** It wrote the first half of the discussion into a
+   migration header, shipped it in two migrations the same day (`…140000_signature_edit_rules`,
+   `…140001_resign_after_withdrawal` — the latter making manual withdraw → review → re-sign work,
+   which is state 2's mechanic, not state 3's), and never went back to the header when the owner
+   refined the rule minutes later in front of it. **This is not a lost message. It is a thread that
+   heard the correction and shipped the draft.**
 **So NOGUARD2 did not go rogue.** On 2026-08-10 it dropped the orphaned `void_signatures_on_edit` as
 unguarded dead code, correctly, and consistently with state 2 — the only ruling then on file. State 3
-had reversed that intent weeks earlier in conversation and existed nowhere it could read.
+had reversed that intent *the same afternoon it was written*, and existed nowhere NOGUARD2 could read.
+**THE MECHANISM FAILURE, stated plainly:** a ruling captured in a migration header is captured in the
+one place no later thread looks for current intent. Had state 2 gone into this ledger as a CR, state
+3 would have amended that CR the same day and NOGUARD2 would have found it.
 **THE RULING OF RECORD IS STATE 3 (rules 1–4 at the top of this entry). State 2's migration header is
 SUPERSEDED and must be annotated so no future thread rebuilds read-only-when-signed from it.**
 **Still owed from state 2, never done:** removing the lock button itself. It is what trapped
