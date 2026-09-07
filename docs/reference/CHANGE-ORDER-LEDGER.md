@@ -4611,6 +4611,34 @@ signing is an unresolved field that belongs to the party trying to sign"*
 **Consequence for the remaining-fixes list:** item B2 is not an open decision and never was; it is a
 build against a month-old ruling the code does not implement. Reclassified.
 
+**PROVENANCE — found 2026-09-06 after the owner insisted it was written down. He is right, and the
+history is three states, not two:**
+1. **Original:** a lock button gated signing.
+2. **2026-08-03 — the lock button is removed AND signed means read-only.** Captured, but only inside
+   a migration header (`20260803140000_signature_edit_rules.sql`), never as a CR:
+   > *"Owner ruling: the signature / lock / edit / notify functions are a main problem area. Do not
+   > refactor, expand, or preserve the existing complex options — reduce to one simple,
+   > straightforward rule: A document signed by EITHER party is READ-ONLY. To change it, the signing
+   > party removes their signature."*
+   ⚠️ **HALF OF THIS SHIPPED.** The read-only rule shipped (`assert_not_signature_locked`). **The lock
+   button did not get removed** — `advance_document_workflow(…,'locked')` and
+   `approve_contract_review` are both still live, and `ContractPage.tsx` gates on
+   `state === 'locked'` in 19 places. `docs/reference/flows/contracts.md:37` still teaches locking as
+   step 4 of the flow.
+3. **Later (owner, date not recorded) — the refinement, never captured anywhere:** *"then we changed
+   it to wipe the signature and inform them to sign again. but that was only the case if the editing
+   party is not the one that already signed."* This is rules 3 and 4 above. No file in the repo
+   records it; the search covered the CR ledger, all of `docs/` including `docs/archive/`, and git
+   history for deleted files and for the phrasing.
+**So NOGUARD2 did not go rogue.** On 2026-08-10 it dropped the orphaned `void_signatures_on_edit` as
+unguarded dead code, correctly, and consistently with state 2 — the only ruling then on file. State 3
+had reversed that intent weeks earlier in conversation and existed nowhere it could read.
+**THE RULING OF RECORD IS STATE 3 (rules 1–4 at the top of this entry). State 2's migration header is
+SUPERSEDED and must be annotated so no future thread rebuilds read-only-when-signed from it.**
+**Still owed from state 2, never done:** removing the lock button itself. It is what trapped
+`7adcd08f` (Pamela's lease) tonight — she signed, it locked, and the line she wants to add cannot be
+added without destroying her signature.
+
 ## CR-124 — 2026-09-06: delete the "We couldn't activate your account" page; a signed-in stranger goes to /sign and activates themselves
 **SAID (owner, verbatim, with a screenshot of the page on a phone):** *"why are people still seeing this
 page? I told you a million fucking times to delete this fucking page it serves no purpose and people

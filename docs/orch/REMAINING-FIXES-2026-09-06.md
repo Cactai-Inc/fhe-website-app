@@ -22,6 +22,10 @@ Carries one migration and one test file. Needs a verification pass and a merge d
 
 **B2. ~~The approve button~~ — NOT a decision. Moved to section A/D as a build.** Ruled a month ago (recorded 2026-09-06 as CR-121·A3): a contract locks when the second signature lands; it is fully editable until then; an edit by a party who has not signed voids the signed party's signature while an edit by the party who did sign keeps it; the only blocker on signing is an unresolved field owned by the signing party. **All four rules are contradicted by what is built** — the lock is a button click that seeds the signature rows, any signature makes the whole document read-only, the void-on-edit function was dropped and never replaced, and the blocker ignores field ownership. This is the largest single build on the list.
 
+**Provenance settled 2026-09-06.** The model was ruled twice. On 2026-08-03 the ruling was *remove the lock button, and a signed document is read-only until the signer withdraws their signature* — captured only in a migration header, and **only half of it shipped**: the read-only rule went in, the lock button never came out. Later, uncaptured anywhere, it was refined to *an edit wipes the signature and asks for a re-sign, but only when the editing party is not the one who already signed.* That refinement is the ruling of record. The security thread that dropped the void-on-edit function in August acted correctly against the only ruling then on file.
+
+**Sub-item: remove the lock button.** Owed since 2026-08-03. Still live in `advance_document_workflow`, `approve_contract_review`, 19 gates in `ContractPage.tsx`, and taught as step 4 in `docs/reference/flows/contracts.md`.
+
 ## C. Specced and dispatched, never started
 
 **C1. CR-118 — per-account nav visibility** (wt-12). Admin-nested account link, hidden Admin section for the second owner login, Team-page control per staff account, self-protection rule. Also absorbs two older queued items about the nav not reading page visibility.
