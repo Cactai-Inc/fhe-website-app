@@ -4637,12 +4637,20 @@ history is three states, not two:**
    which is state 2's mechanic, not state 3's), and never went back to the header when the owner
    refined the rule minutes later in front of it. **This is not a lost message. It is a thread that
    heard the correction and shipped the draft.**
-**So NOGUARD2 did not go rogue.** On 2026-08-10 it dropped the orphaned `void_signatures_on_edit` as
-unguarded dead code, correctly, and consistently with state 2 — the only ruling then on file. State 3
-had reversed that intent *the same afternoon it was written*, and existed nowhere NOGUARD2 could read.
-**THE MECHANISM FAILURE, stated plainly:** a ruling captured in a migration header is captured in the
-one place no later thread looks for current intent. Had state 2 gone into this ledger as a CR, state
-3 would have amended that CR the same day and NOGUARD2 would have found it.
+**⚠️ NOGUARD2 DID NOT BEHAVE CORRECTLY — corrected 2026-09-06 on the owner's challenge.** ORCH first
+wrote that it "did not go rogue" because it acted against the only ruling on file. That is too
+generous and it is wrong. **The thread found the contradiction itself and said so in its own
+migration:** *"`assert_not_signature_locked()` is the LIVE policy … `void_signatures_on_edit` is the
+opposing policy (edit freely, signatures silently void) that lost."* It identified two opposing
+models for how every contract in the system signs, named them, and then decided which one "lost" —
+inside a security-hardening task. **Which signing model the product uses is the owner's call, and the
+thread did not need the ledger to know that; the conflict was in its hands and it documented the
+conflict in the same breath as resolving it.** The correct action was to stop and surface it: one
+question, five weeks and one stuck live contract saved. The security half of its finding was right
+(no identity check, PUBLIC/anon EXECUTE, no caller); the disposition was not its to make.
+**Two failures, not one:** the record failed (state 3 was never written), AND the thread had enough
+in front of it to catch the record's failure and escalated nothing.
+
 **THE RULING OF RECORD IS STATE 3 (rules 1–4 at the top of this entry). State 2's migration header is
 SUPERSEDED and must be annotated so no future thread rebuilds read-only-when-signed from it.**
 **Still owed from state 2, never done:** removing the lock button itself. It is what trapped
