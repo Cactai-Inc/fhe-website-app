@@ -4581,6 +4581,27 @@ URL was conditional in SITESEO §4c.7 and never asked for directly — ORCH's mi
 audit + analytics) is raised to the front of the queue**; the owner's input list is in the ORCH
 thread 2026-09-03.
 
+## CR-124 — 2026-09-06: delete the "We couldn't activate your account" page; a signed-in stranger goes to /sign and activates themselves
+**SAID (owner, verbatim, with a screenshot of the page on a phone):** *"why are people still seeing this
+page? I told you a million fucking times to delete this fucking page it serves no purpose and people
+keep ending up at it, this app is built for shit, you cant get redirected to the login properly or you
+cant get redirected to the landing properly or something, there is no such thing as we are activating
+your account. the routing of something is fucked up and you need to fix it immediately!!!!! if this is
+a person who doesnt have an account the solution is to take them to the main page for the /sign url
+and let them pick which applies to them, then they click, input their email, the account is created,
+the email is sent to them with the link, they click the link and their account is activated, 100% all
+on their own no need to serve a dead end that lies to them, no need to bug me with screenshots and
+questions and confusion. just an intelligently authored flow with error handling thats built right"*
+**WHO HIT IT:** `logan.tufty@gmail.com` — auth user created 2026-09-06 20:43, signed in again 21:04,
+with **no contact, no profile, no invitation, no client row.** Someone who signed in having never been
+invited. The page was `ProtectedRoute.tsx:126-146`, reached when `requireMember && !isMember` and the
+auto-heal had exhausted.
+**DONE by ORCH the same session (`29b9e155`, merged to `main`):** the page is deleted. Signed in with
+nothing left to redeem now `<Navigate to="/sign" replace />` — the public chooser, outside this guard,
+where picking a door creates the account and sends the activation link. The interim heal render stays
+(a real pending invitation still redeems into the app) but loses the "Activating your account…"
+wording, which described something that does not happen. Gates: typecheck 0, lint 0, build clean.
+
 ## CR-121 — 2026-09-06: Pamela's lease is not signable — vet address blocks it; the field was removed from the horse record; her three onboarding documents sit in Draft; reconstruct exactly what she was shown
 **SAID (owner, verbatim):** *"i need you to look at the contract for pamela and her horse sundance it
 doesnt let her sign, likely issue is the vet address is still showing as a missing field. the issue is

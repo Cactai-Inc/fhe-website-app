@@ -18,7 +18,7 @@ Carries one migration and one test file. Needs a verification pass and a merge d
 
 ## B. Waiting on your decision
 
-**B1. Fair market value reads `$0.00` in Pamela's lease.** Section 13.15 caps each party's aggregate liability at the horse's fair market value, and hers renders as zero dollars because she answered N/A and the field only takes a number. Options: get a real figure; change the clause so the cap sentence doesn't render when there's no figure (affects future leases); or leave it. Hers is the only live document with it.
+**B1. ~~Fair market value~~ — CLOSED 2026-09-06, owner: "it stays at 0." No change to the horse record, no template change. Original note:** Section 13.15 caps each party's aggregate liability at the horse's fair market value, and hers renders as zero dollars because she answered N/A and the field only takes a number. Options: get a real figure; change the clause so the cap sentence doesn't render when there's no figure (affects future leases); or leave it. Hers is the only live document with it.
 
 **B2. The approve button.** Your ruling: remove it and make a contract signable once required fields are filled — or, if that can't be done gracefully, move it beside the signature block. Needs someone to look at the lock mechanics before choosing, because locking is also what seeds the signature rows.
 
