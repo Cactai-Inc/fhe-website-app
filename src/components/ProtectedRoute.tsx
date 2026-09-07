@@ -28,7 +28,7 @@ export default function ProtectedRoute({
    *  admin always passes). Pass the surface's nav key (its route path). */
   grantKey?: string;
 }) {
-  const { user, isAdmin, isStaff, isSuperAdmin, isMember, loading, refreshProfile, signOut } = useAuth();
+  const { user, isAdmin, isStaff, isSuperAdmin, isMember, loading, refreshProfile } = useAuth();
   const location = useLocation();
   const [grantState, setGrantState] = useState<'idle' | 'checking' | 'granted' | 'denied'>('idle');
 
@@ -108,44 +108,31 @@ export default function ProtectedRoute({
     return <Navigate to="/app" replace />;
   }
 
-  // Member-only areas: signed-in but without an active membership. We render an
-  // inline notice rather than redirecting — the whole /app subtree (incl.
-  // /app/account) is member-gated, so any Navigate here would loop into a blank
-  // screen. This is the safety net for an account whose provisioning didn't
-  // complete (e.g. a redeem that stamped no role); refreshing usually clears it.
+  /* Member-only areas: signed in, but no membership yet.
+     ⚠️ THERE IS NO DEAD END HERE ANY MORE (owner, 2026-09-06, CR-124).
+     This used to render "We couldn’t activate your account" — a page that told a
+     visitor their account could not be activated and then offered them nothing
+     but Try again / Sign out. It reached real people: logan.tufty@gmail.com hit
+     it twice tonight with an auth user and no contact, profile, invitation or
+     client row — i.e. someone who simply signed in without ever being invited.
+     Owner: "there is no such thing as we are activating your account... if this
+     is a person who doesnt have an account the solution is to take them to the
+     main page for the /sign url and let them pick which applies to them."
+     So: no notice, no lie, no manual step. Somebody signed in with nothing to
+     enter is sent to the public chooser, where picking a door creates the
+     account and emails the activation link — the self-serve path that already
+     exists. `/sign` is a public route outside this guard, so this cannot loop. */
   if (requireMember && !isMember) {
-    // Still trying to auto-activate (redeem a pending invite / heal membership).
+    // A pending invitation may still be redeeming; that path lands them inside.
+    // Neutral wording only — same idiom as the grant check above.
     if (healState !== 'exhausted') {
       return (
-        <div className="min-h-screen bg-cream flex items-center justify-center px-6">
-          <div className="max-w-md text-center">
-            <p className="eyebrow mb-3">Almost there</p>
-            <h1 className="heading-section text-green-800 mb-4">Activating your account…</h1>
-            <p className="body-text">Just a moment while we finish setting you up.</p>
-          </div>
+        <div className="min-h-screen bg-cream flex items-center justify-center">
+          <p className="body-text text-muted">Loading…</p>
         </div>
       );
     }
-    // Genuinely nothing to redeem — be honest, and offer a real next step.
-    return (
-      <div className="min-h-screen bg-cream flex items-center justify-center px-6">
-        <div className="max-w-md text-center">
-          <p className="eyebrow mb-3">Almost there</p>
-          <h1 className="heading-section text-green-800 mb-4">We couldn’t activate your account</h1>
-          <p className="body-text mb-8">
-            You’re signed in, but we couldn’t find an active invitation for <strong>{user.email}</strong>.
-            If you were invited with a different email, sign out and sign in with that address — or ask
-            whoever invited you to re-send it.
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <button type="button"
-              onClick={() => { void refreshProfile().catch(() => {}).finally(() => setHealState('idle')); }}
-              className="btn-primary">Try again</button>
-            <button type="button" onClick={() => { void signOut(); }} className="btn-secondary">Sign out</button>
-          </div>
-        </div>
-      </div>
-    );
+    return <Navigate to="/sign" replace />;
   }
 
   return <>{children}</>;
