@@ -4689,6 +4689,40 @@ wording, which described something that does not happen. Gates: typecheck 0, lin
 > *Next item is the BOS bill of sale contract. I ran into issues trying to create one and i want you to review the contract, the structure of its conditions and gating and criteria for being signable and the the signing flow for a non account holder who will be invited and asked to review, confirm or edit the contract contents, and then sign. In this case they are the Seller, they are confirming the information is accurate and they can edit it as they want to. If i disagree as the buyer i will discuss with them but i can also edit the document, it should remove their signature if i do this and i should be required to write a note. upon saving the file when im done reviewing the document and making all of my changes, it should notify the other party that the document needs review, my notes and the changes should be captured and inserted into an email for them to see without opening the contract. If they agree with the changes and the notes they can resign it straight away, if they disagree they need to contact me to discuss it or they can change the document again and add a note, after they save and exit the document it notifies me automatically, the page should say this when they close it or it should ask if they want to notify me."*
 
 **SIX ITEMS.** 1-3 are admin capability gaps blocking cleanup of two test accounts. 4 is a BOS review.
+
+**FINDINGS (ORCH, 2026-09-12, measured against production):**
+
+**Item 1 — orders.** There is no cancel or delete writer for an order anywhere in the database. The
+only related function is `void_purchase_item` (one line item, not the order). The dossier's Orders tab
+offers exactly two controls — change payment method, hand off the payer — and no destructive action.
+The buttons are missing because the capability does not exist, not because the UI omits them.
+
+**Item 2 — bookings.** Same shape, and emptier: **no booking cancel/delete RPC exists at all.** The
+only booking writers are `set_booking_horse`, `set_booking_log`, `set_lesson_progress_note` and
+`update_my_pending_booking` (member-side). Nothing can cancel one booking, let alone all future ones
+for a standing slot.
+
+**Item 3A — the two layouts are two different surfaces, and the split tracks whether the person has a
+LOGIN, not their age.** `ContactDossierModal.tsx`'s account block renders the Suspend/Reinstate and
+Remove/Unremove pair **only when `userId` is present**; Archive and Hard-delete render always. So a
+contact with an account shows the full multi-button set, and a contact without one shows the short
+clean set. Separately, `ContactsPage.tsx` (Records) offers **Archive only**, with a mandatory reason
+(D19). Suzie Dropsy has no `profiles` row and no `clients` row; Audrey Dropsy has both — which is
+exactly the pair the owner was comparing.
+
+**Item 3B — the refusal message is wrong about its own cause.** Hard delete goes to
+`api/hard-delete-client.ts`, which deletes and reports a 409 with *"referenced by records that block
+deletion (likely a signed agreement)"* when an FK refuses. **Neither test account has a single
+signature.** What actually blocks both is four `document_parties` rows each, on four DRAFT/editable
+documents — `RELEASE_PARTICIPANT`, `HUMAN_EMERGENCY_MEDICAL`, `COMPANY_POLICIES`, `FACILITY_RULES` —
+with Audrey as CLIENT and Suzie as PARTICIPANT on the same four. Zero signatures, zero orders, zero
+bookings. The documents are unsigned drafts that nothing depends on.
+**⚠️ `purge_account` cannot help.** It exists, has no UI call site, and its allowlist admits **only
+addresses at `@purge-proof.invalid`**, a reserved non-routable test domain — by construction it can
+never purge a real account. It is a self-test fixture, not an admin tool.
+
+**Item 4 — BOS.** `HORSE_BILL_OF_SALE` is active at version 1 and **zero documents have ever been
+created from it in production.** Review not yet started.
 ⚠️ **Item 3B and the BOS signing flow both sit on the CR-121·A3 signing model, which is ruled but NOT
 built** (lock on second signature; edit by a non-signer voids that signature and requires a re-sign;
 blocker scoped to the signing party's own fields). The BOS flow described here is that model plus a
