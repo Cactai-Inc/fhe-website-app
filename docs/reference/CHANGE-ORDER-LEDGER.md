@@ -4678,6 +4678,22 @@ where picking a door creates the account and sends the activation link. The inte
 (a real pending invitation still redeems into the app) but loses the "Activating your account…"
 wording, which described something that does not happen. Gates: typecheck 0, lint 0, build clean.
 
+## CR-125 — 2026-09-12: admin cannot delete/cancel orders or bookings, cannot hard-delete a test account, two different account-page layouts; and the Bill of Sale needs its conditions, gating, signability and counterparty signing flow reviewed
+**SAID (owner, verbatim):**
+> *"Lets investigate some functionality that is missing in the app.*
+> *Here are the admin side issues:*
+> *1. No ability to delete an order, need to be able to cancel or delete any or all orders from the users account record on the orders page; physically lacks the buttons to do it.*
+> *2. No ability to delete/cancel any bookings for a weekly rider, need to be able to cancel all future or individually from the users account record on the bookings page; physically lacks the buttons to do it.*
+> *3. No ability to delete an account; multiple issues found - A) two different page layouts for accounts page, one with multiple buttons for delete/suspend/remove(block), one with clean and clear set of buttons for the same options. the discrepancy appears to be between newer accounts and older accounts. B) received DB error, system says it wont hard delete account due to signed documents, open orders, or scheduled bookings.*
+> *All of this is related to two test accounts i setup that i need to cleanup with hard delete since they arent needed.*
+> *Next item is the BOS bill of sale contract. I ran into issues trying to create one and i want you to review the contract, the structure of its conditions and gating and criteria for being signable and the the signing flow for a non account holder who will be invited and asked to review, confirm or edit the contract contents, and then sign. In this case they are the Seller, they are confirming the information is accurate and they can edit it as they want to. If i disagree as the buyer i will discuss with them but i can also edit the document, it should remove their signature if i do this and i should be required to write a note. upon saving the file when im done reviewing the document and making all of my changes, it should notify the other party that the document needs review, my notes and the changes should be captured and inserted into an email for them to see without opening the contract. If they agree with the changes and the notes they can resign it straight away, if they disagree they need to contact me to discuss it or they can change the document again and add a note, after they save and exit the document it notifies me automatically, the page should say this when they close it or it should ask if they want to notify me."*
+
+**SIX ITEMS.** 1-3 are admin capability gaps blocking cleanup of two test accounts. 4 is a BOS review.
+⚠️ **Item 3B and the BOS signing flow both sit on the CR-121·A3 signing model, which is ruled but NOT
+built** (lock on second signature; edit by a non-signer voids that signature and requires a re-sign;
+blocker scoped to the signing party's own fields). The BOS flow described here is that model plus a
+mandatory note, a change summary in the notify email, and a notify-on-exit prompt.
+
 ## CR-121 — 2026-09-06: Pamela's lease is not signable — vet address blocks it; the field was removed from the horse record; her three onboarding documents sit in Draft; reconstruct exactly what she was shown
 **SAID (owner, verbatim):** *"i need you to look at the contract for pamela and her horse sundance it
 doesnt let her sign, likely issue is the vet address is still showing as a missing field. the issue is
