@@ -93,6 +93,28 @@ function nextBookableSlot(openHour: number, closeHour: number): Date {
   return d;
 }
 
+/** ⚠️ THE 30-MINUTE GAP (owner, 2026-09-12). A soft default, not a rule: if the
+ *  chosen start lands within 30 minutes AFTER a real session on that day ends,
+ *  nudge it to end + 30 so the schedule stays clean. Ignores availability/
+ *  unavailable furniture and cancelled/expired rows. Returns the start unchanged
+ *  when nothing is close — and never moves it earlier or across a big gap. */
+function applyGapDefault(start: Date, items: CalendarItem[]): Date {
+  const GAP_MS = 30 * 60_000;
+  const startMs = start.getTime();
+  let best: number | null = null;
+  for (const it of items) {
+    if (it.status === 'available' || it.status === 'unavailable'
+      || it.status === 'cancelled' || it.status === 'expired' || it.all_day) continue;
+    if (!it.ends_at) continue;
+    const end = new Date(it.ends_at).getTime();
+    // ends before (or at) our start, and our start is inside the 30-min shadow
+    if (end <= startMs && startMs - end < GAP_MS) {
+      best = best === null ? end : Math.max(best, end);
+    }
+  }
+  return best === null ? start : new Date(best + GAP_MS);
+}
+
 /** The outline/fill treatment for an item by status (owner's color model:
  *  yellow=notice, orange=pending, green=approved; plus available + unavailable). */
 function itemClass(item: CalendarItem): string {
@@ -127,14 +149,13 @@ function itemClass(item: CalendarItem): string {
   }
 }
 
+/* ⚠️ REMASTER (owner, 2026-09-12): EMPTY IS AVAILABLE, so there is no "Available"
+   chip and no "Unavailable" furniture to explain — a blank space is open time.
+   The legend now names only what actually renders: the real session states. */
 const LEGEND: { label: string; cls: string }[] = [
-  { label: 'Available', cls: 'bg-green-50 border border-green-600/40' },
   { label: 'Booked', cls: 'bg-green-700 border border-green-800' },
   { label: 'Pending', cls: 'bg-orange-50 border border-orange-400' },
   { label: 'Draft / notice', cls: 'bg-yellow-50 border border-dashed border-yellow-500' },
-  { label: 'Unavailable', cls: 'bg-green-800/5 border border-green-800/15' },
-  // ⚠️ TASK-LIFECYCLE — the ONE new label. A sixth colour with no legend row is
-  // a colour nobody can read, so it ships with the state it explains.
   { label: 'Pending reschedule', cls: 'bg-orange-50 border border-dashed border-orange-500' },
 ];
 
@@ -320,9 +341,21 @@ export default function CalendarPage() {
     else setSelected(it);
   }
   function onEmptyClick(day: Date, hour: number) {
-    const s = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, 0, 0);
-    if (isStaff) setEditing({ item: null, start: s });
-    else setRequesting(s); // client: request this open time
+    /* `day` carries the clicked minute (the :00 or :30 band). Fall back to the
+       hour if a caller passes a bare date. */
+    const s = new Date(day);
+    if (s.getHours() !== hour || (s.getMinutes() !== 0 && s.getMinutes() !== 30)) {
+      s.setHours(hour, 0, 0, 0);
+    }
+    s.setSeconds(0, 0);
+    /* ⚠️ THE 30-MINUTE GAP (owner, 2026-09-12). We try to leave 30 minutes
+       between bookings: if the clicked time lands within 30 min after a session
+       ends, open the new one at that session's end + 30. It is a soft default —
+       staff can drag it back in the panel; a real back-to-back is unrealistic
+       for a 60-min lesson, so a clean schedule starts them apart. Not enforced. */
+    const suggested = applyGapDefault(s, items);
+    if (isStaff) setEditing({ item: null, start: suggested });
+    else setRequesting(suggested); // client: request this open time
   }
 
   // the hour band from business hours (fallback 10–18), for the week grid rows.
@@ -586,12 +619,34 @@ function WeekGrid({
   const hours = Array.from({ length: Math.max(1, closeHour - openHour) }, (_, i) => openHour + i);
   const today = new Date();
 
-  function itemsFor(day: Date, hour: number): CalendarItem[] {
-    return items.filter((it) => {
-      const s = new Date(it.starts_at);
-      return sameDay(s, day) && s.getHours() === hour;
-    });
+  /* ⚠️ CALENDAR REMASTER (owner, 2026-09-12).
+     • EMPTY IS AVAILABLE. The generated `available`/`unavailable` furniture is not
+       drawn — a blank space IS Claire's open time. Only real sessions render.
+     • FULL-SIZE BLOCKS. A session occupies its true duration: a 60-min lesson
+       fills the hour, a 90-min one spills the extra 30. Positioned absolutely
+       within a day column by its start minute, height in proportion to length.
+     • WHO + WHAT. Staff see the client's name and the activity; the fill is the
+       status (itemClass). Clicking a block opens the full panel; clicking empty
+       space starts a booking at that time. */
+  const HOUR_PX = 56;
+  const PER_MIN = HOUR_PX / 60;
+
+  /** Real sessions only — the furniture is gone. */
+  const drawable = items.filter((it) => it.status !== 'available' && it.status !== 'unavailable');
+
+  function blocksFor(day: Date): { it: CalendarItem; top: number; height: number }[] {
+    return drawable
+      .filter((it) => sameDay(new Date(it.starts_at), day) && !it.all_day)
+      .map((it) => {
+        const s = new Date(it.starts_at);
+        const e = it.ends_at ? new Date(it.ends_at) : new Date(s.getTime() + 3_600_000);
+        const startMin = (s.getHours() - openHour) * 60 + s.getMinutes();
+        const durMin = Math.max(30, (e.getTime() - s.getTime()) / 60000);
+        return { it, top: startMin * PER_MIN, height: durMin * PER_MIN };
+      });
   }
+
+  const gridHeight = hours.length * HOUR_PX;
 
   return (
     <div className="min-w-[720px]">
@@ -607,62 +662,90 @@ function WeekGrid({
           </div>
         ))}
       </div>
-      {/* hour rows */}
-      {hours.map((h) => (
-        <div key={h} className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-green-800/5">
-          <div className="px-2 py-1 text-[11px] text-muted text-right">
-            {new Date(2000, 0, 1, h).toLocaleTimeString(undefined, { hour: 'numeric' })}
-          </div>
-          {days.map((d) => {
-            const cell = itemsFor(d, h);
-            return (
-              <div
-                key={d.toISOString()}
-                className={`border-l border-green-800/10 min-h-[44px] p-0.5 space-y-0.5 ${onEmpty ? 'cursor-pointer hover:bg-green-50/50' : ''}`}
-                onClick={onEmpty && cell.length === 0 ? () => onEmpty(d, h) : undefined}
-              >
-                {cell.map((it) => (
-                  <button
-                    key={it.id}
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); onSelect(it); }}
-                    className={`w-full text-left rounded px-1.5 py-1 text-[11px] leading-tight ${itemClass(it)}`}
-                  >
-                    {itemLabel(it)}
-                  </button>
-                ))}
-              </div>
-            );
-          })}
+      {/* time-positioned grid: an hour-labelled rail + seven day columns */}
+      <div className="grid grid-cols-[56px_repeat(7,1fr)]" style={{ height: gridHeight }}>
+        {/* hour labels */}
+        <div className="relative">
+          {hours.map((h, i) => (
+            <div key={h} className="absolute left-0 right-0 px-2 text-[11px] text-muted text-right"
+              style={{ top: i * HOUR_PX - 6 }}>
+              {new Date(2000, 0, 1, h).toLocaleTimeString(undefined, { hour: 'numeric' })}
+            </div>
+          ))}
         </div>
-      ))}
+        {days.map((d) => {
+          const blocks = blocksFor(d);
+          return (
+            <div key={d.toISOString()}
+              className={`relative border-l border-green-800/10 ${sameDay(d, today) ? 'bg-gold-50/30' : ''}`}>
+              {/* hour lines + click-to-book bands (each half-hour is a target) */}
+              {hours.map((h, i) => (
+                <div key={h} className="absolute left-0 right-0 border-b border-green-800/5"
+                  style={{ top: i * HOUR_PX, height: HOUR_PX }}>
+                  {onEmpty && (
+                    <>
+                      <button type="button" aria-label={`Book ${h}:00`}
+                        onClick={() => onEmpty(d, h)}
+                        className="absolute left-0 right-0 top-0 h-1/2 hover:bg-green-50/60 focus-ring" />
+                      <button type="button" aria-label={`Book ${h}:30`}
+                        onClick={() => onEmpty(withMinutes(d, h, 30), h)}
+                        className="absolute left-0 right-0 bottom-0 h-1/2 hover:bg-green-50/60 focus-ring" />
+                    </>
+                  )}
+                </div>
+              ))}
+              {/* the sessions, at their true size */}
+              {blocks.map(({ it, top, height }) => (
+                <button key={it.id} type="button"
+                  onClick={(e) => { e.stopPropagation(); onSelect(it); }}
+                  style={{ top: top + 1, height: Math.max(20, height - 2) }}
+                  className={`absolute left-0.5 right-0.5 z-10 overflow-hidden rounded px-1.5 py-1 text-left text-[11px] leading-tight ${itemClass(it)}`}>
+                  <WeekBlockLabel it={it} />
+                </button>
+              ))}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-/**
- * ⚠️ TASK-FIX2 §4 — WHAT THE MONTH VIEW SHOWED, AND WHY IT SHOWED NOTHING.
- *
- * `dayItems.slice(0, 3)` rendered the first three items in `calendar_free_busy`'s
- * order, which is START TIME. The hourly `/api/calendar-reminders` cron publishes
- * one generated `available` slot per business hour (08:00–20:00, seven days), so
- * every day begins with 8:00 Open, 9:00 Open, 10:00 Open. On Tuesday 2026-09-01
- * the day's two real lessons sat at ranks 10 and 11 — inside "+11 more", which was
- * not clickable. The month view of a working barn showed three empty hours and hid
- * every session on it.
- *
- * ⚠️ THE FURNITURE IS NOT DELETED HERE (AR1 F3/F4/F6). A cron regenerates it hourly
- * and the replacement booking path (`request_open_time`) does not debit a credit
- * yet, so removing it would give lessons away. The fix is ordering and reach:
- * REAL items take the three visible ranks, generated availability fills what is
- * left, and every chip is its own control so a session in view can be opened.
- */
-function dayRank(it: CalendarItem): number {
-  // 0 = a real session (scheduled / pending / confirmed / completed / draft),
-  // 1 = generated open availability. Chronological inside each band.
-  return it.status === 'available' ? 1 : 0;
+/** A day + hour with an explicit minute — for the :30 click band. */
+function withMinutes(day: Date, hour: number, minutes: number): Date {
+  const d = new Date(day);
+  d.setHours(hour, minutes, 0, 0);
+  return d;
 }
 
+/** Who + what on a week block. Staff get the client name and activity; everyone
+ *  else gets the opaque label itemLabel already computes. The fill is the status. */
+function WeekBlockLabel({ it }: { it: CalendarItem }) {
+  const s = new Date(it.starts_at);
+  const time = s.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  const who = it.client_name?.trim();
+  const what = it.offering_name?.trim();
+  if (who || what) {
+    return (
+      <span className="block">
+        <span className="block font-medium truncate">{who || what}</span>
+        {who && what && <span className="block truncate opacity-90">{what}</span>}
+        <span className="block opacity-75">{time}</span>
+      </span>
+    );
+  }
+  return <span className="block truncate">{itemLabel(it)}</span>;
+}
+
+/**
+ * MONTH VIEW. ⚠️ REMASTER (owner, 2026-09-12): empty is available, so the
+ * generated availability furniture is no longer DRAWN (see `itemsOn` — it filters
+ * `available`/`unavailable` out). This also ends the old FIX2 §4 defect at its
+ * source: there is no furniture to out-rank a real session, so the three chips a
+ * day shows are three real sessions, each its own clickable control that opens
+ * the same panel a week chip does. The generated rows still EXIST in the table
+ * (a cron writes them; not this task's to remove), they are simply not rendered.
+ */
 function MonthGrid({
   anchor,
   items,
@@ -680,10 +763,14 @@ function MonthGrid({
   const today = new Date();
 
   function itemsOn(day: Date): CalendarItem[] {
+    /* ⚠️ REMASTER (owner, 2026-09-12): empty is available, so the generated
+       availability/unavailable furniture is not drawn here either — only real
+       sessions. That also ends the F3/F4 problem at its source: with no furniture
+       to out-rank, every chip a day shows is a real session. */
     return items
-      .filter((it) => sameDay(new Date(it.starts_at), day))
-      .sort((a, b) => dayRank(a) - dayRank(b)
-        || new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+      .filter((it) => sameDay(new Date(it.starts_at), day)
+        && it.status !== 'available' && it.status !== 'unavailable')
+      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
   }
 
   return (
@@ -722,12 +809,7 @@ function MonthGrid({
                   </button>
                 ))}
                 {dayItems.length > 3 && (
-                  /* Says WHAT is hidden, not just how much. Three ranks of "Open"
-                     with "+11 more" underneath was the whole defect. */
-                  <div className="text-[10px] text-muted">
-                    +{dayItems.length - 3} more
-                    {dayItems.slice(3).every((it) => it.status === 'available') ? ' open' : ''}
-                  </div>
+                  <div className="text-[10px] text-muted">+{dayItems.length - 3} more</div>
                 )}
               </div>
             </div>

@@ -107,6 +107,9 @@ export interface Offering {
   unit_count: number | null;
   /** Recurring SKUs: sessions per week (1/2/3). */
   weekly_frequency: number | null;
+  /** How long a session of this service lasts, in minutes (default 60; evaluations
+   *  90). Sizes the calendar block and auto-fills the end time on booking. */
+  duration_minutes?: number | null;
   /** Card corner badge text ("Most Popular", "Best Value"). Set → renders as the
    *  badge; null + is_popular → legacy "Popular". */
   badge_label: string | null;

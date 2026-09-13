@@ -318,6 +318,19 @@ export function CalendarItemPanel({
     }
   }, [offeringId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* ⚠️ DURATION AUTO-APPLIES (owner, 2026-09-12). Picking an offering sets the end
+     time to start + the offering's duration — a 60-min lesson ends an hour later,
+     a 90-min evaluation 90 minutes later. Staff can still drag the end; this only
+     applies the "proper time value" the moment a service is chosen, not on every
+     keystroke. Only for a NEW item (no existing end being edited). */
+  useEffect(() => {
+    if (type !== 'offering' || !selectedOffering || item) return;
+    const mins = selectedOffering.duration_minutes ?? 60;
+    const s = fromLocalInput(start);
+    if (!s) return;
+    setEnd(toLocalInput(new Date(new Date(s).getTime() + mins * 60_000).toISOString()));
+  }, [offeringId, start]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const isSeries = !!item?.series_id;
 
   function buildPayload(asDraft: boolean) {

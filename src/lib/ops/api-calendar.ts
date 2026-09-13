@@ -62,6 +62,10 @@ export interface CalendarItem {
   travel_before_minutes?: number;
   travel_after_minutes?: number;
   series_id?: string | null;
+  /** Display-only, staff branch (2026-09-12): who the session is with and what
+   *  it is, so the week grid can show name + activity instead of "Reserved". */
+  client_name?: string | null;
+  offering_name?: string | null;
 }
 
 export interface CalendarView {
