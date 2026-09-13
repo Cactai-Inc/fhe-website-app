@@ -16,7 +16,7 @@ import {
      Activity left with the Activity row (removed, owner 2026-08-31). Eye did
      NOT leave with Oversight — it moves to Page visibility below, which is the
      one row in this rail actually about what is and is not seen. */
-  Contact2, Fence,
+  Contact2, Fence, UserPlus, Truck,
   ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, ListChecks,
   PanelLeftClose, PanelLeftOpen, Compass, Grid3x3, Bookmark,
   Receipt, Eye, Library, NotebookPen, CreditCard,} from 'lucide-react';
@@ -516,6 +516,14 @@ const MANAGEMENT_GROUP: NavItem[] = [
      heading again as a result — it was empty, and manageNavGroups() drops
      empty groups. */
   { to: '/app/ops/support', label: 'Support', icon: LifeBuoy },
+  /* MY STABLE — the business's own operation: horses, supplies, property. Three
+     doors behind one hub (owner, 2026-09-12). FHE-only content; distinct from a
+     member's "My Stable" card. */
+  { to: '/app/my-stable', label: 'My Stable', icon: Fence },
+  /* DIRECTORY — the business relationships: vendors, partners, suppliers, on ONE
+     unified page (owner, 2026-09-12). Distinct from Clients/Leads, which are in
+     Community. */
+  { to: '/app/records/directory', label: 'Directory', icon: Truck },
   // Lessons, Documents, Deals RETIRED from here 2026-08-15 (owner: "lessons…
   // is really a records ledger so it should be added to the records page
   // along with documents, files, and deals") — each is a ledger of records,
@@ -557,9 +565,16 @@ const MANAGEMENT_GROUP: NavItem[] = [
  *
  * Team is still not here — "that is a business configuration activity" (owner)
  * — it lives in the Admin section below. */
+/* ⚠️ CLIENTS AND LEADS ARE SEPARATE COMMUNITY PAGES (owner, 2026-09-12). They
+ * serve different purposes — Clients is who we serve, Leads is who we are
+ * working toward serving — and each is its own page, side by side in Community,
+ * rather than tabs on one Contacts page. Vendors and Partners are NOT here: they
+ * are business relationships and live on the unified Directory page in Management
+ * (see MANAGEMENT_GROUP). My Stable leaves this group entirely and becomes its
+ * own top-level row with three doors (Horses / Supplies / Property). */
 const ACCOUNTS_GROUP: NavItem[] = [
-  { to: '/app/records', label: 'Contacts', icon: Contact2 },
-  { to: '/app/records/horses', label: 'Stable', icon: Fence },
+  { to: '/app/records/clients', label: 'Clients', icon: Contact2 },
+  { to: '/app/records/leads', label: 'Leads', icon: UserPlus },
 ];
 /** THE COMMUNITY SECTION'S KEY. ⚠️ IT IS NOT `community` — that key belongs to
  *  the ADMIN section (see ADMIN_GROUP's note below) and is the `group` field on

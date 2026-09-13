@@ -42,7 +42,11 @@ import { ContactForm } from '../../../components/ops/contacts/ContactForm';
  * and the retired /app/ops/review/contacts mount still reads 'contacts' — but
  * no live page routes to 'directory' any more. 'all' is new: every population
  * this file covers except TEAM, one flat list, for the Records page's All tab. */
-type DirectoryMode = 'directory' | 'leads' | 'contacts' | 'vendors' | 'partners' | 'all';
+type DirectoryMode = 'directory' | 'leads' | 'contacts' | 'vendors' | 'partners' | 'all'
+  /* 'business' (owner, 2026-09-12): the UNIFIED directory — vendors, partners and
+     any legacy DIRECTORY rows on one Management page, since they are all business
+     relationships rather than people we serve. */
+  | 'business';
 
 /** Which stored contact_type each page shows. 'all' has no single type — its
  *  filter lives in `load()` below, alongside the existing unfiled split. */
@@ -81,6 +85,11 @@ const MODE_COPY: Record<DirectoryMode, { title: string; blurb: string; newLabel:
     title: 'All',
     blurb: 'Every lead, client, partner and vendor on file, in one list.',
     newLabel: 'contact',
+  },
+  business: {
+    title: 'Directory',
+    blurb: 'The businesses we work with — vendors, partners and suppliers. The people we serve (clients and leads) live in Community.',
+    newLabel: 'directory entry',
   },
 };
 
@@ -225,9 +234,12 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
       // 'all' (TASK-RECORDS) has no single MODE_TYPE — it shows every filed
       // type except TEAM, which lives in Configuration, not on this page.
       .then((all) => {
+        const BUSINESS = new Set(['VENDOR', 'PARTNER', 'DIRECTORY', 'SUPPLIER']);
         setRows(all.filter((r) => (mode === 'all'
           ? !!r.contact_type && r.contact_type !== 'TEAM'
-          : r.contact_type === MODE_TYPE[mode])));
+          : mode === 'business'
+            ? !!r.contact_type && BUSINESS.has(r.contact_type)
+            : r.contact_type === MODE_TYPE[mode])));
         setUnfiled(all.filter((r) => !r.contact_type));
       })
       .catch(() => setError('Could not load the directory.'));
@@ -256,7 +268,9 @@ function ContactDirectory({ mode }: { mode: DirectoryMode }) {
   const save = useAsync(async (input: ContactInput, existing: DirectoryContact | null) => {
     if (existing) return updateContact(existing.id, input);
     const created = await createContact(input);
-    const type = MODE_TYPE[mode];
+    // 'business' has no single MODE_TYPE — a new directory entry defaults to
+    // VENDOR (the most common), refilable to Partner/Supplier from the record.
+    const type = MODE_TYPE[mode] ?? (mode === 'business' ? 'VENDOR' as ContactType : undefined);
     if (type) await setContactType(created.id, type);
     return created;
   });
@@ -684,5 +698,10 @@ export function ContactsPage() {
 /** Potential future clients — the campaign list. */
 export function LeadsPage() {
   return <ContactDirectory mode="leads" />;
+}
+/** The unified business Directory — vendors, partners and suppliers on one
+ *  Management page (owner, 2026-09-12). */
+export function BusinessDirectoryPage() {
+  return <ContactDirectory mode="business" />;
 }
 export default ContactsPage;

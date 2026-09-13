@@ -1,13 +1,6 @@
-import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDocumentTitle } from '../../lib/hooks';
-import { ContactDossierModal } from '../../components/app/ContactDossierModal';
-import {
-  LeadsPage, PartnersPage, VendorsPage,
-} from './ops/ContactsPage';
-import Admin from './Admin';
-import HorseRecordsPage from './ops/HorseRecordsPage';
 import LessonsHubPage from './ops/hubs/LessonsHubPage';
 import DocumentsQueuePage from './ops/DocumentsQueuePage';
 import FilesRecordsPage from './ops/FilesRecordsPage';
@@ -32,7 +25,6 @@ import ArchivedAccountsPage from './ops/ArchivedAccountsPage';
  */
 
 type RecordsTab =
-  | 'leads' | 'clients' | 'partners' | 'vendors' | 'horses'
   | 'lessons' | 'documents' | 'files' | 'deals' | 'archived';
 
 const TABS: { id: RecordsTab; label: string; adminOnly?: boolean }[] = [
@@ -44,11 +36,11 @@ const TABS: { id: RecordsTab; label: string; adminOnly?: boolean }[] = [
   // and serves only to make me click more." Removed rather than rebuilt
   // into a real cross-record view -- that is a different feature, not
   // named here, and not assumed.
-  { id: 'leads', label: 'Leads' },
-  { id: 'clients', label: 'Clients' },
-  { id: 'partners', label: 'Partners' },
-  { id: 'vendors', label: 'Vendors' },
-  { id: 'horses', label: 'Horses' },
+  /* ⚠️ Leads, Clients, Partners, Vendors and Horses LEFT this strip (owner,
+     2026-09-12): Clients and Leads are standalone Community pages, Vendors and
+     Partners fold into the Management Directory, and Horses moved to My Stable.
+     Their routes are handled directly in App.tsx. What remains here are the
+     record LEDGERS. */
   // Owner, 2026-08-15: "lessons... is really a records ledger so it should be
   // added to the records page along with documents, files, and deals" — each
   // is its own ledger of records, not a work queue, so Management (day-to-day
@@ -100,34 +92,17 @@ function RecordsTabStrip({ active }: { active: RecordsTab }) {
 export default function RecordsPage() {
   useDocumentTitle('Records');
   const { tab: tabParam } = useParams<{ tab?: string }>();
-  const tab: RecordsTab = (tabParam && TAB_IDS.has(tabParam) ? tabParam : 'leads') as RecordsTab;
-
-  /** A horse's owner/lessee opens their full record in place — "a horse links
-   *  to its people … without leaving the page." Lives here, one level above
-   *  every tab, because the contact opened this way is not necessarily filed
-   *  on whichever tab is active. The reverse direction (a person's horses) is
-   *  already live and unchanged: ContactDossierModal's own Horse records
-   *  section (ClientHorseRecordsCard), reused as-is on every people tab. */
-  const [crossContact, setCrossContact] = useState<string | null>(null);
+  const tab: RecordsTab = (tabParam && TAB_IDS.has(tabParam) ? tabParam : 'documents') as RecordsTab;
 
   return (
     <div>
       <RecordsTabStrip active={tab} />
 
-      {tab === 'leads' && <LeadsPage />}
-      {tab === 'clients' && <Admin />}
-      {tab === 'partners' && <PartnersPage />}
-      {tab === 'vendors' && <VendorsPage />}
-      {tab === 'horses' && <HorseRecordsPage onOpenContact={setCrossContact} />}
       {tab === 'lessons' && <LessonsHubPage />}
       {tab === 'documents' && <DocumentsQueuePage />}
       {tab === 'files' && <FilesRecordsPage />}
       {tab === 'deals' && <DealsPage />}
       {tab === 'archived' && <ArchivedAccountsPage />}
-
-      {crossContact && (
-        <ContactDossierModal contactId={crossContact} onClose={() => setCrossContact(null)} />
-      )}
     </div>
   );
 }

@@ -82,6 +82,9 @@ import { verifyWithPassword, verifyWithGoogle } from './lib/emailChange';
 // Imported there, not here.
 import RecordsPage from './pages/app/RecordsPage';
 import PersonRecordPage from './pages/app/PersonRecordPage';
+import Admin from './pages/app/Admin';
+import { LeadsPage, BusinessDirectoryPage } from './pages/app/ops/ContactsPage';
+import MyStablePage from './pages/app/MyStablePage';
 // Ops / CRM (staff/admin)
 import OpsHome from './pages/app/OpsHome';
 import InstructorHomePreview from './pages/app/ops/InstructorHomePreview';
@@ -339,7 +342,24 @@ export function AppRoutes() {
                   overlay. `person/:contactId` sits ABOVE `:tab` so the static
                   segment wins; ContactDossierModal now redirects here. */}
               <Route path="records/person/:contactId" element={<ProtectedRoute requireStaff><PersonRecordPage /></ProtectedRoute>} />
+              {/* ⚠️ CLIENTS AND LEADS ARE STANDALONE COMMUNITY PAGES (owner
+                  2026-09-12) — not tabs on a shared Contacts page. They render
+                  their own component directly, above the generic :tab route so
+                  the static segments win. DIRECTORY is the unified vendors/
+                  partners/suppliers page in Management. */}
+              <Route path="records/clients" element={<ProtectedRoute requireStaff><Admin /></ProtectedRoute>} />
+              <Route path="records/leads" element={<ProtectedRoute requireStaff><LeadsPage /></ProtectedRoute>} />
+              <Route path="records/directory" element={<ProtectedRoute requireStaff><BusinessDirectoryPage /></ProtectedRoute>} />
+              {/* Old Vendors/Partners tab links land on the unified Directory. */}
+              <Route path="records/vendors" element={<Navigate to="/app/records/directory" replace />} />
+              <Route path="records/partners" element={<Navigate to="/app/records/directory" replace />} />
+              {/* Horses moved to My Stable (owner 2026-09-12). */}
+              <Route path="records/horses" element={<Navigate to="/app/my-stable/horses" replace />} />
               <Route path="records/:tab" element={<ProtectedRoute requireStaff><RecordsPage /></ProtectedRoute>} />
+              {/* MY STABLE — FHE's own operation, three doors: Horses / Supplies /
+                  Property (owner 2026-09-12). */}
+              <Route path="my-stable" element={<ProtectedRoute requireStaff><MyStablePage /></ProtectedRoute>} />
+              <Route path="my-stable/:door" element={<ProtectedRoute requireStaff><MyStablePage /></ProtectedRoute>} />
               {/* RETIRED 2026-08-12 (TASK-RECORDS): the Clients page folded into
                   Records as its own tab. RedirectWithQuery preserves ?open=<id>,
                   which DashboardPanel and DocumentQueueTable both still send. */}

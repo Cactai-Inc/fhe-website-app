@@ -220,15 +220,19 @@ export const PAGE_REGISTRY: PageEntry[] = [
      `org_page_visibility` and this file's header forbids re-deriving a key from
      anything, its group included. A tenant that hid Contacts still has it
      hidden after the move. */
-  { key: 'people.records', path: '/app/records', label: 'Contacts', group: 'app_pages' },
-  /* The horses. The name was settled by the owner on 2026-08-08
-     (docs/reference/nav-icon-exercise.md): "Rename it Stable, which also
-     matches the member-side term already in use (My Stable)."
-     ⚠️ It points at the Horses TAB, not at /app/stable — TASK-AR3 F3 measured
-     /app/stable returning 0 of the tenant's 3 horses for staff, because it
-     reads the member-scoped my_stable_horses(). Mounting the staff roster there
-     needs RecordsPage.tsx, which TASK-FIX2 owns. */
-  { key: 'people.stable', path: '/app/records/horses', label: 'Stable', group: 'app_pages' },
+  /* ⚠️ CLIENTS AND LEADS ARE SEPARATE COMMUNITY PAGES (owner, 2026-09-12). The
+     one "Contacts" row (`people.records`) splits into two purpose-built pages.
+     KEYS keep the `people.` grammar (stored in org_page_visibility; this file's
+     header forbids re-deriving a key). `people.records` is retained as the
+     Clients row so a tenant that hid Contacts still has Clients hidden. */
+  { key: 'people.records', path: '/app/records/clients', label: 'Clients', group: 'app_pages' },
+  { key: 'people.leads', path: '/app/records/leads', label: 'Leads', group: 'app_pages' },
+  /* The unified business Directory — vendors, partners, suppliers — in
+     MANAGEMENT (owner, 2026-09-12). Distinct from the people we serve. */
+  { key: 'mgmt.directory', path: '/app/records/directory', label: 'Directory', group: 'management' },
+  /* MY STABLE — FHE's own operation, three doors (Horses / Supplies / Property).
+     The horses live here now, not on a Records tab (owner, 2026-09-12). */
+  { key: 'mgmt.my_stable', path: '/app/my-stable', label: 'My Stable', group: 'management' },
 
   // ── Management ───────────────────────────────────────────────────────────
   { key: 'mgmt.dashboard', path: '/app/dashboard', label: 'Dashboard', group: 'management' },
