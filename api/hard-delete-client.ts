@@ -1,21 +1,42 @@
 /* POST /api/hard-delete-client — NUCLEAR client deletion (owner directive).
  *
- * Removes ALL traces: the auth user (service-role admin.deleteUser), then the
- * clients + contact rows. FK dependents cascade where ON DELETE CASCADE exists;
- * where a constraint would block (e.g. signed documents referencing the contact
- * as a party), the delete fails and the caller is told what held it — a signed
- * agreement is not silently shredded. This is irreversible and admin-gated by a
- * bearer token whose profile must be ADMIN in the contact's org.
+ * ⚠️ REWRITTEN 2026-09-12. The previous version did a bare `DELETE FROM contacts`
+ * and relied on FK cascade. That is refused by the RESTRICT foreign keys on
+ * documents, signatures, purchases, document_parties, contract_parties,
+ * document_deliveries, esign_consents, billable_lines, board_agreements and
+ * cost_allocation_rules — i.e. any client who ever ordered or signed anything.
+ * Worse, it deleted the auth login FIRST and only then hit the wall, leaving a
+ * half-torn-down account with no way back. This is the exact "won't hard delete
+ * due to signed documents / open orders / scheduled bookings" error.
  *
- * Body: { contactId } for a client, OR { userId } for a team member (staff
- * accounts have no contact row). Deleting the auth user cascades profiles /
- * memberships / grants (all FK ON DELETE CASCADE on user_id).
+ * Now it calls `admin_purge_contact(p_contact_id, 'PURGE')` — one atomic function
+ * (a single transaction) that tears down children first, anchors last, runs an
+ * orphan sweep, and keeps the protected-identity denylist and the company guard.
+ * It runs AS THE CALLING ADMIN (their own bearer), so the function's own
+ * has_staff_access() + current_org() checks apply. Either the whole account goes
+ * or nothing does — no half-deleted state is possible.
+ *
+ * Body: { contactId } for a person, OR { userId } for a team member (staff
+ * accounts have no contact row — that path deletes only the auth user, whose
+ * profiles / memberships / grants cascade on user_id).
  * -> 200 { ok, deletedUser, deletedContact }
- * -> 403 caller not an admin
- * -> 409 { error, blockedBy } when a FK constraint refuses (nothing deleted)
+ * -> 401 no/bad bearer · 403 caller not admin · 404 not in org · 409 refused
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
+
+/** An anon client carrying the caller's JWT, so RPCs run with their auth.uid()
+ *  and current_org() — the context admin_purge_contact's own guards require. */
+function callerClient(bearer: string) {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const anon = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url || !anon) throw new Error('Missing SUPABASE_URL or SUPABASE_ANON_KEY');
+  return createClient(url, anon, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${bearer}` } },
+  });
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
@@ -36,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const db = getSupabaseAdmin();
 
-    // caller must be an admin
+    // caller must be an admin (verified with the service client)
     const { data: userData, error: userErr } = await db.auth.getUser(bearer);
     if (userErr || !userData.user) return res.status(401).json({ error: 'unauthorized' });
     const { data: caller } = await db
@@ -44,70 +65,72 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const isAdmin = caller?.is_admin || ['ADMIN', 'SUPER_ADMIN'].includes(caller?.role ?? '');
     if (!isAdmin) return res.status(403).json({ error: 'admin access required' });
 
-    // ── Team-member (user_id) path: no contact row. Deleting the auth user
-    //    cascades profiles / memberships / grants. ──
-    if (!contactId && userId) {
-      if (userId === userData.user.id) {
-        return res.status(400).json({ error: 'you cannot delete your own account' });
+    // ── CONTACT path: the atomic purge does everything, as the calling admin. ──
+    if (contactId) {
+      const { data: contact } = await db
+        .from('contacts').select('id, org_id').eq('id', contactId).maybeSingle();
+      if (!contact || contact.org_id !== caller?.org_id) {
+        return res.status(404).json({ error: 'contact not found in your organization' });
       }
-      const { data: target } = await db
-        .from('profiles').select('user_id, org_id, role').eq('user_id', userId).maybeSingle();
-      if (!target || target.org_id !== caller?.org_id) {
-        return res.status(404).json({ error: 'team member not found in your organization' });
-      }
-      if (target.role === 'SUPER_ADMIN') {
-        return res.status(403).json({ error: 'a super admin account cannot be deleted here' });
-      }
-      // The email BEFORE we delete the auth user — used to revoke stale invites.
-      const { data: authUser } = await db.schema('auth').from('users').select('email').eq('id', userId).maybeSingle();
-      const { error: delErr } = await db.auth.admin.deleteUser(userId);
-      if (delErr) return res.status(500).json({ error: `could not delete the account: ${delErr.message}` });
-      // Deleting a member must not leave a live invite pointing at a now-missing
-      // account: a lingering `sent` row lets the deleted person re-claim the login
-      // and land in a broken, profile-less state. Retire every pending invite for
-      // their email in this org.
-      if (authUser?.email) {
-        await db.from('invitations').update({ status: 'revoked' })
-          .eq('org_id', target.org_id).ilike('email', authUser.email).eq('status', 'sent');
-      }
-      return res.status(200).json({ ok: true, deletedUser: true, deletedContact: false });
-    }
-
-    // the contact must be in the caller's org
-    const { data: contact } = await db
-      .from('contacts').select('id, org_id, email').eq('id', contactId).maybeSingle();
-    if (!contact || contact.org_id !== caller?.org_id) {
-      return res.status(404).json({ error: 'contact not found in your organization' });
-    }
-    // Retire any pending invite for this person so it can't be re-claimed later.
-    if (contact.email) {
-      await db.from('invitations').update({ status: 'revoked' })
-        .eq('org_id', contact.org_id).ilike('email', contact.email).eq('status', 'sent');
-    }
-
-    // the linked auth user (if any) goes first
-    const { data: profile } = await db
-      .from('profiles').select('user_id').eq('contact_id', contactId).maybeSingle();
-    let deletedUser = false;
-    if (profile?.user_id) {
-      const { error: delUserErr } = await db.auth.admin.deleteUser(profile.user_id);
-      if (delUserErr) return res.status(500).json({ error: `could not delete the login: ${delUserErr.message}` });
-      deletedUser = true;
-    }
-
-    // clients rows, then the contact. A blocking FK (signed docs, etc.) aborts.
-    await db.from('clients').delete().eq('contact_id', contactId);
-    const { error: delContactErr } = await db.from('contacts').delete().eq('id', contactId);
-    if (delContactErr) {
-      return res.status(409).json({
-        error: 'This person is referenced by records that block deletion (likely a signed agreement). '
-             + 'Their login was removed; use Soft delete to retire the rest while keeping history.',
-        blockedBy: delContactErr.message,
-        deletedUser,
+      const asAdmin = callerClient(bearer);
+      const { data, error } = await asAdmin.rpc('admin_purge_contact', {
+        p_contact_id: contactId, p_confirm: 'PURGE',
       });
+      if (error) {
+        // A refusal (protected identity, company, cross-org) or any teardown
+        // problem aborts the WHOLE transaction — nothing was deleted.
+        const msg = error.message || 'could not delete the account';
+        const refused = /protected|company|not in your organization|staff access/i.test(msg);
+        return res.status(refused ? 409 : 500).json({
+          error: refused
+            ? msg
+            : 'Could not complete the deletion. Nothing was removed — the account is intact. '
+              + `(${msg})`,
+        });
+      }
+      const out = (data ?? {}) as { had_login?: boolean };
+      return res.status(200).json({ ok: true, deletedUser: out.had_login === true, deletedContact: true });
     }
 
-    return res.status(200).json({ ok: true, deletedUser, deletedContact: true });
+    // ── Team-member (user_id) path: staff accounts have no contact row.
+    //    Deleting the auth user cascades profiles / memberships / grants. ──
+    if (userId === userData.user.id) {
+      return res.status(400).json({ error: 'you cannot delete your own account' });
+    }
+    const { data: target } = await db
+      .from('profiles').select('user_id, org_id, role, contact_id').eq('user_id', userId).maybeSingle();
+    if (!target || target.org_id !== caller?.org_id) {
+      return res.status(404).json({ error: 'team member not found in your organization' });
+    }
+    if (target.role === 'SUPER_ADMIN') {
+      return res.status(403).json({ error: 'a super admin account cannot be deleted here' });
+    }
+    // If the staff member actually has a contact row, route through the atomic
+    // purge so their attribution is cleaned up the same way a client's is.
+    if (target.contact_id) {
+      const asAdmin = callerClient(bearer);
+      const { data, error } = await asAdmin.rpc('admin_purge_contact', {
+        p_contact_id: target.contact_id, p_confirm: 'PURGE',
+      });
+      if (error) {
+        const msg = error.message || 'could not delete the account';
+        const refused = /protected|company|not in your organization|staff access/i.test(msg);
+        return res.status(refused ? 409 : 500).json({
+          error: refused ? msg
+            : `Could not complete the deletion. Nothing was removed. (${msg})`,
+        });
+      }
+      return res.status(200).json({ ok: true, deletedUser: true, deletedContact: true });
+    }
+    // No contact — remove the auth user (cascades on user_id) and revoke invites.
+    const { data: authUser } = await db.schema('auth').from('users').select('email').eq('id', userId).maybeSingle();
+    const { error: delErr } = await db.auth.admin.deleteUser(userId);
+    if (delErr) return res.status(500).json({ error: `could not delete the account: ${delErr.message}` });
+    if (authUser?.email) {
+      await db.from('invitations').update({ status: 'revoked' })
+        .eq('org_id', target.org_id).ilike('email', authUser.email).eq('status', 'sent');
+    }
+    return res.status(200).json({ ok: true, deletedUser: true, deletedContact: false });
   } catch (err) {
     console.error('hard-delete-client error', err);
     return res.status(500).json({ error: 'could not complete the deletion' });

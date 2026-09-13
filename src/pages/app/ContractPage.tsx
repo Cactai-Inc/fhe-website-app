@@ -26,6 +26,7 @@ import {
   requestContractTermination, approveContractTermination, declineContractTermination,
   setDocumentPartyArchived, deleteContractWithCopy, clauseConditionMet,
   documentSignatureState, removeMySignature, requestPermissionToEdit, notifyReviewChanges,
+  notifyReviewChangesEmail,
   type ContractDetail, type ContractField, type PartyControls,
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
   type DocumentSignatureState,
@@ -389,6 +390,19 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [sigState, setSigState] = useState<DocumentSignatureState | null>(null);
   const [sigBusy, setSigBusy] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  /* The "notify the other party" prompt — shown when someone edits a document a
+     signature came off, and offered again on leaving the page so the change is
+     never stranded unseen (owner: it should notify automatically, or ask on
+     close). `notifyPrompt` carries WHY it opened so the copy can differ. */
+  const [notifyPrompt, setNotifyPrompt] = useState<null | 'edited' | 'leaving'>(null);
+  const [notifyNote, setNotifyNote] = useState('');
+  const [notifiedOnce, setNotifiedOnce] = useState(false);
+  /* ⚠️ EDIT-REMOVES-THEIR-SIGNATURE (D14 §3). When the owner side wants to change
+     a document the OTHER party signed, the edit removes that signature and a note
+     is REQUIRED — the note is what the other party sees when they are asked to
+     review and sign again. This prompt captures it. */
+  const [editUnlockNote, setEditUnlockNote] = useState('');
+  const [editUnlockOpen, setEditUnlockOpen] = useState(false);
   const [coBuyerBusy, setCoBuyerBusy] = useState(false);
   const [coBuyerPick, setCoBuyerPick] = useState('');
   const [coBuyerEntry, setCoBuyerEntry] = useState<Record<string, string>>({});
@@ -717,6 +731,20 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // once the caller themselves signs.
   const isVoid = state === 'void' || !!doc?.voided_at;
   const canVoid = !!doc?.can_void && !isVoid;
+
+  /* ⚠️ UNSENT CHANGES — a signature came off and this side has not yet told the
+     other party. The notify banner stays visible while this is true (the page
+     saying so), and leaving the tab warns. This is the "notify automatically or
+     ask on close" requirement, made non-losable. */
+  const hasUnsentChanges = !isExecuted && !notifiedOnce
+    && !!(doc as { signatures_voided_at?: string | null } | undefined)?.signatures_voided_at
+    && !(sigState?.locked_by_signature);
+  useEffect(() => {
+    if (!hasUnsentChanges) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [hasUnsentChanges]);
   // The counterparty of a void needs the same keep-or-remove choice. Show it when
   // the doc is void, they didn't do the voiding, and they haven't chosen yet.
   const needsVoidChoice = isVoid && !doc?.voided_by_me && !doc?.my_hidden_at && myRoles.length > 0;
@@ -922,6 +950,55 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     } catch (e) {
       setError(errMessage(e));
     }
+  }
+
+  /* Send the review notice — email (with the note and the changes inlined so the
+     other party can decide WITHOUT opening the contract) plus the in-app
+     notification. Falls back to in-app-only if the mailer is unreachable, so the
+     notification is never lost to a send failure. */
+  async function sendNotify(noteText: string): Promise<void> {
+    setSigBusy(true); setError(null);
+    try {
+      let msg = 'They have been notified to review the changes.';
+      try {
+        const r = await notifyReviewChangesEmail(id!, noteText || undefined);
+        msg = r.emailed > 0
+          ? `They have been emailed the changes and notified in the app.`
+          : `They have been notified in the app (no email on file).`;
+      } catch {
+        await notifyReviewChanges(id!, noteText || undefined);
+      }
+      setNotifiedOnce(true);
+      setNote(msg);
+      setNotifyPrompt(null);
+      await load({ blank: false });
+    } catch (e) {
+      setError(errMessage(e));
+    } finally { setSigBusy(false); }
+  }
+
+  /* ⚠️ D14 §3 — the owner side edits a document the other party signed. Remove
+     each OTHER signer's signature (staff acts on their behalf), capture the
+     REQUIRED note on the change log, and leave the document editable. The note
+     surfaces to them in the review notice; the document regresses to
+     AWAITING_SIGNATURE so they must review and re-sign. */
+  async function editUnlockWithNote(noteText: string): Promise<void> {
+    if (!noteText.trim()) { setError('A note is required to edit a signed document.'); return; }
+    setSigBusy(true); setError(null);
+    try {
+      const others = (sigState?.signers ?? []).filter((s) => s.contact_id);
+      for (const s of others) {
+        await removeMySignature(id!, s.contact_id);
+      }
+      // Capture the note against the document so the review notice carries it.
+      await notifyReviewChanges(id!, noteText.trim());
+      setEditUnlockOpen(false);
+      setNotifiedOnce(false);   // the changes are now unsent again
+      setNote('Their signature was removed — make your changes, then notify them to review.');
+      await load({ blank: false });
+    } catch (e) {
+      setError(errMessage(e));
+    } finally { setSigBusy(false); }
   }
 
   // Lock-for-signing gate: a party missing required info (name/address/email/phone)
@@ -1562,7 +1639,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               Signed by {sigState.signers.map((s) => s.name ?? s.party_role).join(', ')} —
               this document is read-only. {sigState.i_have_signed
                 ? 'Remove your signature to make changes.'
-                : 'Ask them to remove their signature before making changes.'}
+                : isOwnerSide
+                  ? 'Editing removes their signature and asks them to review and sign again — a note is required.'
+                  : 'Ask them to remove their signature before making changes.'}
             </p>
             <span className="flex gap-2">
               {sigState.i_have_signed ? (
@@ -1574,6 +1653,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                       .finally(() => setSigBusy(false));
                   }}>
                   Remove my signature
+                </button>
+              ) : isOwnerSide ? (
+                /* ⚠️ D14 §3 — the owner side edits by removing the OTHER party's
+                   signature, with a REQUIRED note. The note travels to them in
+                   the review notice, so they see WHY before they re-sign. */
+                <button type="button" className="btn-outline-gold text-xs" disabled={sigBusy}
+                  onClick={() => { setEditUnlockNote(''); setEditUnlockOpen(true); }}>
+                  Edit — removes their signature
                 </button>
               ) : (
                 <button type="button" className="btn-outline-gold text-xs" disabled={sigBusy}
@@ -1605,19 +1692,23 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             <span className="flex gap-2">
               {isOwnerSide ? (
                 <button type="button" className="btn-outline-gold text-xs" disabled={sigBusy}
-                  onClick={() => {
-                    setSigBusy(true);
-                    void act(() => notifyReviewChanges(id!),
-                      'They have been asked to review the changes.')
-                      .finally(() => setSigBusy(false));
-                  }}>
+                  onClick={() => { setNotifyNote(''); setNotifyPrompt('edited'); }}>
                   Notify to review
                 </button>
               ) : (
-                <button type="button" className="btn-outline-gold text-xs"
-                  onClick={() => setReviewOpen(true)}>
-                  Review the changes
-                </button>
+                <>
+                  <button type="button" className="btn-outline-gold text-xs"
+                    onClick={() => setReviewOpen(true)}>
+                    Review the changes
+                  </button>
+                  {/* The counterparty who edited can notify the OTHER side too —
+                      the flow runs in both directions (owner: after they save
+                      and exit it notifies me automatically, or asks). */}
+                  <button type="button" className="btn-outline-gold text-xs" disabled={sigBusy}
+                    onClick={() => { setNotifyNote(''); setNotifyPrompt('edited'); }}>
+                    Notify to review
+                  </button>
+                </>
               )}
             </span>
           </div>
@@ -1627,6 +1718,67 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {reviewOpen && id && (
         <ReviewChangesModal documentId={id} reviewerName={reviewerName}
           onClose={() => setReviewOpen(false)} onDone={() => { void load({ blank: false }); }} />
+      )}
+
+      {/* NOTIFY-TO-REVIEW — a note plus the in-app + email notice. Opened by the
+          "Notify to review" buttons, and again on leaving the page when a change
+          has not yet been sent (owner: it notifies automatically, or asks on
+          close). The note travels in the email so the other party reads it
+          without opening the contract. */}
+      {notifyPrompt && id && (
+        <Modal open size="sm"
+          onClose={() => setNotifyPrompt(null)}
+          title={notifyPrompt === 'leaving' ? 'Notify the other party before you go?' : 'Notify the other party'}>
+          <p className="text-sm text-green-900 mb-2">
+            {notifyPrompt === 'leaving'
+              ? 'You made changes that the other party has not been told about. Send them the changes now?'
+              : 'They will get an email with your note and exactly what changed, so they can review it without opening the contract — plus an in-app notification.'}
+          </p>
+          <label className="block text-[11px] uppercase tracking-wide text-muted mb-1" htmlFor="notify-note">
+            A note for them (optional)
+          </label>
+          <textarea id="notify-note" rows={3} className="form-input w-full mb-3"
+            value={notifyNote} onChange={(e) => setNotifyNote(e.target.value)}
+            placeholder="Anything you want them to know about the changes…" />
+          <div className="flex gap-2 justify-end">
+            <button type="button" className="btn-outline-gold text-sm"
+              onClick={() => setNotifyPrompt(null)}>
+              {notifyPrompt === 'leaving' ? 'Not now' : 'Cancel'}
+            </button>
+            <button type="button" className="btn-primary text-sm" disabled={sigBusy}
+              onClick={() => void sendNotify(notifyNote.trim())}>
+              {sigBusy ? 'Sending…' : 'Notify'}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* EDIT — REMOVES THEIR SIGNATURE (D14 §3). A note is required; it is what
+          the other party is shown when asked to review and re-sign. */}
+      {editUnlockOpen && id && (
+        <Modal open size="sm" onClose={() => setEditUnlockOpen(false)}
+          title="Edit this signed document">
+          <p className="text-sm text-green-900 mb-2">
+            This removes {sigState?.signers.map((s) => s.name ?? s.party_role).join(', ') || 'their'} signature
+            so you can make changes. They will be asked to review what changed and sign again.
+            <strong> A note is required</strong> — it travels to them with the changes.
+          </p>
+          <label className="block text-[11px] uppercase tracking-wide text-muted mb-1" htmlFor="edit-note">
+            Why are you editing? (required)
+          </label>
+          <textarea id="edit-note" rows={3} className="form-input w-full mb-3"
+            value={editUnlockNote} onChange={(e) => setEditUnlockNote(e.target.value)}
+            placeholder="Explain the change you are about to make…" />
+          <div className="flex gap-2 justify-end">
+            <button type="button" className="btn-outline-gold text-sm"
+              onClick={() => setEditUnlockOpen(false)}>Cancel</button>
+            <button type="button" className="btn-primary text-sm"
+              disabled={sigBusy || !editUnlockNote.trim()}
+              onClick={() => void editUnlockWithNote(editUnlockNote)}>
+              {sigBusy ? 'Working…' : 'Remove signature & edit'}
+            </button>
+          </div>
+        </Modal>
       )}
 
       {/* mb-6: the notify card sat almost against the title. */}

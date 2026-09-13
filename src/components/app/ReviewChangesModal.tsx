@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Modal } from '../ops/kit/Modal';
 import { BackControl } from './BackControl';
 import { toErrorMessage } from '../../lib/ops/errors';
@@ -8,18 +8,21 @@ import {
 } from '../../lib/contracts';
 
 /**
- * REVIEW CHANGES (deal plan L9) — what changed since this party's signature came
- * off, one change at a time, with Accept or Reject.
+ * REVIEW CHANGES — what changed since this party's signature came off, one change
+ * at a time.
  *
- * Reject reveals a comment field. Because the location is already known, the
- * comment is PRE-AUTHORED with a sentence naming the change, who made it, and
- * when; the reviewer adds anything further below it. Saving writes through the
- * ordinary contracts comment function, so the note lands in the comments drawer
- * exactly as if it had been written there directly — this modal is only a
- * convenience that puts it in the flow.
+ * ⚠️ D14 §2 / D29 — SEEN-IS-APPROVED. A CHANGE is something the other party was
+ * already entitled to make; it is already true. Being shown it IS the approval —
+ * there is no Accept button and no Reject button, because there is nothing to
+ * decide. (That is the distinction from a PROPOSAL, which is not yet true and
+ * does carry accept/reject/revise — a different surface entirely.)
  *
- * Skip closes without a comment but still records the rejection.
- * Back (top-left) returns to the change if they reconsider before saving.
+ * The reviewer steps Next through the changes. If they DISAGREE, the honest next
+ * step is not a "reject" verb — it is to say so: "I disagree — add a note" opens
+ * a pre-authored comment they can add to, which lands in the document's comments
+ * for the other party (owner: "if they disagree they need to contact me to
+ * discuss it or they can change the document again and add a note"). Seeing the
+ * changes without commenting leaves them free to sign again straight away.
  */
 
 function when(iso: string): string {
@@ -29,11 +32,11 @@ function when(iso: string): string {
   });
 }
 
-/** The sentence the rejection comment opens with — and its title. */
-function rejectionIntro(c: ChangeSinceSignature, reviewer: string): string {
+/** The sentence a disagreement comment opens with — and its title. */
+function disagreeIntro(c: ChangeSinceSignature, reviewer: string): string {
   const where = c.field_label ?? c.field_key ?? 'this document';
   const who = c.actor ?? 'the other party';
-  return `Change made to ${where} on ${when(c.at)} by ${who} is not accepted by ${reviewer}.`;
+  return `${reviewer} has a question about the change to ${where} made on ${when(c.at)} by ${who}.`;
 }
 
 export function ReviewChangesModal({
@@ -47,11 +50,12 @@ export function ReviewChangesModal({
 }) {
   const [changes, setChanges] = useState<ChangeSinceSignature[] | null>(null);
   const [i, setI] = useState(0);
-  const [rejecting, setRejecting] = useState(false);
+  const [commenting, setCommenting] = useState(false);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [outcomes, setOutcomes] = useState<Record<string, 'accepted' | 'rejected'>>({});
+  /** How many changes carried a disagreement note (for the closing summary). */
+  const [flagged, setFlagged] = useState(0);
 
   useEffect(() => {
     changesSinceSignature(documentId).then(setChanges)
@@ -61,44 +65,37 @@ export function ReviewChangesModal({
   const current = changes?.[i];
   const done = !!changes && i >= changes.length;
 
-  function advance(id: string, outcome: 'accepted' | 'rejected') {
-    setOutcomes((o) => ({ ...o, [id]: outcome }));
-    setRejecting(false);
+  function next() {
+    setCommenting(false);
     setNote('');
     setI((n) => n + 1);
   }
 
-  async function saveRejection(withComment: boolean) {
+  async function saveComment() {
     if (!current) return;
     setBusy(true); setErr(null);
     try {
-      if (withComment) {
-        const intro = rejectionIntro(current, reviewerName);
-        await postContractComment(documentId, {
-          body: note.trim() ? `${intro}\n\n${note.trim()}` : intro,
-          anchorKind: current.field_key ? 'field' : 'document',
-          anchorRef: current.field_key ?? null,
-        });
-      }
-      advance(current.id, 'rejected');
+      const intro = disagreeIntro(current, reviewerName);
+      await postContractComment(documentId, {
+        body: note.trim() ? `${intro}\n\n${note.trim()}` : intro,
+        anchorKind: current.field_key ? 'field' : 'document',
+        anchorRef: current.field_key ?? null,
+      });
+      setFlagged((n) => n + 1);
+      next();
     } catch (e) {
       setErr(toErrorMessage(e, 'Could not save that comment.'));
     } finally { setBusy(false); }
   }
 
-  const rejected = Object.values(outcomes).filter((o) => o === 'rejected').length;
-  const accepted = Object.values(outcomes).filter((o) => o === 'accepted').length;
-
   return (
-    /* ⚠️ TASK-FIX4 §3/§7 — converged, and the step back is `BackControl`. The
-       rejection note is a textarea, so the backdrop no longer discards it. */
     <Modal open onClose={onClose} size="md" title={done ? 'Review complete' : 'Review the changes'}
       error={err}>
         <div>
-          {rejecting && (
+          {commenting && (
             <div className="mb-3">
               <BackControl label="Back to the change"
-                onClick={() => { setRejecting(false); setNote(''); }} />
+                onClick={() => { setCommenting(false); setNote(''); }} />
             </div>
           )}
 
@@ -113,14 +110,12 @@ export function ReviewChangesModal({
           {done && changes.length > 0 && (
             <div>
               <p className="text-sm text-green-900 mb-1">
-                You reviewed {changes.length} change{changes.length === 1 ? '' : 's'}
-                {accepted > 0 ? ` — ${accepted} accepted` : ''}
-                {rejected > 0 ? `${accepted > 0 ? ',' : ' —'} ${rejected} not accepted` : ''}.
+                You've seen all {changes.length} change{changes.length === 1 ? '' : 's'}.
               </p>
               <p className="text-[12px] text-muted">
-                {rejected > 0
-                  ? 'Your comments are in the document’s comments for the other party.'
-                  : 'You can sign the document when you are ready.'}
+                {flagged > 0
+                  ? `You left ${flagged} note${flagged === 1 ? '' : 's'} for the other party in the document's comments. You can sign when you're ready, or wait to hear back.`
+                  : 'You can sign the document whenever you’re ready.'}
               </p>
               <button type="button" className="btn-primary text-sm mt-4"
                 onClick={() => { onDone?.(); onClose(); }}>
@@ -145,15 +140,17 @@ export function ReviewChangesModal({
                 Changed by {current.actor ?? 'the other party'} on {when(current.at)}.
               </p>
 
-              {!rejecting ? (
+              {!commenting ? (
                 <div className="flex gap-2">
+                  {/* Seen-is-approved: Next advances and that is the approval.
+                      No Accept/Reject verbs (D14 §2 / D29). */}
                   <button type="button" className="btn-primary text-sm" disabled={busy}
-                    onClick={() => advance(current.id, 'accepted')}>
-                    <Check size={14} /> Accept
+                    onClick={next}>
+                    {i + 1 < changes!.length ? 'Next' : 'Finish'}
                   </button>
                   <button type="button" className="btn-outline-gold text-sm" disabled={busy}
-                    onClick={() => setRejecting(true)}>
-                    Reject
+                    onClick={() => setCommenting(true)}>
+                    I disagree — add a note
                   </button>
                 </div>
               ) : (
@@ -162,20 +159,16 @@ export function ReviewChangesModal({
                     This note goes to the other party:
                   </p>
                   <p className="text-[12.5px] text-green-950 bg-cream-100/60 border border-green-800/10 rounded p-2.5 mb-2">
-                    {rejectionIntro(current, reviewerName)}
+                    {disagreeIntro(current, reviewerName)}
                   </p>
                   <textarea className="form-input min-h-[5rem]" value={note}
                     aria-label="Add to your comment"
-                    placeholder="Add anything you want them to know (optional)"
+                    placeholder="Tell them what you'd like to discuss (optional)"
                     onChange={(e) => setNote(e.target.value)} />
                   <div className="flex gap-2 mt-2">
                     <button type="button" className="btn-primary text-sm" disabled={busy}
-                      onClick={() => void saveRejection(true)}>
-                      {busy && <Loader2 size={14} className="animate-spin" />} Save comment
-                    </button>
-                    <button type="button" className="btn-outline-gold text-sm" disabled={busy}
-                      onClick={() => void saveRejection(false)}>
-                      Skip
+                      onClick={() => void saveComment()}>
+                      {busy && <Loader2 size={14} className="animate-spin" />} Save note & continue
                     </button>
                   </div>
                 </div>

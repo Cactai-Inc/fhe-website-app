@@ -81,6 +81,7 @@ import { verifyWithPassword, verifyWithGoogle } from './lib/emailChange';
 // longer mount their own routes — they are tabs inside RecordsPage now.
 // Imported there, not here.
 import RecordsPage from './pages/app/RecordsPage';
+import PersonRecordPage from './pages/app/PersonRecordPage';
 // Ops / CRM (staff/admin)
 import OpsHome from './pages/app/OpsHome';
 import InstructorHomePreview from './pages/app/ops/InstructorHomePreview';
@@ -334,6 +335,10 @@ export function AppRoutes() {
                   Vendors · Horses, one tab strip over independent renderers.
                   Supersedes TASK-ONEPEOPLE. /app/records bare = the All tab. */}
               <Route path="records" element={<ProtectedRoute requireStaff><RecordsPage /></ProtectedRoute>} />
+              {/* The client record is now a routed PAGE (owner 2026-09-12), not an
+                  overlay. `person/:contactId` sits ABOVE `:tab` so the static
+                  segment wins; ContactDossierModal now redirects here. */}
+              <Route path="records/person/:contactId" element={<ProtectedRoute requireStaff><PersonRecordPage /></ProtectedRoute>} />
               <Route path="records/:tab" element={<ProtectedRoute requireStaff><RecordsPage /></ProtectedRoute>} />
               {/* RETIRED 2026-08-12 (TASK-RECORDS): the Clients page folded into
                   Records as its own tab. RedirectWithQuery preserves ?open=<id>,

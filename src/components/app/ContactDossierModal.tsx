@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   contactDossier, updateContactRecord, setContactType,
   listLookupOptionsAll, addLookupValue,
@@ -21,7 +20,8 @@ import {
 import { AutoSaveIndicator } from '../ops/kit/AutoSaveIndicator';
 import { StaffStandingSlotSection } from './StandingSlotPicker';
 import { ClientInvitationSection } from './ClientInvitationSection';
-import { fetchClientStandingSlots } from '../../lib/ops/api-calendar';
+import { fetchClientStandingSlots, adminCancelBooking } from '../../lib/ops/api-calendar';
+import { voidOrder } from '../../lib/ops/api-intake';
 import { markOrderPaid } from '../../lib/ops/api-payments';
 import { asRecordedDate, barnToday } from '../../lib/recordedDate';
 import { RecordedDateField } from './RecordedDateField';
@@ -100,8 +100,13 @@ import { orderStatusLabel } from '../../lib/orderStatus';
  * everything editable is editable.
  */
 
-type Tab = 'record' | 'relationships' | 'bookings' | 'documents' | 'orders'
-  | 'paperwork' | 'account' | 'activity';
+/* ⚠️ TWO AREAS, owner ruling 2026-09-12 (this session). The eight tabs collapse
+   into two: ACCOUNT (who they are + how we administer them: profile, account
+   information, login, documents/paperwork, and the danger zone) and ACTIVITY
+   (what they did: posts, saved, bookings, orders, lessons, services). Documents
+   live in Account, not duplicated in Activity — one home. The cancel/void
+   controls live on the Bookings and Orders lists inside Activity, staff-only. */
+type Tab = 'account' | 'activity';
 
 const FIELD_GROUPS: { title: string; fields: [string, string][] }[] = [
   { title: 'Name and contact', fields: [
@@ -215,16 +220,27 @@ function OriginChannelSelect({
   );
 }
 
-export function ContactDossierModal({
-  contactId, onClose, onChanged,
+/**
+ * PERSON RECORD — the one client-record surface, now a routed PAGE
+ * (`/app/records/person/:contactId`) rather than an overlay (owner ruling
+ * 2026-09-12). Two areas: Account and Activity. Reached from every people list;
+ * `ContactDossierModal` below is a thin redirect that keeps old callers working.
+ *
+ * ⚠️ This overrides CR-74/CR-75's "the client record is an expanding row, not a
+ * page you travel to" — the owner asked for a routed page in this session, after
+ * seeing the modal, so it is a deliberate change of that earlier ruling.
+ */
+export function PersonRecord({
+  contactId, onChanged, onGone,
 }: {
   contactId: string;
-  onClose: () => void;
-  /** Fired after any save, so the list behind the modal can refresh. */
+  /** Fired after any save, so a list behind the page can refresh. */
   onChanged?: () => void;
+  /** The person is gone (archived / hard-deleted) — the page navigates away. */
+  onGone?: () => void;
 }) {
   const [d, setD] = useState<ContactDossier | null>(null);
-  const [tab, setTab] = useState<Tab>('record');
+  const [tab, setTab] = useState<Tab>('account');
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState<Record<string, unknown>>({});
@@ -287,7 +303,6 @@ export function ContactDossierModal({
   flushRef.current = save.flush;
   useEffect(() => () => { void flushRef.current(); }, []);
 
-  const requestClose = () => { onClose(); };
 
   /* ⚠️ TASK-MODAL2 D1 — ESCAPE NO LONGER CLOSES THIS RECORD, AND THE LISTENER IS
      GONE RATHER THAN NEUTERED. FIX4 kept Escape deliberately, on the reasoning
@@ -351,44 +366,19 @@ export function ContactDossierModal({
     || (c.email as string | null) || 'Contact';
 
   const input = 'w-full px-2.5 py-1.5 rounded-lg border border-green-800/15 text-sm text-green-900 focus-ring bg-white';
-  /* ⚠️ ONE TAB SET, EVERY STAGE (TASK-FIX2 §3). Every tab renders for every
-     person; a section inside one is absent only when its OWN data is absent, the
-     way `StaffStandingSlotSection` already behaves. Nothing here asks "do they
-     have a login?" to decide WHICH SURFACE you see — that question was
-     `Admin.tsx`'s and it is what left 17 of 24 people looking at nothing. */
+  /* TWO AREAS (owner 2026-09-12). Account = who they are + how we administer them;
+     Activity = what they did. Counts are on the money surfaces the owner watches. */
   const TABS: [Tab, string, number | null][] = [
-    ['record', 'Record', null],
-    ['relationships', 'Relationships', (d?.family.dependants.length ?? 0) + (d?.horses.length ?? 0)],
-    ['bookings', 'Bookings', null],
-    ['documents', 'Documents', d?.documents.length ?? 0],
-    ['orders', 'Orders', d?.orders.length ?? 0],
-    ['paperwork', 'Paperwork', null],
     ['account', 'Account', null],
-    ['activity', 'Activity', null],
+    ['activity', 'Activity', (d?.orders.length ?? 0)],
   ];
 
   return (
-    /* ⚠️ TASK-FIX4 §3 — the backdrop no longer closes this record. It is the most
-       field-dense surface in the app; a stray click beside it was CR-68a. This
-       one keeps its hand-rolled shell deliberately (see the note at the top of
-       the file): it is a fixed-height, tab-railed record surface, not a box
-       around a form. What it shares with every converged dialog is the RULES,
-       not the markup — and ⚠️ TASK-MODAL2 applies all of them here by hand: no
-       backdrop close, no Escape close (D1), and the save state in the header
-       beside Close, reading `Saved` (D3). */
-    <div className="fixed inset-0 z-50 grid place-items-center bg-green-950/40 px-4 py-8"
-      role="dialog" aria-modal="true" aria-label={`${name} record`}>
-      {/* ⚠️ ONE SIZE, ALWAYS (owner, 2026-08-25): "keep it one size dont change it
-          based on the contents when i switch tabs it is constantly resizing and it
-          stays center aligned which makes it really uncomfortable." `max-h-full` let
-          the height follow the tab's content, so every tab change re-centred the box
-          under the cursor. A fixed height holds still; the body scrolls instead. */}
-      {/* AR2 F14: `dvh`, not `vh`. On iOS `vh` measures the chrome-less viewport, so
-          the footer went under the browser bar on the owner's working device —
-          the repo's newer overlays (Modal, CreateModal, HorseRecordsPage, the
-          add-horse sheet two files away) all use `dvh` already. */}
-      <div className="bg-white rounded-2xl border border-green-800/10 w-full max-w-3xl h-[85dvh] flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}>
+    /* A routed PAGE (owner 2026-09-12) — no overlay chrome. The auto-save
+       indicator stays (it is how the person knows their typing was kept); there
+       is no close button, because leaving the page is the browser's back. */
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-white rounded-2xl border border-green-800/10 flex flex-col overflow-hidden">
 
         <div className="flex items-start gap-3 px-5 py-4 border-b border-green-800/10">
           <div className="min-w-0 flex-1">
@@ -399,21 +389,7 @@ export function ContactDossierModal({
               {d?.account ? ' · has an account' : ' · no account'}
             </p>
           </div>
-          {/* ⚠️ THE INDICATOR IS NOT OPTIONAL. With no Save button and no
-              commit-on-close, it is the only thing telling the person their
-              typing was kept — *"we need to show auto-save so the user knows the
-              inputs are saved."*
-              ⚠️ TASK-MODAL2 D3 — IT SITS HERE, BESIDE THE CLOSE ICON, and it
-              reads `Saved`. It used to pass `savedLabel="Saved to the record"`;
-              the owner named the word — *"a green checkmark with the word saved
-              in green (light green)"* — so the custom label is gone. This is the
-              same position `ops/kit/Modal` now renders it in, reached by hand
-              because this surface keeps its own shell. */}
           <AutoSaveIndicator status={save.status} />
-          <button type="button" onClick={requestClose} aria-label="Close"
-            className="p-1.5 rounded-lg text-muted hover:bg-green-800/5 focus-ring shrink-0">
-            <X size={18} />
-          </button>
         </div>
 
         {(err ?? save.error) && <p role="alert" className="form-error mx-5 mt-3">{err ?? save.error}</p>}
@@ -435,7 +411,7 @@ export function ContactDossierModal({
           {TABS.map(([id, label, count]) => (
             <button key={id} type="button" onClick={() => setTab(id)}
               aria-current={tab === id ? 'page' : undefined}
-              className={`px-3 py-1.5 rounded-full text-[12.5px] focus-ring ${
+              className={`px-4 py-2 rounded-full text-sm font-medium focus-ring ${
                 tab === id ? 'bg-green-800 text-white' : 'bg-green-800/10 text-green-800 hover:bg-green-800/20'}`}>
               {label}{count ? ` (${count})` : ''}
             </button>
@@ -445,7 +421,7 @@ export function ContactDossierModal({
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4">
           {!d ? <p className="text-sm text-muted">Loading…</p> : (
             <>
-              {tab === 'record' && (
+              {tab === 'account' && (
                 <div className="flex flex-col gap-5">
                   <div>
                     <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">Filed under</p>
@@ -535,7 +511,7 @@ export function ContactDossierModal({
                 </div>
               )}
 
-              {tab === 'relationships' && (
+              {tab === 'account' && (
                 <div className="flex flex-col gap-5">
                   <Section title="Guardian">
                     {d.family.guardian
@@ -567,11 +543,7 @@ export function ContactDossierModal({
                   `account_contact_id` (staff RLS is `has_staff_access()`), and
                   `purchases` carries `buyer_contact_id` on every live row, so both
                   read off the CONTACT and work at every stage. */}
-              {tab === 'bookings' && (
-                <ContactSessionsTab contactId={contactId} />
-              )}
-
-              {tab === 'documents' && (
+              {tab === 'account' && (
                 <div className="flex flex-col gap-5">
                   {!archived && (
                     <div className="flex flex-wrap items-center gap-3">
@@ -602,8 +574,14 @@ export function ContactDossierModal({
                 </div>
               )}
 
-              {tab === 'orders' && (
-                <div className="flex flex-col gap-5">
+              {tab === 'activity' && (
+                <div className="flex flex-col gap-6">
+                  {/* BOOKINGS — with staff cancel controls (owner 2026-09-12).
+                      One or all-future for a weekly rider. */}
+                  <ContactSessionsTab contactId={contactId} archived={archived}
+                    onChanged={() => { load(); setOrdersKey((k) => k + 1); }} />
+
+                  <div className="flex flex-col gap-5">
                   {/* ⚠️ THE ORDER COMES FIRST (owner, 2026-08-25): "the order should be
                       the first thing on the page not the last". It was last, under a
                       standing-time editor for a plan the reader had not been shown yet.
@@ -661,11 +639,22 @@ export function ContactDossierModal({
                               review uses. `draft` is INCLUDED: production held
                               one ($880, PUR-000302) that no surface in the app
                               could settle. A void order is not money owed. */}
-                          {!archived && o.payment_status !== 'paid' && o.status !== 'void' && (
-                            <SettleOrderControl order={o} onSettled={(m) => {
-                              setOrderNote(m); load(); setOrdersKey((k) => k + 1);
-                            }} />
-                          )}
+                          <div className="flex flex-wrap gap-2 pl-4">
+                            {!archived && o.payment_status !== 'paid' && o.status !== 'void' && (
+                              <SettleOrderControl order={o} onSettled={(m) => {
+                                setOrderNote(m); load(); setOrdersKey((k) => k + 1);
+                              }} />
+                            )}
+                            {/* CANCEL THE WHOLE ORDER (owner 2026-09-12). Voids every
+                                live line — the order voids when the last one goes,
+                                and any booking on it releases its slot. Evidence
+                                retained (D32). A void order has nothing to cancel. */}
+                            {!archived && o.status !== 'void' && (o.items ?? []).some((it) => !it.voided_at) && (
+                              <CancelOrderControl order={o} onCancelled={(m) => {
+                                setOrderNote(m); load(); setOrdersKey((k) => k + 1);
+                              }} />
+                            )}
+                          </div>
                         </div>
                       ))}
                     {!archived && (
@@ -694,10 +683,11 @@ export function ContactDossierModal({
                       personName={[c.first_name, c.last_name].filter(Boolean).join(' ') || null}
                     />
                   )}
+                  </div>
                 </div>
               )}
 
-              {tab === 'paperwork' && <PaperworkEditor contactId={contactId} />}
+              {tab === 'account' && <PaperworkEditor contactId={contactId} />}
 
               {/* ⚠️ TASK-FIX2 §3 — THE ACCOUNT TAB IS NOW STAGE-DEPENDENT CONTENT,
                   NOT A STAGE-DEPENDENT SURFACE. It used to fork on `d.account` into
@@ -773,16 +763,6 @@ export function ContactDossierModal({
                           Open the message thread with {name}
                         </Link>
                       </Section>
-                      {d.posts && (
-                        <Section title="Posts">
-                          {d.posts.length === 0 ? <Empty>None.</Empty>
-                            : d.posts.map((pp) => (
-                              <Row key={pp.id} main={pp.body || `(${pp.post_type})`}
-                                sub={new Date(pp.created_at).toLocaleDateString()}
-                                badge={pp.pulled_down ? 'pulled' : pp.published ? 'live' : 'draft'} />
-                            ))}
-                        </Section>
-                      )}
                     </>
                   ) : (
                     <Empty>
@@ -809,12 +789,22 @@ export function ContactDossierModal({
                     isSuspended={d.account?.is_suspended ?? false}
                     archived={archived}
                     onChanged={() => { load(); onChanged?.(); }}
-                    onGone={() => { onChanged?.(); onClose(); }} />
+                    onGone={() => { onChanged?.(); onGone?.(); }} />
                 </div>
               )}
 
               {tab === 'activity' && (
                 <div className="flex flex-col gap-5">
+                  {d.posts && (
+                    <Section title="Posts">
+                      {d.posts.length === 0 ? <Empty>None.</Empty>
+                        : d.posts.map((pp) => (
+                          <Row key={pp.id} main={pp.body || `(${pp.post_type})`}
+                            sub={new Date(pp.created_at).toLocaleDateString()}
+                            badge={pp.pulled_down ? 'pulled' : pp.published ? 'live' : 'draft'} />
+                        ))}
+                    </Section>
+                  )}
                   <Section title="Notifications">
                     {d.notifications.length === 0 ? <Empty>None.</Empty>
                       : d.notifications.map((n) => (
@@ -854,9 +844,6 @@ export function ContactDossierModal({
               disabled={archived || Object.keys(dirty).length === 0}>
               Clear unsaved edits
             </button>
-            <button type="button" className="btn-primary text-sm" onClick={requestClose}>
-              Close
-            </button>
           </div>
         </div>
       </div>
@@ -884,23 +871,39 @@ export function ContactDossierModal({
  * spine, and both tables' staff RLS is `has_staff_access()`, so this reads the same
  * facts off the contact and works at every stage.
  */
-function ContactSessionsTab({ contactId }: { contactId: string }) {
-  const [sessions, setSessions] = useState<{
-    id: string; starts_at: string; kind: string; status: string; notes: string | null;
-  }[] | null>(null);
+interface SessionRow {
+  id: string; starts_at: string; kind: string; status: string;
+  notes: string | null; offering_id: string | null;
+}
+function ContactSessionsTab({ contactId, archived, onChanged }: {
+  contactId: string; archived?: boolean; onChanged?: () => void;
+}) {
+  const [sessions, setSessions] = useState<SessionRow[] | null>(null);
   const [payments, setPayments] = useState<{
     id: string; amount: number | null; payment_method: string | null;
     payment_reference: string | null; payment_status: string | null; created_at: string;
   }[] | null>(null);
+  const [cancelId, setCancelId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    void supabase.from('bookings')
+      .select('id, starts_at, kind, status, notes, offering_id')
+      .eq('account_contact_id', contactId)
+      .order('starts_at', { ascending: false })
+      .limit(100)
+      .then(({ data }) => setSessions((data ?? []) as SessionRow[]));
+  }, [contactId]);
 
   useEffect(() => {
     let alive = true;
     void supabase.from('bookings')
-      .select('id, starts_at, kind, status, notes')
+      .select('id, starts_at, kind, status, notes, offering_id')
       .eq('account_contact_id', contactId)
       .order('starts_at', { ascending: false })
       .limit(100)
-      .then(({ data }) => { if (alive) setSessions(data ?? []); });
+      .then(({ data }) => { if (alive) setSessions((data ?? []) as SessionRow[]); });
     void supabase.from('purchases')
       .select('id, amount, payment_method, payment_reference, payment_status, created_at')
       .eq('buyer_contact_id', contactId)
@@ -913,14 +916,66 @@ function ContactSessionsTab({ contactId }: { contactId: string }) {
   const upcoming = (sessions ?? []).filter((b) => new Date(b.starts_at) >= new Date());
   const past = (sessions ?? []).filter((b) => new Date(b.starts_at) < new Date());
 
+  async function cancel(b: SessionRow, scope: 'one' | 'future') {
+    setBusy(true); setErr(null);
+    try {
+      const reason = window.prompt(
+        scope === 'future'
+          ? 'Cancel this booking AND all future ones in this weekly series? Reason (optional):'
+          : 'Cancel this booking? Reason (optional):', '');
+      if (reason === null) { setBusy(false); return; }   // dismissed
+      const r = await adminCancelBooking(b.id, scope, reason.trim() || undefined);
+      setCancelId(null);
+      load(); onChanged?.();
+      setErr(null);
+      // brief inline confirmation via the notes reload; count comes back in r
+      if (r.cancelled === 0) setErr('Nothing was cancelled — it may already be cancelled or completed.');
+    } catch (e) {
+      setErr(toErrorMessage(e, 'Could not cancel that booking.'));
+    } finally { setBusy(false); }
+  }
+
+  /** A scheduled, future booking can be cancelled; a recurring rider's row also
+   *  offers "and all future". */
+  function CancelControls({ b }: { b: SessionRow }) {
+    if (archived || b.status !== 'scheduled') return null;
+    if (cancelId !== b.id) {
+      return (
+        <button type="button" onClick={() => setCancelId(b.id)}
+          className="text-[11px] text-red-700 border border-red-300 rounded px-2 py-0.5 hover:bg-red-50 focus-ring">
+          Cancel
+        </button>
+      );
+    }
+    return (
+      <span className="flex gap-1.5">
+        <button type="button" disabled={busy} onClick={() => void cancel(b, 'one')}
+          className="text-[11px] text-red-700 border border-red-300 rounded px-2 py-0.5 hover:bg-red-50 focus-ring">
+          Just this one
+        </button>
+        <button type="button" disabled={busy} onClick={() => void cancel(b, 'future')}
+          className="text-[11px] text-red-700 border border-red-300 rounded px-2 py-0.5 hover:bg-red-50 focus-ring">
+          This + all future
+        </button>
+        <button type="button" onClick={() => setCancelId(null)}
+          className="text-[11px] text-muted px-1">Keep</button>
+      </span>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5">
+      {err && <p role="alert" className="form-error">{err}</p>}
       <Section title="Upcoming">
         {sessions === null ? <Empty>Loading…</Empty>
           : upcoming.length === 0 ? <Empty>Nothing on the calendar.</Empty>
           : upcoming.map((b) => (
-            <Row key={b.id} main={new Date(b.starts_at).toLocaleString()}
-              sub={b.notes ?? undefined} badge={b.status} />
+            <div key={b.id} className="flex items-baseline gap-2 border-b border-green-800/[0.06] pb-1.5">
+              <span className="text-sm text-green-900 min-w-0 flex-1">{new Date(b.starts_at).toLocaleString()}</span>
+              {b.notes && <span className="text-[11px] text-muted shrink-0 max-w-[40%] truncate">{b.notes}</span>}
+              <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-cream-100 text-secondary border border-green-800/10 shrink-0">{b.status}</span>
+              <CancelControls b={b} />
+            </div>
           ))}
       </Section>
       <Section title="Past">
@@ -1133,6 +1188,58 @@ function SettleOrderControl({ order, onSettled }: {
   );
 }
 
+/** CANCEL A WHOLE ORDER (owner 2026-09-12) — voids every live line through
+ *  `admin_void_order`; the order voids when the last one goes, and bookings on it
+ *  release their slot. Evidence retained (D32). States itself and captures a
+ *  reason before it acts (D19). */
+function CancelOrderControl({ order, onCancelled }: {
+  order: ContactDossier['orders'][number];
+  onCancelled: (message: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [working, setWorking] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function doCancel() {
+    setWorking(true); setErr(null);
+    try {
+      const r = await voidOrder(order.purchase_id, reason.trim() || undefined);
+      onCancelled(`Order cancelled — ${r.voided_items} line${r.voided_items === 1 ? '' : 's'} voided. It is kept on file as evidence.`);
+      setOpen(false); setReason('');
+    } catch (e) {
+      setErr(toErrorMessage(e, 'Could not cancel this order.'));
+    } finally { setWorking(false); }
+  }
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)}
+        className="self-start border border-red-300 text-red-700 text-[11.5px] font-medium px-2 py-0.5 rounded hover:bg-red-50 focus-ring">
+        Cancel order
+      </button>
+    );
+  }
+  return (
+    <div className="border border-red-200 bg-red-50/40 rounded p-3 flex flex-col gap-2 w-full">
+      <p className="text-[11.5px] text-green-900">
+        Cancel the whole order? Every line is voided and any booking on it releases its time.
+        The order is kept on file as evidence.
+      </p>
+      <input value={reason} onChange={(e) => setReason(e.target.value)}
+        placeholder="Reason (optional)" className="form-input text-sm py-1" />
+      <div className="flex gap-2">
+        <button type="button" disabled={working} onClick={() => void doCancel()}
+          className="text-xs font-medium bg-red-600 text-white rounded px-3 py-1 hover:bg-red-700 focus-ring disabled:opacity-50">
+          {working ? 'Cancelling…' : 'Cancel order'}
+        </button>
+        <button type="button" onClick={() => setOpen(false)} className="text-xs text-muted px-2">Keep</button>
+      </div>
+      {err && <p role="alert" className="form-error text-xs">{err}</p>}
+    </div>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
@@ -1158,4 +1265,28 @@ function Row({ main, sub, badge }: { main: string; sub?: string; badge?: string 
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className="text-sm text-muted">{children}</p>;
+}
+
+/**
+ * ⚠️ COMPATIBILITY REDIRECT (owner 2026-09-12). The client record is now a routed
+ * PAGE (`/app/records/person/:contactId`, rendered by `PersonRecordPage`), not an
+ * overlay. Every old caller that rendered `<ContactDossierModal contactId=… />`
+ * keeps working: this navigates to the page instead of opening a modal, so there
+ * is ONE record surface and the two-layout split is gone. `onChanged` is not
+ * needed once we navigate away (the page loads fresh); `onClose` is accepted and
+ * ignored — the page has no modal to close.
+ */
+export function ContactDossierModal({
+  contactId, onClose,
+}: {
+  contactId: string;
+  onClose?: () => void;
+  onChanged?: () => void;
+}) {
+  const navigate = useNavigate();
+  useEffect(() => {
+    onClose?.();
+    navigate(`/app/records/person/${contactId}`);
+  }, [contactId, navigate, onClose]);
+  return null;
 }

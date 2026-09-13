@@ -342,6 +342,21 @@ export async function setChangeFeeSchedule(rows: Array<{
   return Number(data ?? 0);
 }
 
+/** Staff cancel a booking directly, and — for a recurring rider — its future
+ *  siblings in one act. Scope: 'one' | 'future' | 'all'. The cancel releases the
+ *  fulfillment unit (slot/credit returns) via the existing booking trigger, and
+ *  notifies the member. Distinct from `requestBookingChange`, which is the
+ *  member-initiated request-and-fee flow. */
+export async function adminCancelBooking(
+  bookingId: string, scope: 'one' | 'future' | 'all' = 'one', reason?: string,
+): Promise<{ cancelled: number; scope: string }> {
+  const { data, error } = await supabase.rpc('admin_cancel_booking', {
+    p_booking_id: bookingId, p_scope: scope, p_reason: reason ?? null,
+  });
+  if (error) throw error;
+  return data as { cancelled: number; scope: string };
+}
+
 export type ChangeKind = 'reschedule' | 'cancel' | 'defer';
 
 export interface ChangeResult {

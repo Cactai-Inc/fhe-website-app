@@ -1661,7 +1661,7 @@ export async function requestPermissionToEdit(
   return data as { notified: number };
 }
 
-/** Tell the other parties there are changes to review. */
+/** Tell the other parties there are changes to review (in-app notification only). */
 export async function notifyReviewChanges(
   documentId: string, message?: string,
 ): Promise<{ notified: number }> {
@@ -1670,6 +1670,26 @@ export async function notifyReviewChanges(
   });
   if (error) throw error;
   return data as { notified: number };
+}
+
+/** Notify the other party BY EMAIL as well as in-app — the note and the actual
+ *  field changes are inlined in the message so they can decide WITHOUT opening
+ *  the contract (owner requirement, BOS flow). Falls back to the in-app-only
+ *  path above if the mailer is unreachable, so a failed send never blocks the
+ *  notification. */
+export async function notifyReviewChangesEmail(
+  documentId: string, note?: string,
+): Promise<{ emailed: number; notified: number }> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  const res = await fetch('/api/contract-review-notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ documentId, note: note ?? null }),
+  });
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(payload.error || 'Could not send the review notice.');
+  return { emailed: Number(payload.emailed ?? 0), notified: Number(payload.notified ?? 0) };
 }
 
 export interface ChangeSinceSignature {

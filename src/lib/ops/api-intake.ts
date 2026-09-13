@@ -477,3 +477,13 @@ export async function voidOrderItem(itemId: string, reason?: string): Promise<vo
   });
   if (error) throw error;
 }
+
+/** Cancel a WHOLE order — voids every live line (which recomputes the total and
+ *  voids the order when the last one goes). Staff only; evidence retained. */
+export async function voidOrder(purchaseId: string, reason?: string): Promise<{ voided_items: number; status: string }> {
+  const { data, error } = await supabase.rpc('admin_void_order', {
+    p_purchase_id: purchaseId, p_reason: reason ?? null,
+  });
+  if (error) throw error;
+  return data as { voided_items: number; status: string };
+}
