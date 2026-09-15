@@ -1026,8 +1026,17 @@ function AccountDangerZone({
   onGone: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [hardConfirm, setHardConfirm] = useState('');
   const [err, setErr] = useState<string | null>(null);
+  /* ⚠️ HARD DELETE BY REASON (owner, 2026-09-14). `admin_purge_contact` already
+     tears everything down atomically (docs, signatures, orders, bookings), so the
+     old "type DELETE, refused if signed docs" framing is gone. Instead we ASK WHY
+     the delete is OK, and only two reasons authorise a hard delete:
+       • test  — a client I set up to test the system.
+       • no_show — did paperwork, never paid, never took a service; not needed.
+     A real client with activity is soft-deleted (archived) instead. The reason is
+     recorded. */
+  const [deleteReason, setDeleteReason] = useState<'' | 'test' | 'no_show'>('');
+  const [ack, setAck] = useState(false);
 
   async function act(fn: () => Promise<unknown>, gone = false) {
     setErr(null);
@@ -1087,19 +1096,45 @@ function AccountDangerZone({
           <div className="border-t border-red-200 pt-3">
             <p className="text-sm font-medium text-red-700">Hard delete — nuclear, irreversible</p>
             <p className="text-[12px] text-muted mb-2">
-              Erases all traces: the login and their records. Refused if a signed agreement references them.
-              Type <span className="font-mono font-semibold">DELETE</span> to enable.
+              Erases <strong>everything</strong>: the login, paperwork, orders, scheduled bookings and
+              activity. This is only right in two cases — otherwise use <em>Archive</em> above, which
+              keeps the record and hides it. Tell me which this is:
             </p>
-            <div className="flex items-center gap-2">
-              <input value={hardConfirm} onChange={(e) => setHardConfirm(e.target.value)}
-                placeholder="DELETE"
-                className="px-3 py-2 rounded-lg border border-red-300 text-sm focus-ring w-32" />
-              <button type="button" disabled={hardConfirm !== 'DELETE'}
-                onClick={() => void act(() => adminHardDeleteClient(contactId), true)}
-                className="px-3.5 py-2 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 focus-ring disabled:opacity-40 disabled:cursor-not-allowed">
-                Hard delete
-              </button>
+            {/* The two reasons that authorise wiping FK-referenced content. */}
+            <div className="flex flex-col gap-1.5 mb-2">
+              <label className="flex items-start gap-2 text-[12.5px] text-green-900 cursor-pointer">
+                <input type="radio" name="del-reason" className="accent-red-600 mt-0.5"
+                  checked={deleteReason === 'test'}
+                  onChange={() => { setDeleteReason('test'); setAck(false); }} />
+                <span><strong>A test client</strong> I set up to try the system — none of it is real.</span>
+              </label>
+              <label className="flex items-start gap-2 text-[12.5px] text-green-900 cursor-pointer">
+                <input type="radio" name="del-reason" className="accent-red-600 mt-0.5"
+                  checked={deleteReason === 'no_show'}
+                  onChange={() => { setDeleteReason('no_show'); setAck(false); }} />
+                <span><strong>Did paperwork, never paid, never took a service.</strong> Until they pay
+                  and show up their records aren&apos;t needed and shouldn&apos;t take up space.</span>
+              </label>
             </div>
+            {deleteReason && (
+              <>
+                <label className="flex items-start gap-2 text-[12px] text-red-800 mb-2 cursor-pointer">
+                  <input type="checkbox" className="accent-red-600 mt-0.5"
+                    checked={ack} onChange={(e) => setAck(e.target.checked)} />
+                  <span>I understand this permanently deletes {deleteReason === 'test' ? 'this test client' : 'this client'} and
+                    <strong> all of their paperwork, orders, bookings and activity</strong>. It cannot be undone.</span>
+                </label>
+                <button type="button" disabled={!ack}
+                  onClick={() => void act(() => adminHardDeleteClient(contactId), true)}
+                  className="px-3.5 py-2 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 focus-ring disabled:opacity-40 disabled:cursor-not-allowed">
+                  Delete this client and everything of theirs
+                </button>
+              </>
+            )}
+            <p className="text-[11px] text-muted mt-2">
+              A real client with real activity? Don&apos;t hard delete — use <em>Archive</em>, which hides
+              them and their content everywhere except Records › Archived, where you can still view it.
+            </p>
           </div>
         </div>
       )}
