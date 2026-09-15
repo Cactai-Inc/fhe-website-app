@@ -82,6 +82,17 @@
     @apply bg-cream text-green-900 font-sans;
     font-size: 1rem;
     line-height: 1.7;
+    /* Owner, 2026-09-14: on iPhone the page opened wider than the screen and you
+       had to pinch-zoom out; some surfaces slid side to side past the edges. A
+       wide child (the calendar's min-width, a data table) was pushing the whole
+       document past the viewport. `overflow-x: clip` HERE — on body, not on
+       <html> — contains that: body is not the scroll-anchoring root, so it does
+       NOT reintroduce the contract-authoring scroll-to-top regression that took
+       clip off <html> in 2026-08-08 (see the html rule above). This is exactly
+       the "clip it on THAT element rather than the document root" that comment
+       asks for. Vertical scroll and rubber-band are untouched; only sideways
+       overflow is clipped, which is what makes the page fit the device width. */
+    overflow-x: clip;
   }
 
   h1, h2, h3, h4, h5, h6 {

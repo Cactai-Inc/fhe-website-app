@@ -182,6 +182,18 @@ function itemLabel(item: CalendarItem): string {
   return 'Reserved';
 }
 
+/** ⚠️ MONTH VIEW parity with the week grid (owner, 2026-09-14): staff see the
+ *  client name and the activity, not "Reserved". Same rule as WeekBlockLabel:
+ *  name + activity when we have them, else the opaque label. Kept to one line
+ *  because a month chip is tiny. */
+function monthChipLabel(item: CalendarItem): string {
+  const who = item.client_name?.trim();
+  const what = item.offering_name?.trim();
+  if (who && what) return `${who} · ${what}`;
+  if (who || what) return (who || what) as string;
+  return itemLabel(item);
+}
+
 export default function CalendarPage() {
   useDocumentTitle('Calendar');
   /* TASK-DASHBOARDBUILD — THE REACH FOR EVERY SESSION ROW (D17).
@@ -600,6 +612,23 @@ export default function CalendarPage() {
   );
 }
 
+/** The current viewport height, updated on resize/orientation — so the week grid
+ *  can size its hours to fit the screen (owner, 2026-09-14: the whole day must be
+ *  visible without scrolling). SSR-safe default. */
+function useViewportHeight(): number {
+  const [h, setH] = useState(() => (typeof window === 'undefined' ? 800 : window.innerHeight));
+  useEffect(() => {
+    const on = () => setH(window.innerHeight);
+    window.addEventListener('resize', on);
+    window.addEventListener('orientationchange', on);
+    return () => {
+      window.removeEventListener('resize', on);
+      window.removeEventListener('orientationchange', on);
+    };
+  }, []);
+  return h;
+}
+
 function WeekGrid({
   weekStart,
   openHour,
@@ -627,8 +656,17 @@ function WeekGrid({
        within a day column by its start minute, height in proportion to length.
      • WHO + WHAT. Staff see the client's name and the activity; the fill is the
        status (itemClass). Clicking a block opens the full panel; clicking empty
-       space starts a booking at that time. */
-  const HOUR_PX = 56;
+       space starts a booking at that time.
+     • ⚠️ FITS THE SCREEN (owner, 2026-09-14). The whole day must be visible with
+       no vertical scroll. The hour height is derived from the viewport: the day
+       is squeezed so all its hours fit the space below the header, floored at a
+       height that keeps a 60-min block legible and capped so a short day does not
+       stretch into giant rows. Empty hours shrink; sessions stay proportional. */
+  const vh = useViewportHeight();
+  // ~ header + nav chrome + page padding reserved above the grid. Tuned to the
+  // app shell; the floor/ceiling keep it sane on any device.
+  const available = Math.max(320, vh - 260);
+  const HOUR_PX = Math.min(64, Math.max(34, Math.floor(available / hours.length)));
   const PER_MIN = HOUR_PX / 60;
 
   /** Real sessions only — the furniture is gone. */
@@ -805,7 +843,7 @@ function MonthGrid({
                     onClick={(e) => { e.stopPropagation(); onSelect(it); }}
                     className={`block w-full rounded px-1 py-0.5 text-left text-[10px] leading-tight truncate ${itemClass(it)}`}
                   >
-                    {formatTimeRange(it.starts_at, it.ends_at ?? it.starts_at).split(' – ')[0]} {itemLabel(it)}
+                    {formatTimeRange(it.starts_at, it.ends_at ?? it.starts_at).split(' – ')[0]} {monthChipLabel(it)}
                   </button>
                 ))}
                 {dayItems.length > 3 && (

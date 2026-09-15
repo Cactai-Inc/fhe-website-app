@@ -53,7 +53,6 @@ import { AddHorseModal } from '../../components/app/AddHorseModal';
 import { ClauseDocument } from '../../components/app/ClauseDocument';
 import { SendCopiesMenu } from '../../components/app/SendCopiesMenu';
 import { SignedVersionNote } from '../../components/ops/documents/SignedVersionNote';
-import { ContractActivityCard } from '../../components/app/ContractActivityCard';
 import { FlatDocument } from '../../components/app/FlatDocument';
 import {
   contractTemplateStructure, DEFAULT_TEMPLATE_CONFIG,
@@ -1957,9 +1956,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
         </div>
       )}
 
-      {/* A14 — staff-only activity feed, visible at ANY status (unlike Manage,
-          which is executed-only), placed adjacent to it. */}
-      {isStaff && id && <ContractActivityCard documentId={id} />}
+      {/* ⚠️ ACTIVITY CARD REMOVED from the authoring surface (owner, 2026-09-14):
+          "there should not be a space showing activity on the contract surface
+          itself, its shown in history. remove the card." The activity is still
+          available in the History drawer (ContractSubheader → history); this
+          only removes the always-on card from the page body. */}
 
       {/* TERMINATE — executed contracts only. This survived the removal of the
           notify card, which shared its wrapper: terminating an executed contract

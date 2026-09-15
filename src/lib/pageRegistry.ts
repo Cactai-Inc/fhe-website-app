@@ -241,8 +241,14 @@ export const PAGE_REGISTRY: PageEntry[] = [
      `StaffNavItems` and no registry presence at all, so the tenant could not
      hide it and this file's own header claim to list "EVERY staff page with a
      nav row of its own" was false. It is a NavItem in MANAGEMENT_GROUP now. */
-  { key: 'mgmt.calendar', path: '/app/calendar', label: 'Calendar', group: 'management' },
+  /* ⚠️ Calendar renders in the COMMUNITY section (below the feed) since
+     2026-09-14; the STORED key stays `mgmt.calendar` (this file forbids
+     re-deriving a key), only the group field follows it to `app_pages`. */
+  { key: 'mgmt.calendar', path: '/app/calendar', label: 'Calendar', group: 'app_pages' },
   { key: 'mgmt.support', path: '/app/ops/support', label: 'Support', group: 'management' },
+  /* ⚠️ Documents gets its first nav row + registry row (owner, 2026-09-14) — the
+     staff document queue was reachable only from the avatar menu. */
+  { key: 'mgmt.documents', path: '/app/ops/documents', label: 'Documents', group: 'management' },
   { key: 'mgmt.payments_review', path: '/app/ops/payments/review', label: 'Payment review', group: 'management' },
   /* MOVED 2026-08-31 (TASK-FIX3): Evaluations left the Community/Admin section
      for Management. ⚠️ The KEY stays `community.evaluations` — it is stored in

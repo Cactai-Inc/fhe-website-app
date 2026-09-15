@@ -505,12 +505,10 @@ const MANAGEMENT_GROUP: NavItem[] = [
      experiment ends; the duplicate-page ruling now lives in TASK-PAGEMERGE.
      Dashboard's badge is injected by route below, not by table position. */
   { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  /* TASK-FIX3 (owner, 2026-08-31): Calendar moves in from the App-pages block.
-     It was hand-written JSX in StaffNavItems and therefore had no registry row
-     — the D17 shape exactly. It is a NavItem here now, and `mgmt.calendar` in
-     pageRegistry.ts, so the tenant can hide it like every other row.
-     Catalog and Messages stay in that block; only Calendar was asked for. */
-  { to: '/app/calendar', label: 'Calendar', icon: CalendarDays },
+  /* ⚠️ Calendar MOVED to the Community section, below the community feed (owner,
+     2026-09-14). It now lives at the top of COMMUNITY_PAGES_GROUP. It was here in
+     Management from TASK-FIX3; the registry row `mgmt.calendar` keeps its stored
+     key so a tenant's hide setting survives — only its rendered section moved. */
   /* The "Records" row that sat here moved to ACCOUNTS_GROUP below and became
      two rows, Contacts and Stable (owner, 2026-08-31). "People" is a rendered
      heading again as a result — it was empty, and manageNavGroups() drops
@@ -524,6 +522,12 @@ const MANAGEMENT_GROUP: NavItem[] = [
      unified page (owner, 2026-09-12). Distinct from Clients/Leads, which are in
      Community. */
   { to: '/app/records/directory', label: 'Directory', icon: Truck },
+  /* ⚠️ DOCUMENTS gets a real nav row (owner, 2026-09-14). The staff document
+     queue (`/app/ops/documents`) had no top-level link — it was reachable only
+     from the avatar menu, so the one surface for "what am I working on / what is
+     unsigned" was effectively hidden. The page itself splits into In progress /
+     Signed & on file (see DocumentsQueuePage). */
+  { to: '/app/ops/documents', label: 'Documents', icon: FileText },
   // Lessons, Documents, Deals RETIRED from here 2026-08-15 (owner: "lessons…
   // is really a records ledger so it should be added to the records page
   // along with documents, files, and deals") — each is a ledger of records,
@@ -607,6 +611,9 @@ const COMMUNITY_KEY = 'app-pages';
  *  its filter views nested under it, and it renders as this section's first
  *  content at each surface — a NavItem[] row cannot carry nested children. */
 const COMMUNITY_PAGES_GROUP: NavItem[] = [
+  /* ⚠️ Calendar sits FIRST here, directly below the community feed (owner,
+     2026-09-14). Registry key stays `mgmt.calendar`. */
+  { to: '/app/calendar', label: 'Calendar', icon: CalendarDays },
   { to: '/app/catalog', label: 'Catalog', icon: ShoppingBag },
   { to: '/app/messages', label: 'Messages', icon: MessageSquare },
 ];
@@ -1363,7 +1370,7 @@ function ClientRail({ bellCount, dmCount, presence, lessonsOn, onOpenTour, onSig
           needs touching. The staff rail's own <nav> already carries p-3 —
           untouched here, this order's Files section scopes to this rail
           only. */}
-      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-900/12 ${NAV_PANEL} p-3 overflow-y-auto overflow-x-hidden flex flex-col oh-rail-shadow`}>
+      <nav className={`sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] border-r border-green-900/12 ${NAV_PANEL} p-3 overflow-y-auto overflow-x-hidden overscroll-contain flex flex-col oh-rail-shadow`}>
         <div className="flex flex-col gap-0.5">
           {/* Community Feed (position 1) with its views nested underneath. */}
           <CommunityNav />
@@ -2025,7 +2032,7 @@ export default function AppLayout() {
                 component with the two surfaces that ARE green, so leaving it
                 light would mean carrying two palettes through RailLink,
                 CommunityNav, AccountNavLink and NavFooter. One menu, one look. */}
-            <nav className={`p-3 sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] overflow-y-auto overflow-x-hidden border-r border-green-950/20 ${NAV_PANEL} flex flex-col transition-[width] duration-100 ease-out oh-rail-shadow ${staffRailWidthClass}`}>
+            <nav className={`p-3 sticky top-[var(--cs-hdr-h)] h-[calc(100dvh-var(--cs-hdr-h))] overflow-y-auto overflow-x-hidden overscroll-contain border-r border-green-950/20 ${NAV_PANEL} flex flex-col transition-[width] duration-100 ease-out oh-rail-shadow ${staffRailWidthClass}`}>
               {/* Owner, 2026-08-07: the create control lives HERE now, in the
                   slot the collapse toggle used to occupy, and the header's
                   hanging tab is gone. The collapse toggle moved to the foot of
