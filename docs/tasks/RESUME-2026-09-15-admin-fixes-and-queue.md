@@ -1,0 +1,568 @@
+# RESUME NOTE — 2026-09-15 — Admin fixes, contract work, and the full queue
+
+**Purpose:** a single file to read after compacting so the assistant can resume exactly where we
+are. It contains (A) session state / what's done, (B) the queue in priority order with open
+decisions, and (C) the owner's requests VERBATIM so nothing is paraphrased away.
+
+**Repo:** `/Users/Cactai/Downloads/claude-code-repo/French Heritage Project/Repo/fhe-website-app`
+**Branch:** `main` (committing directly to main this session; pushes go to `origin/main`).
+**DB:** live prod, connection string = line 1 of `.env.db`. Migrations are a hand-applied journal
+(dry-run in a `BEGIN;…ROLLBACK;`, apply, verify with a query). `psql` is available.
+**Working rule:** the canonical-checkout pre-commit hook does NOT fire here (this path lowercases
+differently), so code commits succeed without `FHE_ALLOW_CODE`.
+
+---
+
+## A. WHAT IS DONE (committed + pushed to origin/main)
+
+Commits this arc, newest last:
+- `9e6fbe01` — CR-125 findings (diagnosis only; the pre-work baseline).
+- `68f7bcd4` — Client record as a PAGE (`/app/records/person/:contactId`, two-area Account/Activity
+  model); order cancel (whole-order void), booking cancel (one / this-and-all-future); atomic
+  hard-delete via `admin_purge_contact`; BOS review-by-email + edit-removes-signature + note.
+- `9866322d` — Contacts split: Community = Clients + Leads (separate pages); Management = unified
+  Directory (vendors/partners/suppliers); My Stable hub (Horses/Supplies/Property).
+- `274019c0` — Calendar remaster: empty = available, full-size duration blocks, who+what, duration
+  auto-apply, 30-min soft gap. (AR1's two "urgent" bugs already fixed in live save_calendar_item.)
+- `d7585f7c` — body `overflow-x: clip` (page fits iPhone, no pinch-zoom); nav rails
+  `overscroll-contain`; Calendar → Community (below feed); Documents nav link; month-view shows
+  name+service (not "Reserved"); week grid fits viewport height; contract activity card removed.
+- `f1608af2` — Hard delete client BY REASON (test client / paperwork-no-pay → wipe everything with
+  a checkbox; real client with activity → steered to Archive). No FK error path.
+- `3102907d` — Contract View-as picker: staff/admin can preview the doc AS ANY PARTY (Author + a
+  chip per party, labelled by name; company shows as "French Heritage Equestrian"). Party actions
+  disabled while previewing.
+
+### DB objects added this arc (all live, verified)
+- `admin_purge_contact(p_contact_id, p_confirm)` — atomic FK-breaking teardown, keeps the D1
+  protected-identity denylist + company guard; called by `/api/hard-delete-client`.
+- `contract_review_payload(p_document_id)` — recipients + changes + note for the BOS review email.
+- `admin_cancel_booking(p_booking_id, p_scope, p_reason)` — scope one|future|all; trigger handles
+  the fulfillment-unit/credit refund.
+- `admin_void_order(p_purchase_id, p_reason)` — voids every live line via `void_purchase_item`.
+- `calendar_free_busy` staff branch now returns `client_name` + `offering_name` (display-only).
+- `offerings.duration_minutes` (default 60; evaluations 90).
+
+### Key diagnoses already confirmed (do NOT re-investigate)
+- The contract the owner is editing is **`HORSE_SALE_V2`** ("Horse Sale and Purchase Agreement"),
+  NOT `HORSE_BILL_OF_SALE`. Sections: 3=The Horse, 6=PPE, 7=Trial, 8=Title/Delivery/Risk, 12=Assignment.
+- "**from horse record**" on reg# / current location = UI PLACEHOLDER (`ClauseDocument.tsx:132`)
+  for an empty `HORSE.*` field. Tokens ARE wired (`HORSE.REGISTRATION_NUMBER → horses.registration_number`,
+  `HORSE.CURRENT_LOCATION → horses.current_location`); those columns are empty on that horse.
+  LATENT HAZARD: `template_tokens` has DUPLICATE rows per HORSE field (one wired, others unwired) —
+  worth deduping.
+- **§6 dates linked** = the exam clause (PPE.CONDUCTED) and the written-notice clause
+  (PPE.CONTINGENCY) BOTH print the SAME single field `{{TXN.PPE_DEADLINE}}`. Only one date field
+  exists for two different dates. And `TXN.PPE_CHOICE` has only Conducted/Waived — no N/A.
+- **§12 unsignable** = the Sign box only renders when `state === 'locked'`; the only control that
+  locks (`approveContractReview`, "Accept & sign") is gated on `!isOwnerSide` (counterparty only),
+  so a staff author can complete every field and never reach lock. "By:" name does NOT auto-sign.
+- **View-as toggle absence** = `caller_party_roles` only returns a role when
+  `document_parties.contact_id = current_contact_id()`. The sale contract's BUYER party is the
+  org's canonical company contact `352c3898-65d0-4a90-ad59-29107b7e03fe` ("French Heritage
+  Equestrian", is_company, NO linked user — correctly faceless, a D1-protected identity). So neither
+  admin@ nor hello@ is a literal party → my_roles empty → no toggle. FIXED by the View-as picker.
+  The `hello@fhequestrian.com` shown was only the company contact's EMAIL, not Claire's account.
+- `/app/ops/preview/instructor-home` = a PREVIEW wrapper around `InstructorHome` (the non-admin
+  trainer home), URL-only, behind a gold "Preview — not a live page" banner. Data is the viewer's.
+
+### Lessons system — source material FOUND (for the design conversation, NOT yet built)
+- `lesson_plans` table (client-scoped, versioned, supersede-able, focus/objectives/coach_notes,
+  `advanced_from_booking_id`) — **0 rows** (built, unused).
+- `activity_checklists` table — **31 rows** — likely the lesson-item content.
+- Components exist: `LessonPlanEditor.tsx`, `LessonPlanProgress.tsx`, `MyLessonPlanCard.tsx`,
+  `LessonActivityLog.tsx`, `SessionActivityForm.tsx`, `TodaysPlansPanel.tsx`, `MyLessonsContent.tsx`,
+  `LessonPlansPage.tsx` (route `/app/ops/lessons/plans`, no nav row).
+- Specs/docs: `docs/tasks/TASK-LESSONPLAN-plans-progress-and-the-record-of-what-happened.md`,
+  `docs/design/refactor/PROGRESSION-PLAN.md`.
+
+---
+
+## B. THE QUEUE (owner's chosen order) + OPEN DECISIONS
+
+Owner sequence for the design conversations: **(1) SALE/contract logic → (2) Payments + Orders
+pages → (3) calendar/booking modal → (4) Lessons system** (deepest; likely a fresh thread when
+context is near full).
+
+### B0. NEXT UP — booking-modal rewrite (calendar items 7 & 8, MINUS lesson plan)
+Owner said: "do all the work except the lesson plan revisions, just remove the link for now and when
+we are done with the work on the lessons buildout we can add the content to the view based on what
+we end up with." Open this turn with the two quick wins first, then the rewrite:
+- Quick wins: (a) cancel a weekly plan from an open scheduled booking (Booking item 1 —
+  `adminCancelBooking(id, 'all')` already exists, needs a UI hook on the calendar item VIEW);
+  (b) widen the desktop modal (C6): desktop centered, side padding ~2–3× the top/bottom padding;
+  mobile keeps current sizing. Same modal is used for both today.
+- The rewrite (CalendarItemPanel.tsx, ~984 lines):
+  - Item 7: opens in **VIEW mode** showing current config; an **Edit** button top-right enters edit.
+    Saving = "Save" (updates the item), NOT "Save draft" and NOT "Submit". "Submit" is ONLY for a
+    NEW booking REQUEST (notifies Claire to review/approve/suggest another time).
+  - Item 8: replace the "session / appointment / unavailable" tri-toggle with a BINARY: a checkbox
+    "mark this timeframe unavailable" (for a date) → when checked, offer "recurring" + a notes field.
+    Everyone sees an unavailable spot; staff see the notes + who it pertains to. For everything else
+    the OFFERING dictates booking type + duration; system tracks usage vs credits (punch cards,
+    weekly plans). Each scheduled booking shows "Lesson 5/8 | 3 Credits Remaining".
+  - Remove the "+ New Client" button from the client dropdown (wrong place to make an account;
+    likely mis-wired). The client is a DROPDOWN today — change to require an explicit "edit client"
+    button to switch (guard against accidental client change; rare, only for wrong-client fixes).
+  - Explain/keep: "ask the client to add their horse" button (find what it does).
+  - REMOVE price from the booking entirely (price lives in catalog + order records).
+  - "Assign to purchase" menu is confusing ("4-lesson punch card / evaluation lesson / none - let
+    the system debit or create one"). Rename "Booked against" → **"Purchase"** and show, on the
+    VIEW mode, a CARD of the thing they purchased with the usage counter + credits remaining (only
+    for series: punch card / weekly plan / weekly care; not for single items). Don't show both the
+    selector and the "booked against" box — selector in edit, card in view.
+  - Cancel/reschedule must be clearly visible on the VIEW mode of a scheduled booking (NOT edit).
+  - "Plan and Record" button → REMOVE THE LINK FOR NOW (owner). It should eventually be a SPACE on
+    the view that shows the lesson's plan, pulled from the Lessons system (built later).
+
+### B1. SALE/contract logic (HORSE_SALE_V2) — DISCUSS then build
+Owner wants to discuss before building; several are investigations already answered above.
+- **Document controls → LOCK model (General 2), owner's exact spec:** default shows Add + Comments +
+  Requests. A control offers to RESTRICT a party to either: "restrict to suggestions only" (they see
+  Comments + Requests, no Add) or "restrict to read only, with comments still available" (Comments
+  only). Default = both parties can edit everything until signed. Also: MOVE the Add-item button next
+  to Requests; MOVE "scroll to bottom" next to Save. (Engine today: `can_edit_deal` → Add/apply;
+  `can_suggest` → Requests; comments always on. Invert the UI, keep engine booleans; guard "one party
+  must always be able to edit".)
+- §1 "from horse record": fill the horse record columns (proper fix) + dedupe `template_tokens`.
+- §2: implement cascading logic so decisions gate whether future things show/are required.
+- §3.4 Health & Condition Disclosures: add a Yes/No condition gate like §3.5; on Yes, list with a
+  selectable CATEGORY menu (from the shown list), then "+ Add date of the incident or start date for
+  timeframe" and "+ Add end date if disclosing a timeframe" (end-date field offers "present" for
+  ongoing), plus free-text description. Remove "Other" (not appropriate here or §3.5).
+- §3.5 Serious Injury: position the Yes/No selection ABOVE the section it gates (inside 3.4/3.5 as
+  appropriate); remove the trailing period on the line below the input (let authors add their own);
+  move the required-asterisk to the END of the field (field is full-width, no room now); the "buyer
+  acknowledges" sentence needs to be its OWN section with a title (e.g. "Buyer Acceptance and
+  Acknowledgement of Disclosures"), a checkbox, spacing, and it references BY NUMBER each section with
+  a Yes; when both are No it is not included.
+- §3.6 Breeding warranty: gate on HORSE.SEX (gelding cannot breed; mare/stallion can). Remove "Other".
+  Position the gating selection line above §3.6 (leaving it in §3.5 when not included; below the
+  included text when included). If it prints in the final view it must reside inside the section above
+  the text it gates.
+- §6.1/§6.2: SPLIT the shared `TXN.PPE_DEADLINE` into TWO date fields (exam date + written-notice
+  deadline). Add an N/A option to `TXN.PPE_CHOICE` (and PPE contingency) so the sections can be
+  removed entirely. Owner's scenario: month-long eval Aug 1–31, testing scheduled in-period, results
+  came back 2 weeks later, blood-draw postponed 2 weeks; needs accurate independent dates and the
+  ability to mark N/A. The date entered in 6.1 (9/1) was overwritten by the 6.2 selection (9/15) —
+  because same field. FIX and explain the plan before building.
+- §7.1: add N/A to mortality insurance (removes the section). Reword the return clause: "unless
+  written notice is given and approved by Seller, Buyer must return the horse … on or before [date]
+  or execute the agreement." The location field at the start of §7.1 is too small, not self-extending,
+  and has no dropdown of known addresses (add manual entry + known-address dropdown, self-extending).
+- §8: the "delivered to" address field is too small / not self-extending / no known-address dropdown.
+- §8.2 Transfer of Title and Risk: mentions an installment plan when none is selected — make the
+  clause read correctly based on what's actually in the contract.
+- §8.4 No-Slaughter Covenant: include AUTOMATICALLY (CA law; always want it). Buyer accepts via a
+  CHECKBOX on a separate line with spacing, stating the buyer acknowledges the §8.4 covenant and
+  agrees to comply.
+- §12 Assignment: EXPLAIN the purpose of this section to the owner (BOS is the only ownership record;
+  registration/microchip point to Jockey Club; horse too old for digital records). Owner is deciding
+  whether it needs a change.
+- §12 (signable, item 12): make the contract signable once all sections are complete. Give the
+  OWNER-SIDE a lock/ready-to-sign path (today it's counterparty-gated). Confirm signing procedure
+  in the response (done above).
+- General 1 (activity card removed) — DONE.
+- Before building the lock model, owner asked: "tell me what the code dictates a party that isn't me
+  will see as seller and buyer for the BOS contract and what each party sees … lessor and lessee for
+  a lease contract." (Answered in prior turn; re-answer if asked.)
+
+### B2. Payments + Orders pages (General items 7 & 8) — DISCUSS then build
+- Split "Payment Review" (which conflates orders + payments) into TWO pages:
+  - **Payments** page: all payments as individual entries with status: awaiting payment · payment
+    sent · paid (confirmed) · overdue (marked 24h after order created).
+  - **Orders** page: all orders with status: New (unconfirmed requests) · unpaid (confirmed awaiting
+    payment) · booked (confirmed payment + scheduled booking not yet happened) · paid (confirmed
+    payment, no booking scheduled) · complete (paid + scheduled + marked complete) · issue (paid +
+    scheduled but NOT marked complete and NOT rescheduled/cancelled) · cancelled.
+
+### B3. Calendar/booking modal follow-ups — after B0 lands
+Remaining calendar items not in B0 (revisit after the modal rewrite): confirm C6 desktop width;
+anything discovered during B0.
+
+### B4. Lessons system (deepest — likely a FRESH THREAD)
+Owner's design intent (VERBATIM in section C, message 5 and the mid-turn message). Summary of intent:
+- Lessons PAGE organized by client with a profile card (name, what they receive, lessons taken,
+  monthly count; for weekly plan → taken-this-month / entitled; for punch card → card + used/entitled).
+- Click card → that client's lessons page with tabs: Lesson Plan (view-only + Edit button; the
+  rider's individual plan lives here), and Lessons (events as cards in chronological order,
+  switchable to rows). Click an event → activity page: date/time, the scheduled plan items with
+  checkmarks for worked-on (unchecked → strikethrough on save), internal notes, client-readable
+  notes as a CHAT THREAD (trainer + client contribute), and on the client side a private notes space
+  only they see.
+- Instructor must be able to RECORD what a lesson covered; generate PREFORMATTED lesson plans by
+  common skill level for new clients; MATRICULATE riders (mark worked-on + proficient → advanced
+  activities ungate); mark lessons COMPLETE (this is how revenue is recognized after receipt, and how
+  horse usage / consumables / other costs are allocated).
+- Evaluations belong on the Lessons page + client record (NOT the standalone Evaluations report
+  ledger). The Lessons page has the authoring surface for the EVALUATION LESSON (the rider's FIRST)
+  — a FORMATTED input form (not open free text) where the instructor marks skills, comprehension,
+  proficiency. The evaluation lesson DETERMINES the lesson plan; lessons generate from the plan;
+  activities marked proficient reconcile against the plan so the next lesson holds the next items,
+  with notes on progression, milestones, achievements, and lesson-item content. Every lesson needs a
+  template form the instructor works from during/after to generate the lesson record.
+- Use the FOUND source material (lesson_plans, activity_checklists 31 rows, the components, the
+  TASK-LESSONPLAN spec, PROGRESSION-PLAN.md).
+
+### B5. The Alerts/Notifications/Tasks system — spec written, NOT built
+Spec at `docs/tasks/TASK-ATN-alerts-tasks-notifications.md`. Decisions already made: condition alerts
+COMPUTED live + auto-clear on resolution; notifications "seen" when rendered (per-user seen_at);
+tasks are a new entity (`tasks` + `task_assignees` + `task_links` + `task_reminders`) + stored
+`alerts`; weekly Monday per-person email; weather built now. **4 open questions still unanswered:**
+(1) alert card ranking (severity-then-oldest assumed vs newest-first); (2) which notification
+categories exist at launch (to seed the mute list); (3) weather API (Open-Meteo, free/no-key, is the
+recommendation); (4) stale in-progress task "aging" nudge — weeks threshold or none. Build is staged:
+data+engine → dashboard grid → task authoring → reminders/weekly email/weather.
+
+### B6. Nav / pages answers already given (owner "will decide what to do")
+Routed-but-unlinked pages surfaced: `/app/ops/documents` (now linked), `/app/ops/lessons/*`,
+`/app/ops/deals`, `/app/care`, `/app/deal`, the review + preview routes (intentionally unlinked),
+settings/modules (Account-page cards). Pages that SHOULD exist: Lessons (B4), Payments + Orders (B2).
+Directory shows vendors/partners/suppliers. Evaluations (nav) = the delivered report ledger
+(EvaluationReportsPage) — but owner wants evaluation AUTHORING on the Lessons page (B4).
+
+---
+
+## C. OWNER REQUESTS — VERBATIM (do not paraphrase)
+
+### Message — the Alerts/Notifications/Tasks system
+> we need a timeout rule for things that are notifications on the dashboard that dont require my
+> attention or action but are surfaced just so i have awareness. for these seeing them is the point
+> and once seen they arent needed to persist. what i suggest is a sectioned notification setup,
+> alerts, notifications, tasks. Alerts are urgent; this order hasnt paid, this person hasnt finished
+> their onboarding documents, this lesson is booked today and its going to rain, this person cancelled
+> or rescheduled, this person wants to book a lesson, you have a new lead...etc. notifications are
+> temporary keeping me in the loop type things; this person paid, this order was submitted, you have 4
+> lessons today, tiz did 7 lessons this week, you made $900 today...etc. and tasks require action,
+> these must be included with every alert unless there is no action to take for the alert, they can
+> also exist on their own (auto generated based on something that happened in the app or manually
+> created using a button, modal, and flow that needs to be setup and configured. Just like i have 3
+> cards at the top of the dashboard, i should have a grid below that with these items that live in rows
+> based on type, the row can be scrolled horizontally on mobile (3x grid width on mobile with the 3rd
+> showing half off the page so it indicates the scrollability, and flexible with no limit to the qty
+> shown on desktop, min 3x (scalable in size so desktop shows larger cards with more information,
+> mobile shows smaller cards with less information, and on desktop the last card in the row is always
+> showing as a fade-out gradient style half visible with the right side showing an arrow to indicate a
+> click and the row moves (we have to decide between replacing the whole row qty on click or one card
+> at a time incremental advancement. i like the single click rather than the full row replacement so
+> lets try that style first), and then rank them in order of Alerts (click to open as a modal with the
+> information and the task shown, make the task assignable with things related to clients and services
+> and horses auto assigned to claire and things related to support, payments, documents, assigned to me
+> but we both see everything and the assignement is easy to change by clicking on a button it switches
+> between the two of us like a toggle, when the name is clicked it opens that person's list of tasks and
+> shows where this task is on the list but the whole list is scrollable and each task is openable, all
+> of this happens in a modal. Next row is the notifications, these auto dismiss after being seen and the
+> manual dismiss button remains just in case i want to clean up the section manually and when the
+> section is empty its hidden, alerts is also hidden when empty, tasks is always shown and when there
+> are not tasks to show a button for adding a task is shown in place of the first card, when there are
+> tasks to show there is a button on the left side above the first card for adding a new task, when a
+> task is created it can be assigned to either or both of me and claire. the button on the task ui that
+> cycles through assignment should have all three options and we should be able to categorize the task,
+> link it to any order/booking/horse/service (as in catalog item, useful if i need to update something
+> about an offering)/contract/document/client, etc...categories for general task, app update task,
+> website update task, etc...and a space for text notes, adding an image (useful for including a photo
+> of something from the ranch or a screenshot, etc...), auto sets the date it was created but can be
+> manually adjusted and a due date that is optional with the option to add a dashboard alert, email
+> alert, and an option to schedule a reminder with or without alerts via email or dashboard (the
+> alternative being an urgent alert which appears as a modal popup on sign in until cleared by calling
+> the task complete or turning off the alert). tasks need to have a status (new, in progress, complete)
+> complete are auto removed, and the ability to delete a task must be included as well as the ability to
+> edit everything that can be authored or set. All deleted/completed/cancelled tasks, alerts,
+> notifications go to a history page so nothing is ever lost after it leaves the dashboard. from the
+> history page they retain the full visibility, the ability to be restored, and the ability to be hard
+> deleted from the system. when a task includes another person from the company (staff/admin) the
+> alerts for them are set by the task creator with the option to mirror the settings the task carries
+> for the author (when the author is included in the task), when a client is included the option to add
+> the task to their dashboard with an option to include an alert. For all tasks the option to show no
+> alert, priority alert (modal on login), or standard alert (normal dashboard alert), and the option to
+> send an email, are all required options for the ui but not required to be configured. no
+> configuration, no alert. additionally, the reminders are optional and must be available in the ui for
+> all parties individually, and are independent of the alerts, a reminder can be surfaced as an alert in
+> the same 2 formats (modal on login and/or in the dashboard). checkboxes are the best option for
+> selecting the config for these so the user can select all that apply or by selecting none nothing
+> applies. So a task is created, an alert can be set by checking either of the boxes for the three
+> choices (dashboard, modal, email) and reminders follow the same style but require a timer set from X
+> days/weeks from now, and/or X days/weeks before due date. setting nothing from those two just adds a
+> task to the task section of the dashboard for each party listed on the task and there should be two
+> roles, observer (used for awareness only) and participant (used for assigning responsibility for
+> making sure it gets done or some part of it is done by them). a weekly email that goes out to start
+> the week on monday morning should list the contents of their alerts and task lists without overlap,
+> and with priority to the alert so when the task has an alert it just shows in the alert list.
+> dismissing or cancelling an alert doesnt cancel or remove the task and removing the task cancels the
+> alert. is there anything missing from this setup?
+
+### Message — the big mixed batch (General, Booking/Calendar/Clients, Contract System, BOS)
+> ok, i need you to make corrections in these areas:
+>
+> General Issues (found in the admin view):
+> 1.Scrolling the desktop menu scrolls the page when the menu reaches its end.
+> 2. Some surfaces move side to side and flow off the page, they aren't locked in, vertical over scroll
+> up and down is ok.
+> 3. Missing Documents page doesnt have a nav link. Should we have a separate Contracts page or should
+> it just show under documents? There is a distinct difference between a document I'm working on
+> (typically so far only contracts) and signed documents which don't need to see regularly, I just need
+> to know if they are not signed.
+> 4. Calendar nav link needs to be moved to the Community section to the position below community feed.
+> 5. Lessons doesnt have a page or a nav link. this would be a page that shows the lesson plans and
+> lesson content for each client, it should be organized by client with a profile card that shows the
+> client name, what they are receiving from us, basic information about how many lessons they have taken,
+> their monthly lesson count and when they are on a weekly riding plan it should show the count of how
+> many lessons they have taken this month out of how many they are entitled to, similarly for punchcard
+> holders it should show the punchcard they have and how many lessons they have used out of how many they
+> are entitled to. then clicking the profile card should open to their lessons page which would have the
+> lesson plan as a tab, this is where the rider's individual lesson plan lives and opens to a view only
+> view and with the clicking of an edit button it can be edited. the lessons themselves are recorded as
+> events which would be shown on separate tab and they would appear as cards in chronological order with
+> the option to switch the view to a row layout. when the card or row is clicked it opens to the page
+> that shows the activity, the information about the date and time, and the lesson plan that shows what
+> was scheduled to be worked on that lesson and the items worked on should have a checkmark to indicate
+> they were worked on and items without a checkmark should recieve a strikethrough when the lesson is
+> saved, there should also be a space for internal notes and a space for notes the client can read and
+> that should have a chat thread type interface so the trainer and client can both contribute and on the
+> client side when they are looking at their lesson card they should have a space for internal notes that
+> only they see. suggest anything else you can think of or alternatives to what ive suggested, dont just
+> build this verbatim off what i wrote, actively discuss this with me so we build it one time and its
+> done right. there is mention of this lessons page(s) being missing in a request further down this
+> message, just a heads up so you know its not a completely separate request, the metions are linked and
+> the obvious gap that exists that wasnt explicitly mentioned but needs to be addressed is the ability for
+> the trainer to record the items the lesson covered, the ability to generate preformatted lesson plans
+> based on common skill levels for new clients, and the ability to matriculate the riders through the plan
+> contents by indicating what was worked on and what the rider has become proficient in so more advanced
+> activities can be ungated and the lessons need a way to be marked complete since this is how we are able
+> to recognize the revenue was earned after it was received and its how we are able to allocated things
+> like horse usage, consumables, and other costs.
+> 6. Directory is intended to show what?
+> 7. "Payment Review" conflates what a page should show and what a label should do, and it mixes orders
+> into the same page. We need a "Payments" page and it should show all payments as individual entries with
+> a status; awaiting payment, payment sent, paid (payment confirmed), overdue (marked 24 hours after order
+> created).
+> 8. Need to create a dedicated page for "Orders". It should show all orders with status; New (for
+> unconfirmed requests), unpaid (for confirmed awaiting payment), booked (for confirmed payment and
+> scheduled booking on the calendar that hasnt happened yet), paid (for confirmed payment but no booking
+> scheduled), complete (for paid and scheduled bookings that have been marked complete), issue (for paid
+> and scheduled bookings that have not been marked complete and that have not been rescheduled or
+> cancelled), cancelled (for orders that have been cancelled).
+> 9. Evaluations page is intended to show what?
+> 10. Tell me what pages exist but are missing a top-level nav link, and tell me pages that should exist.
+> I will decide what to do with the items on your list.
+>
+> Issues with Booking, Calendar, and Clients:
+> 1. need to be able to cancel a weekly plan from any of the open scheduled bookings.
+> 2. need to be able to delete a client entirely (hard delete) and delete all of their paperwork and
+> scheduled bookings and order and activity history. Instead of denying the delete because of the FK
+> database constraint, show a modal that asks if this is a test client and let me check a box to indicate
+> its ok to delete the client and all of their associated content. for a real client who didnt show up,
+> didnt pay, but has an order and signed docs, I need to be able to delete them from the system because
+> until they pay and show up their paperwork is not needed and shouldnt be taking up space in the system.
+> so the other option next to test client is a client who did paperwork and didnt pay or take any
+> services. For these i need to be able to delete them just like a test client. if they have paperwork and
+> payments and activity history and they are not a test client then we soft delete them and they appear in
+> the deleted client page so their content can be viewed, this hides them and their content from the system
+> views for everything except when accessed directly through the deleted client door.
+> 3. the month view of calendar still doesnt, match the updates to the week view. the term "reserved" is
+> still being shown instead of the client name and service.
+> 4. the calendar view is too large in the week view the vertical size is bigger than the screen and i have
+> to scroll to see all of it. I want to be able to see all of it without scrolling, you can make the
+> unfilled spots smaller so the whole day is visible on iphone the horizontal scroll and vertical scroll
+> shouldnt be necessary either, or if you have to keep horizontal scroll that is fine but make sure the app
+> is locked so the whole page isnt moving past its edges horizontally (mentioned in general app issues).
+> 5. the pages need to be sized to the device not generic static sizing, on iphone in particular the pages
+> open slightly wider than the screen and the user has to pinch to zoom out to see the whole page, this
+> should not be necessary.
+> 6. the modal that opens from the month view is narrow and should be made wider, it looks like the mobile
+> and desktop use the same modal sizing, desktop should be wider with the centered positioning and the
+> padding currently used for the gap at the top and bottom is sufficient, the sides should use a padding
+> value that is roughly 2x or 3x the padding used at the top and bottom and then the modal will fill the
+> screen nicely. if i find that its too big we can reduce it.
+> 7. on the calendar item modal, it always opens in edit calendar item view. this is incorrect, it should
+> open in view mode and show everything as it is currently configured. an edit button should be located in
+> the top right to access the edit view, saving should not be save draft, it should save the inputs and
+> update the item i should not use submit after an item is on the calendar, this submit button is only to
+> be used when making a new booking request and it should notify claire to review the booking request and
+> approve or suggest a different day and/or time.
+> 8. on the calendar booking modal there is a set of three options at the top "session, appointment,
+> unavailable". these dont make sense and arent aligned with the contents in the system that get a booking.
+> Change it to use a binary option with a checkbox for marking a specific timeframe unavailable for a
+> specific date, when that is checked the option to make it a recurring item on the calendar, and a space
+> for notes. thats it. everyone sees it as a spot that is unavailable, staff see the notes and who it
+> pertains to. For everything else the offering should dictate the type of booking, the timeframe duration,
+> and the system should be tracking usage against credits for things like punch cards and weekly riding
+> plans. each scheduled booking should show the number in the set with the number remaining below it (ie:
+> Lesson 5/8 | 3 Credits Remaining). There is also a conflict between the Client drop down menu where a
+> client is selected and the "+ New Client" button. I assume the button is to add a new account, it should
+> not be here and this is not the correct way to handle adding an account and its very likely this button
+> isnt properly wired and contributing to the system chaos around creating a new account. Also i would like
+> to know what the "ask the client to add their horse" button does. Also, why do we show price as an
+> editable field on a booking? the price shouldnt be shown anywhere on a booking. Prices are shown in the
+> catalog and on the order records. The "Assign to purchase" menu list is confusing, for example, on
+> Naomi's lesson on 9/14 at 11am, shows a 4-lesson punch card, an evaluation lesson, and an option for
+> "none - let the system debit or create one". This is confusing to me as to which to select and what
+> happens when "none" is selected. also, why are we seeing the client as a drop down menu list to easily
+> change the client, seems like a good way to accidentally change the client and not realize it and with no
+> history record on the edit view we have no way to know who it belonged to in order to change it back. make
+> it require a button to "edit" the client if we need to switch the lesson from one client to another. but
+> this is only for when the wrong client is selected which should be very rare, it is not appropriate to
+> switch a client as a way to record a change when one client wants to move their lesson to another
+> date/time and we fill the spot with another client. there is an appropriate way to do this and its with
+> the cancel/reschedule option which needs to be clearly visible on the viewing view of the scheduled
+> booking, not the edit view. and then the box for "Booked Against" showing what the selected item from the
+> "book against" menu selection already shows is only useful if its shown as the counterparty to the menu
+> selection that is visible on the view only view of the scheduled booking, we dont show both, the selection
+> menu selects the purchase the lesson is booked for, the viewing mode version of the scheduled booking
+> shows a card like this so we know which purchase this booking is for. and we should change the name from
+> "booked against" to "Purchase" and then show the thing they purchased, and this is the proper place to
+> show the information about the usage counter and credits remaining. if its a single item purchase (ie:
+> single lesson, single care service) we dont need to show the counter because its not part of a series, but
+> when its part of a series (ie: punch card, weekly lesson plan, weekly care service plan) we should show
+> the quantities for consumed and remaining. the button for "Plan and Record" is something that should be
+> shown on the view only view. It should not be a button, rather it should be a space for the plan to live,
+> it shows the plan for the lesson. It pulls this information from the lesson itself which needs an authoring
+> and viewing system and location in the app. the pages for this might already exist but they are not shown
+> in the current nav and ui views i can see.
+>
+> CONTRACT SYSTEM
+> General Issues (applies to all contracts):
+> 1. On the contract authoring surface there should not be a space showing activity on the contract surface
+> itself, its shown in history. remove the card at the top of the page. On the BOS contract its shown
+> directly below the title "HORSE SALE AND PURCHASE AGREEMENT".
+> 2. Let's revise the document controls system. lets flip it to a lock system where a checkmark indicates a
+> lock on an ability rather than the current setup where a checkmark makes something available. this means
+> all contracts in their default configuration are editable by both parties until signed by both parties.
+>
+> BOS Contract:
+> 1. In section 3 "The Horse" the registration number and current location are showing "from horse record"
+> this in the past has indicated a disconnect between what the contract is wired to and what it should be
+> wired to. Please investigate the cause of this and either fix it straight away or suggest what you think
+> will fix it.
+> 2. we need to implement basic logic so decisions cascade to control whether future things are shown and
+> need to be selected.
+> 3. In section 3.4 "Health and Condition Disclosures" doesnt have a condition gate. It should operate like
+> section 3.5 "Serious Injury History" that begins by asking if there are any of the following to disclose
+> and show the list with a menu to select from at the end and uses "Yes or No". "Other" doesnt make sense
+> for this or for 3.5. If they select yes, it ungates the section to list them similar to how section 3.5
+> does, but for this section it should be listed with a selectable category using a menu of options based on
+> the list shown. After the selection there should be the option to include a date or date range that is
+> added using a button that says "+ Add date of the incident or start date for timeframe" and "+ Add end
+> date if disclosing a timeframe". The second button should add a selection field that shows the option to
+> select "present" to indicate its currently ongoing, this is needed when something like a medicine was
+> started on a certain date and they are still taking it. a single date is used for an incident so they can
+> indicate the date it happened. Then there needs to be a space for free text input for them to include a
+> description/explanation or further information, in the example of a medication they could list the name of
+> the medicine, the dosing, the schedule, etc... or in the example of an incident they could describe what
+> happened.
+> 4. Section 3.5 positions the question with the selection of "No" after the statement that is gated by that
+> selection. When "yes" is selected it shows the question above Section 3.5 so it appears inside of Section
+> 3.4. Also, there is a period shown on the line below the input field, i assume this will be appended to the
+> end of the input but its better to let the author add their own periods, remove this one, and move the
+> asterisk that indicates the input field must contain something to the end of the field, right now the
+> field is full width and leaves no room for the asterisk to appear on the same line. And then there is a
+> sentence that says the buyer acknowledges this disclosure and proceeds with knowledge of it. I understand
+> the intention behind this but its improperly executed. it needs a checkbox, it needs a space between it and
+> the disclosures above and it needs a title and should be its own section, something like Buyer acceptance
+> and acknowledgement of disclosures. And it should reference the sections by number for each section that
+> has a yes selected and when both are "no" it is not included.
+> 5. The breeding warranty is a weird one. this should be gated on the horse sex selection. a gelding cannot
+> breed, a mare could and this would be acceptable to include but the option for "Other" should be removed
+> just like in section 3.5 its not appropriate, and just like in section 3.5 where selecting "yes" positions
+> the selection gating line above the section it belongs to, this positions the line that asks for a
+> selection above section 3.6 the breeding warranty section above it leaving it in section 3.5 when the
+> selection of not included is selected, and positions the selection line below the included text when
+> included is selected. if this prints in the final view of the contract it needs to reside inside the
+> section and above the text it gates. Just like the correction made to section 3.5.
+> 6. Section 6.1 and 6.2 have the dates linked and this doesnt make sense because testing can take time to be
+> received. I set the date for testing and then set the date for the written notice requirement as 2 weeks
+> later and it changed the date for the testing. and it asks if the prepurchase examination was conducted or
+> waived. this doesnt make sense, in my scenario where i had an evaluation period of 1 month that ran from
+> august 1st to august 31st and i scheduled the testing during this period and i needed the results back
+> before i could decide (and drug testing wasnt the reason for the testing, ill address that section next), i
+> didnt get the results back until two weeks later, and the original blood draw date was postponed by two
+> weeks which put it at the end of the evaluation period, and now that ive received the results im preparing
+> and executing the BOS and im forced to make selections for these sections instead of having the ability to
+> select them as not applicable so they are removed from the contract and when i try to enter the selections
+> that are accurate in my case 9/1 for the examination, and "conducted" for the pre-purchase examination line
+> item, and then in section 6.2 9/15 for the date by which i need to notify the party if the results are
+> unsatisfactory, and yes for the sale contingent on the results. the contract reads weird and the date of
+> 9/1 in section 6.1 was changed to 9/15 because of the selection made in 6.2. Explain to me how we can
+> address these issues with updates so i can approve the plan or suggest changes to it before you make any
+> changes.
+> 7. in section 7.1 the clause for mortality insurance needs an option for not applicable and it removes the
+> section. The line item for "buyer may return the horse...on written notice given on or before [date], in
+> which case...it should say unless written notice is given and approved by Seller, Buyer must return the
+> horse... on or before [date] or execute the agreement. Additionally, the location input field at the
+> beginning of section 7.1 is too small and doesnt appear to be self extending and doesnt have a drop down
+> menu with known addresses to select from in addition to the input of an address manually.
+> 8. in section 8 "Title, Delivery, and Risk of Loss" the delivered to address field is too small and doesnt
+> appear to be self extending and doesnt have a drop down menu with known addresses to select from in
+> addition to the input of an address manually.
+> 9. section 8.2 "Transfer of Title and Risk" mentions installment plan but no installment plan is selected
+> in this contract. this should be adjusted so the clause reads correctly based on what is actually included
+> in the contract.
+> 10. section 8.4 "No-Slaughter Covenant" should be included automatically and not require a menu selection,
+> its the law in california and that is where this contract is being used but in general we want people to
+> always agree to this. and the buyer must accept this covenant by checking a box that is on a separate line
+> with a space between it and the clause above and it states that the buyer acknowledges the covenant in
+> section 8.4 above and agrees to comply with it.
+> 11. Section 12 "Assignment" this section might need a change. in the event i transfer ownership to another
+> person or entity, this section seems to say that i need the sellers written consent because the BOS is the
+> only record of the ownership of the horse, the registration and microchip information all point to jockey
+> club and this horse is too old to have digital records which began after its birthdate. explain to me the
+> purpose of this section.
+> 12. the contract is complete and all sections have their inputs but it remains unsignable, i need it to be
+> signable once all sections are completed. unless the signature and date are added automatically based on my
+> name being already entered into the "By:" field in the buyer signature section? please review and explain
+> the signing procedure as dictated by the actual code for this document.
+
+### Message — mid-turn: instructor-home + evaluations/lessons design
+> whats on this: /app/ops/preview/instructor-home
+> this: "Item 9 — Evaluations (/app/ops/evaluations, EvaluationReportsPage) shows: delivered horse/rider
+> evaluation reports — the "report card" records (D27), with read/download/email/share. It is not a queue of
+> evaluations due (that's a dashboard zone). So the nav "Evaluations" = the report ledger." belongs on the
+> lessons page and the client record as parts of those surface and the lessons page should have the authoring
+> surface as evaluation lesson, their first. This is where the instructor marks things based on rider skills
+> and comprehension and proficiency, it should be a formatted input form not an open free text input field by
+> itself. we should come up with a design for what it should contain and what it should look like and then
+> implement it. Every lesson needs a template form for the instructor to work from during and after the lesson
+> that generates the lesson record. the evaluation lesson should determine what the lesson plan contains, then
+> the lessons get generated based on the plan and the lesson activities that get marked as proficient reconcile
+> against the lesson plan so the next lesson contains the next items but there are notes about how the
+> progression works and even the milestones, achievements, and contents for lesson items. see if you can find
+> that so we have it to use in this buildout.
+
+### Message — the View-as toggle / party identity question
+> "The viewAsSigner toggle (only when you're also a party) is the only way you'd see the read-only frame." I
+> dont see the toggle, i should always see the toggle as the author and admin its a helpful item to have for me
+> to see what each party will see. i suspect that even though "french heritage equestrian" is a party to the
+> contracts ive made so far, the system is gating it to the other account "hello@fhequestrian.com" and not
+> treating my account "admin@fhequestrian.com" as a party to the contract...?
+> [RESOLVED — View-as picker shipped in commit 3102907d. Diagnosis in section A.]
+
+### Owner choices captured (for the lock model + sequencing)
+> the new model would show the option to restrict to either option; restrict to suggestions only, restrict to
+> read only, with comments still available. this changes whether the viewer sees the comments button or comments
+> button and requests button. the default being that it shows the add button, comments button, requests button.
+> the add item button should be moved over next to requests. and the scroll to bottom should be moved over next
+> to save. im not sure what either party sees when they open a contract right now because i always see it in edit
+> view. it would help for you to tell me what the code dictates a party that isnt me will see as seller and buyer
+> for the BOS contract and what each party sees when they arent me when they are lessor and lessee for a lease
+> contract.
+
+> do the fixes now, lets see how those land, then we can discuss these three, starting wtih the sale/contract
+> logic, then the payments and orders pages, then the calendar/booking modal and then the lessons system since
+> that is the deepest and largest we will need to possibly hand that off to ourselves in a new thread since the
+> context might be full by then.
+
+> do all the work except the lesson plan revisions, just remove the link for now and when we are done with the
+> work on the lessons buildout we can add the content to the view based on what we end up with in the lessons
+> system.
+
+---
+
+## D. HOW TO RESUME
+1. Read this file.
+2. Confirm branch is `main` and `git status` is clean (or note what's uncommitted).
+3. Start with **B0** (booking-modal rewrite, items 7 & 8, minus lesson plan) — lead with the two quick
+   wins (cancel-weekly-plan hook + wider desktop modal), then the CalendarItemPanel rewrite.
+4. Then run the design conversations in owner order: B1 (SALE contract) → B2 (Payments/Orders) → B3
+   (calendar follow-ups) → B4 (Lessons, likely fresh thread).
+5. Still-open owner decisions to collect when relevant: the 4 ATN questions (B5); confirm the lock-model
+   toolbar reorg details (B1) before building.
