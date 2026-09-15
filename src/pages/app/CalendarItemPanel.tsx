@@ -547,8 +547,12 @@ export function CalendarItemPanel({
   );
 
   return (
-    /* ⚠️ TASK-FIX4 §3 — converged on the shared dialog's `drawer` variant. */
-    <Modal open onClose={handleClose} size="sm" panelClassName="bg-cream"
+    /* ⚠️ TASK-FIX4 §3 — converged on the shared dialog's `drawer` variant.
+       B0/C6 (owner, 2026-09-14): the month-view modal was too narrow — mobile and
+       desktop shared one width. `lg` (max-w-2xl) keeps the mobile full-width base
+       (`w-full`) while giving desktop a wider, centered panel; the overlay's own
+       `p-4` reads as the top/bottom gap and the extra side room fills the screen. */
+    <Modal open onClose={handleClose} size="lg" panelClassName="bg-cream"
       title={`${editing ? 'Edit' : 'New'} calendar item`}
       onClear={clearForm} saveStatus={draft.status} error={error}>
         <div className="flex flex-col gap-4 flex-1">

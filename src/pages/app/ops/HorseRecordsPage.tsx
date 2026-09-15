@@ -312,10 +312,21 @@ function EditableRecord({
   );
 }
 
-export default function HorseRecordsPage({ onOpenContact }: { onOpenContact?: (contactId: string) => void } = {}) {
+export default function HorseRecordsPage({
+  onOpenContact, ownerScope,
+}: {
+  onOpenContact?: (contactId: string) => void;
+  /** ⚠️ 'company' scopes the list to FHE's OWN horses — the ones the company is
+   *  the current owner or lessee of (owner, 2026-09-15: "My Stable is showing all
+   *  the horses in the system … we should have only our own horses in the
+   *  stable"). Client-owned horses are seen through the client record, not here.
+   *  Uses the same company_contact_id() scope as `my_stable_horses`. Undefined =
+   *  every horse (the standalone /app/ops/horse-records surface, unchanged). */
+  ownerScope?: 'company';
+} = {}) {
   const [companyId, setCompanyId] = useState<string | null>(null);
   useEffect(() => { companyContactId().then(setCompanyId).catch(() => {}); }, []);
-  useDocumentTitle('Horse records');
+  useDocumentTitle(ownerScope === 'company' ? 'Our horses' : 'Horse records');
   const [rows, setRows] = useState<StaffHorseRecord[] | null>(null);
   const [contacts, setContacts] = useState<ContactOption[]>([]);
   const [breeds, setBreeds] = useState<LookupCode[]>([]);
@@ -331,20 +342,39 @@ export default function HorseRecordsPage({ onOpenContact }: { onOpenContact?: (c
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  /** ⚠️ In the Stable ('company') scope, only FHE's own horses — the company is
+   *  the current owner or lessee. Client-owned horses live on the client record.
+   *  Filtered client-side off the record's own party columns so the full
+   *  record-management UI (edit, parties, docs) is unchanged. Until companyId
+   *  resolves we show nothing rather than every horse, so the all-horses list
+   *  never flashes in the Stable. */
+  const visibleRows = rows === null ? null
+    : ownerScope === 'company'
+      ? (companyId
+          ? rows.filter((r) => r.owner_contact_id === companyId || r.lessee_contact_id === companyId)
+          : [])
+      : rows;
+
   return (
     <PageLayout
-      name="Horse records"
+      name={ownerScope === 'company' ? 'Our horses' : 'Horse records'}
       addLabel="horse"
       onAdd={() => setAdding(true)}
-      description="The single source of truth for every horse — identity, parties, lease state, and the documents that created them."
+      description={ownerScope === 'company'
+        ? "The horses French Heritage Equestrian owns or leases. A client's own horse is on their client record."
+        : 'The single source of truth for every horse — identity, parties, lease state, and the documents that created them.'}
     >
 
       {error && <p role="alert" className="form-error mb-4">{error}</p>}
-      {rows === null && !error && <p className="text-sm text-green-800/70">Loading…</p>}
-      {rows?.length === 0 && <p className="text-sm text-green-800/70">No horse records yet — add the first one.</p>}
+      {visibleRows === null && !error && <p className="text-sm text-green-800/70">Loading…</p>}
+      {visibleRows?.length === 0 && (
+        <p className="text-sm text-green-800/70">
+          {ownerScope === 'company' ? 'No horses owned or leased by the company yet.' : 'No horse records yet — add the first one.'}
+        </p>
+      )}
 
       <div className="flex flex-col gap-3">
-        {rows?.map((r) => (
+        {visibleRows?.map((r) => (
           <div key={r.id} className="bg-white border border-green-800/10 rounded-xl p-4">
             <button type="button" className="w-full text-left focus-ring rounded-md"
               onClick={() => setOpenId(openId === r.id ? null : r.id)}>

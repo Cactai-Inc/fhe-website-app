@@ -155,14 +155,15 @@ export default function AccountHub() {
         <Row icon={ShieldCheck} title="My Login" sub="Sign-in email, password & Google" onClick={() => toggle('login')} open={open === 'login'} />
         {open === 'login' && <div className="lg:col-span-2"><MyLoginContent /></div>}
 
-        {/* Owner, 2026-08-15: "modules and settings should all be inside of
-            the account page... just show them as cards that open the page
-            when clicked." Staff-only — these are operator surfaces. My
-            Stable joins them for the same reason it was unreachable for
-            staff before today: useNavPresence (the sidebar's own "My
-            Stable" link) is disabled entirely for staff
-            (`useNavPresence(!isStaff)` in AppLayout.tsx), so this was the
-            only door.
+        {/* ⚠️ THE STAFF "MY STABLE" CARD IS GONE (owner, 2026-09-15). It was here
+            because the sidebar's own My Stable link was disabled for staff, so the
+            account page was the only door. That is no longer true: My Stable is now
+            a real nav item in the Management section (MyStablePage — Horses /
+            Supplies / Property), and its Horses door reads FHE's OWN horses via
+            HorseRecordsPage ownerScope="company" (the company_contact_id scope the
+            /app/stable card was already using). The account page is the wrong home
+            for a business surface, and two doors onto the same content is the
+            duplication this removal ends. /app/stable still renders for a held URL.
 
             ⚠️ THE "SETTINGS" CARD IS GONE (owner, 2026-08-31). Settings is no
             longer a thing with a landing page you visit — its four pages are
@@ -171,9 +172,6 @@ export default function AccountHub() {
             renders its card grid for anyone holding the URL, but this page no
             longer advertises it: two doors onto the same four pages is the
             duplication this change exists to end. */}
-        {isStaff && (
-          <NavRow icon={Boxes} title="My Stable" sub="The business's horses, gear, and supplies" to="/app/stable" />
-        )}
 
         {!isStaff && (
           <>

@@ -528,6 +528,16 @@ const MANAGEMENT_GROUP: NavItem[] = [
      unsigned" was effectively hidden. The page itself splits into In progress /
      Signed & on file (see DocumentsQueuePage). */
   { to: '/app/ops/documents', label: 'Documents', icon: FileText },
+  /* ⚠️ CATALOG moved here from Community on the STAFF view (owner, 2026-09-15:
+     "catalog needs to be removed from the community section on staff view and
+     moved to the management section"). It was in COMMUNITY_PAGES_GROUP because
+     that is what the community sees — but that reasoning is a member one, and
+     members reach Catalog from their own rail (RailLink below), not from this
+     staff grouping. For staff it is a business surface. Registry row
+     `app_pages.catalog` keeps its stored key so any tenant hide-setting survives;
+     only its rendered section moved. The catalog EDITOR is still Products in
+     Admin — unchanged. */
+  { to: '/app/catalog', label: 'Catalog', icon: ShoppingBag },
   // Lessons, Documents, Deals RETIRED from here 2026-08-15 (owner: "lessons…
   // is really a records ledger so it should be added to the records page
   // along with documents, files, and deals") — each is a ledger of records,
@@ -614,7 +624,9 @@ const COMMUNITY_PAGES_GROUP: NavItem[] = [
   /* ⚠️ Calendar sits FIRST here, directly below the community feed (owner,
      2026-09-14). Registry key stays `mgmt.calendar`. */
   { to: '/app/calendar', label: 'Calendar', icon: CalendarDays },
-  { to: '/app/catalog', label: 'Catalog', icon: ShoppingBag },
+  /* ⚠️ Catalog left this staff group for MANAGEMENT_GROUP (owner, 2026-09-15).
+     The member catalog view is unaffected — members render their own rail, not
+     this grouping. See the note beside Catalog in MANAGEMENT_GROUP above. */
   { to: '/app/messages', label: 'Messages', icon: MessageSquare },
 ];
 /* SERVICING and BUSINESS were folded into Management 2026-07-31 (owner): the
