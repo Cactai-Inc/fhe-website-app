@@ -378,14 +378,10 @@ export function PersonRecord({
        indicator stays (it is how the person knows their typing was kept); there
        is no close button, because leaving the page is the browser's back. */
     <div className="max-w-4xl mx-auto">
-      {/* ⚠️ As a routed PAGE this card must FLOW in the document — it is not a
-          fixed-height modal panel any more. `overflow-hidden` + a `flex-1
-          overflow-y-auto` body made the body its own scroll container with no
-          bounded height, so a wheel over the content was swallowed and never
-          chained to the window; the page only scrolled from the gap beside it
-          (owner, 2026-09-15). The card now grows with its content and the window
-          is the scroller. `overflow-x-clip` keeps the rounded corners honest
-          horizontally without trapping vertical scroll. */}
+      {/* This card flows in the page and the window is the scroll container — it
+          must NOT be its own scroll region, or a wheel over the content is
+          swallowed instead of scrolling the page. `overflow-x-clip` keeps the
+          rounded corners clean horizontally without trapping vertical scroll. */}
       <div className="bg-white rounded-2xl border border-green-800/10 flex flex-col overflow-x-clip">
 
         <div className="flex items-start gap-3 px-5 py-4 border-b border-green-800/10">

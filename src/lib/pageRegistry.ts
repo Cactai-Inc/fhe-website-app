@@ -95,14 +95,12 @@ export interface PageEntry {
  *  page leaving it is the owner's acceptance signal. Listed here so the settings
  *  page can say why a row it offers to hide is not in the rail today, and so
  *  nobody reads the absence as a registry bug. */
+/** Page keys currently sitting in the temporary Review section: a page waits here
+ *  until it is accepted, and moving it out of this set into its real nav group IS
+ *  the acceptance. Every key here must exist in PAGE_REGISTRY (enforced by this
+ *  file's own test). */
 export const PARKED_IN_REVIEW = new Set([
   'mgmt.dashboard', 'records.hub', 'settings.team',
-  /* people.leads / people.clients / people.directory REMOVED 2026-08-12
-     (TASK-RECORDS) — not restored, superseded. Their one-key replacement,
-     people.records, ships directly into ACCOUNTS_GROUP, never parked. */
-  /* mgmt.horses REMOVED 2026-08-15 — the key itself no longer exists in
-     PAGE_REGISTRY (every key in this set must, per this file's own test);
-     it isn't parked in Review, it's genuinely retired. See PAGE_REGISTRY. */
 ]);
 
 /** Display names for the module sections on the settings page. Mirrors

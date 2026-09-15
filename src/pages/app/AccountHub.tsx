@@ -155,23 +155,11 @@ export default function AccountHub() {
         <Row icon={ShieldCheck} title="My Login" sub="Sign-in email, password & Google" onClick={() => toggle('login')} open={open === 'login'} />
         {open === 'login' && <div className="lg:col-span-2"><MyLoginContent /></div>}
 
-        {/* ⚠️ THE STAFF "MY STABLE" CARD IS GONE (owner, 2026-09-15). It was here
-            because the sidebar's own My Stable link was disabled for staff, so the
-            account page was the only door. That is no longer true: My Stable is now
-            a real nav item in the Management section (MyStablePage — Horses /
-            Supplies / Property), and its Horses door reads FHE's OWN horses via
-            HorseRecordsPage ownerScope="company" (the company_contact_id scope the
-            /app/stable card was already using). The account page is the wrong home
-            for a business surface, and two doors onto the same content is the
-            duplication this removal ends. /app/stable still renders for a held URL.
-
-            ⚠️ THE "SETTINGS" CARD IS GONE (owner, 2026-08-31). Settings is no
-            longer a thing with a landing page you visit — its four pages are
-            ordinary rows in the Admin section of the staff menu, which is where
-            the owner asked them to end up. The route /app/ops/settings still
-            renders its card grid for anyone holding the URL, but this page no
-            longer advertises it: two doors onto the same four pages is the
-            duplication this change exists to end. */}
+        {/* The business's own stable is a Management nav item (My Stable —
+            Horses / Supplies / Property), not an account-page card, so staff do
+            not see a stable row here. Settings is likewise not a card here: its
+            pages are rows in the Admin section of the staff menu. Both surfaces
+            are one door each, reached from the staff nav. */}
 
         {!isStaff && (
           <>

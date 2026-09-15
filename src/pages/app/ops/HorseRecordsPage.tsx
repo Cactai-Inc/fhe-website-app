@@ -316,12 +316,10 @@ export default function HorseRecordsPage({
   onOpenContact, ownerScope,
 }: {
   onOpenContact?: (contactId: string) => void;
-  /** ⚠️ 'company' scopes the list to FHE's OWN horses — the ones the company is
-   *  the current owner or lessee of (owner, 2026-09-15: "My Stable is showing all
-   *  the horses in the system … we should have only our own horses in the
-   *  stable"). Client-owned horses are seen through the client record, not here.
-   *  Uses the same company_contact_id() scope as `my_stable_horses`. Undefined =
-   *  every horse (the standalone /app/ops/horse-records surface, unchanged). */
+  /** 'company' scopes the list to the horses the business itself owns or leases
+   *  (the My Stable surface). Client-owned horses are seen through the client
+   *  record, not here. Undefined shows every horse (the standalone
+   *  /app/ops/horse-records surface). */
   ownerScope?: 'company';
 } = {}) {
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -342,12 +340,10 @@ export default function HorseRecordsPage({
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  /** ⚠️ In the Stable ('company') scope, only FHE's own horses — the company is
-   *  the current owner or lessee. Client-owned horses live on the client record.
-   *  Filtered client-side off the record's own party columns so the full
-   *  record-management UI (edit, parties, docs) is unchanged. Until companyId
-   *  resolves we show nothing rather than every horse, so the all-horses list
-   *  never flashes in the Stable. */
+  /** In the 'company' scope, keep only horses the business owns or leases,
+   *  filtered client-side off each record's party columns so the full
+   *  record-management UI is unchanged. While companyId is still resolving show
+   *  nothing rather than every horse, so the all-horses list never flashes. */
   const visibleRows = rows === null ? null
     : ownerScope === 'company'
       ? (companyId

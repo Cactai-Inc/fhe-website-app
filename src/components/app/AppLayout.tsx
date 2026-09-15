@@ -528,25 +528,13 @@ const MANAGEMENT_GROUP: NavItem[] = [
      unsigned" was effectively hidden. The page itself splits into In progress /
      Signed & on file (see DocumentsQueuePage). */
   { to: '/app/ops/documents', label: 'Documents', icon: FileText },
-  /* ⚠️ CATALOG moved here from Community on the STAFF view (owner, 2026-09-15:
-     "catalog needs to be removed from the community section on staff view and
-     moved to the management section"). It was in COMMUNITY_PAGES_GROUP because
-     that is what the community sees — but that reasoning is a member one, and
-     members reach Catalog from their own rail (RailLink below), not from this
-     staff grouping. For staff it is a business surface. Registry row
-     `app_pages.catalog` keeps its stored key so any tenant hide-setting survives;
-     only its rendered section moved. The catalog EDITOR is still Products in
-     Admin — unchanged. */
+  /* Catalog on the staff rail: for staff this is a business surface, so it lives
+     in Management. Members reach the same page from their own rail (RailLink
+     below), not from this grouping. The catalog EDITOR is a separate page,
+     Products, in Admin. */
   { to: '/app/catalog', label: 'Catalog', icon: ShoppingBag },
-  // Lessons, Documents, Deals RETIRED from here 2026-08-15 (owner: "lessons…
-  // is really a records ledger so it should be added to the records page
-  // along with documents, files, and deals") — each is a ledger of records,
-  // not a work queue, so they moved to be Records tabs instead (in that
-  // order, after Horses). Management keeps the actual day-to-day queues.
-  // Payment review is a management task; Business is hidden until the reporting
-  // and business-ops surfaces that belong there actually exist.
-  /* Receipt, not ReceiptText — which My Orders already uses in the member nav.
-     Two different pages were wearing one glyph. */
+  /* Payment review is a day-to-day queue. Receipt (not ReceiptText, which My
+     Orders uses in the member nav) so the two pages do not share a glyph. */
   { to: '/app/ops/payments/review', label: 'Payment review', icon: Receipt },
   /* TASK-FIX3 (owner, 2026-08-31): Evaluations arrives from the section that is
      now Admin. D27 files an evaluation as a record on a rider or a horse, which
@@ -624,9 +612,6 @@ const COMMUNITY_PAGES_GROUP: NavItem[] = [
   /* ⚠️ Calendar sits FIRST here, directly below the community feed (owner,
      2026-09-14). Registry key stays `mgmt.calendar`. */
   { to: '/app/calendar', label: 'Calendar', icon: CalendarDays },
-  /* ⚠️ Catalog left this staff group for MANAGEMENT_GROUP (owner, 2026-09-15).
-     The member catalog view is unaffected — members render their own rail, not
-     this grouping. See the note beside Catalog in MANAGEMENT_GROUP above. */
   { to: '/app/messages', label: 'Messages', icon: MessageSquare },
 ];
 /* SERVICING and BUSINESS were folded into Management 2026-07-31 (owner): the

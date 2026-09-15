@@ -384,6 +384,26 @@ function nextMultiSelect(selected: string[], val: string): string[] {
   const base = selected.filter((s) => s !== 'NONE');
   return base.includes(val) ? base.filter((s) => s !== val) : [...base, val];
 }
+/** ⚠️ Resolve a stored field value to one of the options, matching by option
+ *  VALUE first and then by LABEL, case-insensitively. Why this exists (owner,
+ *  2026-09-15): the horse record stores breed/color as CODES (horses.breed =
+ *  "THOROUGHBRED"), but the contract field for this document was filled with the
+ *  DISPLAY NAME ("Thoroughbred"). A strict value-only match then failed and the
+ *  control fell to "Other" showing the label in the free-text box — but only in
+ *  the party/preview view, because the author view renders the same field
+ *  read-only. Matching on label too maps the stored value back onto its real
+ *  option, so both views agree and neither shows a spurious "Other".
+ *  The write path (token dedup / storing the code) is B1's job; this makes the
+ *  control robust to either spelling meanwhile. */
+function resolveOption(
+  opts: { value: string; label: string }[], stored: string,
+): { value: string; label: string } | undefined {
+  if (!stored) return undefined;
+  const s = stored.trim().toLowerCase();
+  return opts.find((o) => o.value.toLowerCase() === s)
+      ?? opts.find((o) => o.label.trim().toLowerCase() === s);
+}
+
 function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; disabled: boolean }) {
   const opts = f.options ?? [];
   // Use the field's own "Other" option when it defines one; only synthesize a
@@ -391,17 +411,22 @@ function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: Sa
   const ownOther = opts.find((o) => o.value === 'OTHER' || /^other\b/i.test(o.label));
   const otherVal = ownOther?.value ?? OTHER_VALUE;
   const stored = f.value ?? '';
-  const storedIsCustom = stored !== '' && !opts.some((o) => o.value === stored);
+  // ⚠️ Match by value OR label (see resolveOption) — a label-spelled stored value
+  // is a real selection, not a custom "Other" entry.
+  const matched = resolveOption(opts, stored);
+  const storedIsCustom = stored !== '' && !matched;
   const [otherMode, setOtherMode] = useState(storedIsCustom);
   const [custom, setCustom] = useState(storedIsCustom ? stored : '');
   useEffect(() => {
-    if (stored !== '' && !opts.some((o) => o.value === stored)) { setOtherMode(true); setCustom(stored); }
+    const m = resolveOption(opts, stored);
+    if (stored !== '' && !m) { setOtherMode(true); setCustom(stored); }
+    else if (m) { setOtherMode(false); }
   }, [stored]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex flex-col gap-1.5">
       <select className={inputCls} disabled={disabled}
-        value={otherMode || stored === otherVal ? otherVal : stored}
+        value={otherMode || stored === otherVal ? otherVal : (matched?.value ?? stored)}
         onChange={(e) => {
           if (e.target.value === otherVal) { setOtherMode(true); setCustom(''); void onSave(f.field_key, ''); }
           else { setOtherMode(false); setCustom(''); void onSave(f.field_key, e.target.value); }
@@ -564,7 +589,6 @@ function useStructuredDraft(
   useEffect(() => {
     if (editingRef.current) return;
     if (JSON.stringify(f.structured ?? {}) !== JSON.stringify(draftRef.current)) setDraft(f.structured ?? {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [f.structured]);
   return {
     draft,
