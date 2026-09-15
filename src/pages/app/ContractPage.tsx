@@ -383,6 +383,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   // undefined to use the natural default for the current state (edit while
   // editable/in-review; read-only signer view once locked). Set by the toggle.
   const [viewChoice, setViewChoice] = useState<'signer' | 'author' | undefined>(undefined);
+  /* ⚠️ VIEW-AS (owner, 2026-09-14): "I should always see the toggle as the author
+     and admin — it's helpful to see what each party will see." Staff/admin can
+     preview the document AS ANY PARTY (read-only, exactly what that party gets),
+     not only when they are literally a party. null = the author view. When set to
+     a role, the render below treats the viewer as that party. */
+  const [previewRole, setPreviewRole] = useState<string | null>(null);
   // Sale contracts: bill-of-sale generation + co-buyer capture state.
   const [bosBusy, setBosBusy] = useState(false);
   // L9: signature state drives the read-only rule and its actions
@@ -678,7 +684,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       /* the numbered strip still offers the link; never strand the signature */
     }
   }, [id, deliverExecutedCopy, navigate]);
-  const myRoles = detail?.my_roles ?? [];
+  /* When staff/admin is PREVIEWING a party (View-as picker), render exactly what
+     that party would see: they become that role, in the read-only signer frame,
+     and the author affordances switch off. Otherwise `my_roles` is whatever the
+     server resolved for the real caller (empty for staff who are not a party). */
+  const myRoles = previewRole ? [previewRole] : (detail?.my_roles ?? []);
   const state = doc?.workflow_state ?? 'editable';
   // A staff member can ALSO be a party on the contract (e.g. a barn admin who is
   // the Lessee, signing on the company's behalf). They wear two hats:
@@ -690,13 +700,17 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const staffIsParty = isStaff && myRoles.length > 0;
   // Natural default: read-only signer view once locked; author/edit before that.
   const defaultAsSigner = state === 'locked';
-  const viewAsSigner = staffIsParty
-    ? (viewChoice === undefined ? defaultAsSigner : viewChoice === 'signer')
-    : false;
+  // Previewing a party is always the read-only party frame. Otherwise the old
+  // rule: a staff member who is also a party may toggle author vs signer.
+  const viewAsSigner = previewRole
+    ? true
+    : staffIsParty
+      ? (viewChoice === undefined ? defaultAsSigner : viewChoice === 'signer')
+      : false;
   // H1 originator-authority collapse: the company (staff) is always the author.
   // A party being stamped as originator is provenance only — it no longer opens
-  // the owner-side surface.
-  const isOwnerSide = isStaff && !viewAsSigner;
+  // the owner-side surface. Previewing a party forces the party (non-owner) view.
+  const isOwnerSide = isStaff && !viewAsSigner && !previewRole;
   // the horse-owning side: Lessor on a lease, Seller on a sale / bill of sale
   // Editing is allowed in review too — the parties' per-party controls (can_fill /
   // can_edit_deal) decide what each may actually change; a party with neither just
@@ -1512,7 +1526,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           /* ROW ONE beside Send/Save/drawers: the counterparty's primary action. */
           extras={
             <>
-              {!isOwnerSide && myRoles.length > 0 && editablePhase && !isInactive && (
+              {/* !previewRole: while a staff viewer is only PREVIEWING a party's
+                  view, the party's real actions are inert — the server would
+                  reject them anyway (they are not that contact). */}
+              {!isOwnerSide && !previewRole && myRoles.length > 0 && editablePhase && !isInactive && (
                 <button type="button"
                   className={`${SUBHEADER_BTN} border-green-800 bg-green-800 text-white hover:bg-green-700`}
                   onClick={() => void approveReview()}>
@@ -1838,11 +1855,47 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           A termination request is pending your response — see Manage above.
         </div>
       )}
+      {/* ⚠️ VIEW-AS PICKER (owner, 2026-09-14). Staff/admin can always preview the
+          document as any party — "helpful to see what each party will see." Author
+          is the real editing surface; each party chip shows that party's exact
+          read-only view. Distinct from the author/signer toggle below, which only
+          appears when the viewer is themselves a party. Company parties render by
+          NAME (French Heritage Equestrian), never their email. */}
+      {isStaff && !isExecuted && !isInactive && (partiesSummary?.parties.length ?? 0) > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-[12px]">
+          <span className="text-muted">View as:</span>
+          <button type="button"
+            className={`px-3 py-1.5 rounded-lg border ${previewRole === null
+              ? 'border-green-800 bg-green-800 text-white'
+              : 'border-green-800/20 text-secondary hover:bg-green-800/5'}`}
+            onClick={() => setPreviewRole(null)}>
+            Author
+          </button>
+          {(partiesSummary?.parties ?? [])
+            // one chip per distinct party role; skip internal company aliases
+            .filter((p, i, arr) => arr.findIndex((q) => q.party_role === p.party_role) === i)
+            .map((p) => (
+            <button key={p.party_role} type="button"
+              className={`px-3 py-1.5 rounded-lg border ${previewRole === p.party_role
+                ? 'border-green-800 bg-green-800 text-white'
+                : 'border-green-800/20 text-secondary hover:bg-green-800/5'}`}
+              onClick={() => setPreviewRole(p.party_role)}>
+              {p.name?.trim() || (p.party_role.charAt(0) + p.party_role.slice(1).toLowerCase())}
+            </button>
+          ))}
+          {previewRole && (
+            <span className="text-[11px] text-gold-800">
+              Previewing what {previewRole.charAt(0) + previewRole.slice(1).toLowerCase()} sees — read-only.
+            </span>
+          )}
+        </div>
+      )}
+
       {/* A staff member who is ALSO a party wears two hats. While editable/in review
           they can edit (author) or preview read-only as the signer. Once LOCKED, the
           doc is frozen for signing — but they can temporarily re-enable editing to
           fix a term before anyone signs. The toggle controls which mode they're in. */}
-      {staffIsParty && !isExecuted && !isInactive && (
+      {staffIsParty && !previewRole && !isExecuted && !isInactive && (
         <div className="mb-4 flex flex-wrap items-center gap-2 text-[12px]">
           <span className="text-muted">
             {state === 'locked'
@@ -2457,7 +2510,18 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             </div>
           )}
 
-          {state === 'locked' && myRoles.length > 0 && !iSigned && !docGated && !nameGated && (
+          {/* While PREVIEWING a party (staff view-as), show where their signature
+              box is — but not a live Sign control, since the viewer is not that
+              party. */}
+          {state === 'locked' && previewRole && !iSigned && !docGated && !nameGated && (
+            <div className="border-t border-green-800/10 pt-4">
+              <p className="text-sm text-secondary">
+                <strong>{previewRole.charAt(0) + previewRole.slice(1).toLowerCase()}</strong> signs here —
+                they type their full legal name. <span className="text-gold-800">(Preview — sign disabled.)</span>
+              </p>
+            </div>
+          )}
+          {state === 'locked' && !previewRole && myRoles.length > 0 && !iSigned && !docGated && !nameGated && (
             <div className="border-t border-green-800/10 pt-4">
               <p className="text-sm text-secondary mb-2">
                 Sign as <strong>{myRoles[0]}</strong> — typing your full legal name is your signature.
