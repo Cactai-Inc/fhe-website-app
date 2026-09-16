@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {  } from 'lucide-react';
 import { Modal } from '../../components/ops/kit/Modal';
 import { useFormDraft } from '../../lib/formState';
 import { toErrorMessage } from '../../lib/ops/errors';
@@ -9,7 +8,7 @@ import { listLessonClients, listScheduleHorses } from '../../lib/ops/api-lessons
 import type { LessonClientOption, ScheduleHorseOption } from '../../lib/ops/api-lessons';
 import { BookingItemSwap } from '../../components/app/BookingItemSwap';
 import { FeeChooser } from '../../components/app/FeeChooser';
-import { SessionActivityForm } from './ops/lessons/SessionActivityForm';
+import { BookingView } from '../../components/app/BookingView';
 import {
   fetchLocations, addMyLocation,
   fetchClientPurchases,
@@ -34,17 +33,25 @@ import {
   type MonthlyPlan,
   type BookingFeeCharge,
 } from '../../lib/ops/api-calendar';
-import { adminSendInvitation } from '../../lib/admin';
 
 /*
- * The staff/admin calendar config panel (Phase 6, Slice 3). Right-side on
- * desktop, full-screen on mobile. Create or edit a calendar item: an
- * unavailable block, a flexible-open block, or a real offering booking assigned
- * to a client/horse/purchase — single or recurring. Submit commits; "Save draft"
- * keeps it as a draft on the calendar; Delete removes it (series-scoped).
+ * The staff/admin calendar item modal.
+ *
+ * An EXISTING booking (a client lesson/care session) opens in VIEW mode — the
+ * read-only BookingView with its Purchase card, cancel/reschedule, and the
+ * activity workspace — with an Edit button to enter the editor. Everything else
+ * (a new item, an unavailable block, an appointment) opens straight in the
+ * editor.
+ *
+ * The editor creates or updates: an offering session assigned to a
+ * client/horse/purchase (single or recurring), an unavailable block, or an
+ * external appointment. "Save" updates an existing item; "Submit" is only for a
+ * NEW booking request (it notifies staff to review). Price is not shown on a
+ * booking — it lives in the catalog and on the order.
  */
 
 type ItemType = 'unavailable' | 'offering' | 'appointment';
+type PanelMode = 'view' | 'edit';
 
 function toLocalInput(iso: string): string {
   const d = new Date(iso);
@@ -67,6 +74,14 @@ export function CalendarItemPanel({
   onSaved: () => void;
 }) {
   const editing = !!item?.id;
+  const isBooking = item?.kind === 'lesson' || item?.kind === 'care';
+  /* An existing booking opens read-only; the editor is one Edit click away.
+     Anything else (new item, block, appointment) opens in the editor. */
+  const [mode, setMode] = useState<PanelMode>(editing && isBooking ? 'view' : 'edit');
+  /* The client is shown as read-only text on an existing booking; changing it is
+     a rare correction gated behind this toggle, not an always-live dropdown that
+     is easy to change by accident. */
+  const [editClient, setEditClient] = useState(false);
   const [offerings, setOfferings] = useState<Offering[]>([]);
   const [clients, setClients] = useState<LessonClientOption[]>([]);
   const [horses, setHorses] = useState<ScheduleHorseOption[]>([]);
@@ -111,18 +126,9 @@ export function CalendarItemPanel({
   const [address, setAddress] = useState(item?.address ?? '');
   const [travelBefore, setTravelBefore] = useState(String(item?.travel_before_minutes ?? 0));
   const [travelAfter, setTravelAfter] = useState(String(item?.travel_after_minutes ?? 0));
-  const [price, setPrice] = useState(item?.price_amount != null ? String(item.price_amount) : '');
   const [notes, setNotes] = useState(item?.notes ?? '');
   const [weeks, setWeeks] = useState('1');
   const [scope, setScope] = useState<'one' | 'future' | 'all'>('one');
-
-  // BOOKLINK B1 — inline "create the client" escape when a lesson needs one.
-  const [newClientOpen, setNewClientOpen] = useState(false);
-  const [newClientFirst, setNewClientFirst] = useState('');
-  const [newClientLast, setNewClientLast] = useState('');
-  const [newClientEmail, setNewClientEmail] = useState('');
-  const [newClientBusy, setNewClientBusy] = useState(false);
-  const [newClientError, setNewClientError] = useState<string | null>(null);
 
   // BOOKLINK B2 — payment disposition, consulted only if this save ends up
   // creating a brand-new order (nothing existed to debit).
@@ -208,38 +214,6 @@ export function CalendarItemPanel({
       .catch(() => setMonthlyPlan(null));
   }, [clientId, offeringId, isRecurringOffering]);
 
-  async function createNewClient() {
-    if (!newClientFirst.trim() || !newClientEmail.trim()) {
-      setNewClientError('First name and email are required.');
-      return;
-    }
-    setNewClientBusy(true);
-    setNewClientError(null);
-    try {
-      // BOOKLINK B1: reuse the canonical provisioning spine
-      // (ProvisionClientForm → adminSendInvitation → provision_client_invitation)
-      // rather than a second client-creation path.
-      await adminSendInvitation({
-        email: newClientEmail.trim(),
-        firstName: newClientFirst.trim(),
-        lastName: newClientLast.trim() || undefined,
-        categories: ['GUEST'],
-      });
-      const refreshed = await listLessonClients();
-      setClients(refreshed);
-      const created = refreshed.find(
-        (c) => (c.email ?? '').toLowerCase() === newClientEmail.trim().toLowerCase(),
-      );
-      if (created) setClientId(created.id);
-      setNewClientOpen(false);
-      setNewClientFirst(''); setNewClientLast(''); setNewClientEmail('');
-    } catch (e) {
-      setNewClientError(toErrorMessage(e, 'Could not create the client.'));
-    } finally {
-      setNewClientBusy(false);
-    }
-  }
-
   async function savePlanDays() {
     if (!monthlyPlan || planDays.length === 0) return;
     setMonthlyBusy(true); setMonthlyError(null); setMonthlyResult(null);
@@ -311,14 +285,7 @@ export function CalendarItemPanel({
   const selectedLocation = locations.find((l) => l.id === locationId);
   const offsite = selectedLocation?.is_offsite ?? false;
 
-  // price auto-fills from the offering when empty
-  useEffect(() => {
-    if (type === 'offering' && selectedOffering && price === '') {
-      if (selectedOffering.price_amount != null) setPrice(String(selectedOffering.price_amount));
-    }
-  }, [offeringId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ⚠️ DURATION AUTO-APPLIES (owner, 2026-09-12). Picking an offering sets the end
+  /* Picking an offering sets the end time to start + the offering's duration; the
      time to start + the offering's duration — a 60-min lesson ends an hour later,
      a 90-min evaluation 90 minutes later. Staff can still drag the end; this only
      applies the "proper time value" the moment a service is chosen, not on every
@@ -374,7 +341,8 @@ export function CalendarItemPanel({
       address: offsite ? address || selectedLocation?.address || null : null,
       travel_before_minutes: offsite ? Number(travelBefore) || 0 : 0,
       travel_after_minutes: offsite ? Number(travelAfter) || 0 : 0,
-      price_amount: type === 'offering' && price !== '' ? Number(price) : null,
+      // Price is never set from a booking — it lives on the catalog + the order.
+      price_amount: null,
       notes: notes.trim() || null,
       recurrence_weeks: !editing ? Number(weeks) || 1 : 1,
       scope: editing && isSeries ? scope : 'one',
@@ -505,7 +473,7 @@ export function CalendarItemPanel({
      the item being edited (or `new` for a fresh one). ⚠️ A DRAFT, NOT A ROW. */
   const draftShape = {
     type, start, end, offeringId, clientId, purchaseId, horseId, instructorId,
-    isFlexible, locationId, address, travelBefore, travelAfter, price, notes, weeks,
+    isFlexible, locationId, address, travelBefore, travelAfter, notes, weeks,
   };
   const draft = useFormDraft(
     `calendar.item.${item?.id ?? 'new'}`,
@@ -524,7 +492,6 @@ export function CalendarItemPanel({
       if (typeof d.address === 'string') setAddress(d.address);
       if (typeof d.travelBefore === 'string') setTravelBefore(d.travelBefore);
       if (typeof d.travelAfter === 'string') setTravelAfter(d.travelAfter);
-      if (typeof d.price === 'string') setPrice(d.price);
       if (typeof d.notes === 'string') setNotes(d.notes);
       if (typeof d.weeks === 'string') setWeeks(d.weeks);
     },
@@ -533,7 +500,7 @@ export function CalendarItemPanel({
   function clearForm() {
     setOfferingId(''); setClientId(''); setPurchaseId(''); setHorseId('');
     setInstructorId(''); setLocationId(''); setAddress('');
-    setTravelBefore('0'); setTravelAfter('0'); setPrice(''); setNotes('');
+    setTravelBefore('0'); setTravelAfter('0'); setNotes('');
     setWeeks('1'); setIsFlexible(false); setError(null);
     draft.clear();
   }
@@ -551,8 +518,17 @@ export function CalendarItemPanel({
        full-width base still applies, so this reads full-screen on a phone and a
        comfortable centered dialog on desktop. */
     <Modal open onClose={handleClose} size="lg" panelClassName="bg-cream"
-      title={`${editing ? 'Edit' : 'New'} calendar item`}
-      onClear={clearForm} saveStatus={draft.status} error={error}>
+      title={mode === 'view' ? 'Booking' : `${editing ? 'Edit' : 'New'} calendar item`}
+      onClear={mode === 'edit' ? clearForm : undefined}
+      saveStatus={mode === 'edit' ? draft.status : undefined} error={error}>
+        {mode === 'view' && item ? (
+          <BookingView
+            item={item}
+            onEdit={() => setMode('edit')}
+            onReschedule={() => setMode('edit')}
+            onChanged={() => { done.current = true; onSaved(); }}
+          />
+        ) : (
         <div className="flex flex-col gap-4 flex-1">
           {/* type */}
           <div className="inline-flex rounded-full bg-green-800/10 p-0.5 self-start">
@@ -599,49 +575,47 @@ export function CalendarItemPanel({
                 Flexible — open for clients to book
               </label>
               {!isFlexible && (
-                <label className="text-sm">
+                <div className="text-sm">
                   <span className="form-label">
                     Client{selectedOffering?.segment !== 'horse' ? ' (required to book)' : ''}
                   </span>
-                  <select className="form-input" value={clientId} onChange={(e) => { setClientId(e.target.value); setPurchaseId(''); }}>
-                    <option value="">Unassigned</option>
-                    {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                  {!newClientOpen ? (
-                    <button type="button" className="text-xs text-green-800 underline underline-offset-2 mt-1" onClick={() => setNewClientOpen(true)}>
-                      + New client
-                    </button>
-                  ) : (
-                    <div className="mt-2 p-3 bg-green-800/5 rounded-md flex flex-col gap-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <input className="form-input" placeholder="First name" value={newClientFirst} onChange={(e) => setNewClientFirst(e.target.value)} />
-                        <input className="form-input" placeholder="Last name" value={newClientLast} onChange={(e) => setNewClientLast(e.target.value)} />
-                      </div>
-                      <input className="form-input" type="email" placeholder="Email" value={newClientEmail} onChange={(e) => setNewClientEmail(e.target.value)} />
-                      <div className="flex items-center gap-2">
-                        <button type="button" className="btn-primary text-xs px-3 py-1.5" disabled={newClientBusy} onClick={() => void createNewClient()}>
-                          {newClientBusy ? 'Creating…' : 'Invite & select'}
-                        </button>
-                        <button type="button" className="text-xs text-green-800/70" onClick={() => { setNewClientOpen(false); setNewClientError(null); }}>
-                          Cancel
-                        </button>
-                      </div>
-                      {newClientError && <p role="alert" className="form-error">{newClientError}</p>}
+                  {/* On an EXISTING booking the client is read-only text; changing
+                      it is a rare correction gated behind "Change client", not an
+                      always-live dropdown that is easy to change by accident. To
+                      move a session to another person, cancel/reschedule — do not
+                      re-point the client. */}
+                  {editing && !editClient ? (
+                    <div className="flex items-center gap-2">
+                      <p className="text-green-900">
+                        {clients.find((c) => c.id === clientId)?.name
+                          ?? item?.client_name ?? 'Unassigned'}
+                      </p>
+                      <button type="button" className="text-xs text-green-800 underline underline-offset-2"
+                        onClick={() => setEditClient(true)}>
+                        Change client
+                      </button>
                     </div>
+                  ) : (
+                    <select className="form-input" value={clientId}
+                      onChange={(e) => { setClientId(e.target.value); setPurchaseId(''); }}>
+                      <option value="">Unassigned</option>
+                      {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
                   )}
-                </label>
+                </div>
               )}
               {!isFlexible && clientId && purchases.length > 0 && (
                 <label className="text-sm">
-                  <span className="form-label">Assign to purchase</span>
+                  <span className="form-label">Purchase</span>
                   <select className="form-input" value={purchaseId} onChange={(e) => setPurchaseId(e.target.value)}>
-                    <option value="">None — let the system debit or create one</option>
+                    <option value="">Let the system use a credit or create an order</option>
                     {purchases.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.label}{p.amount != null ? ` — $${p.amount}` : ''}
                       </option>
                     ))}
                   </select>
+                  <span className="form-hint">Which order this session is booked against — its usage counter shows on the booking view.</span>
                 </label>
               )}
               {!isFlexible && clientId && offeringId && (!editing || !item?.purchase_id) && (
@@ -816,10 +790,6 @@ export function CalendarItemPanel({
                   )
                 )}
               </label>
-              <label className="text-sm">
-                <span className="form-label">Price</span>
-                <input type="number" step="0.01" className="form-input" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Inherited from offering" />
-              </label>
             </>
           )}
 
@@ -921,12 +891,8 @@ export function CalendarItemPanel({
             </div>
           )}
 
-          {/* A1 — log + report for a real serviced booking (lesson or horse-care) */}
-          {editing && item?.id && (item.kind === 'lesson' || item.kind === 'care') && (
-            <div className="pt-1">
-              <SessionActivityForm bookingId={item.id} />
-            </div>
-          )}
+          {/* The activity record (notes, checklist, plan, mark complete) is the
+              bottom half of the VIEW surface (BookingView), not the editor. */}
 
           {/* FEECHOICE F3 — a no-show or late-start fee, applied directly to
               this booking, no reschedule request required. */}
@@ -961,8 +927,10 @@ export function CalendarItemPanel({
 
           {error && <p role="alert" className="form-error">{error}</p>}
         </div>
+        )}
 
-        {/* actions */}
+        {/* actions — only in the editor; view mode carries its own controls. */}
+        {mode === 'edit' && (
         <div className="p-4 border-t border-green-800/10 flex items-center gap-2 sticky bottom-0 bg-cream">
           {/* ⚠️ TASK-LIFECYCLE — a fresh ask is `requested` now, not `pending`.
               Gating this on 'pending' alone would have taken the staff approve
@@ -980,18 +948,23 @@ export function CalendarItemPanel({
               </button>
             </>
           )}
+          {/* An EXISTING item is updated with "Save". "Submit" is only for a NEW
+              booking request — it notifies staff to review/approve. */}
           <button type="button" className="btn-primary flex-1 justify-center" disabled={busy} onClick={() => void submit(false)}>
-            {busy ? 'Saving…' : 'Submit'}
+            {busy ? 'Saving…' : editing ? 'Save' : 'Submit'}
           </button>
-          <button type="button" className="btn-secondary" disabled={busy} onClick={() => void submit(true)}>
-            Save draft
-          </button>
+          {!editing && (
+            <button type="button" className="btn-secondary" disabled={busy} onClick={() => void submit(true)}>
+              Save draft
+            </button>
+          )}
           {editing && (
             <button type="button" className="text-sm text-red-700 px-3 py-2 hover:bg-red-50 rounded-md" disabled={busy} onClick={() => void remove()}>
               Delete
             </button>
           )}
         </div>
+        )}
     </Modal>
   );
 }

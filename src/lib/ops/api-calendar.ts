@@ -275,6 +275,27 @@ export async function fetchClientPurchases(clientId: string): Promise<ClientPurc
   return (data ?? []) as ClientPurchaseOption[];
 }
 
+/** What a booking is booked against, for the view-mode Purchase card. Series
+ *  purchases (punch card / weekly plan) carry a usage counter; a single item
+ *  carries none. `has_purchase` false when the booking is not tied to an order. */
+export interface BookingPurchaseCard {
+  has_purchase: boolean;
+  label?: string;
+  offering?: string;
+  kind?: 'single' | 'punch_card' | 'recurring';
+  is_series?: boolean;
+  total?: number;
+  used?: number;
+  remaining?: number;
+  /** 1-based position of this booking within its series ("Lesson 5/8"). */
+  position?: number;
+}
+export async function fetchBookingPurchaseCard(bookingId: string): Promise<BookingPurchaseCard> {
+  const { data, error } = await supabase.rpc('booking_purchase_card', { p_booking_id: bookingId });
+  if (error) throw error;
+  return (data ?? { has_purchase: false }) as BookingPurchaseCard;
+}
+
 // ─── Client booking + change flow (Slice 4) ──────────────────────────────────
 
 /** A client claims a flexible-open block. Throws NO_CREDITS when a lesson slot
