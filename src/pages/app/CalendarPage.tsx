@@ -48,6 +48,9 @@ import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { formatSessionWhen, formatTimeRange } from '../../lib/formatDateTime';
 import { CalendarItemPanel } from './CalendarItemPanel';
 import { CalendarSettingsPanel } from './CalendarSettingsPanel';
+import { CalendarDayView } from '../../components/app/CalendarDayView';
+import { TaskModal } from '../../components/app/TaskModal';
+import { listTasks, type Task } from '../../lib/ops/api-tasks';
 import { SessionNotesView } from '../../components/app/SessionNotesView';
 import { BookingItemSwap } from '../../components/app/BookingItemSwap';
 import { FeeChooser } from '../../components/app/FeeChooser';
@@ -61,7 +64,7 @@ import { FeeChooser } from '../../components/app/FeeChooser';
  * config + booking panels land in Slices 3–4.
  */
 
-type ViewMode = 'week' | 'month';
+type ViewMode = 'week' | 'month' | 'day';
 
 const DAY_MS = 86_400_000;
 
@@ -219,6 +222,10 @@ export default function CalendarPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<CalendarItem | null>(null);
   const [editing, setEditing] = useState<{ item: CalendarItem | null; start?: Date } | null>(null);
+  /* Tasks scheduled in the visible range — shown alongside bookings in the Day
+     view (and, untimed, in its "to do today" strip). Staff-only. */
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskModal, setTaskModal] = useState<{ task: Task | null; date?: string } | null>(null);
   const [money, setMoney] = useState<{ week: number; month: number } | null>(null);
   const [roster, setRoster] = useState<CreditRosterEntry[] | null>(null);
   const [rosterOpen, setRosterOpen] = useState(false);
@@ -246,6 +253,10 @@ export default function CalendarPage() {
 
   // the visible range: a Sunday-start week, or the 6-week grid covering a month.
   const range = useMemo(() => {
+    if (view === 'day') {
+      const from = startOfDay(anchor);
+      return { from, to: addDays(from, 1) };
+    }
     if (view === 'week') {
       const from = startOfWeek(anchor);
       return { from, to: addDays(from, 7) };
@@ -270,6 +281,15 @@ export default function CalendarPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Tasks in the visible range (staff only) — bookings and tasks share the Day
+  // view. Reloaded whenever the range or the calendar reloads.
+  const loadTasks = useCallback(() => {
+    if (!isStaff) { setTasks([]); return; }
+    listTasks({ from: range.from.toISOString(), to: range.to.toISOString() })
+      .then(setTasks).catch(() => setTasks([]));
+  }, [isStaff, range.from, range.to]);
+  useEffect(() => { loadTasks(); }, [loadTasks]);
 
   // BUYANDBOOK §4.3 — THE HORIZON, MATERIALISED ON READ. There is no scheduler:
   // `pg_cron` is not installed and the Vercel crons were never created, so nothing
@@ -380,7 +400,9 @@ export default function CalendarPage() {
 
   function shift(dir: number) {
     setAnchor((a) =>
-      view === 'week' ? addDays(a, dir * 7) : new Date(a.getFullYear(), a.getMonth() + dir, 1),
+      view === 'day' ? addDays(a, dir)
+      : view === 'week' ? addDays(a, dir * 7)
+      : new Date(a.getFullYear(), a.getMonth() + dir, 1),
     );
   }
 
@@ -393,9 +415,11 @@ export default function CalendarPage() {
   }
 
   const title =
-    view === 'week'
-      ? `${range.from.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${addDays(range.from, 6).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
-      : anchor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    view === 'day'
+      ? anchor.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+      : view === 'week'
+        ? `${range.from.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${addDays(range.from, 6).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+        : anchor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
   return (
     <div className="w-full">
@@ -404,11 +428,16 @@ export default function CalendarPage() {
           <CalendarDays size={22} className="text-gold-ink" aria-hidden="true" /> Calendar
         </h1>
         <div className="flex items-center gap-2">
-          {/* D25 — the button used to say "+ Booking", which is the internal word
-              for the row it writes, on a surface both staff and clients read. */}
+          {/* The label names what a person makes, not the internal "booking" row. */}
           <PageCreateButton label={isStaff ? 'Calendar item' : 'Request a time'} onClick={onCreateBooking} />
+          {isStaff && (
+            <button type="button" onClick={() => setTaskModal({ task: null })}
+              className="text-sm text-green-800 border border-green-800/25 rounded-full px-3 py-1.5 hover:bg-green-800/5 inline-flex items-center gap-1">
+              + Task
+            </button>
+          )}
           <div className="inline-flex rounded-full bg-green-800/10 p-0.5">
-            {(['week', 'month'] as ViewMode[]).map((v) => (
+            {(['day', 'week', 'month'] as ViewMode[]).map((v) => (
               <button
                 key={v}
                 type="button"
@@ -567,6 +596,24 @@ export default function CalendarPage() {
 
       {error && <p role="alert" className="form-error mb-3">{error}</p>}
 
+      {view === 'day' ? (
+        /* The Day view lays out its own panes (rundown + workspace); it is not a
+           grid inside the scroll frame the week/month share. On mobile, selecting
+           a booking opens the modal; on desktop it fills the right pane. Tasks
+           open the task editor on both. */
+        <div className="bg-white border border-green-800/10 rounded-lg p-4">
+          <CalendarDayView
+            day={anchor}
+            bookings={items.filter((i) => i.kind === 'lesson' || i.kind === 'care')}
+            tasks={tasks}
+            isStaff={isStaff}
+            onEditBooking={isStaff ? (b) => setEditing({ item: b }) : undefined}
+            onSelectTask={(t) => setTaskModal({ task: t })}
+            onAddTask={() => setTaskModal({ task: null, date: startOfDay(anchor).toISOString().slice(0, 10) })}
+            onReload={() => { void load(); loadTasks(); }}
+          />
+        </div>
+      ) : (
       <div className="bg-white border border-green-800/10 rounded-lg overflow-x-auto">
         {view === 'week' ? (
           <WeekGrid
@@ -579,9 +626,10 @@ export default function CalendarPage() {
           />
         ) : (
           <MonthGrid anchor={anchor} items={items} onSelect={onItemClick}
-            onPickDay={(d) => { setView('week'); setAnchor(d); }} />
+            onPickDay={(d) => { setView('day'); setAnchor(d); }} />
         )}
       </div>
+      )}
 
       {loading && <p className="text-sm text-muted mt-3">Loading…</p>}
 
@@ -599,6 +647,14 @@ export default function CalendarPage() {
           defaultStart={editing.start}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); void load(); }}
+        />
+      )}
+      {taskModal && (
+        <TaskModal
+          task={taskModal.task}
+          defaultDate={taskModal.date}
+          onClose={() => setTaskModal(null)}
+          onSaved={() => { setTaskModal(null); loadTasks(); }}
         />
       )}
       {settingsOpen && (
