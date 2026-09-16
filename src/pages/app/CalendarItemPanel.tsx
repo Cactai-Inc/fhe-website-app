@@ -530,23 +530,18 @@ export function CalendarItemPanel({
           />
         ) : (
         <div className="flex flex-col gap-4 flex-1">
-          {/* type */}
-          <div className="inline-flex rounded-full bg-green-800/10 p-0.5 self-start">
-            {(['offering', 'appointment', 'unavailable'] as ItemType[]).map((t) => (
-              <button
-                key={t}
-                type="button"
-                aria-pressed={type === t}
-                onClick={() => setType(t)}
-                className={`px-3 py-1 rounded-full text-sm ${type === t ? 'bg-green-800 text-white' : 'text-green-800'}`}
-              >
-                {/* D25 (SLOTREACH §4) — "booking" is internal taxonomy and must not
-                    appear in staff-facing copy either. What this tab creates is a
-                    session against something the client bought. */}
-                {t === 'offering' ? 'Session' : t === 'appointment' ? 'Appointment' : 'Unavailable'}
-              </button>
-            ))}
-          </div>
+          {/* A calendar item is an offering SESSION by default; the one alternative
+              here is marking a timeframe UNAVAILABLE. Everything else that goes on
+              the calendar without a client purchase — farrier, vet, medications,
+              a to-do — is a Task (the "+ Task" action / TaskModal), not a type on
+              this control. */}
+          {!editing && (
+            <label className="inline-flex items-center gap-2 text-sm text-green-900 self-start">
+              <input type="checkbox" checked={type === 'unavailable'}
+                onChange={(e) => setType(e.target.checked ? 'unavailable' : 'offering')} />
+              Mark this timeframe unavailable
+            </label>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <label className="text-sm">
