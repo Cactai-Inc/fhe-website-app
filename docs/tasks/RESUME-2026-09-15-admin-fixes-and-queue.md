@@ -84,6 +84,92 @@ Owner sequence for the design conversations: **(1) SALE/contract logic → (2) P
 pages → (3) calendar/booking modal → (4) Lessons system** (deepest; likely a fresh thread when
 context is near full).
 
+---
+
+### ⚠️ 2026-09-15 SESSION — RULINGS + EXPANDED B0 SCOPE (read this first on resume)
+
+**Fixes SHIPPED this session (commit `e1ed168f`, pushed):** hard-delete FK gaps closed in
+`admin_purge_contact` (payments, requests+request_alert_sends, per-contact doc-interaction rows,
+counterparty rows on the contact's own documents — proven on a real contact, applied to prod);
+PersonRecord page scroll trap (dropped the modal-era `flex-1 overflow-y-auto` body so the window
+scrolls); My Stable → Horses scoped to FHE's own horses via `HorseRecordsPage ownerScope="company"`
+(company_contact_id scope); removed the redundant staff "My Stable" account-page card; Catalog moved
+Community→Management on staff nav (member view untouched); calendar item modal widened sm→lg (C6).
+
+**B0 was expanded by the owner to A + B + C in ONE pass, with a UNIFIED tasks entity:**
+- **A** — panel view/edit mode split (open in VIEW, Edit button top-right) + Purchase card (usage/credits
+  counter for series only) + cancel/reschedule on the VIEW surface + field cleanups (remove price,
+  remove "+ New Client", client-change behind an Edit-client button, keep "ask client to add horse",
+  rename "Booked against"→"Purchase", remove "Plan and Record" link).
+- **B** — appointments become **task-typed calendar items** sharing the ATN `tasks` entity; an untimed
+  "things to do today" strip above hour 1.
+- **C** — a **Day view**: desktop = left day-rundown / right workspace (task list when nothing selected,
+  close button top-right of the content view); mobile = list → modal. Week & month keep the modal.
+- **D (follows)** — mirror the Day-view setup compactly on the dashboard.
+
+**UNIFIED TASKS — owner rulings (verbatim intent):**
+- A **task = something NOT associated with a client purchase.** Typically manual; can be auto-triggered.
+  Bookings STAY bookings (their credit/fulfillment/fee engine is untouched); tasks are the non-purchase
+  items. The Day view MERGES bookings + tasks for display only.
+- **Not all tasks go on the calendar.** A task with another party (farrier/vet) shows on the calendar
+  AND as a task, likely with an expected timeframe. "buy feed" / "clean the tackroom" = manual task,
+  OPTIONAL date, OPTIONAL time (a time-block marks that timeframe unavailable). So task → optional date →
+  optional time.
+- Task types/categories to seed: farrier, veterinarian, medications, own-horse care items (turnout/
+  clipping/exercise done for OUR horses), general (buy feed, clean tackroom), app-update, website-update.
+  These become the ATN `tasks.category` vocabulary (owner-editable via lookup_options, D13).
+- Reconcile with the ATN spec (`docs/tasks/TASK-ATN-alerts-tasks-notifications.md`): the calendar
+  task-items ARE ATN tasks with optional scheduling fields added (`scheduled_at` / `scheduled_end` /
+  `blocks_availability`). Build the tasks data foundation FIRST, prove with queries, then UI.
+
+**THE ACTIVITY-RECORD / WORK-SURFACE RULING (big, architectural):**
+- The Day-view right pane (desktop) / modal (mobile) is split: **top half = booking info (the view-only
+  panel content); bottom half = the INTERACTIVE WORKSPACE** — create the activity record, mark COMPLETE,
+  lesson notes + full lesson plan, checkboxes for what was completed (later editable, auditable, and
+  reports generated for clients showing what was done).
+- ⚠️ **GLOBAL/CENTRALIZED SINGLE-IMPLEMENTATION OBJECTS.** These surfaces must be one implementation
+  reused everywhere the content is shown/edited/authored/removed — NOT per-surface copies. (This is the
+  standing D18 "no second implementation" rule applied to the activity-record UI.)
+- ⚠️ **GAP the owner named:** the offerings FHE currently fulfils are NOT being added to the calendar /
+  not in the system / have no companion content set. The activity-record system (notes + checkboxes +
+  complete + audit + client reports) is what fills that — overlaps B4 (Lessons). For B0 the right pane
+  shows the view-only panel content now; the Lessons work surface slots into the same pane later.
+- ⚠️ **MOBILE IS THE PRIMARY INTERACTIVE VIEW** (Claire + clients). Owner uses desktop; other tenants may
+  use tablet/desktop. **Capability + experience must be equivalent across all device sizes.** Build
+  mobile-first, parity everywhere.
+
+**NEW CONTRACT BUG (View-as, regression in commit `3102907d`) — owner testing the HORSE_SALE_V2:**
+1. In View-as (as a party) the horse **color and breed render as "Other"** with the correct value shown
+   in the adjacent space; in the EDITOR they render correctly as the dropdown selection. → the party-view
+   render resolves the lookup code (breed/color) differently and falls through to "Other". Likely the
+   party read path doesn't resolve `horse_breeds`/`horse_colors` codes to names, or the field-def render
+   treats an unmatched value as Other. FIX in B1.
+2. **View-as is interactive but nothing saves.** Owner wants to FIX issues FROM the View-as screen —
+   "if i cant fix issues from that screen it defeats the purpose." So View-as should NOT be a dead
+   read-only frame for the AUTHOR/ADMIN; author edits from within View-as must save (while still showing
+   the party's rendering). Rework the previewRole gating so the author retains edit/save capability.
+   (Belongs with B1 SALE/contract work.)
+
+### ⚠️ FINAL CLEANUP PASS — DEFERRED, do NOT do mid-feature (owner, 2026-09-15)
+These are last-activities, not now-activities. Owner: "stay in your lane." Recorded so they are
+not lost; act on them only during the dedicated final cleanup pass.
+- **Migration files do NOT live in the repo.** Move `supabase/migrations/` (+ `migrations-archive/`)
+  to the external Archive: `French Heritage Project/Archive/`. (My one session migration is already
+  moved there: `Archive/supabase-migrations-removed-from-repo/`; the function is applied in prod.)
+- **DB test harness rework.** `test/db/harness.ts` currently rebuilds the DB from ~900 migration
+  files to test — owner wants this replaced: a maintained TEST DB kept in sync with live, tested
+  directly (not build-up/tear-down from migrations). Ties into the DB overhaul (lots of duplication).
+- **Current-state DB documentation set in `supabase/`.** The `supabase/README.md` (does not exist
+  yet) is the exhaustive first-line-of-information; a file or set of files documents everything about
+  the DB — per object: what it does, what it's wired to, what it affects, what affects it. NO
+  evolution notes. This REPLACES migration files as the DB's source of truth in the repo.
+- **Relocate working `docs/`.** Only actual app/website runtime working files stay in `docs/`. CRs,
+  Claude Code transcripts, reports, design/task specs move to a platform project repo one level up
+  (alongside `Archive/`, i.e. under `French Heritage Project/`; `Files/` already holds working files).
+- **Repo-wide stale-comment sweep.** Remove ALL evolution/remediation comments and dead/commented-out
+  code repo-wide; comments describe current state only (what it does, wired-to, affects, affected-by).
+  See memory `fhe-clean-code-no-evolution-comments`. Applied to touched files already; full sweep here.
+
 ### B0. NEXT UP — booking-modal rewrite (calendar items 7 & 8, MINUS lesson plan)
 Owner said: "do all the work except the lesson plan revisions, just remove the link for now and when
 we are done with the work on the lessons buildout we can add the content to the view based on what
