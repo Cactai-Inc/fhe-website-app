@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
-  fetchTodayPlan, fetchWeekStrip, fetchMoneyWaiting, fetchPeopleWaiting,
+  fetchTodayPlan, fetchTodayTasks, fetchWeekStrip, fetchMoneyWaiting, fetchPeopleWaiting,
   fetchNotesLoop, fetchStableBoard, fetchDocumentsOnboarding, fetchCommunityPulse,
   fetchEvaluationsDue, fetchGifts, fetchMoneyHealth, fetchClairesPlate,
   fetchDealsContracts, fetchCatalogHygiene,
@@ -19,7 +19,7 @@ import {
 } from '../../../components/app/dashboard/DashboardChrome';
 import { usd, ageLabel } from '../../../lib/dashboard/format';
 import {
-  TodayZone, WeekZone, MoneyZone, PeopleZone, NotesZone, StableZone,
+  TodayZone, TodayTasksZone, WeekZone, MoneyZone, PeopleZone, NotesZone, StableZone,
   DocumentsZone, CommunityZone, EvaluationsZone, GiftsZone,
 } from '../../../components/app/dashboard/TrainerZones';
 import {
@@ -68,6 +68,7 @@ const LOADERS: Record<string, Loader> = {
      per desk) under the same key, because it is the same list either way. */
   N1: fetchNotifications as Loader,
   C1: fetchTodayPlan as Loader,
+  C1b: fetchTodayTasks as Loader,
   C2: fetchWeekStrip as Loader,
   C3: fetchMoneyWaiting as Loader,
   C4: fetchPeopleWaiting as Loader,
@@ -257,6 +258,7 @@ function renderZone(
     /* eslint-disable @typescript-eslint/no-explicit-any */
     case 'N1':  return <NotificationsZone items={items as any} onDone={refresh} />;
     case 'C1':  return <TodayZone items={items as any} />;
+    case 'C1b': return <TodayTasksZone items={items as any} />;
     case 'C2':  return <WeekZone items={items as any} />;
     case 'C3':  return <MoneyZone items={items as any} onDone={refresh} />;
     case 'C4':  return <PeopleZone items={items as any} onDone={refresh} />;

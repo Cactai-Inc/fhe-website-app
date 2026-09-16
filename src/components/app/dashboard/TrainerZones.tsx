@@ -4,7 +4,7 @@ import { confirmPaymentClaim } from '../../../lib/ops/api-payments';
 import { markBookingNoteSeen } from '../../../lib/ops/api-dashboard';
 import { markRequestContacted, appendRequestNote } from '../../../lib/ops/api-intake';
 import type {
-  TodayRow, WeekDay, MoneyRow, PersonWaitingRow, NotesRow, StableRow,
+  TodayRow, TodayTaskRow, WeekDay, MoneyRow, PersonWaitingRow, NotesRow, StableRow,
   DocRow, CommunityRow, EvalRow, GiftRow, StableReason,
 } from '../../../lib/ops/api-dashboard';
 import {
@@ -69,6 +69,37 @@ export function TodayZone({ items }: { items: TodayRow[] }) {
               r.has_plan ? 'bg-green-50 text-green-700' : 'bg-gold-100 text-gold-800'}`}
             >
               {r.has_plan ? 'Plan ready' : 'Plan now'}
+            </span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── C1b · TODAY'S TASKS ────────────────────────────────────────────────── */
+export function TodayTasksZone({ items }: { items: TodayTaskRow[] }) {
+  return (
+    <div className="grid gap-1.5">
+      {items.map((r) => {
+        const time = r.scheduled_at ? new Date(r.scheduled_at) : null;
+        const timed = time && !(time.getHours() === 0 && time.getMinutes() === 0);
+        return (
+          <Link key={r.task_id} to="/app/calendar?view=day"
+            className="dash-card grid grid-cols-[4.6rem_1fr_auto] items-center gap-3 px-3.5 py-2.5 focus-ring">
+            <span className="font-serif text-[0.98rem] text-green-700">
+              {timed ? formatTime(r.scheduled_at!) : 'To do'}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-[0.86rem] font-semibold text-green-900">{r.title}</span>
+              <span className="block truncate text-[0.74rem] text-green-800/60">
+                {r.category ? r.category.toLowerCase().replace(/_/g, ' ') : 'general'}
+                {r.horse_name ? ` · ${r.horse_name}` : ''}
+              </span>
+            </span>
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-tracked ${
+              r.status === 'in_progress' ? 'bg-gold-100 text-gold-800' : 'bg-green-50 text-green-700'}`}>
+              {r.status === 'in_progress' ? 'In progress' : 'New'}
             </span>
           </Link>
         );

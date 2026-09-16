@@ -211,7 +211,10 @@ export default function CalendarPage() {
   const [params] = useSearchParams();
   const wantItem = params.get('item');
   const wantOn = params.get('on');
-  const [view, setView] = useState<ViewMode>('week');
+  const [view, setView] = useState<ViewMode>(() => {
+    const v = new URLSearchParams(window.location.search).get('view');
+    return v === 'day' || v === 'month' || v === 'week' ? v : 'week';
+  });
   const [anchor, setAnchor] = useState<Date>(() => {
     const on = new URLSearchParams(window.location.search).get('on');
     if (on && /^\d{4}-\d{2}-\d{2}$/.test(on)) return new Date(`${on}T12:00:00`);

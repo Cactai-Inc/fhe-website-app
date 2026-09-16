@@ -50,6 +50,21 @@ export interface TodayRow {
 }
 export const fetchTodayPlan = () => zone<TodayRow>('dash_today_plan');
 
+/* ── C1b · today's tasks (the unified task entity) ──────────────────────── */
+export interface TodayTaskRow {
+  task_id: string;
+  title: string;
+  category: string | null;
+  status: string;
+  scheduled_at: string | null;
+  due_at: string | null;
+  blocks_availability: boolean;
+  horse_id: string | null;
+  horse_name: string | null;
+  client_id: string | null;
+}
+export const fetchTodayTasks = () => zone<TodayTaskRow>('dash_today_tasks');
+
 /* ── C2 · week strip ───────────────────────────────────────────────────── */
 export interface WeekDay {
   day: string;
