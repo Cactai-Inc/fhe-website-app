@@ -85,7 +85,8 @@ function splitBodyIntoSections(body: string): Chunk[] {
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
 export function PartyDocumentView({
-  body, sections, fields, editable, onSave, onSaveStructured, onSaveResponsibility,
+  body, sections, fields, editable, authorPreview = false,
+  onSave, onSaveStructured, onSaveResponsibility,
 }: {
   body: string | null;
   /** The template's section defs, used only to map a printed heading back to the
@@ -95,6 +96,12 @@ export function PartyDocumentView({
   sections: SectionDef[];
   fields: ContractField[];
   editable: boolean;
+  /** The viewer is a staff AUTHOR previewing what a party sees. They get the
+   *  party's rendering (the composed body, resolved conditionals) but keep author
+   *  edit power, so an issue spotted in preview — a wrong breed/color, a bad
+   *  value — can be fixed from this screen instead of leaving it. Off for a real
+   *  party, who only edits fields the server says are theirs. */
+  authorPreview?: boolean;
   onSave: (key: string, value: string) => void | Promise<void>;
   onSaveStructured: (key: string, s: unknown) => void | Promise<void>;
   onSaveResponsibility: (key: string, r: unknown) => void | Promise<void>;
@@ -105,9 +112,11 @@ export function PartyDocumentView({
     return m;
   }, [fields]);
 
-  /** Hers to answer, and asked by the document as it currently stands. */
+  /** Hers to answer, and asked by the document as it currently stands. An author
+   *  previewing sees every fillable field as editable (not just the party's), so
+   *  they can fix an issue from the party view; a real party sees only `can_edit`. */
   const mine = useMemo(() => fields.filter((f) => (
-    f.can_edit
+    (authorPreview || f.can_edit)
     // Structural author rows (a section, a header, a line of prose) are not
     // questions; their content is already IN the composed text above.
     && !f.custom_kind
@@ -118,7 +127,7 @@ export function PartyDocumentView({
     && clauseConditionMet(f.conditional_on, valueMap)
     && f.is_na !== true
     && f.included !== false
-  )), [fields, valueMap]);
+  )), [fields, valueMap, authorPreview]);
 
   const chunks = useMemo(() => (body ? splitBodyIntoSections(body) : []), [body]);
 
@@ -160,7 +169,7 @@ export function PartyDocumentView({
   const controls = (list: ContractField[], key: string) => (
     <div key={`c-${key}`} className="bg-green-50 border border-green-500/40 rounded-lg px-5 py-4 my-4">
       <p className="text-[11px] font-sans uppercase tracking-wide text-green-800 mb-3">
-        {list.length === 1 ? 'Your answer' : 'Your answers'}
+        {authorPreview ? 'Edit (author)' : list.length === 1 ? 'Your answer' : 'Your answers'}
       </p>
       <div className="flex flex-col gap-3">
         {list.map((f) => (

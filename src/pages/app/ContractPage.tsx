@@ -1885,7 +1885,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           ))}
           {previewRole && (
             <span className="text-[11px] text-gold-800">
-              Previewing what {previewRole.charAt(0) + previewRole.slice(1).toLowerCase()} sees — read-only.
+              Previewing what {previewRole.charAt(0) + previewRole.slice(1).toLowerCase()} sees.
+              {editablePhase ? ' You can still edit any field here to fix an issue.' : ''}
             </span>
           )}
         </div>
@@ -2341,7 +2342,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           body={doc.merged_body}
           sections={structure?.sections ?? []}
           fields={detail.fields}
-          editable={editablePhase}
+          /* A staff author previewing keeps edit power (to fix an issue they spot
+             in the party view), as long as the document is still in an editable
+             phase; a real party edits only what the server says is theirs. */
+          editable={editablePhase && (isStaff || myRoles.length > 0)}
+          authorPreview={isStaff && !!previewRole && editablePhase}
           onSave={saveField}
           onSaveStructured={(k, sv) => void act(() => setFieldStructured(id!, k, sv as never))}
           onSaveResponsibility={(k, r) => void act(() => setFieldResponsibility(id!, k, r as never))}
