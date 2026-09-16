@@ -144,11 +144,10 @@ Community→Management on staff nav (member view untouched); calendar item modal
    render resolves the lookup code (breed/color) differently and falls through to "Other". Likely the
    party read path doesn't resolve `horse_breeds`/`horse_colors` codes to names, or the field-def render
    treats an unmatched value as Other. FIX in B1.
-2. **View-as is interactive but nothing saves.** Owner wants to FIX issues FROM the View-as screen —
-   "if i cant fix issues from that screen it defeats the purpose." So View-as should NOT be a dead
-   read-only frame for the AUTHOR/ADMIN; author edits from within View-as must save (while still showing
-   the party's rendering). Rework the previewRole gating so the author retains edit/save capability.
-   (Belongs with B1 SALE/contract work.)
+2. ✅ **View-as editable-in-preview — DONE** (commit `648eb551`). PartyDocumentView gained an
+   `authorPreview` flag: a staff author previewing a party sees every fillable field as an editable
+   author control (not just the party's), so issues are fixed from that screen; saves use author
+   authority. Banner updated. The breed/color "Other" itself was fixed separately in `6ecc35b4`.
 
 ### ⚠️ FINAL CLEANUP PASS — DEFERRED, do NOT do mid-feature (owner, 2026-09-15)
 These are last-activities, not now-activities. Owner: "stay in your lane." Recorded so they are
@@ -170,7 +169,31 @@ not lost; act on them only during the dedicated final cleanup pass.
   code repo-wide; comments describe current state only (what it does, wired-to, affects, affected-by).
   See memory `fhe-clean-code-no-evolution-comments`. Applied to touched files already; full sweep here.
 
-### B0. NEXT UP — booking-modal rewrite (calendar items 7 & 8, MINUS lesson plan)
+### ✅ B0 — DONE (2026-09-16). Calendar/booking rewrite + unified tasks + Day view.
+Shipped commits: e1ed168f (admin fixes), 6ecc35b4 (contract Other fix), e1325251 (migration
+out of repo), 4f39d35c (tasks API), 6620ea80 (Slice A: view/edit + BookingView + Purchase card),
+c75af392 (Slice B/C: Day view + tasks on calendar), b774cc45 (binary offering/unavailable control),
+4152a119 (Slice D: Today's tasks dashboard zone). What landed:
+- **Unified tasks entity** (`tasks`/`task_links`/`task_assignees`, RLS staff-only, anon revoked;
+  categories in lookup_options 'task_category', owner-editable). Client API `src/lib/ops/api-tasks.ts`.
+- **BookingView** (`src/components/app/BookingView.tsx`) — the ONE view-only surface: top = who/what/
+  when/where + Purchase card (usage counter for series via `booking_purchase_card` RPC), cancel +
+  reschedule; bottom = SessionActivityForm (the activity workspace). Reused by the calendar modal +
+  Day view + dashboard.
+- **CalendarItemPanel** now opens existing bookings in VIEW mode (Edit button); "Submit"→"Save" for
+  existing; price removed; "+ New client" removed; client read-only behind "Change client"; "Assign to
+  purchase"→"Purchase"; tri-toggle → binary offering/unavailable checkbox; appointments are Tasks now.
+- **Day view** (`src/components/app/CalendarDayView.tsx`) — desktop left rundown / right workspace
+  (task list when nothing selected, close button); mobile → modal; untimed "to do today" strip; week/
+  month keep the modal; month-day click opens Day view. `?view=day` deep-link honored.
+- **TaskModal** (`src/components/app/TaskModal.tsx`) — the one task create/edit surface.
+- **Dashboard zone C1b "Today's tasks"** via `dash_today_tasks` RPC.
+DB objects added this session (all in external Archive, applied to prod): `booking_purchase_card`,
+`dash_today_tasks`, `tasks_foundation` (3 tables + seed).
+Deferred within B0 (owner ruling): the lesson-plan CONTENT in the workspace waits for B4; the
+workspace already reuses SessionActivityForm which carries the plan today.
+
+### B0-OLD (superseded by the above) — booking-modal rewrite (calendar items 7 & 8, MINUS lesson plan)
 Owner said: "do all the work except the lesson plan revisions, just remove the link for now and when
 we are done with the work on the lessons buildout we can add the content to the view based on what
 we end up with." Open this turn with the two quick wins first, then the rewrite:
