@@ -193,6 +193,56 @@ DB objects added this session (all in external Archive, applied to prod): `booki
 Deferred within B0 (owner ruling): the lesson-plan CONTENT in the workspace waits for B4; the
 workspace already reuses SessionActivityForm which carries the plan today.
 
+### ⚠️ 2026-09-17 CONTRACT SESSION — done + remaining (read before resuming B1)
+**Migration convention:** all DB changes this session are applied to prod and the SQL archived
+outside the repo at `French Heritage Project/Archive/supabase-migrations-removed-from-repo/`.
+**DONE (HORSE_SALE_V2 unless noted; committed code where applicable):**
+- N1 stray periods on label lines — FIXED in `remerge_contract_from_clauses` (label:value lines
+  take no terminal period; sentences still do). N2 blank line before every section/subsection.
+- Location fields (delivery/trial/installment) → the structured `location` element (name+address),
+  field defs + per-doc rows; existing text values migrated to structured.name.
+- **PARTY VIEW REWORK (big):** green "YOUR ANSWERS" boxes REMOVED entirely; `PartyDocumentView`
+  DELETED. A party (and staff View-as) now renders through `ClauseDocument` — the inline authoring
+  surface, scoped by role (`cb.myRoles`), `authorView=false` so a party doesn't see muted
+  conditional previews. Edit mode while editable; view-only once locked/executed. View-as = the
+  party's exact surface, editable. OUTLINE added around any section with a party field still to
+  fill (gold outline, gone when complete). Tooltip icon made legible (was a ~9px superscript glyph
+  → 14px Info). Own-field tip is SECOND PERSON ("This is for you, as the Seller, to fill in").
+  Empty imported field shows "not on file" (was "from horse record", read like a value).
+- §8.2 title/risk reworded to read correctly with or without installments.
+- §8.4 no-slaughter AUTO-INCLUDED (gate removed) + buyer-acceptance certify checkbox
+  (`TXN.NO_SLAUGHTER_ACK`, clause `DELIVERY.NO_SLAUGHTER_ACK`).
+- §7 trial: insurance sentence split into `TRIAL.INSURANCE` clause gated on the election; added
+  **N/A** option to `TXN.TRIAL_INSURANCE_RESPONSIBLE` (fixes the "at No Applicable's cost" bug);
+  return clause reworded ("Unless written notice is given and approved by Seller, Buyer must return
+  … or execute this Agreement").
+- §6 PPE: **split the shared date** — `TXN.PPE_DEADLINE` = exam date (§6.1); new
+  `TXN.PPE_NOTICE_DEADLINE` = written-notice deadline (§6.2), `PPE.CONTINGENCY` repointed to it;
+  added **N/A** to `TXN.PPE_CHOICE` + a `PPE.NA` clause. Live doc set to exam 9/1, notice 9/15.
+- §3.6 breeding warranty GATED ON HORSE.SEX (gelding → section absent; mare/stallion/colt/filly →
+  available). §3.4 got a **Yes/No gate** (`TXN.HAS_DISCLOSURES`) + a "nothing to disclose" clause +
+  a PENDING placeholder; new **Buyer Acceptance and Acknowledgement of Disclosures** section
+  (`BUYER_ACCEPTANCE`) with a certify checkbox (`TXN.BUYER_ACCEPTS_DISCLOSURES`), shown when §3.4 or
+  injury history has a Yes.
+
+**REMAINING B1 (not yet built):**
+- §3.4 RICH incident list — category menu (from the shown list, no "Other"), "+ Add date of
+  incident / start" and "+ Add end date" (with a "present" option), repeating incidents, free-text.
+  ⚠️ NEEDS NEW UI CONTROLS in ContractCascade (a repeating category+date-range widget) — a focused
+  sub-build, not yet done.
+- §3.5 polish: reposition Yes/No above the gated text; the required-asterisk placement; trailing
+  period on the input's helper line. (Partly addressed by N1; the reposition/asterisk not yet.)
+- §1 fill horse-record columns (current_location empty → now shows "not on file") + dedupe the
+  duplicate `template_tokens` HORSE.* rows.
+- §2 cascading logic (broader decision-gates future selections).
+- §12 make the contract SIGNABLE (owner-side lock/ready-to-sign path) — the counterparty-gated lock
+  is the remaining blocker to signing; + explain §12 assignment purpose.
+- LOCK MODEL (document controls: restrict-to-suggestions / read-only) — General item 2.
+- Mint a template version once the wording is stable (D34; sale has 0 executed docs so D33 = nothing
+  to oblige; clause templates don't use save_contract_template_version — check record_template_version_bump).
+- Also queued: item 5 (new-task modal fixes), item 6 (client-record FILED UNDER relocation +
+  suspend/remove/delete redesign + audit-trail page).
+
 ### B0-OLD (superseded by the above) — booking-modal rewrite (calendar items 7 & 8, MINUS lesson plan)
 Owner said: "do all the work except the lesson plan revisions, just remove the link for now and when
 we are done with the work on the lessons buildout we can add the content to the view based on what
