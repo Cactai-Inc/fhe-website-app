@@ -445,6 +445,16 @@ export async function advanceWorkflow(documentId: string, to: string): Promise<s
   return data as string;
 }
 
+/** The reasons a document cannot yet be signed (required fields empty, open
+ *  change requests, horse not confirmed, onboarding docs outstanding). Empty
+ *  array = complete and signable. Signability is gated by COMPLETENESS, not by a
+ *  manual lock (D14) — the sign action locks-and-signs atomically. */
+export async function fetchLockBlockers(documentId: string): Promise<LockBlocker[]> {
+  const { data, error } = await supabase.rpc('contract_lock_blockers', { p_document_id: documentId });
+  if (error) throw error;
+  return (data ?? []) as LockBlocker[];
+}
+
 /** `signerTitle` is the capacity the signer signs IN, and it is REQUIRED when the
  *  contract treats that party as an ENTITY — a company has no hand of its own, so
  *  a person signs for it and must say in what role. The server writes it (and the

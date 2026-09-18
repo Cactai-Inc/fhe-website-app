@@ -68,36 +68,26 @@ const MIN_HEIGHT = 160;
 
    The nav rail only exists from lg up, so below that the bar has the full window
    width — the earlier sizing assumed a rail that was not there. */
+/* ONE BUTTON, one comfortable size. The bar WRAPS into tidy rows rather than
+   crushing every control onto one line — squeezing padding down to a few pixels
+   to hold `flex-nowrap` is what made the row read as cramped and uneven. Padding,
+   gap and type are steady from md up; the row wraps when it must (below). */
 export const SUBHEADER_BTN =
   'inline-flex items-center justify-center gap-1.5 rounded-lg border font-medium '
   + 'focus-ring whitespace-nowrap w-full px-3 py-3 text-sm '
-  // From sm up: auto width, shrinkable, with fluid padding and type.
-  + 'md:w-auto md:shrink md:min-w-0 md:py-2 '
-  // UIO-015, owner: "buttons on subheader and text (desktop version) too
-  // large." Ceilings only — 0.875rem->0.625rem (14px->10px) and
-  // 14px->13px — the minimums and the vw scaling term are untouched, so
-  // the fluid behaviour below the ceiling is exactly what it was. This
-  // order originally quoted a two-breakpoint version of this file that no
-  // longer existed; appending fixed-value classes on top of these arbitrary
-  // clamp() properties was a no-op (Tailwind's own generation order placed
-  // them after the fixed classes regardless of source order, so the clamp
-  // always won) — confirmed by building and reading the compiled CSS, not
-  // assumed. Lowering the ceiling in place is the form of this change that
-  // actually renders.
-  + 'md:[padding-inline:clamp(0.4rem,1.1vw,0.625rem)] '
-  + 'md:[font-size:clamp(11.5px,1.05vw,13px)] '
-  + 'md:[gap:clamp(0.25rem,0.5vw,0.375rem)]';
+  // From md up: auto width, no forced shrink, a steady comfortable size.
+  + 'md:w-auto md:py-2 md:px-3.5 md:text-[13px]';
 
 /* Drawer buttons hold a consistent width so the row does not reflow when
    "Click to close" (wider than "Comments") replaces a label — but that width is
    now FLUID too. A fixed rem value was the main reason the bar wrapped early:
    three drawers at 8rem each claimed 24rem before anything else was measured. */
-/* One line, deliberately: Tailwind scans source text for complete class names,
-   and a template literal broken across lines can hide a variant from the scanner
-   — which is exactly why lg:flex-nowrap never reached the stylesheet. */
-const ROW_CLS = 'grid-cols-2 gap-2 pt-2 min-w-0 md:flex md:grid-cols-none md:items-center md:pt-0 md:gap-1.5 md:flex-wrap lg:flex-nowrap lg:gap-2';
+/* Below md: a two-across grid of full-size tap targets. From md up: a flex row
+   that WRAPS — comfortable, consistent gaps, tidy rows when the controls exceed
+   one line, instead of a single crushed line held by flex-nowrap. */
+const ROW_CLS = 'grid-cols-2 gap-2 pt-2 min-w-0 md:flex md:grid-cols-none md:items-center md:pt-0 md:gap-2 md:flex-wrap';
 
-const DRAWER_BTN_W = 'md:[width:clamp(5rem,9vw,9.5rem)]';
+const DRAWER_BTN_W = '';
 
 
 

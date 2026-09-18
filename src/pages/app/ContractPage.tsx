@@ -13,7 +13,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { usePropertyTerm } from '../../contexts/BrandProvider';
 import { withArticleCapitalized, agree } from '../../lib/propertyTerm';
 import {
-  contractDocumentDetail, setContractField,
+  contractDocumentDetail, setContractField, fetchLockBlockers,
   resolveChangeRequest, advanceWorkflow, sendForReview, lockAndSign, approveContractReview,
   setPartyControls, contractSigningSet,
   contractRedlineState, resolveFieldEdit, withdrawFieldEdit,
@@ -29,7 +29,7 @@ import {
   notifyReviewChangesEmail,
   type ContractDetail, type ContractField, type PartyControls,
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
-  type DocumentSignatureState,
+  type DocumentSignatureState, type LockBlocker,
 } from '../../lib/contracts';
 import { myWallState, myNameConfirmationState, startBillOfSale, setDocumentCoBuyer, type NameConfirmationState } from '../../lib/api';
 import { ReviewChangesModal } from '../../components/app/ReviewChangesModal';
@@ -310,6 +310,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   );
   const viewers = useContractPresence(id, presenceMe);
   const [detail, setDetail] = useState<ContractDetail | null>(null);
+  /* The document's outstanding lock blockers. Empty = complete and signable.
+     Signability is gated by COMPLETENESS, not by a manual lock (D14): the sign
+     action locks-and-signs atomically, so a party can sign the moment the whole
+     document is complete, without anyone locking it first. */
+  const [blockers, setBlockers] = useState<LockBlocker[]>([]);
   const [signingSet, setSigningSet] = useState<SigningSetDoc[]>([]);
   const [redline, setRedline] = useState<RedlineState | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -533,6 +538,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       documentSignatureState(requestedId)
         .then((v) => { if (idRef.current === requestedId) setSigState(v); })
         .catch(() => { if (idRef.current === requestedId) setSigState(null); });
+      fetchLockBlockers(requestedId)
+        .then((v) => { if (idRef.current === requestedId) setBlockers(v); })
+        .catch(() => { if (idRef.current === requestedId) setBlockers([]); });
       setError(null);
     } catch (e) {
       if (idRef.current !== requestedId) return;
@@ -895,10 +903,20 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      signed yet`, split three ways only by which message shows — so their
      union collapses to the shared prefix. Withdraw / correct moved to the
      subheader (2026-08-13) and no longer contributes a disjunct here.) */
+  /* ⚠️ SIGNABLE = COMPLETE, NOT LOCKED (owner, 2026-09-17; D14). A party can sign
+     the moment the whole document is complete — no manual "lock" step gates the
+     counterparty. `lock_and_sign_contract` locks-and-signs atomically from the
+     editable phase and re-checks the blockers, so `docComplete` (no blockers) is
+     the true gate; a locked document is complete by definition. Executed/void
+     never re-open a sign box. */
+  const docComplete = blockers.length === 0;
+  const signPhaseOpen = state === 'locked'
+    || (editablePhase && docComplete && !isInactive);
+
   const hasSignatureCardContent =
-    (state === 'locked' && myRoles.length > 0 && !iSigned)
+    (signPhaseOpen && myRoles.length > 0 && !iSigned)
     || iSigned
-    || (isOwnerSide && state === 'locked' && companyPendingRoles.length > 0)
+    || (isOwnerSide && signPhaseOpen && companyPendingRoles.length > 0)
     || (detail?.signatures.length ?? 0) > 0;
 
   const sections = useMemo(() => {
@@ -1074,24 +1092,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       setChangeKey((k) => k + 1);
     } catch (e) {
       setError(errMessage(e, 'Could not record your approval.'));
-    }
-  }
-
-  /* OWNER-SIDE LOCK FOR SIGNING (owner item 12). Staff/author locks the completed
-     document so signatures can be captured — the counterparty's "Accept & sign"
-     is the party-side path to the same lock, but the author needs their own way to
-     get there when the contract is ready. advance_document_workflow(…, 'locked')
-     enforces contract_lock_blockers, so a missing field comes back as a message
-     rather than a bad lock. */
-  async function lockForSigning() {
-    setError(null); setNote(null);
-    try {
-      await advanceWorkflow(id!, 'locked');
-      setNote('Locked and ready to sign below.');
-      await load({ blank: false });
-      setChangeKey((k) => k + 1);
-    } catch (e) {
-      setError(errMessage(e, 'Could not lock the contract for signing.'));
     }
   }
 
@@ -1486,17 +1486,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   className={`${SUBHEADER_BTN} sm:w-[7.5rem] border-green-800 bg-green-800 text-white hover:bg-green-700 disabled:opacity-60`}
                   onClick={() => setSendOpen(true)}>
                   <Send size={15} /> {notifying ? 'Sending…' : 'Send'}
-                </button>
-              )}
-              {/* LOCK FOR SIGNING (owner item 12): the author's path to the signable
-                  state. The counterparty reaches the same lock via "Accept & sign";
-                  the author needs their own control once the contract is complete.
-                  Disabled/erroring with the named blocker if a field is missing. */}
-              {isOwnerSide && editablePhase && (
-                <button type="button"
-                  className={`${SUBHEADER_BTN} border-green-800/25 bg-white text-green-900 hover:bg-green-800/5`}
-                  onClick={() => void lockForSigning()}>
-                  <Lock size={15} /> Lock for signing
                 </button>
               )}
               {/* Every party can mail THEMSELVES the current state as a PDF. */}
@@ -2457,7 +2446,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           disjunction of what's inside; ANDed on here so this can only get
           MORE restrictive than the state check alone, never less. */}
       {state !== 'executed' && state !== 'void' && state !== 'terminated'
-        && (state === 'in_review' || state === 'locked' || (detail?.signatures.length ?? 0) > 0)
+        && (signPhaseOpen || (detail?.signatures.length ?? 0) > 0)
         && hasSignatureCardContent && (
         <section id="contract-signatures" className="bg-white border border-green-800/10 rounded-xl p-6 scroll-mt-16 mt-6">
           {/* DOCUMENT-BEFORE-CONTRACT (2026-07-29): a party with unsatisfied
@@ -2522,7 +2511,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           {/* While PREVIEWING a party (staff view-as), show where their signature
               box is — but not a live Sign control, since the viewer is not that
               party. */}
-          {state === 'locked' && previewRole && !iSigned && !docGated && !nameGated && (
+          {signPhaseOpen && previewRole && !iSigned && !docGated && !nameGated && (
             <div className="border-t border-green-800/10 pt-4">
               <p className="text-sm text-secondary">
                 <strong>{previewRole.charAt(0) + previewRole.slice(1).toLowerCase()}</strong> signs here —
@@ -2530,7 +2519,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               </p>
             </div>
           )}
-          {state === 'locked' && !previewRole && myRoles.length > 0 && !iSigned && !docGated && !nameGated && (
+          {signPhaseOpen && !previewRole && myRoles.length > 0 && !iSigned && !docGated && !nameGated && (
             <div className="border-t border-green-800/10 pt-4">
               <p className="text-sm text-secondary mb-2">
                 Sign as <strong>{myRoles[0]}</strong> — typing your full legal name is your signature.
@@ -2559,7 +2548,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               of the org; this only surfaces the affordance for roles that
               branch actually accepts (company_signable_roles), never for an
               individual party staff doesn't represent. */}
-          {isOwnerSide && state === 'locked' && companyPendingRoles.length > 0 && (
+          {isOwnerSide && signPhaseOpen && companyPendingRoles.length > 0 && (
             <div className="border-t border-green-800/10 pt-4">
               <p className="text-sm text-secondary mb-1">Sign on behalf of the company</p>
               <p className="form-hint mb-3">
