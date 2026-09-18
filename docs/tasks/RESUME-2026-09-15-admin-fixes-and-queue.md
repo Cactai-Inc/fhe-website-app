@@ -13,6 +13,150 @@ differently), so code commits succeed without `FHE_ALLOW_CODE`.
 
 ---
 
+## ⚠️⚠️ SESSION LOG 2026-09-15 → 2026-09-18 — READ THIS FIRST ON RESUME ⚠️⚠️
+
+### STANDING CONVENTIONS ESTABLISHED THIS SESSION (binding going forward)
+- **Migrations do NOT live in the repo.** Write the SQL, dry-run in `BEGIN;…ROLLBACK;`, apply to
+  prod via `psql` (conn = line 1 of `.env.db`), then COPY the file to the external Archive:
+  `/Users/Cactai/Downloads/.../French Heritage Project/Archive/supabase-migrations-removed-from-repo/`.
+  Never `git add` a migration. Verify anon is REVOKED on any new function.
+- **Clean code / no evolution comments** (memory `fhe-clean-code-no-evolution-comments`): removal
+  means DELETE everywhere (no commented-out code, no "moved 2026-XX / RESTORED / TASK-X did this"
+  breadcrumbs). Comments describe CURRENT behavior — what it does, wired to, affects, affected by.
+- **Legal drafting:** match the contract's own register. Declarative allocation ("Title to the Horse
+  passes to Buyer at Closing…"), operative verbs ("Seller shall…", "Buyer may…"), "If…, then…"
+  conditions. NEVER start a sentence/clause with "Because" or explanatory conjunctions.
+- **DB doc set / root-README rework / docs-relocation / test-harness overhaul / repo-wide comment
+  sweep / Fractal-alignment restructuring = FINAL CLEANUP PASS, deferred.** Do not do mid-feature.
+
+### DB APPLY PATTERN THAT MATTERS
+- Contract templates are CLAUSE-COMPOSED (`contract_section_defs`/`contract_clause_defs`/
+  `contract_field_defs` for `HORSE_SALE_V2`, `HORSE_LEASE_V2`, `HORSE_BILL_OF_SALE`). The editor
+  reads structure LIVE from the template via `contract_template_structure(template_key)`; per-doc
+  field VALUES live in `contract_fields`.
+- **After changing template field_defs you MUST run `sync_contract_fields_from_defs(p_document_id)`**
+  to materialise new/changed fields onto an existing document, then `remerge_contract_from_clauses(
+  p_document_id)` to recompose the body. Per-doc `contract_fields.format_type` is a COPY of the def's —
+  changing a def's format_type also requires updating the doc rows (learned on the location fields).
+- `remerge_contract_from_clauses` composes `documents.merged_body`; a label:value line takes NO
+  terminal period, a sentence does; blank line before every numbered section/subsection heading.
+- The owner's live test contract: **HORSE_SALE_V2 document `80537662-7b4e-4adc-9ebc-49ed9d2bed78`**
+  (buyer = FHE company contact `352c3898…`, seller = Kamryn Herrera, horse = Tiz Love `b6a00ca9…`,
+  a GELDING). Zero executed sale docs, so template edits oblige no past signer (D33); mint a
+  template version (check `record_template_version_bump`) once wording is stable.
+
+### EVERYTHING SHIPPED THIS SESSION (commits, newest last), all pushed to origin/main
+- `e1ed168f` admin fixes: hard-delete FK gaps closed in admin_purge_contact; PersonRecord page scroll;
+  My Stable → company horses only (HorseRecordsPage ownerScope="company"); catalog Community→Management;
+  removed redundant staff My-Stable account card; calendar modal sm→lg.
+- `6ecc35b4` contract selects match stored LABEL→option (breed/color no spurious "Other").
+- `e1325251` remove session migration from repo → Archive.
+- `4f39d35c` unified tasks client API (`src/lib/ops/api-tasks.ts`).
+- `6620ea80` calendar Slice A: BookingView (view-only surface + Purchase card via booking_purchase_card
+  RPC), CalendarItemPanel view/edit split, Save-vs-Submit, price removed, client behind Change-client,
+  "+ New client" removed, "Assign to purchase"→"Purchase".
+- `c75af392` calendar Day view (CalendarDayView: desktop rundown+workspace, mobile modal, untimed
+  "to do today" strip) + tasks on the calendar + TaskModal.
+- `b774cc45` calendar item binary offering/unavailable (appointments are Tasks).
+- `4152a119` dashboard zone C1b "Today's tasks" (dash_today_tasks RPC).
+- `619c4cf3 / 009f52c4 / …` resume-note updates.
+- `85c99b2d` (context) → `1de666ad` FIX blank calendar (CalendarDayView built `sel!.item` before the
+  null-check → threw; month-day click → day view → blanked). workspace is a function now.
+- `f320b963` contracts: no stray periods on label lines; heading spacing; role-scoped party preview
+  (superseded next).
+- `7be2fb70` party view stops repeating record-derived contact info; location fields → structured
+  `location` element (delivery/trial/installment), values migrated to structured.name.
+- `19c81986` **BIG:** PartyDocumentView DELETED; party (and staff View-as) routes through
+  ClauseDocument — the inline authoring surface scoped by role, `authorView=false` (no muted preview);
+  edit mode while editable, view-only once locked/executed; gold OUTLINE on a section with an empty
+  party field; tooltip icon legible (was ~9px superscript → 14px Info); own-field tip second-person.
+- `e4f7d011` empty imported field reads "not on file" (was "from horse record").
+- `3f3e121f` gate stays as its subsection's FIRST LINE and stays answerable; consequence hides;
+  fixed co-buyer question omitted from buyer view + title-detail showing when co-buyer=no.
+- `84529d16` **SIGNABLE = COMPLETE, not manually locked** (D14): sign box appears from editable/
+  in_review when no lock blockers (fetchLockBlockers added); removed the misleading "Lock for signing"
+  button; toolbar wraps into tidy rows.
+- `c9af077b` (superseded by 3f3e121f approach) section-shaping vs sub-section gate.
+- `861a9bde` **standalone Bill of Sale** authorable from New Contract (start_bill_of_sale_standalone
+  RPC wired; buyer+optional seller+horse; BOS_HAS_SALE_AGREEMENT=NO). Sale→companion-BOS path
+  unchanged. The two are separate docs, sign at separate times.
+- `fd6d6fcc` **DECLARATIVE TOOLBAR**: ContractSubheader now takes `actions: ToolbarAction[]` +
+  `documentWidget`; ContractPage builds `contractActions` (each states visible-precondition + group:
+  primary/document/destructive). Replaces the 4 scattered leading/extras/trailing/destructive slots.
+- `17f9a1ac` no-slaughter Included/Not-included election REMOVED (covenant hardcoded, checkbox only);
+  location shows resolved address on known-selection; owned highlight tighter for block controls;
+  section gold-outline fires only on an empty field OWNED BY THE VIEWER'S ROLE (not shared DEAL terms).
+- **(applied to prod, not yet a code commit — DB only, archived)** `20260918T0100_sale_insurance_risk_reversal.sql`:
+  §7 TRIAL.INSURANCE → Seller-discretion declaration (TXN.TRIAL_INSURANCE_RESPONSIBLE election removed);
+  §7 TRIAL.TERMS risk sentence reversed (Seller bears risk while holding title; Buyer full refund +
+  decline-by-not-signing-BOS on loss before Closing; Buyer pays care only); §5 PRICE.INSTALLMENTS same
+  reversal (removed Buyer-must-insure/loss-payee); §8 DELIVERY.TITLE_RISK risk passes on "passing of
+  title" not "delivery"; §8 DELIVERY.TERMS 8th-day risk-shift removed (board cost kept).
+
+### KEY FINDINGS / DIAGNOSES (do not re-investigate)
+- Party = author surface: the app HAD switched the party view from ClauseDocument to a composed-body+
+  green-boxes surface on 2026-08-25; the owner reversed it. Party now uses ClauseDocument. The green
+  "YOUR ANSWERS" boxes are GONE for everyone (owner ruling).
+- `contract_document_detail.can_edit = v_staff OR …` → for a staff viewer EVERY field is editable,
+  which is why the old party preview looked identical for both parties.
+- `lock_and_sign_contract` accepts state `editable` too and locks-and-signs atomically, re-checking
+  `contract_lock_blockers`. So signing NEVER needs a manual lock. `approve_contract_review` explicitly
+  refuses staff ("use Lock for signing") — that staff lock button had been REMOVED earlier and should
+  stay removed; completeness is the gate.
+- `has_staff_access()` SECURITY-DEFINER functions can't be called from psql (no auth.uid); test their
+  LOGIC by running the equivalent queries directly in a ROLLBACK block.
+- The owner is the BUYER (FHE company) but the company contact has no linked user, so admin@ resolves
+  as staff/author, not as a literal BUYER party → to see/fill buyer fields, use View-as → the party chip.
+- "BUYER: pending / SELLER: pending" card = the signature-status summary (who has/hasn't signed); it
+  looks sparse in a View-as preview because the Sign control is disabled while previewing. Not a bug.
+
+### DB OBJECTS ADDED/CHANGED THIS SESSION (all live, archived externally)
+admin_purge_contact (widened FK teardown) · booking_purchase_card · dash_today_tasks · tasks +
+task_links + task_assignees (unified tasks) + lookup_options 'task_category' seed ·
+remerge_contract_from_clauses (label-line periods + heading spacing) · many HORSE_SALE_V2 template
+edits (location→structured, §3.4 disclosure gate + Buyer Acceptance section, §3.6 sex-gate, §6 PPE
+date split + N/A, §7 trial insurance/return reword, §8.2 title/risk, §8.4 auto no-slaughter + ack,
+removed NO_SLAUGHTER_ELECTION + TRIAL_INSURANCE_RESPONSIBLE, insurance/risk reversal).
+
+### CONTRACT ITEMS STILL OPEN (the CR list to work through next)
+1. **Verify the installment gate can be undone** (no→yes→no). Give every section gate ONE stable home
+   (its subsection's first line) regardless of which consequence is active if still flaky.
+2. **§5.3 installment schedule field** — `TXN.INSTALLMENT_SCHEDULE` (longtext) is tiny/obscure; make it
+   self-explanatory (guidance/placeholder), properly sized, ideally a structured schedule builder.
+3. **§3.4 RICH incident list** — category menu (from the shown list, NO "Other"), "+ Add date of
+   incident / start", "+ Add end date" (with a "present" option for ongoing), repeating incidents, free
+   text. NEEDS NEW UI CONTROLS in ContractCascade (a repeating category+date-range widget).
+4. **§3.5 polish** — reposition the Yes/No above the gated text; asterisk placement; trailing period on
+   the helper line.
+5. **§1** fill horse-record columns (current_location empty → shows "not on file") + dedupe duplicate
+   `template_tokens` HORSE.* rows.
+6. **§2** broader cascading logic (decisions gate whether future selections show/are required).
+7. **§12** assignment — explain purpose to owner; confirm whether it needs a change.
+8. **LOCK MODEL** (General item 2) — document controls: restrict-to-suggestions / read-only-with-
+   comments; move Add-item next to Requests; move scroll-to-bottom next to Save. (Engine booleans:
+   can_edit_deal / can_suggest; invert the UI, guard "one party must always be able to edit".)
+9. **Mint a template version** once wording is stable (D34; clause templates — check record_template_
+   version_bump, NOT save_contract_template_version which is for flat templates).
+10. **Apply the same insurance/risk reversal to HORSE_BILL_OF_SALE and HORSE_LEASE_V2** where analogous
+    clauses exist (this session did HORSE_SALE_V2 only). Audit each for "Buyer bears risk before title".
+
+### NON-CONTRACT ITEMS STILL QUEUED (from earlier this session)
+- **Item 5 — new-task modal fixes:** category "Horse Care (our horses)"→"Horse Care"; add Feeding,
+  Shopping, Research, Travel, Events, Meetings + a self-author "Other / + add a type" free-text; add an
+  END-time field (row: Start / End) with 15-min increments; horse list tied to client list (selecting a
+  horse auto-sets its owner/lessee client); alphabetical order for horses AND clients; client dropdown
+  shows a CLI-000284 code that shouldn't; rename "Assigned to"→"Assign to".
+- **Item 6 — client-record redesign:** move the "FILED UNDER" strip from the top to the bottom (above
+  the suspend/remove/delete control); rename that 3-word button (unclear) — split into "Remove and
+  Block", "Deactivate"↔"Reactivate", "Archive"; define what happens client-side + to their data for
+  Deactivate and for Archive; the audit trail on the Activity page belongs on its OWN page reached by a
+  link from the client record, not inline on Activity.
+- **B2 Payments + Orders pages, B3 calendar follow-ups, B4 Lessons system, B5 ATN build** — see below.
+- **Dashboard mirror (D of B0)** — the compact CalendarDayView on the dashboard (a Today's-tasks zone
+  exists; the full day rundown/workspace mirror is not yet built).
+
+---
+
 ## A. WHAT IS DONE (committed + pushed to origin/main)
 
 Commits this arc, newest last:
