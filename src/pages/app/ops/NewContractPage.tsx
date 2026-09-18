@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
-import { startLeaseContract, startSaleContract, linkContractToPurchase, listLeaseTemplates } from '../../../lib/api';
+import { startLeaseContract, startSaleContract, startBillOfSaleStandalone, linkContractToPurchase, listLeaseTemplates } from '../../../lib/api';
 import type { ContractTemplate } from '../../../lib/ops/types';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import {
@@ -43,11 +43,15 @@ import { BackControl } from '../../../components/app/BackControl';
  * generated at lock — this step never emails anyone.
  */
 
-type ContractType = 'lease' | 'purchase';
+type ContractType = 'lease' | 'purchase' | 'bill_of_sale';
 
 const TYPES: { id: ContractType; label: string; hint: string; roles: [string, string] }[] = [
   { id: 'lease', label: 'Horse lease', hint: 'Lease agreement — lessee & lessor', roles: ['LESSEE', 'LESSOR'] },
   { id: 'purchase', label: 'Horse sale', hint: 'Sale and purchase agreement — buyer & seller', roles: ['BUYER', 'SELLER'] },
+  /* A standalone Bill of Sale is its own signable ownership record — no Sale
+     Agreement required. (A completed sale can also generate a companion BOS from
+     the sale document; this is the direct path.) */
+  { id: 'bill_of_sale', label: 'Bill of sale', hint: 'Ownership record — buyer & seller, signable on its own', roles: ['BUYER', 'SELLER'] },
 ];
 
 type Controls = PartyControlValues;
@@ -153,7 +157,7 @@ export default function NewContractPage() {
     if (owner) contactHorseRecords(owner).then(setSellerHorses).catch(() => {});
   }
 
-  const ready = !!partyA && !!partyB && (type === 'purchase'
+  const ready = !!partyA && !!partyB && (type === 'purchase' || type === 'bill_of_sale'
     ? !!horseId
     : horseMode === 'pick' ? !!horseId : !!horseParty);
 
@@ -177,14 +181,17 @@ export default function NewContractPage() {
     try {
       // The horse is either picked/added above (both write a real `horses` row
       // through the one intake path) or deliberately left to a party to fill in.
-      const chosenHorse = (type === 'purchase' || horseMode === 'pick') ? horseId : undefined;
+      const chosenHorse = (type === 'purchase' || type === 'bill_of_sale' || horseMode === 'pick') ? horseId : undefined;
       const result = type === 'lease'
         ? await startLeaseContract(partyA, partyB, chosenHorse, leaseTemplateKey || undefined)
-        : await startSaleContract(
-            partyA, partyB, chosenHorse,
-            amount ? Number(amount.replace(/[$,]/g, '')) : undefined,
-            deposit ? Number(deposit.replace(/[$,]/g, '')) : undefined,
-          );
+        : type === 'bill_of_sale'
+          // partyA = Buyer, partyB = Seller (roles order in TYPES).
+          ? await startBillOfSaleStandalone({ buyerContactId: partyA, sellerContactId: partyB || null, horseId: chosenHorse || null })
+          : await startSaleContract(
+              partyA, partyB, chosenHorse,
+              amount ? Number(amount.replace(/[$,]/g, '')) : undefined,
+              deposit ? Number(deposit.replace(/[$,]/g, '')) : undefined,
+            );
       const docId = result.document_id;
       // Started from a purchase context (?purchase=<id>) → record the traceable
       // purchase↔contract link. Best-effort: never blocks contract creation.
@@ -313,7 +320,7 @@ export default function NewContractPage() {
             contract; per-party abilities are set with the controls below.) */}
       </section>
 
-      {type === 'purchase' && (
+      {(type === 'purchase' || type === 'bill_of_sale') && (
         <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
           <h2 className="font-serif text-green-800 text-base">Horse</h2>
           <p className="text-[12px] text-muted mb-3">

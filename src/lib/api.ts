@@ -2318,6 +2318,23 @@ export async function startBillOfSale(
   return data as { document_id: string; contract_id: string };
 }
 
+/** Author a STANDALONE Equine Bill of Sale — its own signable ownership record,
+ *  with no Sale Agreement behind it. Buyer is required; seller and horse are
+ *  optional here but needed for a complete record (add/assign them on the
+ *  document). Sets BOS_HAS_SALE_AGREEMENT = NO. Distinct from `startBillOfSale`,
+ *  which generates the companion BOS from a completed sale document. */
+export async function startBillOfSaleStandalone(
+  p: { buyerContactId: string; sellerContactId?: string | null; horseId?: string | null },
+): Promise<{ document_id: string; contract_id: string }> {
+  const { data, error } = await supabase.rpc('start_bill_of_sale_standalone', {
+    p_buyer_contact_id: p.buyerContactId,
+    p_seller_contact_id: p.sellerContactId ?? null,
+    p_horse_id: p.horseId ?? null,
+  });
+  if (error) throw error;
+  return data as { document_id: string; contract_id: string };
+}
+
 /** Add a co-buyer to a sale / bill-of-sale document: a second BUYER party with
  *  the next signer_order. Pass a contactId to pick an existing account/contact,
  *  or hand-entry fields to create a contact record (deduped on email). */
