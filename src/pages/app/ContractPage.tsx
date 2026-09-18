@@ -2347,6 +2347,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
              phase; a real party edits only what the server says is theirs. */
           editable={editablePhase && (isStaff || myRoles.length > 0)}
           authorPreview={isStaff && !!previewRole && editablePhase}
+          previewRole={previewRole}
           onSave={saveField}
           onSaveStructured={(k, sv) => void act(() => setFieldStructured(id!, k, sv as never))}
           onSaveResponsibility={(k, r) => void act(() => setFieldResponsibility(id!, k, r as never))}

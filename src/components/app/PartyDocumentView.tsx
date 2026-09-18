@@ -84,8 +84,13 @@ function splitBodyIntoSections(body: string): Chunk[] {
  *  picked up a trailing colon must still find its section. */
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
+/** The buyer/lessee side never owns the DEAL fields (the horse identity and deal
+ *  terms) — those belong to the seller/lessor. Used to bucket DEAL fields under
+ *  the right party when previewing. */
+const BUYER_SIDE_ROLES = new Set(['BUYER', 'COBUYER', 'LESSEE']);
+
 export function PartyDocumentView({
-  body, sections, fields, editable, authorPreview = false,
+  body, sections, fields, editable, authorPreview = false, previewRole = null,
   onSave, onSaveStructured, onSaveResponsibility,
 }: {
   body: string | null;
@@ -102,6 +107,11 @@ export function PartyDocumentView({
    *  value — can be fixed from this screen instead of leaving it. Off for a real
    *  party, who only edits fields the server says are theirs. */
   authorPreview?: boolean;
+  /** The role being previewed (SELLER, BUYER, LESSEE…). In author preview this
+   *  scopes the "answers" boxes to the fields THAT party fills, so the author
+   *  sees what each party is assigned — not every field at once. Null = the real
+   *  caller's own view, scoped by the server's per-field can_edit. */
+  previewRole?: string | null;
   onSave: (key: string, value: string) => void | Promise<void>;
   onSaveStructured: (key: string, s: unknown) => void | Promise<void>;
   onSaveResponsibility: (key: string, r: unknown) => void | Promise<void>;
@@ -112,11 +122,21 @@ export function PartyDocumentView({
     return m;
   }, [fields]);
 
-  /** Hers to answer, and asked by the document as it currently stands. An author
-   *  previewing sees every fillable field as editable (not just the party's), so
-   *  they can fix an issue from the party view; a real party sees only `can_edit`. */
-  const mine = useMemo(() => fields.filter((f) => (
-    (authorPreview || f.can_edit)
+  /** The fields shown as fillable "answers", and asked by the document as it
+   *  currently stands. A real party sees only what the server says is theirs
+   *  (`can_edit`). An author previewing a role sees exactly that role's assigned
+   *  fields (owner_role = the role, plus the DEAL fields for the seller/lessor
+   *  side) — so the preview shows what THAT party will be asked to fill, and the
+   *  author can still fix any of it. */
+  const mine = useMemo(() => {
+    const ownedByPreviewRole = (f: ContractField): boolean => {
+      if (!previewRole) return false;
+      if (f.owner_role === previewRole) return true;
+      if (f.owner_role === 'DEAL') return !BUYER_SIDE_ROLES.has(previewRole);
+      return false;
+    };
+    return fields.filter((f) => (
+    (authorPreview ? ownedByPreviewRole(f) : f.can_edit)
     // Structural author rows (a section, a header, a line of prose) are not
     // questions; their content is already IN the composed text above.
     && !f.custom_kind
@@ -127,7 +147,8 @@ export function PartyDocumentView({
     && clauseConditionMet(f.conditional_on, valueMap)
     && f.is_na !== true
     && f.included !== false
-  )), [fields, valueMap, authorPreview]);
+    ));
+  }, [fields, valueMap, authorPreview, previewRole]);
 
   const chunks = useMemo(() => (body ? splitBodyIntoSections(body) : []), [body]);
 
@@ -169,7 +190,9 @@ export function PartyDocumentView({
   const controls = (list: ContractField[], key: string) => (
     <div key={`c-${key}`} className="bg-green-50 border border-green-500/40 rounded-lg px-5 py-4 my-4">
       <p className="text-[11px] font-sans uppercase tracking-wide text-green-800 mb-3">
-        {authorPreview ? 'Edit (author)' : list.length === 1 ? 'Your answer' : 'Your answers'}
+        {authorPreview
+          ? `${previewRole ? previewRole.charAt(0) + previewRole.slice(1).toLowerCase() : 'This party'} fills in${' '}— you can edit it`
+          : list.length === 1 ? 'Your answer' : 'Your answers'}
       </p>
       <div className="flex flex-col gap-3">
         {list.map((f) => (
