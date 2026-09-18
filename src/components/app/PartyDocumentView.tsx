@@ -89,6 +89,14 @@ const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
  *  the right party when previewing. */
 const BUYER_SIDE_ROLES = new Set(['BUYER', 'COBUYER', 'LESSEE']);
 
+/** Party CONTACT identity is derived from the contact record (D22) and printed in
+ *  the parties section of the body — it is edited on the record, never answered on
+ *  the contract, so it must not reappear as a fill-in "answer" box. */
+const CONTACT_FIELD_SUFFIXES = ['FULL_NAME', 'PRINTED_NAME', 'ADDRESS', 'PHONE', 'EMAIL', 'ENTITY_SIGNER_NAME'];
+function isPartyContactField(fieldKey: string): boolean {
+  return CONTACT_FIELD_SUFFIXES.some((s) => fieldKey.endsWith('.' + s));
+}
+
 export function PartyDocumentView({
   body, sections, fields, editable, authorPreview = false, previewRole = null,
   onSave, onSaveStructured, onSaveResponsibility,
@@ -137,6 +145,9 @@ export function PartyDocumentView({
     };
     return fields.filter((f) => (
     (authorPreview ? ownedByPreviewRole(f) : f.can_edit)
+    // Party contact identity is record-derived (D22) and shown in the parties
+    // section — never a fill-in here.
+    && !isPartyContactField(f.field_key)
     // Structural author rows (a section, a header, a line of prose) are not
     // questions; their content is already IN the composed text above.
     && !f.custom_kind
