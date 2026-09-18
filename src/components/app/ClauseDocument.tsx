@@ -255,17 +255,31 @@ function OwnedField({
     );
   }
   // The viewer's OWN field: highlighted so a party can scan for their inputs, with
-  // a visible info marker carrying a tip addressed to them directly. inline-flex +
-  // vertical padding so the highlight fully covers a tall control (a row of pill
-  // buttons, a structured input), not just a thin band behind the text baseline.
+  // a visible info marker carrying a tip addressed to them directly. An INLINE
+  // control gets a snug pill so the highlight covers a tall row of pills; a BLOCK
+  // control (a structured location/address) gets just a light tint + ring with
+  // minimal padding, so the whole multi-input panel is not wrapped in a large box.
+  if (block) {
+    return (
+      <div className="rounded-md bg-green-100/50 ring-1 ring-green-300/60 px-2 py-1.5">
+        <div className="flex items-start gap-1.5">
+          <div className="min-w-0 flex-1">{children}</div>
+          <ExplainTip text={ownFieldTip(cb)} underline={false}
+            className="mt-0.5 inline-flex items-center text-green-700/80 hover:text-green-800 shrink-0">
+            <Info size={14} aria-hidden="true" />
+          </ExplainTip>
+        </div>
+      </div>
+    );
+  }
   return (
-    <Tag className="inline-flex items-center flex-wrap gap-y-1 rounded-md bg-green-100/70 ring-1 ring-green-300/70 px-1 py-0.5 align-middle">
+    <span className="inline-flex items-baseline flex-wrap gap-y-1 rounded-md bg-green-100/70 ring-1 ring-green-300/70 px-1 py-0.5 align-middle">
       {children}
       <ExplainTip text={ownFieldTip(cb)} underline={false}
         className="ml-1 inline-flex items-center align-middle text-green-700/80 hover:text-green-800">
         <Info size={14} aria-hidden="true" />
       </ExplainTip>
-    </Tag>
+    </span>
   );
 }
 
@@ -1166,14 +1180,16 @@ export function ClauseDocument({
         const sectionAllOptional = clausesToShow.length > 0
           && sectionCustom.length === 0
           && clausesToShow.every((c) => !clauseConditionMet(c.conditional_on, valueByKey));
-        /* ⚠️ OUTLINE A SECTION THE PARTY STILL HAS TO FILL (owner, 2026-09-17).
-           For a party (not the author), a section that contains an editable field
-           of theirs that is still empty is outlined, so they can see at a glance
-           where their input is needed; once every such field in it is filled the
-           outline goes away. Never for the author, who sees the whole instrument. */
-        const sectionNeedsParty = !cb.authorView && clausesToShow.some((c) =>
+        /* ⚠️ OUTLINE A SECTION THE PARTY SPECIFICALLY MUST FILL (owner, 2026-09-17).
+           For a party (not the author), a section with an empty field OWNED BY THEIR
+           ROLE is outlined so they can see where their input is needed; the outline
+           clears once those fields are filled. DEAL (shared deal-term) fields do NOT
+           trigger it — they are not one party's to complete, and outlining a whole
+           section for a blank shared term over-fires (e.g. §8's delivery terms). */
+        const viewerRoles = new Set((cb.myRoles ?? []).map((r) => r.toUpperCase()));
+        const sectionNeedsParty = !cb.authorView && viewerRoles.size > 0 && clausesToShow.some((c) =>
           (fieldsByClause.get(c.clauseKey) ?? []).some((f) =>
-            f.can_edit && fieldIsMine(f, cb)
+            f.can_edit && viewerRoles.has((f.owner_role ?? '').toUpperCase())
             && clauseConditionMet(f.conditional_on, valueByKey)
             && f.is_na !== true && f.included !== false
             && !(f.value ?? '').trim() && !f.structured));

@@ -448,6 +448,14 @@ function LocationField({
         {known.map((k) => <option key={k.id} value={k.id}>{k.name}{k.address ? ` — ${k.address}` : ''}</option>)}
         <option value={MANUAL_LOCATION}>Enter an address manually…</option>
       </select>
+      {/* A known location is picked → show the resolved address it will print, so
+          the selection is not a bare name with the address hidden. */}
+      {!manual && matched && (
+        <p className="text-[12.5px] text-green-800/80">
+          {[s.name, s.line1].filter(Boolean).join(' — ') || s.name}
+        </p>
+      )}
+      {/* Manual entry → the editable name + address fields. */}
       {manual && (
         <div className="grid grid-cols-2 gap-1.5">
           <input className={`${inputCls} col-span-2`} disabled={disabled} placeholder="Facility / place name (e.g. Willow Creek Stables)" value={s.name ?? ''} onChange={(e) => set({ name: e.target.value })} />
