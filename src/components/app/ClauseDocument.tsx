@@ -127,13 +127,16 @@ function TokenValue({ token, value, tip }: { token: string; value: string; tip?:
       </ExplainTip>
     );
   }
-  // party/horse imports show a muted "on file" hint instead of a fillable blank —
-  // they're changed on the contact / horse record, not typed into the contract.
-  const hint = AUTOFILL_HINT[token] ?? (token.startsWith('HORSE.') ? 'from horse record' : null);
-  if (hint) {
+  // An empty imported field (party contact / horse record) shows a clear
+  // "not on file" state — NOT a phrase that reads like a value ("from horse
+  // record" looked like content). The value is added on that record, not typed
+  // into the contract; the tooltip names where. The composed document omits an
+  // empty imported line entirely, so this only appears on the authoring surface.
+  const isImport = token in AUTOFILL_HINT || token.startsWith('HORSE.');
+  if (isImport) {
     return (
       <ExplainTip text={tip} className="text-muted italic text-[12.5px]">
-        {hint}
+        not on file
       </ExplainTip>
     );
   }
