@@ -44,6 +44,34 @@ export interface DrawerSpec {
   count?: number;
 }
 
+/**
+ * A TOOLBAR ACTION, DECLARED — not hand-placed. Each action states its own group
+ * and how it looks; the bar renders every action whose caller included it (the
+ * caller has already decided visibility from the document's state), grouped and
+ * ordered. This replaces the old leading/extras/trailing/destructive slots, where
+ * each button carried its own inline `{isOwnerSide && …}` condition and the reader
+ * had to trace four render sites to know what showed when.
+ *
+ *   group 'primary'     — the actions you reach for: Send, Save, Accept & sign.
+ *                         A `primary` tone fills; a `primary` action without it is
+ *                         the outlined sibling (Save to Send's fill).
+ *   group 'document'    — secondary document actions: Scroll, Add item, Generate
+ *                         bill of sale, Withdraw/correct, Archive.
+ *   group 'destructive' — Void / Delete, pinned to the right on whatever row.
+ */
+export interface ToolbarAction {
+  key: string;
+  label: ReactNode;
+  icon?: ReactNode;
+  group: 'primary' | 'document' | 'destructive';
+  /** 'fill' = solid primary (Send); 'danger' = red (Void/Delete); default outline. */
+  tone?: 'fill' | 'danger';
+  disabled?: boolean;
+  onClick: () => void;
+  /** Hold a stable width so a label change (Save → Saved) does not reflow the row. */
+  fixedWidth?: boolean;
+}
+
 const DEFAULT_HEIGHT = 460;
 const MIN_HEIGHT = 160;
 
@@ -92,22 +120,21 @@ const DRAWER_BTN_W = '';
 
 
 export function ContractSubheader({
-  drawers, leading, extras, trailing, destructive, openRequest, viewers = [],
+  drawers, actions = [], documentWidget, openRequest, viewers = [],
 }: {
   drawers: DrawerSpec[];
-  /** Rendered BEFORE the drawer buttons — position 1 in the bar. */
-  leading?: ReactNode;
-  /** Secondary actions (Scroll, Add item). They join the destructive pair on
-   *  row two once the bar wraps. */
-  trailing?: ReactNode;
-  /** Void / Delete. Always pinned to the RIGHT, on whichever row they land. */
-  destructive?: ReactNode;
+  /** Every toolbar action the caller wants shown, in intent order. The bar groups
+   *  them (primary · drawers · document · destructive) and lays them out; an action
+   *  the document's state does not warrant is simply not in the list. */
+  actions?: ToolbarAction[];
+  /** A widget that is not a plain button (e.g. the Add-item popover) but belongs in
+   *  the document group. Rendered after the document actions, styled as a button by
+   *  the caller. Omit when there is none. */
+  documentWidget?: ReactNode;
   /** Other people looking at this contract right now. Rendered as a quiet
    *  presence chip — the point is "they can see what you are doing", so it has
    *  to be visible without competing with the actions. */
   viewers?: { key: string; name: string }[];
-  /** Non-drawer actions. Rendered inside the same bar at the same button size. */
-  extras?: ReactNode;
   /** Lets the page open a drawer programmatically — e.g. posting a comment opens
    *  Change requests so the author sees where it landed. Bump `nonce` to
    *  re-trigger for the same key. */
@@ -151,6 +178,22 @@ export function ContractSubheader({
   });
 
   const active = drawers.find((d) => d.key === openKey) ?? null;
+
+  const toneClass = (a: ToolbarAction) =>
+    a.tone === 'fill'
+      ? 'border-green-800 bg-green-800 text-white hover:bg-green-700 disabled:opacity-60'
+      : a.tone === 'danger'
+        ? 'border-red-300 bg-white text-red-700 hover:bg-red-50 disabled:opacity-60'
+        : 'border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60';
+  const renderAction = (a: ToolbarAction) => (
+    <button key={a.key} type="button" disabled={a.disabled} onClick={a.onClick}
+      className={`${SUBHEADER_BTN} ${a.fixedWidth ? 'md:w-[7.5rem]' : ''} ${toneClass(a)}`}>
+      {a.icon}{a.label}
+    </button>
+  );
+  const primary = actions.filter((a) => a.group === 'primary');
+  const documentActions = actions.filter((a) => a.group === 'document');
+  const destructive = actions.filter((a) => a.group === 'destructive');
   // Collapsed by default on MOBILE only: the bar is worth its space on a wide
   // screen, but on a phone it would push the document off the first screen.
   // Opening a drawer reveals the controls, so the state can never strand you.
@@ -226,7 +269,8 @@ export function ContractSubheader({
             exact symptom in the owner's screenshot. flex-nowrap could not win
             against a grid template that was never reset. */}
         <div className={`${barOpen ? 'grid' : 'hidden'} ${ROW_CLS}`}>
-          {leading}
+          {/* PRIMARY — Send / Save / Accept & sign. */}
+          {primary.map(renderAction)}
           {drawers.map((d) => {
             const isOpen = openKey === d.key;
             return (
@@ -267,19 +311,16 @@ export function ContractSubheader({
               </button>
             );
           })}
-          {extras}
+          {/* DOCUMENT — secondary actions (Scroll, Generate BOS, Withdraw, …) plus
+              any non-button widget (the Add-item popover). */}
+          {documentActions.map(renderAction)}
+          {documentWidget}
 
-          {/* ROW TWO on narrower screens, same row on wide ones. Scroll and Add
-              sit left; Void and Delete are pushed right by ml-auto, so the
-              destructive pair holds the right edge on EITHER row rather than
-              floating into the middle of a wrap. */}
-          {trailing}
-          {/* Pinned right by ml-auto. flex-nowrap and min-w-0 so this pair
-              shrinks with everything else instead of forcing the row to break. */}
-          {destructive && (
-            <span className="contents md:flex md:ml-auto md:flex-nowrap md:items-center md:min-w-0
-                             md:gap-1.5 lg:[gap:clamp(0.25rem,0.6vw,0.5rem)]">
-              {destructive}
+          {/* DESTRUCTIVE — Void / Delete, pinned to the RIGHT on whichever row
+              they land, so the dangerous pair never floats into the middle. */}
+          {destructive.length > 0 && (
+            <span className="contents md:flex md:ml-auto md:flex-wrap md:items-center md:gap-2">
+              {destructive.map(renderAction)}
             </span>
           )}
 

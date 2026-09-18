@@ -34,7 +34,7 @@ import {
 import { myWallState, myNameConfirmationState, startBillOfSale, setDocumentCoBuyer, type NameConfirmationState } from '../../lib/api';
 import { ReviewChangesModal } from '../../components/app/ReviewChangesModal';
 import { contractPartyOptions, type PartyOption } from '../../lib/horses';
-import { ContractSubheader, SUBHEADER_BTN, type DrawerSpec } from '../../components/app/ContractSubheader';
+import { ContractSubheader, SUBHEADER_BTN, type DrawerSpec, type ToolbarAction } from '../../components/app/ContractSubheader';
 import { ContractNotes } from '../../components/app/ContractNotes';
 import { subscribeToContract, useContractPresence } from '../../lib/contractRealtime';
 import { Modal } from '../../components/ops/kit/Modal';
@@ -1364,6 +1364,81 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      ended. Only on the standalone page — an embedded contract is laid out by its
      host, which supplies its own spacing. */
   const bodyWidth = embedded ? '' : 'max-w-5xl mx-auto pb-24';
+
+  /* THE TOOLBAR, DECLARED (owner, 2026-09-17). Every button's visibility is decided
+     HERE, from the document's state, and pushed into the bar as a grouped list — so
+     an action that the current phase does not warrant is simply absent, and the four
+     scattered render slots (leading/extras/trailing/destructive) become one place a
+     reader can scan. Each `&&` is the button's precondition; a falsy entry drops out.
+     Groups: primary (Send / Save / Accept & sign) · document (Scroll / Generate BOS /
+     Withdraw / Archive) · destructive (Void / Delete). Add-item is a popover widget,
+     passed separately as `documentWidget`. */
+  const contractActions: ToolbarAction[] = [
+    // Send — the author's path to ask the parties to sign (works while editable or
+    // once locked). Part of the "get it executed" progression.
+    isOwnerSide && (editablePhase || state === 'locked') && {
+      key: 'send', group: 'primary' as const, tone: 'fill' as const, fixedWidth: true,
+      icon: <Send size={15} className="mr-1.5" />, label: notifying ? 'Sending…' : 'Send',
+      disabled: notifying, onClick: () => setSendOpen(true),
+    },
+    // A party's counterpart to Send: mail themselves the current PDF.
+    !isOwnerSide && myRoles.length > 0 && !isExecuted && {
+      key: 'pdf', group: 'primary' as const,
+      label: pdfBusy ? 'Sending…' : 'Email me a PDF', disabled: pdfBusy,
+      onClick: () => void emailWorkingCopy(),
+    },
+    // Save — the outlined sibling of Send. Auto-save also runs; this is the explicit
+    // flush. Only for the author while the document is not executed.
+    isOwnerSide && !isExecuted && {
+      key: 'save', group: 'primary' as const, fixedWidth: true,
+      icon: justSaved ? <Check size={15} className="mr-1.5" /> : undefined,
+      label: saving ? 'Saving…' : justSaved ? 'Saved' : 'Save',
+      disabled: saving || justSaved, onClick: () => void saveNow(),
+    },
+    // Accept & sign — the counterparty's primary action, inert while a staff viewer
+    // is only previewing a party's view.
+    !isOwnerSide && !previewRole && myRoles.length > 0 && editablePhase && !isInactive && {
+      key: 'accept', group: 'primary' as const, tone: 'fill' as const,
+      icon: <CheckCircle2 size={15} className="mr-1.5" />, label: 'Accept & sign',
+      onClick: () => void approveReview(),
+    },
+    // Scroll to the signature block (or the page end when the block is not yet shown).
+    id && !isExecuted && {
+      key: 'scroll', group: 'document' as const, label: 'Scroll to bottom',
+      onClick: () => {
+        const target = document.getElementById('contract-signatures');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        else window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+      },
+    },
+    // Generate the companion document (sale → bill of sale) on the same engagement.
+    templateConfig.companion_template_key === 'HORSE_BILL_OF_SALE' && id && isStaff && !isVoid && {
+      key: 'companion', group: 'document' as const, disabled: bosBusy,
+      label: bosBusy ? 'Generating…' : `Generate ${(templateConfig.companion_label ?? 'companion document').toLowerCase()}`,
+      onClick: () => void generateBillOfSale(),
+    },
+    // Reopen a sent-out document for corrections (author only, before a counterparty signs).
+    isOwnerSide && (state === 'locked' || state === 'in_review') && !counterpartySigned && {
+      key: 'withdraw', group: 'document' as const,
+      icon: <RotateCcw size={13} className="mr-1.5" />, label: 'Withdraw / correct',
+      onClick: () => void act(() => advanceWorkflow(id!, 'editable'), 'Reopened for corrections.'),
+    },
+    // Archive / unarchive this contract from MY own document list (inactive docs only).
+    isInactive && {
+      key: 'archive', group: 'document' as const,
+      label: isArchived ? 'Unarchive' : 'Archive', onClick: toggleMyArchive,
+    },
+    // Destructive, pinned right.
+    canVoid && {
+      key: 'void', group: 'destructive' as const, tone: 'danger' as const,
+      label: 'Void contract', onClick: () => setVoidModal(true),
+    },
+    isStaff && !isExecuted && {
+      key: 'delete', group: 'destructive' as const, tone: 'danger' as const,
+      label: 'Delete', onClick: () => void deleteEntirely(),
+    },
+  ].filter(Boolean) as ToolbarAction[];
+
   return (
     /* PAMELA §B rule 6 — the horse this document is about, published once for the
        controls that need it (the medication builder offers the horse's own
@@ -1471,113 +1546,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               render: () => <ContractChangeHistory documentId={id} refreshKey={changeKey} inDrawer />,
             },
           ].filter(Boolean) as DrawerSpec[]}
-          /* SAVE IS POSITION 1. It lived in `extras`, which renders AFTER the
-             drawer buttons — so "first in extras" still put it fourth on screen.
-             `leading` renders before them. */
-          leading={(
-            <>
-              {/* LOCKED is included (2026-08-09, owner): a locked document is frozen
-                  FOR SIGNING, so sending it is how the parties are asked to sign —
-                  and since the per-party send buttons were removed, this is the only
-                  way to reach them. sendForReview skips the illegal locked→in_review
-                  advance on its own. */}
-              {isOwnerSide && (editablePhase || state === 'locked') && (
-                <button type="button" disabled={notifying}
-                  className={`${SUBHEADER_BTN} sm:w-[7.5rem] border-green-800 bg-green-800 text-white hover:bg-green-700 disabled:opacity-60`}
-                  onClick={() => setSendOpen(true)}>
-                  <Send size={15} /> {notifying ? 'Sending…' : 'Send'}
-                </button>
-              )}
-              {/* Every party can mail THEMSELVES the current state as a PDF. */}
-              {!isOwnerSide && myRoles.length > 0 && !isExecuted && (
-                <button type="button" disabled={pdfBusy}
-                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60`}
-                  onClick={() => void emailWorkingCopy()}>
-                  {pdfBusy ? 'Sending…' : 'Email me a PDF'}
-                </button>
-              )}
-              {isOwnerSide && !isExecuted && (
-            <button type="button" disabled={saving || justSaved}
-              /* Fixed width so gaining the tick and the extra character does not
-                 resize the button and shift everything beside it. */
-              /* SAVE — owner, 2026-08-09. Outlined in the same green the Send
-                 button is FILLED with (green-800), label in that same green, so
-                 the pair reads as one family: Send is the solid form, Save the
-                 outlined one. Cursor-over takes the 66% fill with the label
-                 flipping to the bar's own colour (cream-25); pressing it goes to
-                 100% — momentarily becoming exactly the Send button — then
-                 settles back. `active:` is what makes that "briefly": it holds
-                 only while the pointer is down.
-                 The 66% is declared in tailwind.config.js; it is the lightest
-                 step that still carries the label at 4.5:1. */
-              className={`${SUBHEADER_BTN} sm:w-[7.5rem] disabled:opacity-100 transition-colors duration-320 ease-glide ${
-                justSaved
-                  ? 'border-green-700 bg-green-50 text-green-800'
-                  : 'border-green-800 bg-white text-green-800 hover:bg-green-800/66 hover:text-cream-25 active:bg-green-800 active:text-cream-25 disabled:opacity-60'}`}
-              onClick={() => void saveNow()}>
-              {saving ? 'Saving…' : justSaved
-                ? <><Check size={15} /> Saved</>
-                : 'Save'}
-            </button>
-              )}
-            </>
-          )}
-          /* ROW ONE beside Send/Save/drawers: the counterparty's primary action. */
-          extras={
-            <>
-              {/* !previewRole: while a staff viewer is only PREVIEWING a party's
-                  view, the party's real actions are inert — the server would
-                  reject them anyway (they are not that contact). */}
-              {!isOwnerSide && !previewRole && myRoles.length > 0 && editablePhase && !isInactive && (
-                <button type="button"
-                  className={`${SUBHEADER_BTN} border-green-800 bg-green-800 text-white hover:bg-green-700`}
-                  onClick={() => void approveReview()}>
-                  <CheckCircle2 size={15} /> Accept &amp; sign
-                </button>
-              )}
-            </>
-          }
-          /* ROW TWO when the bar wraps: secondary document actions. */
-          trailing={
-            <>
-              {/* Not gated on `structure` any more (TASK ONEAUTHOR): jumping to
-                  the signature block is a PAGE affordance, not a clause-model one,
-                  and a 12,000-character release is exactly the document where the
-                  reader most needs it. The scroll target is the same either way. */}
-              {id && !isExecuted && (
-                <button type="button"
-                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5`}
-                  /* The signatures card only exists once the document is in
-                     review/locked or has captured signatures — in the plain
-                     editable phase (where this button is most useful) the
-                     target was absent and the click did NOTHING. Fall back to
-                     the end of the page so it always scrolls. */
-                  onClick={() => {
-                    const target = document.getElementById('contract-signatures');
-                    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    else window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
-                  }}>
-                  Scroll to Bottom
-                </button>
-              )}
-              {/* Generate this document's COMPANION on the same engagement (parties,
-                  horse, price and payment status carry). WAS `templateKey ===
-                  'HORSE_SALE_V2'`; the pairing now lives on the template row
-                  (companion_template_key), so a second pairing is an UPDATE.
-                  `start_bill_of_sale` is still the RPC — it derives everything from
-                  the source document and is the only companion generator that
-                  exists; a future second pair needs its own RPC, and this button
-                  should stay pointed at the one the config names. */}
-              {templateConfig.companion_template_key === 'HORSE_BILL_OF_SALE'
-                && id && isStaff && !isVoid && (
-                <button type="button" disabled={bosBusy}
-                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5 disabled:opacity-60`}
-                  onClick={() => void generateBillOfSale()}>
-                  {bosBusy ? 'Generating…' : `Generate ${(templateConfig.companion_label ?? 'companion document').toLowerCase()}`}
-                </button>
-              )}
-              {structure && id && editablePhase
-                && (isOwnerSide || (redline?.can_edit_deal ?? false) || (redline?.can_suggest ?? false)) && (
+          actions={contractActions}
+          documentWidget={
+            structure && id && editablePhase
+              && (isOwnerSide || (redline?.can_edit_deal ?? false) || (redline?.can_suggest ?? false))
+              ? (
                 <AddElementButton documentId={id}
                   className={SUBHEADER_BTN}
                   structure={structure} fields={detail.fields}
@@ -1585,44 +1558,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   canAddClause={isOwnerSide || (redline?.can_add_clause ?? false)}
                   canApplyDirectly={isOwnerSide || (redline?.can_edit_deal ?? false)}
                   onAdded={() => void act(async () => {})} />
-              )}
-              {/* Owner-side only: reopens a sent-out document for corrections.
-                  No counterparty equivalent — a party's way to ask for a change
-                  is Comments/Requests, not pulling the document back themselves. */}
-              {isOwnerSide && (state === 'locked' || state === 'in_review') && !counterpartySigned && (
-                <button type="button"
-                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-green-900 hover:bg-green-800/5`}
-                  onClick={() => void act(() => advanceWorkflow(id!, 'editable'), 'Reopened for corrections.')}>
-                  <RotateCcw size={13} /> Withdraw / correct
-                </button>
-              )}
-              {isInactive && (
-                <button type="button"
-                  className={`${SUBHEADER_BTN} border-green-800/20 bg-white text-secondary hover:bg-green-800/5`}
-                  onClick={toggleMyArchive}>
-                  {isArchived ? 'Unarchive' : 'Archive'}
-                </button>
-              )}
-            </>
-          }
-          /* Pinned RIGHT on whichever row they land — never adrift mid-wrap. */
-          destructive={
-            <>
-              {canVoid && (
-                <button type="button"
-                  className={`${SUBHEADER_BTN} border-red-300 bg-white text-red-700 hover:bg-red-50`}
-                  onClick={() => setVoidModal(true)}>
-                  Void contract
-                </button>
-              )}
-              {isStaff && !isExecuted && (
-                <button type="button"
-                  className={`${SUBHEADER_BTN} border-red-300 bg-white text-red-700 hover:bg-red-50 ${canVoid ? '' : 'ml-auto'}`}
-                  onClick={() => void deleteEntirely()}>
-                  Delete
-                </button>
-              )}
-            </>
+              ) : undefined
           }
         />
       )}

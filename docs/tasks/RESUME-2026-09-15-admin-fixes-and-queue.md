@@ -225,6 +225,26 @@ outside the repo at `French Heritage Project/Archive/supabase-migrations-removed
   (`BUYER_ACCEPTANCE`) with a certify checkbox (`TXN.BUYER_ACCEPTS_DISCLOSURES`), shown when §3.4 or
   injury history has a Yes.
 
+**⚠️ OPEN CONTRACT ITEMS (owner, 2026-09-17, later batch):**
+- **TOOLBAR REFACTOR (owner directed)** — rebuild ContractSubheader to a declarative action
+  model: one derived doc-state object; each action declares visible/enabled/group; render from a
+  grouped list (send→lock→sign progression, void/delete group, Save only when unsaved changes,
+  Generate BOS only when complete). Replaces the scattered inline `{isOwnerSide && ...}` conditions.
+- **INSTALLMENT GATE BUG** — switching installments no→yes: the gate control seemed to disappear and
+  the change couldn't be undone (the gate field TXN.INSTALLMENTS_ENABLED is assigned to clause
+  PRICE.FULL_PAYMENT, so it visually moves when the answer flips). `clauseHasViewerGate`/
+  `gateOnlyForParty` (commit 3f3e121f) may have addressed the party path; VERIFY, and give every
+  section gate ONE stable home (first line of its subsection) regardless of which consequence is active.
+- **§5.3 installment schedule field** — `TXN.INSTALLMENT_SCHEDULE` (longtext) is a tiny obscure input;
+  make it self-explanatory (guidance/placeholder) and properly sized, ideally a structured schedule.
+- **INSURANCE + RISK ALLOCATION IS BACKWARDS (legal content).** During installments title stays with
+  the SELLER, so the BUYER cannot insure a horse they don't own. Reverse it: mortality/health/injury
+  insurance become SELLER-side DECLARATIVE options ("the Seller may at their discretion maintain a
+  mortality policy … if a claim is filed, Seller returns to Buyer all money paid"), with a RECIPROCAL
+  liability waiver the Buyer agrees to. Any clause assigning the Buyer responsibility for the Horse
+  while they do NOT hold title must be reversed or deleted. Applies to §7 (trial) and §8 (risk of loss)
+  too — audit every "Buyer bears/assumes risk … during [pre-title period]" clause.
+
 **REMAINING B1 (not yet built):**
 - §3.4 RICH incident list — category menu (from the shown list, no "Other"), "+ Add date of
   incident / start" and "+ Add end date" (with a "present" option), repeating incidents, free-text.
