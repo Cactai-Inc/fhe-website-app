@@ -1156,16 +1156,24 @@ export function ClauseDocument({
             && f.is_na !== true && f.included !== false
             && !(f.value ?? '').trim() && !f.structured));
 
-        /* ⚠️ GATE DECISIONS LIVE AT THE TOP OF THE SECTION (owner, 2026-09-17). A
-           selection that gates other clauses ("does a trial apply?", "installments
-           or full payment?") is a decision that shapes the section, so it is
-           hoisted here and rendered ABOVE the clauses as a plain control — never a
-           "Question: Answer" line at the bottom, and it does not print in the final
-           contract (only the clauses it turns on do). A field is a section gate
-           when another clause in this section conditions on it. Rendered once, at
-           the top; suppressed from its inline clause position below. */
-        const sectionGateKeys = new Set<string>();
-        clausesToShow.forEach((c) => gateTriggerKeys(c.conditional_on).forEach((k) => sectionGateKeys.add(k)));
+        /* ⚠️ A SECTION-SHAPING GATE LIVES AT THE TOP OF THE SECTION; A SUB-SECTION
+           GATE STAYS BEFORE THE PART IT GATES (owner, 2026-09-17). A decision that
+           shapes the whole section ("does a trial apply?", "installments or full
+           payment?") is the section's opening decision and is hoisted here, above
+           the clauses. A decision that gates only a later sub-part (the co-buyer
+           block inside Parties) belongs BEFORE that sub-part, not at the section
+           head — so it is NOT hoisted and renders inline above its own clause.
+           The test: hoist a gate only when the FIRST clause it gates is the
+           section's first clause. It never prints in the final contract either
+           way; only the clauses it turns on do. */
+        const firstGatedIndex = new Map<string, number>();
+        clausesToShow.forEach((c, i) => {
+          gateTriggerKeys(c.conditional_on).forEach((k) => {
+            if (!firstGatedIndex.has(k)) firstGatedIndex.set(k, i);
+          });
+        });
+        const sectionGateKeys = new Set<string>(
+          [...firstGatedIndex.entries()].filter(([, idx]) => idx === 0).map(([k]) => k));
         const sectionGateFields = clausesToShow
           .flatMap((c) => fieldsByClause.get(c.clauseKey) ?? [])
           .filter((f, i, arr) => arr.findIndex((g) => g.field_key === f.field_key) === i)
