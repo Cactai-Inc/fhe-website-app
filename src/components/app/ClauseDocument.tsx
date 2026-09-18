@@ -1155,6 +1155,22 @@ export function ClauseDocument({
             && clauseConditionMet(f.conditional_on, valueByKey)
             && f.is_na !== true && f.included !== false
             && !(f.value ?? '').trim() && !f.structured));
+
+        /* ⚠️ GATE DECISIONS LIVE AT THE TOP OF THE SECTION (owner, 2026-09-17). A
+           selection that gates other clauses ("does a trial apply?", "installments
+           or full payment?") is a decision that shapes the section, so it is
+           hoisted here and rendered ABOVE the clauses as a plain control — never a
+           "Question: Answer" line at the bottom, and it does not print in the final
+           contract (only the clauses it turns on do). A field is a section gate
+           when another clause in this section conditions on it. Rendered once, at
+           the top; suppressed from its inline clause position below. */
+        const sectionGateKeys = new Set<string>();
+        clausesToShow.forEach((c) => gateTriggerKeys(c.conditional_on).forEach((k) => sectionGateKeys.add(k)));
+        const sectionGateFields = clausesToShow
+          .flatMap((c) => fieldsByClause.get(c.clauseKey) ?? [])
+          .filter((f, i, arr) => arr.findIndex((g) => g.field_key === f.field_key) === i)
+          .filter((f) => sectionGateKeys.has(f.field_key) && !f.custom_kind
+            && clauseConditionMet(f.conditional_on, valueByKey));
         return (
           <section key={section.key}
             className={`${sectionAllOptional ? 'opacity-50' : ''} ${
@@ -1168,6 +1184,27 @@ export function ClauseDocument({
                 </span>
               )}
             </h2>
+            {/* Section-shaping decisions, at the top. These do not print in the
+                final contract — only the clauses they turn on do. */}
+            {sectionGateFields.length > 0 && (
+              <div className="mb-4 rounded-lg bg-green-800/[0.04] border border-green-800/10 px-4 py-3 flex flex-col gap-2">
+                {sectionGateFields.map((f) => {
+                  const selfLabels = f.format_type === 'certify'
+                    || f.format_type === 'add_text' || f.format_type === 'reveal_text';
+                  return (
+                    <OwnedField key={f.field_key} f={f} cb={cb} block>
+                      <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1 max-w-full text-[13.5px] text-green-950">
+                        {!selfLabels && <span className="shrink-0 font-medium">{f.label ?? f.field_key}</span>}
+                        <InlineFieldControl f={fieldWithAvailableOptions(f, valueByKey)}
+                          editable={cb.editable && fieldIsMine(f, cb)}
+                          onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
+                          onSaveResponsibility={cb.onSaveResponsibility as never} />
+                      </span>
+                    </OwnedField>
+                  );
+                })}
+              </div>
+            )}
             <div className="flex flex-col gap-4">
               {clausesToShow.map((clause) => {
                 // A suggest-tier proposal renders as its own review box — it
@@ -1225,6 +1262,9 @@ export function ClauseDocument({
                 const orphanFields = (fieldsByClause.get(clause.clauseKey) ?? [])
                   .filter((f) => (!bodyTokens.has(f.field_key) || (gatedOff && triggerKeys.has(f.field_key)))
                     && !f.custom_kind)
+                  // Section-gate decisions are hoisted to the top of the section,
+                  // so they never also render inline here.
+                  .filter((f) => !sectionGateKeys.has(f.field_key))
                   .filter((f) => triggerKeys.has(f.field_key)
                     || clauseConditionMet(f.conditional_on, valueByKey));
                 const gateControls = orphanFields.filter((f) => triggerKeys.has(f.field_key));
