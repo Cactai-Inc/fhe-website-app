@@ -1077,6 +1077,24 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     }
   }
 
+  /* OWNER-SIDE LOCK FOR SIGNING (owner item 12). Staff/author locks the completed
+     document so signatures can be captured — the counterparty's "Accept & sign"
+     is the party-side path to the same lock, but the author needs their own way to
+     get there when the contract is ready. advance_document_workflow(…, 'locked')
+     enforces contract_lock_blockers, so a missing field comes back as a message
+     rather than a bad lock. */
+  async function lockForSigning() {
+    setError(null); setNote(null);
+    try {
+      await advanceWorkflow(id!, 'locked');
+      setNote('Locked and ready to sign below.');
+      await load({ blank: false });
+      setChangeKey((k) => k + 1);
+    } catch (e) {
+      setError(errMessage(e, 'Could not lock the contract for signing.'));
+    }
+  }
+
   // Per-party archive — hide/unhide this contract from MY own document list only.
   function toggleMyArchive() {
     void act(() => setDocumentPartyArchived(id!, !isArchived),
@@ -1468,6 +1486,17 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   className={`${SUBHEADER_BTN} sm:w-[7.5rem] border-green-800 bg-green-800 text-white hover:bg-green-700 disabled:opacity-60`}
                   onClick={() => setSendOpen(true)}>
                   <Send size={15} /> {notifying ? 'Sending…' : 'Send'}
+                </button>
+              )}
+              {/* LOCK FOR SIGNING (owner item 12): the author's path to the signable
+                  state. The counterparty reaches the same lock via "Accept & sign";
+                  the author needs their own control once the contract is complete.
+                  Disabled/erroring with the named blocker if a field is missing. */}
+              {isOwnerSide && editablePhase && (
+                <button type="button"
+                  className={`${SUBHEADER_BTN} border-green-800/25 bg-white text-green-900 hover:bg-green-800/5`}
+                  onClick={() => void lockForSigning()}>
+                  <Lock size={15} /> Lock for signing
                 </button>
               )}
               {/* Every party can mail THEMSELVES the current state as a PDF. */}

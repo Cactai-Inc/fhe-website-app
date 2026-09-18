@@ -179,8 +179,10 @@ function fieldIsMine(f: ContractField, cb: FieldCallbacks): boolean {
  *  "…by the Lessee" on the mirror fields. */
 function otherPartyTip(f: ContractField): string {
   const owner = (f.owner_role ?? '').toUpperCase();
-  const who = ROLE_WORD[owner] ?? 'the other party';
-  return `This item is set by ${who}.`;
+  const who = ROLE_WORD[owner];
+  // Name the party who fills it whenever the role is known; only fall back to a
+  // generic phrasing when the field genuinely carries no owner role.
+  return who ? `This is filled in by ${who}.` : 'This is filled in by the other party.';
 }
 
 /** Role words in the SECOND PERSON, for a tip on a field the reader themselves
@@ -238,9 +240,11 @@ function OwnedField({
     );
   }
   // The viewer's OWN field: highlighted so a party can scan for their inputs, with
-  // a visible info marker carrying a tip addressed to them directly.
+  // a visible info marker carrying a tip addressed to them directly. inline-flex +
+  // vertical padding so the highlight fully covers a tall control (a row of pill
+  // buttons, a structured input), not just a thin band behind the text baseline.
   return (
-    <Tag className="rounded-sm bg-green-100/70 ring-1 ring-green-300/70 px-0.5">
+    <Tag className="inline-flex items-center flex-wrap gap-y-1 rounded-md bg-green-100/70 ring-1 ring-green-300/70 px-1 py-0.5 align-middle">
       {children}
       <ExplainTip text={ownFieldTip(cb)} underline={false}
         className="ml-1 inline-flex items-center align-middle text-green-700/80 hover:text-green-800">

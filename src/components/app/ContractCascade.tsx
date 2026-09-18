@@ -5,6 +5,7 @@ import { fieldSourceTip } from '../../lib/fieldSources';
 import { listHorseMedications, type HorseMedication } from '../../lib/horses';
 import { ExplainTip } from './ExplainTip';
 import { resolveUnsignedSignatureTokens } from '../../lib/documentBody';
+import { fetchLocations, type CalendarLocation } from '../../lib/ops/api-calendar';
 
 /**
  * THE HORSE THIS DOCUMENT IS ABOUT — TASK-PAMELA §B rule 6.
@@ -402,6 +403,64 @@ function resolveOption(
   const s = stored.trim().toLowerCase();
   return opts.find((o) => o.value.toLowerCase() === s)
       ?? opts.find((o) => o.label.trim().toLowerCase() === s);
+}
+
+/** A structured place: a named location + its address. Offers the org's KNOWN
+ *  locations in a dropdown — picking one fills the address — plus an "Enter an
+ *  address manually" option that reveals the name/street/city/state/ZIP inputs.
+ *  Every contract location field (delivery, trial, the horse's facility) uses
+ *  this one control, so they are consistent and self-extending. */
+const MANUAL_LOCATION = '__manual__';
+function LocationField({
+  value, disabled, onSave,
+}: {
+  value: FieldStructured;
+  disabled: boolean;
+  onSave: (s: FieldStructured) => void;
+}) {
+  const [known, setKnown] = useState<CalendarLocation[]>([]);
+  const s = value ?? {};
+  const hasContent = !!(s.name || s.line1 || s.city || s.state || s.postal);
+  // Manual mode once there is typed content that doesn't match a known pick, or
+  // when the person chooses it explicitly.
+  const [manual, setManual] = useState(hasContent);
+  const set = (patch: Partial<FieldStructured>) => onSave({ ...s, ...patch });
+
+  useEffect(() => {
+    fetchLocations().then(setKnown).catch(() => setKnown([]));
+  }, []);
+  // A known location whose name matches the current value (so the dropdown shows
+  // the right selection after a save/reload).
+  const matched = known.find((k) => k.name === s.name && !manual);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <select className={inputCls} disabled={disabled}
+        value={manual ? MANUAL_LOCATION : (matched?.id ?? '')}
+        onChange={(e) => {
+          if (e.target.value === MANUAL_LOCATION) { setManual(true); return; }
+          setManual(false);
+          const loc = known.find((k) => k.id === e.target.value);
+          if (loc) onSave({ name: loc.name, line1: loc.address ?? '' });
+          else onSave({});
+        }}>
+        <option value="">Select a known location…</option>
+        {known.map((k) => <option key={k.id} value={k.id}>{k.name}{k.address ? ` — ${k.address}` : ''}</option>)}
+        <option value={MANUAL_LOCATION}>Enter an address manually…</option>
+      </select>
+      {manual && (
+        <div className="grid grid-cols-2 gap-1.5">
+          <input className={`${inputCls} col-span-2`} disabled={disabled} placeholder="Facility / place name (e.g. Willow Creek Stables)" value={s.name ?? ''} onChange={(e) => set({ name: e.target.value })} />
+          <input className={`${inputCls} col-span-2`} disabled={disabled} placeholder="Street address" value={s.line1 ?? ''} onChange={(e) => set({ line1: e.target.value })} />
+          <input className={inputCls} disabled={disabled} placeholder="City" value={s.city ?? ''} onChange={(e) => set({ city: e.target.value })} />
+          <div className="grid grid-cols-2 gap-1.5">
+            <input className={inputCls} disabled={disabled} placeholder="State" value={s.state ?? ''} onChange={(e) => set({ state: e.target.value })} />
+            <input className={inputCls} disabled={disabled} placeholder="ZIP" value={s.postal ?? ''} onChange={(e) => set({ postal: e.target.value })} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SelectWithOther({ f, onSave, disabled }: { f: ContractField; onSave: SaveFn; disabled: boolean }) {
@@ -1011,20 +1070,12 @@ function FieldControl({
     );
   }
   if (fmt === 'location') {
-    // A location is a named place + its address — e.g. a boarding facility.
-    // Structured so it reads back as "Name — Street, City, ST ZIP".
-    const s = f.structured ?? {};
-    const set = (patch: Partial<FieldStructured>) => void onSaveStructured(f.field_key, { ...s, ...patch });
     return (
-      <div className="grid grid-cols-2 gap-1.5">
-        <input className={`${inputCls} col-span-2`} disabled={disabled} placeholder="Facility / place name (e.g. Willow Creek Stables)" value={s.name ?? ''} onChange={(e) => set({ name: e.target.value })} />
-        <input className={`${inputCls} col-span-2`} disabled={disabled} placeholder="Street address" value={s.line1 ?? ''} onChange={(e) => set({ line1: e.target.value })} />
-        <input className={inputCls} disabled={disabled} placeholder="City" value={s.city ?? ''} onChange={(e) => set({ city: e.target.value })} />
-        <div className="grid grid-cols-2 gap-1.5">
-          <input className={inputCls} disabled={disabled} placeholder="State" value={s.state ?? ''} onChange={(e) => set({ state: e.target.value })} />
-          <input className={inputCls} disabled={disabled} placeholder="ZIP" value={s.postal ?? ''} onChange={(e) => set({ postal: e.target.value })} />
-        </div>
-      </div>
+      <LocationField
+        value={f.structured ?? {}}
+        disabled={disabled}
+        onSave={(sv) => void onSaveStructured(f.field_key, sv)}
+      />
     );
   }
 
