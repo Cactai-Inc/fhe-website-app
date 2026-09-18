@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Info } from 'lucide-react';
 import { toErrorMessage } from '../../lib/ops/errors';
 import {
   clauseConditionMet, removeContractComposition, resolvePendingComposition,
@@ -180,6 +180,20 @@ function otherPartyTip(f: ContractField): string {
   return `This item is set by ${who}.`;
 }
 
+/** Role words in the SECOND PERSON, for a tip on a field the reader themselves
+ *  fills — "…you, as the Seller, fill in", never "…a Seller fills in" (owner,
+ *  2026-09-17: a tip addressed to the party must not reference them abstractly). */
+const ROLE_WORD_SELF: Record<string, string> = {
+  LESSOR: 'the Lessor', LESSEE: 'the Lessee', SELLER: 'the Seller',
+  BUYER: 'the Buyer', COBUYER: 'the Co-Buyer',
+};
+/** The tip on a field the viewing party owns, addressed to them directly. */
+function ownFieldTip(cb: FieldCallbacks): string {
+  const role = (cb.myRoles?.[0] ?? '').toUpperCase();
+  const who = ROLE_WORD_SELF[role];
+  return who ? `This is for you, as ${who}, to fill in.` : 'This is for you to fill in.';
+}
+
 /** OWNERSHIP AFFORDANCE (2026-08-04; consolidated to one wrapper 2026-08-06).
  *  A field the viewer does NOT own reads inactive and says whose it is on
  *  hover; a field they DO own is highlighted, so a party can scan the document
@@ -220,8 +234,16 @@ function OwnedField({
       </ExplainTip>
     );
   }
+  // The viewer's OWN field: highlighted so a party can scan for their inputs, with
+  // a visible info marker carrying a tip addressed to them directly.
   return (
-    <Tag className="rounded-sm bg-green-100/70 ring-1 ring-green-300/70 px-0.5">{children}</Tag>
+    <Tag className="rounded-sm bg-green-100/70 ring-1 ring-green-300/70 px-0.5">
+      {children}
+      <ExplainTip text={ownFieldTip(cb)} underline={false}
+        className="ml-1 inline-flex items-center align-middle text-green-700/80 hover:text-green-800">
+        <Info size={14} aria-hidden="true" />
+      </ExplainTip>
+    </Tag>
   );
 }
 
@@ -1115,8 +1137,21 @@ export function ClauseDocument({
         const sectionAllOptional = clausesToShow.length > 0
           && sectionCustom.length === 0
           && clausesToShow.every((c) => !clauseConditionMet(c.conditional_on, valueByKey));
+        /* ⚠️ OUTLINE A SECTION THE PARTY STILL HAS TO FILL (owner, 2026-09-17).
+           For a party (not the author), a section that contains an editable field
+           of theirs that is still empty is outlined, so they can see at a glance
+           where their input is needed; once every such field in it is filled the
+           outline goes away. Never for the author, who sees the whole instrument. */
+        const sectionNeedsParty = !cb.authorView && clausesToShow.some((c) =>
+          (fieldsByClause.get(c.clauseKey) ?? []).some((f) =>
+            f.can_edit && fieldIsMine(f, cb)
+            && clauseConditionMet(f.conditional_on, valueByKey)
+            && f.is_na !== true && f.included !== false
+            && !(f.value ?? '').trim() && !f.structured));
         return (
-          <section key={section.key} className={sectionAllOptional ? 'opacity-50' : ''}>
+          <section key={section.key}
+            className={`${sectionAllOptional ? 'opacity-50' : ''} ${
+              sectionNeedsParty ? 'rounded-xl border-2 border-gold-500/70 bg-gold-50/40 p-4 -mx-1 my-2' : ''}`}>
             <h2 className="font-serif text-green-900 text-2xl mb-3 flex items-baseline flex-wrap gap-x-2 gap-y-1 border-b border-green-800/10 pb-1.5">
               <span className="text-green-800 tabular-nums">{secNum}.</span>
               {section.heading}

@@ -1332,25 +1332,14 @@ export function InlineFieldControl({
   onSaveStructured: SaveStructFn;
   /** Accepted for call-site compatibility; the inline comment bubble was removed. */
 }) {
-  /* ⚠️ A RETIRED VALUE IS FILTERED HERE, IN THE ONE COMPONENT EVERY PICKER GOES
-     THROUGH — NOT AT THE CALL SITES (TASK-CONTRACTOPTIONS §1).
+  /* A RETIRED (inactive) option value is filtered out HERE, in the one component
+     every picker passes through, so no call site can forget to. `active` needs no
+     sibling context, so it lives here; the `when` gate reads other fields' values
+     and so stays in `fieldWithAvailableOptions`, which wraps the field at the
+     ClauseDocument call sites (the author's and the party's shared surface).
 
-     The sweep found FOUR call sites and only two of them filtered: two in
-     ClauseDocument wrapped the field in `fieldWithAvailableOptions`,
-     `renderCustom` did not, and `PartyDocumentView` — the panel the COUNTERPARTY
-     answers in — did not either. Patching four call sites leaves the fifth
-     author to remember; putting it here means they cannot get it wrong.
-
-     `active` needs no sibling context, which is exactly why it can live here.
-     The `when` gate does (it reads other fields' values), so that one stays in
-     `fieldWithAvailableOptions` at the ClauseDocument call sites.
-     ⚠️ Consequently PartyDocumentView still does not evaluate `when` gates —
-     a PRE-EXISTING gap this build did not create and is not in scope to close,
-     recorded in the report rather than left to be rediscovered.
-
-     An already-SELECTED retired value stays visible so it can be unselected —
-     the same escape hatch the `when` filter uses, and the reason the option is
-     deactivated rather than deleted. */
+     An already-SELECTED retired value stays visible so it can be unselected — the
+     reason the option is deactivated rather than deleted. */
   const f = useMemo(() => {
     const opts = rawField.options;
     if (!opts?.some((o) => o.active === false)) return rawField;
@@ -1375,10 +1364,11 @@ export function InlineFieldControl({
   const srcTip = fieldSourceTip(f.field_key);
   const marks = (
     <>
-      {f.required && <span className="text-red-700 align-super text-[9px]">*</span>}
+      {f.required && <span className="text-red-700 align-super text-[11px] ml-0.5">*</span>}
       {srcTip && (
-        <ExplainTip text={srcTip} underline={false} className="ml-1 align-super text-[9px] text-muted">
-          ⟲
+        <ExplainTip text={srcTip} underline={false}
+          className="ml-1 inline-flex items-center align-middle text-green-700/70 hover:text-green-800">
+          <Info size={14} aria-hidden="true" />
         </ExplainTip>
       )}
     </>
@@ -1732,10 +1722,16 @@ function FieldNode({
           </span>
         )}
         {electionUnresolved && (
-          <ExplainTip text={INSURANCE_TOOLTIP} underline={false} className="text-[10px] text-muted">ⓘ</ExplainTip>
+          <ExplainTip text={INSURANCE_TOOLTIP} underline={false}
+            className="inline-flex items-center align-middle text-green-700/70 hover:text-green-800">
+            <Info size={14} aria-hidden="true" />
+          </ExplainTip>
         )}
         {fieldSourceTip(f.field_key) && (
-          <ExplainTip text={fieldSourceTip(f.field_key)} underline={false} className="text-[10px] text-muted">⟲</ExplainTip>
+          <ExplainTip text={fieldSourceTip(f.field_key)} underline={false}
+            className="inline-flex items-center align-middle text-green-700/70 hover:text-green-800">
+            <Info size={14} aria-hidden="true" />
+          </ExplainTip>
         )}
         {editable && (
           <label className="ml-auto flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">

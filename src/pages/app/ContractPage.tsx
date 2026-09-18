@@ -42,7 +42,6 @@ import { ConfirmNameModal } from '../../components/app/ConfirmNameModal';
 import { CaptureInfoModal } from '../../components/app/CaptureInfoModal';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { ContractCascade, ContractBody, ContractHorseProvider } from '../../components/app/ContractCascade';
-import { PartyDocumentView } from '../../components/app/PartyDocumentView';
 import { AddElementButton } from '../../components/app/AddElementModal';
 import { PartyControlsCard, type PartyControlValues } from '../../components/app/PartyControlsCard';
 import { ContractChangeRequests } from '../../components/app/ContractChangeRequests';
@@ -685,9 +684,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     }
   }, [id, deliverExecutedCopy, navigate]);
   /* When staff/admin is PREVIEWING a party (View-as picker), render exactly what
-     that party would see: they become that role, in the read-only signer frame,
-     and the author affordances switch off. Otherwise `my_roles` is whatever the
-     server resolved for the real caller (empty for staff who are not a party). */
+     that party would see AND in the same mode they get: the editable party surface
+     while the document is still editable, the read-only signer/sealed frame once it
+     is locked or executed. They become that role and the author affordances switch
+     off. Otherwise `my_roles` is whatever the server resolved for the real caller
+     (empty for staff who are not a party). */
   const myRoles = previewRole ? [previewRole] : (detail?.my_roles ?? []);
   const state = doc?.workflow_state ?? 'editable';
   // A staff member can ALSO be a party on the contract (e.g. a barn admin who is
@@ -813,32 +814,21 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   //    never see their captured signature there. (Editing a locked doc means
   //    unlocking it back to in_review, so nobody edits in-place while locked.)
   // Executed has its own sealed view below.
-  /* ⚠️ P1 ITEM 3 — A PARTY READS THE DOCUMENT; ONLY STAFF AUTHOR IT.
-     Owner, 2026-08-25: *"her view of the contract should show the selections made
-     and the text that renders along with that selection, she should not see the
-     text that doesnt render in the finished document … if she makes a change to a
-     selection then the content should change to the appropriately shown text
-     immediately."*
+  /* A party edits the contract on the SAME authoring-style surface the author uses
+     (ClauseDocument): their fields appear inline for selection/input, and a
+     selection's driven text appears in its place once chosen. The one difference
+     from the author is `authorView` — the author previews every conditional branch
+     muted; a party sees a branch previewed only while its controlling selection is
+     unmade, then only the chosen result. `myRoles` scopes their own fields.
 
-     A party used to get <ClauseDocument>, the authoring surface — numbered clause
-     boxes, include/omit affordances, and conditional clauses previewed MUTED while
-     the choice controlling them was unmade. She now gets the composed body with
-     her own controls attached to their sections (<PartyDocumentView>).
-
-     ⚠️ IT COVERS THE WHOLE EDITABLE PHASE, NOT JUST "SHE STILL HAS A BLANK."
-     `reviewOnly` (no REQUIRED field of hers is empty) used to hand her the
-     read-only frame, which meant the moment she answered her last required
-     question every control she owned disappeared — including the ones she had
-     just used. Her optional selections are still hers, and "changing a selection
-     changes the visible text immediately" cannot be true on a surface with no
-     selections on it. She reads the same composed body either way; the only
-     difference is whether her own choices are still hers, and until the document
-     is locked they are. */
-  const partyDocView = !isOwnerSide && myRoles.length > 0
+     `partyEditing` keeps a party in that editable surface for the WHOLE editable
+     phase, not just while a required field is blank — so answering the last
+     question does not strip the controls they just used; their optional selections
+     stay theirs until the document is locked. It is view-only for everyone once
+     locked/terminated (both signatures captured) and once executed. */
+  const partyEditing = !isOwnerSide && myRoles.length > 0
     && state !== 'executed' && editablePhase;
-  // Locked and terminated are frozen — read-only for everyone, party or not. The
-  // party's editable-phase case is `partyDocView` above and never lands here.
-  const readOnlyDoc = (state !== 'executed') && !partyDocView
+  const readOnlyDoc = (state !== 'executed') && !partyEditing
     && (reviewOnly || state === 'locked' || state === 'terminated');
   const partyControls: PartyControls[] = detail?.party_controls ?? [];
   // Counterparty seats = every party on the document that isn't one of my own
@@ -1193,26 +1183,17 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const saveField = useCallback(async (key: string, value: string) => {
     try {
       await setContractField(id!, key, value);
-      /* P1 ITEM 3 — "the content should change to the appropriately shown text
-         immediately". `set_contract_field` writes the VALUE; it does not recompose
-         the body, and the party view renders nothing BUT the body — so without
-         this her selection would land in the database and change nothing she can
-         see until the next full open.
-         Deliberately NOT unconditional: the comment on `load` above records that
-         regenerating on every save "would make a full recompose the cost of a
-         keystroke", and the authoring cascade renders from the fields directly and
-         needs none of it. So it runs exactly where the composed text is what is on
-         screen. Swallowed — a recompose that fails must not lose her answer, which
-         is already saved. */
-      if (partyDocView) {
-        try { await regenerateContractDocument(id!); } catch { /* the value is saved */ }
-      }
+      /* Author and party both render through the authoring cascade
+         (ClauseDocument), which renders from the fields directly — a selection's
+         driven text appears in place immediately, no body recompose needed. The
+         composed body is regenerated at the points that actually read it (send for
+         review, execution), not on every keystroke. */
       await load({ blank: false });
       setChangeKey((k) => k + 1);
     } catch (e) {
       setError(errMessage(e, 'Could not save that field.'));
     }
-  }, [id, load, partyDocView]);
+  }, [id, load]);
 
   // Commit a party CONTACT token (LESSOR/LESSEE . ADDRESS/PHONE/EMAIL/FULL_NAME):
   // writes to that party's contact record, then refills + re-merges the doc so the
@@ -1886,7 +1867,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           {previewRole && (
             <span className="text-[11px] text-gold-800">
               Previewing what {previewRole.charAt(0) + previewRole.slice(1).toLowerCase()} sees.
-              {editablePhase ? ' You can still edit any field here to fix an issue.' : ''}
+              {editablePhase ? ' Switch to Author to change a field.' : ''}
             </span>
           )}
         </div>
@@ -2221,7 +2202,16 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
 
           Clause-model documents (Section›Clause›Field): numbered structure with
           live gating. */}
-      {state !== 'executed' && !readOnlyDoc && !showHorseGate && !partyDocView && structure && (
+      {/* ⚠️ ONE SURFACE FOR AUTHOR AND PARTY (owner, 2026-09-17). A party (and a
+          staff author previewing a party) sees this same authoring-style surface:
+          their fields appear inline for selection/input, and the content driven by
+          a selection appears in its place once chosen. The difference from the
+          author is `authorView` — the author sees every conditional branch previewed
+          muted; a party does not (a gated branch previews only while its controlling
+          selection is unmade, then the preview's job is done). Scoped by `myRoles`
+          so a party's own fields are theirs and others' are read context. There is
+          no separate "answers" surface. */}
+      {state !== 'executed' && !readOnlyDoc && !showHorseGate && structure && (
         <ClauseDocument
           sections={structure.sections}
           fields={detail.fields}
@@ -2256,7 +2246,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {/* Field sections (legacy flat grouping) — hidden until a horse is chosen when
           the gate applies, hidden for a review-only party, and skipped entirely for
           clause-model documents (rendered above). */}
-      {state !== 'executed' && !showHorseGate && !readOnlyDoc && !partyDocView && !structure && sections.map(([section, fields]) => {
+      {state !== 'executed' && !showHorseGate && !readOnlyDoc && !structure && sections.map(([section, fields]) => {
         const anyEditable = fields.some((f) => f.can_edit);
         // counterparty intake: show only sections with something for them (or filled)
         if (!isOwnerSide && !anyEditable && !fields.some((f) => f.value)) return null;
@@ -2323,7 +2313,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           appear while the read-only merged frame (below) or the executed frame is
           showing the same text. This REPLACES the old collapsible "Review the
           document text" block that used to sit further down the page. */}
-      {state !== 'executed' && !showHorseGate && !readOnlyDoc && !partyDocView && !structure && (
+      {state !== 'executed' && !showHorseGate && !readOnlyDoc && !structure && (
         <FlatDocument body={doc.merged_body} title={doc.title} />
       )}
 
@@ -2337,22 +2327,6 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           server and nothing that will not appear in the finished document is on
           screen. The horse gate still comes first: until the contract knows which
           horse it is about there is no composed text worth reading. */}
-      {partyDocView && !showHorseGate && (
-        <PartyDocumentView
-          body={doc.merged_body}
-          sections={structure?.sections ?? []}
-          fields={detail.fields}
-          /* A staff author previewing keeps edit power (to fix an issue they spot
-             in the party view), as long as the document is still in an editable
-             phase; a real party edits only what the server says is theirs. */
-          editable={editablePhase && (isStaff || myRoles.length > 0)}
-          authorPreview={isStaff && !!previewRole && editablePhase}
-          previewRole={previewRole}
-          onSave={saveField}
-          onSaveStructured={(k, sv) => void act(() => setFieldStructured(id!, k, sv as never))}
-          onSaveResponsibility={(k, r) => void act(() => setFieldResponsibility(id!, k, r as never))}
-        />
-      )}
 
       {/* (change-request composer removed 2026-07-20, audit M-3: it was
           unreachable — crFieldKey was never set. A field-level "suggest a change"
