@@ -163,6 +163,21 @@ const ROLE_WORD: Record<string, string> = {
   BUYER: 'the Buyer', COBUYER: 'the Co-Buyer',
 };
 
+/** Does this clause carry a GATE CONTROL that the viewer can operate — a field on
+ *  the clause that (a) triggers the clause's own condition and (b) is the viewer's
+ *  to fill? Such a clause stays visible even when its own condition is off, so the
+ *  gate question (e.g. co-buyer yes/no) can still be answered/changed. */
+function clauseHasViewerGate(
+  clause: { clauseKey: string; conditional_on: import('../../lib/contracts').FieldConditional | null | undefined },
+  fieldsByClause: Map<string, ContractField[]>,
+  cb: FieldCallbacks,
+): boolean {
+  const triggers = gateTriggerKeys(clause.conditional_on);
+  if (triggers.size === 0) return false;
+  return (fieldsByClause.get(clause.clauseKey) ?? []).some(
+    (f) => triggers.has(f.field_key) && !f.custom_kind && fieldIsMine(f, cb));
+}
+
 /** Is this field the viewer's to fill? DEAL-owned (shared) fields belong to
  *  everyone; staff authoring (no myRoles given) own everything. */
 function fieldIsMine(f: ContractField, cb: FieldCallbacks): boolean {
@@ -1122,12 +1137,19 @@ export function ClauseDocument({
           const hasContent = !!(c.body && c.body.trim()) || hasFields;
           if (!hasContent) return false;
           if (cb.authorView) return true;     // staff author sees every branch
-          /* PARTY DECISION SUPPORT (owner directive 2026-08-04). A gated-off
-             clause is previewed to a PARTY only while the selection that
+          /* ⚠️ THE GATE STAYS, THE CONSEQUENCE GOES (owner, 2026-09-17). A gate
+             CONTROL that a party can operate — the co-buyer yes/no, for example —
+             must remain visible even after it is answered "no", so the party can
+             still change it; it renders as the first line of its own subsection
+             and never prints in the signed contract. What is hidden once the
+             answer turns a clause off is the CONSEQUENCE (the muted body / the
+             fields it would reveal), not the question. `gateOnlyOff` below renders
+             just the control for such a clause. */
+          if (clauseHasViewerGate(c, fieldsByClause, cb)) return true;
+          /* PARTY DECISION SUPPORT (owner directive 2026-08-04). Otherwise a
+             gated-off clause is previewed to a PARTY only while the selection that
              controls it is still UNMADE, and only to the party who owns that
-             selection — so a reviewer sees what their own pending choice will
-             produce, and nothing about anyone else's resolved or pending
-             decisions. Once answered, the preview has done its job. */
+             selection. Once answered, the preview has done its job. */
           return gateIsPendingForViewer(c.conditional_on, fieldByKey, valueByKey, cb);
         });
         const sectionCustom = customBySection.get(section.sectionKey) ?? [];
@@ -1156,29 +1178,6 @@ export function ClauseDocument({
             && f.is_na !== true && f.included !== false
             && !(f.value ?? '').trim() && !f.structured));
 
-        /* ⚠️ A SECTION-SHAPING GATE LIVES AT THE TOP OF THE SECTION; A SUB-SECTION
-           GATE STAYS BEFORE THE PART IT GATES (owner, 2026-09-17). A decision that
-           shapes the whole section ("does a trial apply?", "installments or full
-           payment?") is the section's opening decision and is hoisted here, above
-           the clauses. A decision that gates only a later sub-part (the co-buyer
-           block inside Parties) belongs BEFORE that sub-part, not at the section
-           head — so it is NOT hoisted and renders inline above its own clause.
-           The test: hoist a gate only when the FIRST clause it gates is the
-           section's first clause. It never prints in the final contract either
-           way; only the clauses it turns on do. */
-        const firstGatedIndex = new Map<string, number>();
-        clausesToShow.forEach((c, i) => {
-          gateTriggerKeys(c.conditional_on).forEach((k) => {
-            if (!firstGatedIndex.has(k)) firstGatedIndex.set(k, i);
-          });
-        });
-        const sectionGateKeys = new Set<string>(
-          [...firstGatedIndex.entries()].filter(([, idx]) => idx === 0).map(([k]) => k));
-        const sectionGateFields = clausesToShow
-          .flatMap((c) => fieldsByClause.get(c.clauseKey) ?? [])
-          .filter((f, i, arr) => arr.findIndex((g) => g.field_key === f.field_key) === i)
-          .filter((f) => sectionGateKeys.has(f.field_key) && !f.custom_kind
-            && clauseConditionMet(f.conditional_on, valueByKey));
         return (
           <section key={section.key}
             className={`${sectionAllOptional ? 'opacity-50' : ''} ${
@@ -1192,27 +1191,6 @@ export function ClauseDocument({
                 </span>
               )}
             </h2>
-            {/* Section-shaping decisions, at the top. These do not print in the
-                final contract — only the clauses they turn on do. */}
-            {sectionGateFields.length > 0 && (
-              <div className="mb-4 rounded-lg bg-green-800/[0.04] border border-green-800/10 px-4 py-3 flex flex-col gap-2">
-                {sectionGateFields.map((f) => {
-                  const selfLabels = f.format_type === 'certify'
-                    || f.format_type === 'add_text' || f.format_type === 'reveal_text';
-                  return (
-                    <OwnedField key={f.field_key} f={f} cb={cb} block>
-                      <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1 max-w-full text-[13.5px] text-green-950">
-                        {!selfLabels && <span className="shrink-0 font-medium">{f.label ?? f.field_key}</span>}
-                        <InlineFieldControl f={fieldWithAvailableOptions(f, valueByKey)}
-                          editable={cb.editable && fieldIsMine(f, cb)}
-                          onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
-                          onSaveResponsibility={cb.onSaveResponsibility as never} />
-                      </span>
-                    </OwnedField>
-                  );
-                })}
-              </div>
-            )}
             <div className="flex flex-col gap-4">
               {clausesToShow.map((clause) => {
                 // A suggest-tier proposal renders as its own review box — it
@@ -1270,9 +1248,6 @@ export function ClauseDocument({
                 const orphanFields = (fieldsByClause.get(clause.clauseKey) ?? [])
                   .filter((f) => (!bodyTokens.has(f.field_key) || (gatedOff && triggerKeys.has(f.field_key)))
                     && !f.custom_kind)
-                  // Section-gate decisions are hoisted to the top of the section,
-                  // so they never also render inline here.
-                  .filter((f) => !sectionGateKeys.has(f.field_key))
                   .filter((f) => triggerKeys.has(f.field_key)
                     || clauseConditionMet(f.conditional_on, valueByKey));
                 const gateControls = orphanFields.filter((f) => triggerKeys.has(f.field_key));
@@ -1313,33 +1288,29 @@ export function ClauseDocument({
                     </OwnedField>
                   );
                 };
+                // A party sees a gated-off clause only for its own gate control:
+                // the muted preview of the consequence is the author's, not theirs.
+                const gateOnlyForParty = gatedOff && !cb.authorView;
                 return (
                   <div key={clause.clauseKey}>
-                    {/* A per-clause "optional" note appears only for a clause that's
-                        individually gated off within an OTHERWISE-ACTIVE section. When
-                        the WHOLE section is optional, the greyed section title carries
-                        the single note instead (no per-clause repetition). */}
-                    {/* R1 (2026-08-04): the QUESTION renders live and at full
-                        opacity, ABOVE the muted consequence — previously the
-                        control that answers a gate sat inside the greyed block it
-                        gated, so the author was asked to interact with something
-                        that read as disabled. The caption now introduces the muted
-                        preview below it rather than floating above the question,
-                        where it read as if the question itself were conditional. */}
+                    {/* THE GATE QUESTION renders live and at full opacity, above the
+                        (author-only) muted consequence. For a party this is the whole
+                        of what a gated-off clause shows — the question they can still
+                        change — and it never prints in the signed contract. */}
                     {gatedOff && gateControls.length > 0 && (
                       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-1.5 text-[13.5px] text-green-950 leading-[1.9]">
                         {gateControls.map(renderOrphan)}
                       </div>
                     )}
-                    {gatedOff && !sectionAllOptional && (
+                    {gatedOff && !sectionAllOptional && !gateOnlyForParty && (
                       <p className="text-[11px] text-green-700/90 mb-0.5">
                         {clause.caption || describeGate(clause.conditional_on, fieldByKey)}
                       </p>
                     )}
                     {/* A gated-off clause is a non-interactive PREVIEW: muted and
-                        pointer-events-none so its inputs can't be edited (its content
-                        only enters the contract once the controlling selection turns
-                        it on). Shown only to the author — reviewers never see it. */}
+                        pointer-events-none, shown only to the author. A party never
+                        sees the muted consequence — only the gate control above. */}
+                    {!gateOnlyForParty && (
                     <div className={
                       gatedOff
                         ? `pointer-events-none select-none${sectionAllOptional ? '' : ' opacity-50'}`
@@ -1411,6 +1382,7 @@ export function ClauseDocument({
                         </div>
                       )}
                     </div>
+                    )}
                   </div>
                 );
               })}
