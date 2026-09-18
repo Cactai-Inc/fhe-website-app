@@ -109,11 +109,13 @@ export function CalendarDayView({
     </div>
   );
 
-  const workspace = (
+  /* A function, not a computed element: reading sel.item before the null-check
+     would throw and blank the page. Called only where sel is known non-null. */
+  const workspace = (item: CalendarItem) => (
     <BookingView
-      item={sel!.item}
-      onEdit={onEditBooking ? () => onEditBooking(sel!.item) : undefined}
-      onReschedule={onEditBooking ? () => onEditBooking(sel!.item) : undefined}
+      item={item}
+      onEdit={onEditBooking ? () => onEditBooking(item) : undefined}
+      onReschedule={onEditBooking ? () => onEditBooking(item) : undefined}
       onChanged={() => { setSel(null); onReload(); }}
     />
   );
@@ -126,7 +128,7 @@ export function CalendarDayView({
         {rundown}
         {sel && (
           <Modal open onClose={() => setSel(null)} size="lg" panelClassName="bg-cream" title="Booking">
-            {workspace}
+            {workspace(sel.item)}
           </Modal>
         )}
       </>
@@ -145,7 +147,7 @@ export function CalendarDayView({
               className="absolute right-3 top-3 p-1.5 rounded-lg text-green-800/60 hover:text-green-900 hover:bg-green-800/5">
               <X size={18} />
             </button>
-            {workspace}
+            {workspace(sel.item)}
           </div>
         ) : (
           // Nothing selected → the staff member's task list fills the pane.
@@ -172,7 +174,7 @@ export function CalendarDayView({
       <div className="lg:hidden">
         {sel && (
           <Modal open onClose={() => setSel(null)} size="lg" panelClassName="bg-cream" title="Booking">
-            {workspace}
+            {workspace(sel.item)}
           </Modal>
         )}
       </div>
