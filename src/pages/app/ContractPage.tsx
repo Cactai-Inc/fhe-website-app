@@ -21,6 +21,7 @@ import {
   markDocumentOpened,
   setFieldResponsibility, setFieldIncluded, setFieldNa, setFieldControlOverride, setFieldStructured,
   documentPartiesSummary, captureContactInfo, captureHorseRecord,
+  contractSendState, type ContractSendPartyState,
   regenerateContractDocument,
   saveContract,
   requestContractTermination, approveContractTermination, declineContractTermination,
@@ -362,6 +363,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const [controlNote, setControlNote] = useState<string | null>(null);
   /** The Send modal: choose which parties are notified, or mail yourself a PDF. */
   const [sendOpen, setSendOpen] = useState(false);
+  /** #6 — per-party account state (invited? account? session? unsigned docs?) so
+   *  the Send modal shows "Invite and include contract" vs "Send", and the packet
+   *  sequence (the contract signs first, then its dependent documents). */
+  const [sendState, setSendState] = useState<ContractSendPartyState[]>([]);
+  useEffect(() => {
+    if (!sendOpen || !id) return;
+    contractSendState(id).then(setSendState).catch(() => setSendState([]));
+  }, [sendOpen, id]);
   const [pdfBusy, setPdfBusy] = useState(false);
   // RETURN-TO-ORIGIN. Where to send someone who VOIDS and chooses "remove", or
   // who closes the document: the page they came FROM. The linking site puts it in
@@ -2592,20 +2601,53 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                 ? 'This contract is locked for signing, so notifying a party asks them to sign it. You stay on the contract.'
                 : 'Notifying a party asks them to review and sign. You stay on the contract.'}
             </p>
-            <div className="flex flex-col gap-2">
+            {/* #6 — per-party, the button says what will happen: a party with no
+                account yet is INVITED (the invitation carries the contract); a
+                party who has signed in before is simply SENT it. Where they carry
+                unsigned documents, the packet signs the contract first, then those.
+                The recipient signs the whole set together. */}
+            <div className="flex flex-col gap-3">
+              {invitableRoles.map((r) => {
+                const st = sendState.find((s) => s.party_role === r);
+                const pretty = r.charAt(0) + r.slice(1).toLowerCase();
+                const needsInvite = st ? !st.has_session : false;
+                const others = st?.unsigned_docs ?? [];
+                return (
+                  <div key={r} className="rounded-lg border border-green-800/12 p-3">
+                    <button type="button"
+                      className="btn-primary text-sm justify-center w-full"
+                      disabled={notifying} onClick={() => void sendReview([r])}>
+                      {needsInvite
+                        ? `Invite ${pretty} and include this contract`
+                        : `Send to ${pretty}`}
+                    </button>
+                    <p className="text-[12px] text-muted mt-2">
+                      {needsInvite
+                        ? `${pretty} has not set up an account. They get one invitation that sets up their sign-in and carries this contract.`
+                        : `${pretty} has an account and will be asked to sign.`}
+                    </p>
+                    {others.length > 0 && (
+                      <div className="mt-2 text-[12px] text-green-900">
+                        <p className="font-medium">They will sign, in order:</p>
+                        <ol className="list-decimal ml-5 mt-0.5">
+                          <li>This contract</li>
+                          {others.map((d) => <li key={d.template_key}>{d.title}</li>)}
+                        </ol>
+                        <p className="text-muted mt-1">
+                          The contract signs first — the other documents follow only once it is signed,
+                          and the whole set is sent to them together.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               {invitableRoles.length > 1 && (
-                <button type="button" className="btn-primary text-sm justify-center"
+                <button type="button" className="btn-secondary text-sm justify-center"
                   disabled={notifying} onClick={() => void sendReview(invitableRoles)}>
-                  Send to both parties
+                  Send to both parties at once
                 </button>
               )}
-              {invitableRoles.map((r) => (
-                <button key={r} type="button"
-                  className="btn-secondary text-sm justify-center"
-                  disabled={notifying} onClick={() => void sendReview([r])}>
-                  Send to {r.charAt(0) + r.slice(1).toLowerCase()} only
-                </button>
-              ))}
               {/* Separated: this one does not notify anybody. */}
               <div className="border-t border-green-800/10 mt-1 pt-3">
                 <button type="button"

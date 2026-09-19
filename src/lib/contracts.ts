@@ -850,6 +850,26 @@ export async function documentPartiesSummary(documentId: string): Promise<Partie
   return data as PartiesHorseSummary;
 }
 
+/** #6 — the account state the Send modal renders from, per counterparty:
+ *  whether they have ever been invited, have an account, have signed in, and what
+ *  unsigned documents they already carry (to sequence this contract against). */
+export interface ContractSendPartyState {
+  party_role: string;
+  contact_id: string | null;
+  party_name: string;
+  party_email: string | null;
+  has_invitation: boolean;
+  has_auth: boolean;
+  has_session: boolean;
+  unsigned_docs: { template_key: string; title: string }[];
+}
+
+export async function contractSendState(documentId: string): Promise<ContractSendPartyState[]> {
+  const { data, error } = await supabase.rpc('contract_send_state', { p_document_id: documentId });
+  if (error) throw error;
+  return (data ?? []) as ContractSendPartyState[];
+}
+
 /**
  * Write missing/updated contact fields to the CENTRAL contact record, then refill
  * the document's party auto-fill tokens and re-merge so the change shows in the
