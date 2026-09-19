@@ -43,7 +43,7 @@ import { CaptureInfoModal } from '../../components/app/CaptureInfoModal';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { ContractCascade, ContractBody, ContractHorseProvider } from '../../components/app/ContractCascade';
 import { AddElementButton } from '../../components/app/AddElementModal';
-import { PartyControlsCard, type PartyControlValues } from '../../components/app/PartyControlsCard';
+import { PartyControlsCard, DEFAULT_PARTY_CONTROLS, type PartyControlValues } from '../../components/app/PartyControlsCard';
 import { ContractChangeRequests } from '../../components/app/ContractChangeRequests';
 import { ContractChangeHistory } from '../../components/app/ContractChangeHistory';
 import { VoidContractModal, VoidedKeepOrRemove } from '../../components/app/VoidContractModal';
@@ -1402,9 +1402,10 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       icon: <CheckCircle2 size={15} className="mr-1.5" />, label: 'Accept & sign',
       onClick: () => void approveReview(),
     },
-    // Scroll to the signature block (or the page end when the block is not yet shown).
+    // Scroll to the signature block (or the page end when the block is not yet
+    // shown). Sits in the primary group so it lands next to Save (owner).
     id && !isExecuted && {
-      key: 'scroll', group: 'document' as const, label: 'Scroll to bottom',
+      key: 'scroll', group: 'primary' as const, label: 'Scroll to bottom',
       onClick: () => {
         const target = document.getElementById('contract-signatures');
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1522,7 +1523,11 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               icon: <StickyNote size={14} />,
               render: () => <ContractNotes documentId={id} refreshKey={changeKey} />,
             },
-            templateConfig.show_change_requests && {
+            /* LOCK MODEL: a party restricted to read-only (no edit, no suggest)
+               sees Comments only — the Requests drawer is hidden for them. The
+               author always sees it. */
+            templateConfig.show_change_requests
+              && (isOwnerSide || (redline?.can_edit_deal ?? true) || (redline?.can_suggest ?? true)) && {
               key: 'requests',
               label: 'Requests',
               icon: <MessageSquarePlus size={14} />,
@@ -2032,41 +2037,26 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               .filter((r, i, a) => a.indexOf(r) === i && r !== 'FHE' && r !== 'COMPANY')
               .sort(byRoleRank((r) => r))
               .map((role) => {
+                // Default: full access. The lock model restricts from there — a
+                // party absent from partyControls has not been restricted.
                 const c = partyControls.find((x) => x.party_role === role)
-                  ?? { party_role: role, can_fill: true, can_edit_deal: false, can_suggest: false, can_add_clause: false };
+                  ?? { party_role: role, ...DEFAULT_PARTY_CONTROLS };
                 const value: PartyControlValues = {
                   can_fill: c.can_fill, can_edit_deal: c.can_edit_deal,
                   can_suggest: c.can_suggest, can_add_clause: c.can_add_clause ?? false,
                 };
-                /* The server refuses to clear the LAST deal editor. Compute the
-                   same condition here so the box is disabled with a reason,
-                   rather than unticking and snapping back on a failed save. */
-                /* Signing parties only — the company's own role is not a
+                /* The server refuses to drop the LAST deal editor below full
+                   access. Compute the same condition here so the card refuses
+                   with a reason rather than snapping back on a failed save.
+                   Signing parties only — the company's own role is not a
                    counterparty that could carry the edit permission. */
                 const signing = partyControls.filter(
                   (x) => x.party_role !== 'FHE' && x.party_role !== 'COMPANY');
                 const editors = signing.filter((x) => x.can_edit_deal);
-                // Nobody can act yet: no editor anywhere and no suggester either.
-                const noOneEngaged = editors.length === 0
-                  && !signing.some((x) => x.can_suggest);
-                const otherRole = signing.map((x) => x.party_role).find((r) => r !== role);
                 return (
                   <PartyControlsCard key={role} role={role} value={value}
                     lastDealEditor={editors.length <= 1 && value.can_edit_deal}
-                    noOneEngaged={noOneEngaged}
                     onBlocked={(m) => { setError(null); setControlNote(m); }}
-                    onEnableOtherEditor={() => {
-                      if (!otherRole) return;
-                      const o = signing.find((x) => x.party_role === otherRole);
-                      void act(() => setPartyControls(id!, otherRole, {
-                        can_fill: o?.can_fill ?? true,
-                        can_edit_deal: true,
-                        can_suggest: false,
-                        can_add_clause: o?.can_add_clause ?? false,
-                      }));
-                      setControlNote(`A suggestion needs someone who can act on it — `
-                        + `${otherRole.charAt(0) + otherRole.slice(1).toLowerCase()} can now edit deal terms.`);
-                    }}
                     onChange={(v) => void act(() => setPartyControls(id!, role, v))} />
                 );
               })}

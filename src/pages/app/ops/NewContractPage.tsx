@@ -84,8 +84,9 @@ export default function NewContractPage() {
      time, for anyone who left the form alone. Party B is the counterparty (the
      lessor / seller — the side that is not us), which is the side the guard
      exists to keep in the conversation; staff can still switch it over. */
+  // Lock model default: both parties have full access until restricted.
   const [controlsA, setControlsA] = useState<Controls>(DEFAULT_CONTROLS);
-  const [controlsB, setControlsB] = useState<Controls>({ ...DEFAULT_CONTROLS, can_edit_deal: true });
+  const [controlsB, setControlsB] = useState<Controls>(DEFAULT_CONTROLS);
   const [amount, setAmount] = useState('');
   const [deposit, setDeposit] = useState('');
   // Both types: the horse step is a dropdown of the horse-owning party's horses

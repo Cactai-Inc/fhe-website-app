@@ -311,10 +311,11 @@ export function ContractSubheader({
               </button>
             );
           })}
-          {/* DOCUMENT — secondary actions (Scroll, Generate BOS, Withdraw, …) plus
-              any non-button widget (the Add-item popover). */}
-          {documentActions.map(renderAction)}
+          {/* ADD ITEM sits directly beside the drawers so it reads next to
+              Requests (owner). It is a non-button widget (a popover). */}
           {documentWidget}
+          {/* DOCUMENT — secondary actions (Generate BOS, Withdraw, Archive, …). */}
+          {documentActions.map(renderAction)}
 
           {/* DESTRUCTIVE — Void / Delete, pinned to the RIGHT on whichever row
               they land, so the dangerous pair never floats into the middle. */}
