@@ -19,7 +19,7 @@ import {
   Contact2, Fence, UserPlus, Truck,
   ChevronDown, ChevronUp, Plus, LifeBuoy, ShoppingBag, MessageSquare, ListChecks,
   PanelLeftClose, PanelLeftOpen, Compass, Grid3x3, Bookmark,
-  Receipt, Eye, Library, NotebookPen, CreditCard,} from 'lucide-react';
+  Receipt, Eye, Library, NotebookPen, CreditCard, ClipboardList, Wallet,} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useStaffLanding } from '../../lib/dashboard/landing';
 import { usePrefersReducedMotion } from '../../lib/hooks';
@@ -533,6 +533,11 @@ const MANAGEMENT_GROUP: NavItem[] = [
      below), not from this grouping. The catalog EDITOR is a separate page,
      Products, in Admin. */
   { to: '/app/catalog', label: 'Catalog', icon: ShoppingBag },
+  /* Orders (fulfillment) and Payments (money) are the two staff ledgers, split out
+     of the old conflated Payment review (owner General items 7 & 8). Payment review
+     stays as the reconcile/confirm queue. */
+  { to: '/app/ops/orders', label: 'Orders', icon: ClipboardList },
+  { to: '/app/ops/payments', label: 'Payments', icon: Wallet },
   /* Payment review is a day-to-day queue. Receipt (not ReceiptText, which My
      Orders uses in the member nav) so the two pages do not share a glyph. */
   { to: '/app/ops/payments/review', label: 'Payment review', icon: Receipt },

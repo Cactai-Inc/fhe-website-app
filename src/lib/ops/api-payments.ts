@@ -482,3 +482,57 @@ export async function revertWritedown(purchaseId: string, reason?: string): Prom
   if (error) throw error;
   return data as RevertWritedownResult;
 }
+
+// ─── B2: the Orders board and Payments board ─────────────────────────────────
+
+export type OrderBucket =
+  | 'new' | 'unpaid' | 'booked' | 'paid' | 'complete' | 'issue' | 'cancelled';
+
+export interface OrderBoardRow {
+  id: string;
+  display_code: string | null;
+  amount: number;
+  amount_paid: number;
+  status: string;
+  current_status: string | null;
+  payment_status: 'unpaid' | 'pending' | 'paid';
+  created_at: string;
+  paid_at: string | null;
+  buyer_name: string;
+  items: string;
+  booking_count: number;
+  completed_count: number;
+  overdue_count: number;
+  bucket: OrderBucket;
+}
+
+/** Every order with its computed bucket (staff_orders_board RPC). */
+export async function listOrdersBoard(): Promise<OrderBoardRow[]> {
+  const { data, error } = await supabase.rpc('staff_orders_board');
+  if (error) throw error;
+  return (data ?? []) as OrderBoardRow[];
+}
+
+export type PaymentState = 'awaiting_payment' | 'payment_sent' | 'paid' | 'overdue';
+
+export interface PaymentBoardRow {
+  id: string;
+  display_code: string | null;
+  amount: number;
+  amount_paid: number;
+  payment_status: 'unpaid' | 'pending' | 'paid';
+  payment_method: string | null;
+  client_reported_method: string | null;
+  client_reported_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+  buyer_name: string;
+  pay_state: PaymentState;
+}
+
+/** Every order as a payment entry with its four-state status (staff_payments_board). */
+export async function listPaymentsBoard(): Promise<PaymentBoardRow[]> {
+  const { data, error } = await supabase.rpc('staff_payments_board');
+  if (error) throw error;
+  return (data ?? []) as PaymentBoardRow[];
+}

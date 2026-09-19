@@ -111,6 +111,8 @@ import AdminMenusPage from './pages/app/ops/admin/AdminMenusPage';
 import AdminPageVisibilityPage from './pages/app/ops/admin/AdminPageVisibilityPage';
 import NavGroupCardsPage from './pages/app/ops/NavGroupCardsPage';
 import PaymentReviewPage from './pages/app/ops/PaymentReviewPage';
+import PaymentsPage from './pages/app/ops/PaymentsPage';
+import OrdersPage from './pages/app/ops/OrdersPage';
 import BoardingHubPage from './pages/app/ops/hubs/BoardingHubPage';
 import FacilitiesPage from './pages/app/ops/boarding/FacilitiesPage';
 import BoardAgreementsPage from './pages/app/ops/boarding/BoardAgreementsPage';
@@ -457,6 +459,8 @@ export function AppRoutes() {
               <Route path="ops/evaluations" element={<ProtectedRoute requireStaff><EvaluationReportsPage /></ProtectedRoute>} />
               <Route path="ops/content" element={<ProtectedRoute requireStaff><ContentStorePage /></ProtectedRoute>} />
               <Route path="ops/payments/review" element={<ProtectedRoute requireStaff><PaymentReviewPage /></ProtectedRoute>} />
+              <Route path="ops/payments" element={<ProtectedRoute requireStaff><PaymentsPage /></ProtectedRoute>} />
+              <Route path="ops/orders" element={<ProtectedRoute requireStaff><OrdersPage /></ProtectedRoute>} />
               {/* Wave-7: module hubs + module pages (module-gated inside via ModuleGate) */}
               <Route path="ops/boarding" element={<ProtectedRoute requireStaff><BoardingHubPage /></ProtectedRoute>} />
               <Route path="ops/boarding/facilities" element={<ProtectedRoute requireStaff><FacilitiesPage /></ProtectedRoute>} />
