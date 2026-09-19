@@ -109,7 +109,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // purge so their attribution is cleaned up the same way a client's is.
     if (target.contact_id) {
       const asAdmin = callerClient(bearer);
-      const { data, error } = await asAdmin.rpc('admin_purge_contact', {
+      const { error } = await asAdmin.rpc('admin_purge_contact', {
         p_contact_id: target.contact_id, p_confirm: 'PURGE',
       });
       if (error) {
