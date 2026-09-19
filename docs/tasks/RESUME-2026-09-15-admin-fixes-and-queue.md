@@ -185,7 +185,11 @@ removed NO_SLAUGHTER_ELECTION + TRIAL_INSURANCE_RESPONSIBLE, insurance/risk reve
   Block", "Deactivate"↔"Reactivate", "Archive"; define what happens client-side + to their data for
   Deactivate and for Archive; the audit trail on the Activity page belongs on its OWN page reached by a
   link from the client record, not inline on Activity.
-- **B2 Payments + Orders pages, B3 calendar follow-ups, B4 Lessons system, B5 ATN build** — see below.
+- ✅ **B2 Payments + Orders pages — DONE 2026-09-18** (commit 440f5e11). Orders page
+  (7 buckets via staff_orders_board), Payments page (4 states via staff_payments_board),
+  both staff-only/anon-revoked (20260918T1000), nav rows added, Payment review kept as
+  the reconcile/confirm queue.
+- **B3 calendar follow-ups, B4 Lessons system, B5 ATN build** — see below.
 - **Dashboard mirror (D of B0)** — the compact CalendarDayView on the dashboard (a Today's-tasks zone
   exists; the full day rundown/workspace mirror is not yet built).
 
