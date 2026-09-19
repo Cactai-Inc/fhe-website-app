@@ -9,6 +9,10 @@ import {
 import { fetchInstructorOptions, type InstructorOption } from '../../lib/ops/api-calendar';
 import { listLessonClients, listScheduleHorses } from '../../lib/ops/api-lessons';
 import type { LessonClientOption, ScheduleHorseOption } from '../../lib/ops/api-lessons';
+import {
+  listTaskReminders, setTaskReminders,
+  type ReminderInput, type ReminderOffset, type ReminderUnit,
+} from '../../lib/ops/api-atn';
 
 /**
  * TASK MODAL — the one create/edit surface for a task, reused by the calendar
@@ -71,13 +75,34 @@ export function TaskModal({
     task?.links.find((l) => l.link_type === 'client')?.target_id
       ?? (presetLink?.link_type === 'client' ? presetLink.target_id : ''),
   );
+  // Reminders (one-time or recurring, independent of alerts). Loaded for an
+  // existing task; a fresh task starts with none.
+  const [reminders, setReminders] = useState<ReminderInput[]>([]);
 
   useEffect(() => {
     listTaskCategories().then(setCategories).catch(() => setCategories([]));
     fetchInstructorOptions().then(setStaff).catch(() => setStaff([]));
     listLessonClients().then(setClients).catch(() => setClients([]));
     listScheduleHorses().then(setHorses).catch(() => setHorses([]));
-  }, []);
+    if (task) {
+      listTaskReminders(task.id)
+        .then((rs) => setReminders(rs.map((r) => ({
+          user_id: r.user_id, contact_id: r.contact_id, offset_kind: r.offset_kind,
+          value: r.value, unit: r.unit, recurring: r.recurring,
+          via_dashboard: r.via_dashboard, via_modal: r.via_modal, via_email: r.via_email,
+        }))))
+        .catch(() => setReminders([]));
+    }
+  }, [task]);
+
+  const addReminder = () => setReminders((prev) => [...prev, {
+    user_id: null, contact_id: null, offset_kind: 'after_create' as ReminderOffset,
+    value: 1, unit: 'weeks' as ReminderUnit, recurring: false,
+    via_dashboard: true, via_modal: false, via_email: false,
+  }]);
+  const editReminder = (i: number, patch: Partial<ReminderInput>) =>
+    setReminders((prev) => prev.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const removeReminder = (i: number) => setReminders((prev) => prev.filter((_, j) => j !== i));
 
   function scheduledIso(): string | null {
     if (!date) return null;
@@ -126,6 +151,7 @@ export function TaskModal({
       if (clientId) links.push({ link_type: 'client', target_id: clientId });
       await setTaskLinks(saved.id, links);
       await setTaskAssignees(saved.id, assignees.map((user_id) => ({ user_id })));
+      await setTaskReminders(saved.id, reminders);
       if (editing && status !== task!.status) await setTaskStatus(saved.id, status);
       onSaved();
     } catch (e) {
@@ -247,6 +273,54 @@ export function TaskModal({
           </div>
         </div>
 
+        {/* REMINDERS — one-time or recurring, independent of alerts. Each fires via
+            the dashboard, a login modal, and/or email. A recurring reminder pushes
+            every value·unit until the task is done; a one-time fires once. */}
+        <div className="text-sm">
+          <span className="form-label">Reminders</span>
+          <div className="flex flex-col gap-2">
+            {reminders.map((r, i) => (
+              <div key={i} className="rounded-lg border border-green-800/12 p-2.5 flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <select className="form-input w-auto" value={r.recurring ? 'every' : 'once'}
+                    onChange={(e) => editReminder(i, { recurring: e.target.value === 'every' })}>
+                    <option value="once">Once</option>
+                    <option value="every">Every</option>
+                  </select>
+                  <input type="number" min={1} className="form-input w-16" value={r.value}
+                    onChange={(e) => editReminder(i, { value: Math.max(1, Number(e.target.value) || 1) })} />
+                  <select className="form-input w-auto" value={r.unit}
+                    onChange={(e) => editReminder(i, { unit: e.target.value as ReminderUnit })}>
+                    <option value="days">days</option>
+                    <option value="weeks">weeks</option>
+                    <option value="months">months</option>
+                  </select>
+                  <select className="form-input w-auto" value={r.offset_kind}
+                    onChange={(e) => editReminder(i, { offset_kind: e.target.value as ReminderOffset })}>
+                    <option value="after_create">from now</option>
+                    <option value="before_due">before it&apos;s due</option>
+                  </select>
+                  <button type="button" className="text-muted hover:text-red-700 text-xs ml-auto"
+                    onClick={() => removeReminder(i)} title="Remove reminder">✕</button>
+                </div>
+                <div className="flex flex-wrap gap-3 text-[12px] text-green-900">
+                  {([['via_dashboard', 'Dashboard'], ['via_modal', 'On login'], ['via_email', 'Email']] as const).map(([k, label]) => (
+                    <label key={k} className="inline-flex items-center gap-1.5">
+                      <input type="checkbox" className="accent-green-700" checked={r[k]}
+                        onChange={(e) => editReminder(i, { [k]: e.target.checked })} />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <button type="button" onClick={addReminder}
+              className="self-start text-sm text-green-800 border border-dashed border-green-400 rounded-lg px-3 py-1.5 hover:bg-green-50 focus-ring">
+              ＋ Add a reminder
+            </button>
+          </div>
+        </div>
+
         {editing && (
           <label className="text-sm">
             <span className="form-label">Status</span>
@@ -263,6 +337,20 @@ export function TaskModal({
           <button type="button" className="btn-primary flex-1 justify-center" disabled={busy} onClick={() => void save()}>
             {busy ? 'Saving…' : editing ? 'Save' : 'Create task'}
           </button>
+          {/* Mark complete (owner): completing moves the task to the hidden
+              Completed/History list. Available once the task exists. */}
+          {editing && task!.status !== 'complete' && (
+            <button type="button" className="text-sm text-green-800 border border-green-800/25 px-3 py-2 rounded-md hover:bg-green-50"
+              disabled={busy}
+              onClick={() => void (async () => {
+                setBusy(true); setErr(null);
+                try { await setTaskStatus(task!.id, 'complete'); onSaved(); }
+                catch (e) { setErr(toErrorMessage(e, 'Could not complete the task.')); }
+                finally { setBusy(false); }
+              })()}>
+              Mark complete
+            </button>
+          )}
           {editing && (
             <button type="button" className="text-sm text-red-700 px-3 py-2 hover:bg-red-50 rounded-md"
               disabled={busy} onClick={() => void remove()}>

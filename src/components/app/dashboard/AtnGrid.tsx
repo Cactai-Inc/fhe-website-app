@@ -210,6 +210,14 @@ export function AtnGrid() {
         ))}
       </CardRow>
 
+      {/* Out-of-the-way door to completed tasks and everything dismissed (owner). */}
+      <div className="mt-1 text-right">
+        <Link to="/app/ops/history"
+          className="text-[11px] text-green-800/50 hover:text-green-800 underline focus-ring rounded">
+          History
+        </Link>
+      </div>
+
       {openAlert && <AlertModal a={openAlert} onClose={() => { setOpenAlert(null); load(); }} />}
       {taskModal !== null && (
         <TaskModal task={taskModal === 'new' ? null : taskModal}
