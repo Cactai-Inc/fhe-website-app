@@ -139,6 +139,10 @@ export interface FieldStructured {
   }[];
   // contacts_list (§7 co-owners: repeatable first/last/phone/email rows)
   coOwners?: { first?: string; last?: string; phone?: string; email?: string }[];
+  // installment_schedule (§5.3 sale installments: repeatable amount/due/notes rows)
+  rows?: { amount?: string; due?: string; notes?: string }[];
+  // incident_list (§3.4 disclosures: repeatable category + date range + detail)
+  incidents?: { category?: string; start?: string; end?: string; endPresent?: boolean; detail?: string }[];
   // reveal_text (§11.6 tack yes/no → input)
   enabled?: boolean;
 }

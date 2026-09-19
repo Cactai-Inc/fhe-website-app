@@ -940,6 +940,145 @@ function LeaseFeeBuilder({
   );
 }
 
+/** §5.3 INSTALLMENT SCHEDULE builder. Structured { rows:[{amount,due,notes}] }.
+ *  A repeatable row of $ amount + due date/description + optional notes. Composes
+ *  to "$X due <when> (notes); $Y due <when>." Replaces the old bare longtext. */
+function InstallmentScheduleBuilder({
+  f, onSaveStructured, disabled,
+}: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
+  const { draft, setLocal, commit, beginEdit, flush } = useStructuredDraft(f, onSaveStructured);
+  const rows = draft.rows ?? [];
+  const add = () => commit({ ...draft, rows: [...rows, { amount: '', due: '', notes: '' }] });
+  const editLocal = (i: number, patch: Partial<NonNullable<FieldStructured['rows']>[number]>) =>
+    setLocal({ ...draft, rows: rows.map((r, j) => (j === i ? { ...r, ...patch } : r)) });
+  const remove = (i: number) => commit({ ...draft, rows: rows.filter((_, j) => j !== i) });
+  const cell = 'px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100';
+  return (
+    <div className="flex flex-col gap-2 w-full max-w-2xl">
+      {rows.length === 0 && (
+        <p className="text-[12px] text-muted">Add each installment: the amount, when it is due, and any conditions.</p>
+      )}
+      {rows.map((r, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <span className="inline-flex items-center shrink-0">
+            <span className="text-green-900 mr-0.5">$</span>
+            <input className={`${cell} w-24`} disabled={disabled} placeholder="amount"
+              value={r.amount ?? ''} onFocus={beginEdit} onBlur={flush}
+              onChange={(e) => editLocal(i, { amount: e.target.value })} />
+          </span>
+          <input className={`${cell} w-40 shrink-0`} disabled={disabled}
+            placeholder="due (e.g. Oct 1, 2026)"
+            value={r.due ?? ''} onFocus={beginEdit} onBlur={flush}
+            onChange={(e) => editLocal(i, { due: e.target.value })} />
+          <input className={`${cell} flex-1 min-w-0`} disabled={disabled} placeholder="Notes (optional)"
+            value={r.notes ?? ''} onFocus={beginEdit} onBlur={flush}
+            onChange={(e) => editLocal(i, { notes: e.target.value })} />
+          {!disabled && (
+            <button type="button" className="text-muted hover:text-red-700 text-xs shrink-0"
+              onClick={() => remove(i)} title="Remove this installment">✕</button>
+          )}
+        </div>
+      ))}
+      {!disabled && (
+        <button type="button" onClick={add}
+          className="self-start text-sm text-green-800 border border-dashed border-green-400 rounded-lg px-3 py-1.5 hover:bg-green-50 focus-ring">
+          ＋ Add an installment
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** §3.4 INCIDENT / DISCLOSURE builder. Structured { incidents:[{category,start,
+ *  end,endPresent,detail}] }. Each row: a category from the field's option list
+ *  (no "Other", owner ruling), a "+ Add date" that reveals a start date, a
+ *  "+ Add end date" that reveals an end date with a "still present" toggle, and a
+ *  free-text detail. Repeatable. Composes one line per incident. */
+function IncidentListBuilder({
+  f, onSaveStructured, disabled,
+}: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
+  const { draft, setLocal, commit, beginEdit, flush } = useStructuredDraft(f, onSaveStructured);
+  const incidents = draft.incidents ?? [];
+  const cats = Array.isArray(f.options) ? f.options : [];
+  const add = () => commit({ ...draft, incidents: [...incidents, { category: '', detail: '' }] });
+  const editLocal = (i: number, patch: Partial<NonNullable<FieldStructured['incidents']>[number]>) =>
+    setLocal({ ...draft, incidents: incidents.map((it, j) => (j === i ? { ...it, ...patch } : it)) });
+  const editNow = (i: number, patch: Partial<NonNullable<FieldStructured['incidents']>[number]>) =>
+    commit({ ...draft, incidents: incidents.map((it, j) => (j === i ? { ...it, ...patch } : it)) });
+  const remove = (i: number) => commit({ ...draft, incidents: incidents.filter((_, j) => j !== i) });
+  const cell = 'w-full px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100';
+  return (
+    <div className="flex flex-col gap-3 w-full max-w-2xl">
+      {incidents.map((it, i) => {
+        const hasStart = it.start !== undefined;
+        const hasEnd = it.end !== undefined || it.endPresent === true;
+        return (
+          <div key={i} className="rounded-lg border border-green-800/15 p-3">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <select className={`${cell} max-w-xs`} disabled={disabled} value={it.category ?? ''}
+                onChange={(e) => editNow(i, { category: e.target.value })}>
+                <option value="">{SELECT_PLACEHOLDER}</option>
+                {cats.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              {!disabled && (
+                <button type="button" className="text-muted hover:text-red-700 text-xs shrink-0"
+                  onClick={() => remove(i)} title="Remove">✕</button>
+              )}
+            </div>
+            <div className="flex flex-wrap items-end gap-3 mb-2">
+              {hasStart ? (
+                <label className="flex flex-col gap-0.5 text-[11px] text-muted">Date (or start of the timeframe)
+                  <input type="date" className={cell} disabled={disabled} value={it.start ?? ''}
+                    onChange={(e) => editNow(i, { start: e.target.value })} /></label>
+              ) : !disabled && (
+                <button type="button" onClick={() => editNow(i, { start: '' })}
+                  className="text-[13px] text-green-800 border border-dashed border-green-400 rounded-lg px-2.5 py-1 hover:bg-green-50 focus-ring">
+                  ＋ Add date of the incident or start date
+                </button>
+              )}
+              {hasStart && (hasEnd ? (
+                <label className="flex flex-col gap-0.5 text-[11px] text-muted">End of the timeframe
+                  {it.endPresent ? (
+                    <span className="text-[13px] text-green-900 py-1">Present (ongoing)</span>
+                  ) : (
+                    <input type="date" className={cell} disabled={disabled} value={it.end ?? ''}
+                      onChange={(e) => editNow(i, { end: e.target.value })} />
+                  )}
+                  {!disabled && (
+                    <label className="flex items-center gap-1.5 text-[11px] text-green-800 mt-1">
+                      <input type="checkbox" className="accent-green-700" checked={it.endPresent === true}
+                        onChange={(e) => editNow(i, e.target.checked
+                          ? { endPresent: true, end: 'present' }
+                          : { endPresent: false, end: '' })} />
+                      Still present / ongoing
+                    </label>
+                  )}
+                </label>
+              ) : !disabled && (
+                <button type="button" onClick={() => editNow(i, { end: '' })}
+                  className="text-[13px] text-green-800 border border-dashed border-green-400 rounded-lg px-2.5 py-1 hover:bg-green-50 focus-ring">
+                  ＋ Add end date (for a timeframe)
+                </button>
+              ))}
+            </div>
+            <label className="flex flex-col gap-0.5 text-[11px] text-muted">Description / details
+              <textarea rows={2} className={`${cell} resize-y`} disabled={disabled} value={it.detail ?? ''}
+                placeholder="Describe what happened, or the medication name, dosing and schedule"
+                onFocus={beginEdit} onBlur={flush}
+                onChange={(e) => editLocal(i, { detail: e.target.value })} /></label>
+          </div>
+        );
+      })}
+      {!disabled && (
+        <button type="button" onClick={add}
+          className="self-start text-sm text-green-800 border border-dashed border-green-400 rounded-lg px-3 py-1.5 hover:bg-green-50 focus-ring">
+          ＋ Add a disclosure
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** A single field's control, chosen by format_type (preferred) or input_kind. */
 function FieldControl({
   f, onSave, onSaveResponsibility, onSaveStructured, disabled,
@@ -975,6 +1114,12 @@ function FieldControl({
   }
   if (fmt === 'med_schedule') {
     return <MedicationBuilder f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
+  }
+  if (fmt === 'installment_schedule') {
+    return <InstallmentScheduleBuilder f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
+  }
+  if (fmt === 'incident_list') {
+    return <IncidentListBuilder f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
   }
   if (fmt === 'contacts_list') {
     return <ContactsList f={f} onSaveStructured={onSaveStructured} disabled={disabled}
@@ -1435,7 +1580,7 @@ export function InlineFieldControl({
 
   // Structured / multi-part formats can't collapse to a single inline token —
   // render the block control, but inline-block and compact so it stays in flow.
-  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'contacts_list', 'reveal_text', 'certify', 'add_text', 'share_amount'].includes(fmt)
+  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'installment_schedule', 'incident_list', 'contacts_list', 'reveal_text', 'certify', 'add_text', 'share_amount'].includes(fmt)
     || kind === 'responsibility' || kind === 'week_grid';
   if (isStructured) {
     // add_text renders as a FLEX row: collapsed it's the "+ Add …" button with
