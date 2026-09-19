@@ -2782,6 +2782,30 @@ export async function contactDossier(contactId: string): Promise<ContactDossier>
   return data as ContactDossier;
 }
 
+export interface ContactAuditEntry {
+  id: string;
+  action: string;
+  table_name: string | null;
+  record_id: string | null;
+  occurred_at: string;
+  actor_user_id: string | null;
+  old_value: unknown;
+  new_value: unknown;
+  by_them: boolean;
+}
+
+/** The full audit trail for a contact's account — actions they took and actions
+ *  recorded against them, newest first. Its own page, linked from the record. */
+export async function contactAuditTrail(
+  contactId: string, limit = 200,
+): Promise<ContactAuditEntry[]> {
+  const { data, error } = await supabase.rpc('contact_audit_trail', {
+    p_contact_id: contactId, p_limit: limit,
+  });
+  if (error) throw error;
+  return (data ?? []) as ContactAuditEntry[];
+}
+
 /** Save an edit to the person record. The RPC allowlists field names and RAISES
  *  on an unknown key, so a typo cannot look like a successful save. Returns the
  *  fresh dossier, so the caller never guesses what landed. */

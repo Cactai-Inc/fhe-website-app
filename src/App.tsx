@@ -82,6 +82,7 @@ import { verifyWithPassword, verifyWithGoogle } from './lib/emailChange';
 // Imported there, not here.
 import RecordsPage from './pages/app/RecordsPage';
 import PersonRecordPage from './pages/app/PersonRecordPage';
+import PersonAuditPage from './pages/app/PersonAuditPage';
 import Admin from './pages/app/Admin';
 import { LeadsPage, BusinessDirectoryPage } from './pages/app/ops/ContactsPage';
 import MyStablePage from './pages/app/MyStablePage';
@@ -342,6 +343,7 @@ export function AppRoutes() {
                   overlay. `person/:contactId` sits ABOVE `:tab` so the static
                   segment wins; ContactDossierModal now redirects here. */}
               <Route path="records/person/:contactId" element={<ProtectedRoute requireStaff><PersonRecordPage /></ProtectedRoute>} />
+              <Route path="records/person/:contactId/audit" element={<ProtectedRoute requireStaff><PersonAuditPage /></ProtectedRoute>} />
               {/* ⚠️ CLIENTS AND LEADS ARE STANDALONE COMMUNITY PAGES (owner
                   2026-09-12) — not tabs on a shared Contacts page. They render
                   their own component directly, above the generic :tab route so

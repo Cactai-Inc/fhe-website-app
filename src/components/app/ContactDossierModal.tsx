@@ -427,46 +427,6 @@ export function PersonRecord({
             <>
               {tab === 'account' && (
                 <div className="flex flex-col gap-5">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">Filed under</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {/* DIRECTORY is deprecated (TASK-RECORDS, 2026-08-12) — split into
-                          VENDOR and PARTNER. Not offered as a fresh pick, but shown if a
-                          contact is already filed there so the picker never hides its own
-                          current state. */}
-                      {([
-                        'LEAD', 'CONTACT', 'VENDOR', 'PARTNER', 'TEAM',
-                        ...(d.standing.contact_type === 'DIRECTORY' ? ['DIRECTORY' as const] : []),
-                      ] as ContactType[]).map((t) => (
-                        <button key={t} type="button" onClick={() => void file(t)}
-                          disabled={archived}
-                          className={`text-[11px] px-2.5 py-1 rounded-full border focus-ring disabled:opacity-50 disabled:cursor-not-allowed ${
-                            d.standing.contact_type === t
-                              ? 'border-green-700 bg-green-50 text-green-900 font-medium'
-                              : 'border-green-800/25 text-green-800 hover:bg-green-800/10'}`}>
-                          {CONTACT_TYPE_LABEL[t]}
-                        </button>
-                      ))}
-                      {d.standing.is_client && (
-                        <span className="text-[11px] px-2.5 py-1 rounded-full bg-green-800 text-white">Client</span>
-                      )}
-                      {/* ⚠️ DERIVED TAGS, AND THEY SAY WHY (OFFERINGDOCS 2026-08-24).
-                          These are applied automatically — by a purchase, a horse,
-                          a file, or a contract — and never ticked by anyone. They
-                          used to render as raw tokens (HORSE_OWNER, and now
-                          DEAL_PARTY), which reads as a system value rather than a
-                          fact about a person. The reason rides in the tooltip
-                          because a tag nobody can account for is a tag nobody
-                          trusts — the same rule CATEGORISE applied to prefills. */}
-                      {d.standing.groups.map((g) => (
-                        <span key={g} title={TAG_REASON[g] ?? 'derived from their record'}
-                          className="text-[11px] px-2.5 py-1 rounded-full bg-cream-100 text-secondary border border-green-800/10 cursor-help">
-                          {TAG_LABEL[g] ?? g}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
                   {/* TASK-ORIGIN §1/§6 — ORIGIN and CHANNEL are not the same
                       question and do not share a field. Beside the standing
                       fields, on the record he is already reviewing — not a
@@ -787,6 +747,55 @@ export function PersonRecord({
                     archived={archived}
                     onChanged={() => { load(); onChanged?.(); }} />
 
+                  {/* FILED UNDER — the classification strip lives at the BOTTOM of
+                      the record (owner, Item 6), above the removal controls: it is
+                      how the person is filed, not the first thing to read. */}
+                  <div className="border-t border-green-800/10 pt-4">
+                    <p className="text-[11px] uppercase tracking-wide text-muted mb-1.5">Filed under</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {/* DIRECTORY is deprecated (TASK-RECORDS, 2026-08-12) — split into
+                          VENDOR and PARTNER. Not offered as a fresh pick, but shown if a
+                          contact is already filed there so the picker never hides its own
+                          current state. */}
+                      {([
+                        'LEAD', 'CONTACT', 'VENDOR', 'PARTNER', 'TEAM',
+                        ...(d.standing.contact_type === 'DIRECTORY' ? ['DIRECTORY' as const] : []),
+                      ] as ContactType[]).map((t) => (
+                        <button key={t} type="button" onClick={() => void file(t)}
+                          disabled={archived}
+                          className={`text-[11px] px-2.5 py-1 rounded-full border focus-ring disabled:opacity-50 disabled:cursor-not-allowed ${
+                            d.standing.contact_type === t
+                              ? 'border-green-700 bg-green-50 text-green-900 font-medium'
+                              : 'border-green-800/25 text-green-800 hover:bg-green-800/10'}`}>
+                          {CONTACT_TYPE_LABEL[t]}
+                        </button>
+                      ))}
+                      {d.standing.is_client && (
+                        <span className="text-[11px] px-2.5 py-1 rounded-full bg-green-800 text-white">Client</span>
+                      )}
+                      {/* ⚠️ DERIVED TAGS, AND THEY SAY WHY (OFFERINGDOCS 2026-08-24).
+                          Applied automatically by a purchase, a horse, a file, or a
+                          contract — never ticked by anyone. The reason rides in the
+                          tooltip because a tag nobody can account for is a tag nobody
+                          trusts. */}
+                      {d.standing.groups.map((g) => (
+                        <span key={g} title={TAG_REASON[g] ?? 'derived from their record'}
+                          className="text-[11px] px-2.5 py-1 rounded-full bg-cream-100 text-secondary border border-green-800/10 cursor-help">
+                          {TAG_LABEL[g] ?? g}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* AUDIT TRAIL — its own page (owner, Item 6), reached by a link
+                      from the record rather than inline on Activity. */}
+                  <div>
+                    <Link to={`/app/records/person/${contactId}/audit`}
+                      className="text-sm text-green-800 underline hover:text-green-900 focus-ring">
+                      View the full audit trail
+                    </Link>
+                  </div>
+
                   <AccountDangerZone
                     contactId={contactId}
                     userId={d.account?.user_id ?? null}
@@ -815,14 +824,8 @@ export function PersonRecord({
                         <Row key={n.id} main={n.title} sub={new Date(n.created_at).toLocaleString()} />
                       ))}
                   </Section>
-                  {d.activity && (
-                    <Section title="Audit trail">
-                      {d.activity.length === 0 ? <Empty>None.</Empty>
-                        : d.activity.map((a) => (
-                          <Row key={a.id} main={a.action} sub={`${a.table_name ?? ''} · ${new Date(a.occurred_at).toLocaleString()}`} />
-                        ))}
-                    </Section>
-                  )}
+                  {/* The full audit trail is its own page (owner, Item 6), linked
+                      from the Account area — not inline here. */}
                 </div>
               )}
             </>
@@ -1052,44 +1055,38 @@ function AccountDangerZone({
     <div>
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open}
         className="px-3.5 py-2 rounded-lg text-xs font-medium border border-red-300 text-red-700 hover:bg-red-50 focus-ring">
-        Suspend / Remove / Delete
+        Account status &amp; removal
       </button>
       {err && <p role="alert" className="form-error mt-2">{err}</p>}
       {open && (
         <div className="mt-3 border border-red-200 rounded-lg p-4 bg-red-50/40 flex flex-col gap-3">
+          {/* DEACTIVATE ↔ REACTIVATE (owner name). Reversible: blocks the login,
+              keeps every record. This is the everyday off-switch. */}
           {userId && (
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-green-900">Suspend — blocks their login</p>
-                <p className="text-[12px] text-muted">They stay on every list and keep every record; they simply cannot sign in.</p>
+                <p className="text-sm font-medium text-green-900">
+                  {isSuspended ? 'Reactivate — restores their login' : 'Deactivate — blocks their login'}
+                </p>
+                <p className="text-[12px] text-muted">
+                  {isSuspended
+                    ? 'They can sign in again. Nothing about their records changes.'
+                    : 'They can no longer sign in. They stay on every list and keep every record — reactivate any time. Nothing is deleted.'}
+                </p>
               </div>
               <button type="button" disabled={archived}
                 onClick={() => void act(() => adminSetSuspended(userId, !isSuspended))}
                 className="px-3.5 py-2 rounded-lg text-xs font-medium border border-green-800/20 text-green-800 hover:bg-white focus-ring shrink-0 disabled:opacity-40">
-                {isSuspended ? 'Reinstate' : 'Suspend'}
+                {isSuspended ? 'Reactivate' : 'Deactivate'}
               </button>
             </div>
           )}
+          {/* ARCHIVE (owner name). Hides them from every list and picker while
+              keeping all data; restorable from Records › Archived. */}
           <div className="flex flex-wrap items-start justify-between gap-3 border-t border-red-200 pt-3">
             <div className="min-w-0">
-              <p className="text-sm font-medium text-green-900">Remove — reversible</p>
-              <p className="text-[12px] text-muted">Deactivates the account. Login is blocked; you can reactivate any time. Nothing is deleted.</p>
-            </div>
-            <span className="flex gap-2 shrink-0">
-              <button type="button" onClick={() => void act(() => adminAccountAction(contactId, 'remove'))}
-                className="px-3.5 py-2 rounded-lg text-xs font-medium border border-green-800/20 text-green-800 hover:bg-white focus-ring">
-                Remove
-              </button>
-              <button type="button" onClick={() => void act(() => adminAccountAction(contactId, 'unremove'))}
-                className="px-3.5 py-2 rounded-lg text-xs font-medium border border-green-800/20 text-green-800 hover:bg-white focus-ring">
-                Reactivate
-              </button>
-            </span>
-          </div>
-          <div className="flex flex-wrap items-start justify-between gap-3 border-t border-red-200 pt-3">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-green-900">Archive — keep the data</p>
-              <p className="text-[12px] text-muted">Hides them from Records, the pickers and every roster. All history, signed documents and orders are preserved and stay visible to anyone who shares them. Find them again — and restore them — in Records › Archived.</p>
+              <p className="text-sm font-medium text-green-900">Archive — keep the data, hide the person</p>
+              <p className="text-[12px] text-muted">Removes them from Records, the pickers and every roster. All history, signed documents and orders are preserved and stay visible to anyone who shares them. Find them again — and restore them — in Records › Archived. Use this for a real client who has left.</p>
             </div>
             <button type="button" disabled={archived}
               onClick={() => void act(() => adminAccountAction(contactId, 'soft'), true)}
@@ -1097,8 +1094,10 @@ function AccountDangerZone({
               Archive
             </button>
           </div>
+          {/* REMOVE AND BLOCK (owner name) = the hard delete. Erases everything,
+              irreversible, authorised only by one of the two reasons below. */}
           <div className="border-t border-red-200 pt-3">
-            <p className="text-sm font-medium text-red-700">Hard delete — nuclear, irreversible</p>
+            <p className="text-sm font-medium text-red-700">Remove and block — erase everything, irreversible</p>
             <p className="text-[12px] text-muted mb-2">
               Erases <strong>everything</strong>: the login, paperwork, orders, scheduled bookings and
               activity. This is only right in two cases — otherwise use <em>Archive</em> above, which
@@ -1131,7 +1130,7 @@ function AccountDangerZone({
                 <button type="button" disabled={!ack}
                   onClick={() => void act(() => adminHardDeleteClient(contactId), true)}
                   className="px-3.5 py-2 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 focus-ring disabled:opacity-40 disabled:cursor-not-allowed">
-                  Delete this client and everything of theirs
+                  Remove and block — delete everything of theirs
                 </button>
               </>
             )}
