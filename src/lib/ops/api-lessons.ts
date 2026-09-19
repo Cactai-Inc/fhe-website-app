@@ -66,6 +66,7 @@ export interface LessonCredit {
  *  its contact's name flattened (clients.contact_id → contacts). */
 export interface LessonClientOption {
   id: string;
+  contact_id: string | null;
   display_code: string | null;
   name: string;
   email: string | null;
@@ -815,38 +816,43 @@ export async function cancelLessonSession(
 export async function listLessonClients(): Promise<LessonClientOption[]> {
   const { data, error } = await supabase
     .from('clients')
-    .select('id, display_code, contact:contacts(first_name, last_name, email)')
+    .select('id, contact_id, display_code, contact:contacts(first_name, last_name, email)')
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
   if (error) throw error;
   type Row = {
     id: string;
+    contact_id: string | null;
     display_code: string | null;
     contact: { first_name: string | null; last_name: string | null; email: string | null } | null;
   };
   return ((data ?? []) as unknown as Row[]).map((r) => ({
     id: r.id,
+    contact_id: r.contact_id,
     display_code: r.display_code,
     name: contactName(r.contact) || (r.display_code ?? r.id.slice(0, 8)),
     email: r.contact?.email ?? null,
-  }));
+  })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // ─── Horses (for the internal booking picker) ────────────────────────────────
 
-/** A horse option for the scheduling form's internal horse picker. */
+/** A horse option for the scheduling form's internal horse picker.
+ *  Owner/lessee CONTACT ids let a picker auto-select the matching client. */
 export interface ScheduleHorseOption {
   id: string;
   name: string;
+  owner_contact_id: string | null;
+  lessee_contact_id: string | null;
 }
 
 /** In-tenant horse roster (RLS: org boundary), for the lesson-booking horse
- *  picker — barn horses and clients' own horses alike. Label prefers the barn
- *  name, then the registered name, then the display code. */
+ *  picker — ranch horses and clients' own horses alike. Label prefers the barn
+ *  name, then the registered name, then the display code. Sorted alphabetically. */
 export async function listScheduleHorses(): Promise<ScheduleHorseOption[]> {
   const { data, error } = await supabase
     .from('horses')
-    .select('id, nickname, registered_name, display_code')
+    .select('id, nickname, registered_name, display_code, current_owner_contact_id, lessee_contact_id')
     .is('deleted_at', null)
     .order('nickname', { nullsFirst: false });
   if (error) throw error;
@@ -855,11 +861,15 @@ export async function listScheduleHorses(): Promise<ScheduleHorseOption[]> {
     nickname: string | null;
     registered_name: string | null;
     display_code: string | null;
+    current_owner_contact_id: string | null;
+    lessee_contact_id: string | null;
   };
   return ((data ?? []) as Row[]).map((h) => ({
     id: h.id,
     name: h.nickname || h.registered_name || h.display_code || h.id.slice(0, 8),
-  }));
+    owner_contact_id: h.current_owner_contact_id,
+    lessee_contact_id: h.lessee_contact_id,
+  })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // ─── Hub summary ─────────────────────────────────────────────────────────────

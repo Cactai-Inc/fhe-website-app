@@ -52,9 +52,14 @@ export function TaskModal({
 
   const [title, setTitle] = useState(task?.title ?? '');
   const [category, setCategory] = useState(task?.category ?? '');
+  // A self-authored type: the category select offers "+ Add a type…", which
+  // reveals this free-text box. The typed value is saved as the task's category.
+  const [addingType, setAddingType] = useState(false);
+  const [customType, setCustomType] = useState('');
   const [body, setBody] = useState(task?.body ?? '');
   const [date, setDate] = useState(toDateInput(task?.scheduled_at ?? null) || defaultDate || '');
   const [time, setTime] = useState(toTimeInput(task?.scheduled_at ?? null));
+  const [endTime, setEndTime] = useState(toTimeInput(task?.scheduled_end ?? null));
   const [blocks, setBlocks] = useState(task?.blocks_availability ?? false);
   const [status, setStatusVal] = useState<TaskStatus>(task?.status ?? 'new');
   const [assignees, setAssignees] = useState<string[]>(task?.assignees.map((a) => a.user_id) ?? []);
@@ -80,12 +85,27 @@ export function TaskModal({
   }
   function scheduledEndIso(): string | null {
     if (!date || !time) return null;
-    // A timed task defaults to a 30-minute block; an all-day task has no end.
+    // An explicit end time when given; otherwise a 30-minute block. An all-day
+    // task (no time) has no end.
+    if (endTime) return new Date(`${date}T${endTime}`).toISOString();
     return new Date(new Date(`${date}T${time}`).getTime() + 30 * 60_000).toISOString();
   }
 
   function toggleAssignee(userId: string) {
     setAssignees((prev) => (prev.includes(userId) ? prev.filter((u) => u !== userId) : [...prev, userId]));
+  }
+
+  // Picking a horse whose owner or lessee is a client auto-selects that client,
+  // so the two links stay consistent (the horse list is tied to the client list).
+  function pickHorse(id: string) {
+    setHorseId(id);
+    if (!id) return;
+    const h = horses.find((x) => x.id === id);
+    if (!h) return;
+    const owner = h.owner_contact_id ?? h.lessee_contact_id;
+    if (!owner) return;
+    const match = clients.find((c) => c.contact_id === owner);
+    if (match) setClientId(match.id);
   }
 
   async function save() {
@@ -95,7 +115,7 @@ export function TaskModal({
       const payload = {
         title: title.trim(),
         body: body.trim() || null,
-        category: category || null,
+        category: (addingType ? customType.trim() : category) || null,
         scheduled_at: scheduledIso(),
         scheduled_end: scheduledEndIso(),
         blocks_availability: blocks,
@@ -134,10 +154,25 @@ export function TaskModal({
 
         <label className="text-sm">
           <span className="form-label">Type</span>
-          <select className="form-input" value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="">General</option>
-            {categories.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
-          </select>
+          {addingType ? (
+            <div className="flex gap-2">
+              <input className="form-input flex-1" value={customType} autoFocus
+                placeholder="Name the new type"
+                onChange={(e) => setCustomType(e.target.value)} />
+              <button type="button" className="text-sm text-secondary px-3 underline"
+                onClick={() => { setAddingType(false); setCustomType(''); }}>Cancel</button>
+            </div>
+          ) : (
+            <select className="form-input" value={category}
+              onChange={(e) => {
+                if (e.target.value === '__add__') { setAddingType(true); setCategory(''); return; }
+                setCategory(e.target.value);
+              }}>
+              <option value="">General</option>
+              {categories.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
+              <option value="__add__">+ Add a type…</option>
+            </select>
+          )}
         </label>
 
         <label className="text-sm">
@@ -150,15 +185,20 @@ export function TaskModal({
             it at an hour; no date = an untimed to-do. */}
         <div className="rounded-lg bg-green-800/5 border border-green-800/10 p-3 flex flex-col gap-3">
           <p className="form-label mb-0">When (optional)</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <label className="text-sm">
               <span className="form-label">Date</span>
               <input type="date" className="form-input" value={date} onChange={(e) => setDate(e.target.value)} />
             </label>
             <label className="text-sm">
-              <span className="form-label">Time</span>
-              <input type="time" className="form-input" value={time} onChange={(e) => setTime(e.target.value)}
-                disabled={!date} />
+              <span className="form-label">Start</span>
+              <input type="time" step={900} className="form-input" value={time}
+                onChange={(e) => setTime(e.target.value)} disabled={!date} />
+            </label>
+            <label className="text-sm">
+              <span className="form-label">End</span>
+              <input type="time" step={900} className="form-input" value={endTime}
+                onChange={(e) => setEndTime(e.target.value)} disabled={!date || !time} />
             </label>
           </div>
           {date && time && (
@@ -175,7 +215,7 @@ export function TaskModal({
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm">
             <span className="form-label">Horse (optional)</span>
-            <select className="form-input" value={horseId} onChange={(e) => setHorseId(e.target.value)}>
+            <select className="form-input" value={horseId} onChange={(e) => pickHorse(e.target.value)}>
               <option value="">None</option>
               {horses.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
             </select>
@@ -190,7 +230,7 @@ export function TaskModal({
         </div>
 
         <div className="text-sm">
-          <span className="form-label">Assigned to</span>
+          <span className="form-label">Assign to</span>
           <div className="flex flex-wrap gap-1.5">
             {staff.map((s) => {
               const on = assignees.includes(s.user_id);
