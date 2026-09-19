@@ -195,7 +195,35 @@ removed NO_SLAUGHTER_ELECTION + TRIAL_INSURANCE_RESPONSIBLE, insurance/risk reve
   (sessions) + C1b "Today's tasks" already surface the day compactly and each links to
   `/app/calendar?view=day`. A third full rundown/workspace embed would duplicate the Day
   view (D18) and violate the self-arranging-surface principle (D13 exception) — not built.
-- **B4 Lessons system, B5 ATN build** — DISCUSS-FIRST, awaiting the owner (see below).
+- ✅ **B5 ATN — DONE 2026-09-18** (commits b88f462a, 3fd3167d, dd90dea1, f5c7bad0). Owner
+  answers: newest-first always · full default notification-category set · Open-Meteo ·
+  no aging nudge (reminders one-time OR recurring every X days/weeks/months) · Mark-complete
+  → hidden Completed/History page via out-of-the-way link · Dismiss on all alerts/notifs.
+  Built in 4 stages: (1) schema + engine (task_reminders/alerts/alert_suppressions/
+  notification_mutes, dashboard_alerts NEWEST-FIRST, dashboard_notifications, dismiss/snooze/
+  mute/seen/history — 20260918T1100/1200); (2) AtnGrid on OwnerDashboard (3 rows, single-card
+  advance, alert modal); (3) TaskModal reminders + Mark-complete + History page
+  (/app/ops/history, discreet link); (4) crons — atn-reminders (hourly, fire_due_task_reminders
+  20260918T1300), atn-weather (Open-Meteo rain alerts, org_staff_user_ids 20260918T1400, FHE
+  coords set), atn-weekly-digest (Monday, weekly_digest 20260918T1500). All in vercel.json +
+  scheduled-jobs.yml. ⚠️ CRONS NEED CRON_SECRET in Vercel + GitHub for atn-* to actually fire.
+- **B4 Lessons system** — DISCUSS-FIRST, awaiting the owner (deepest; owner: fresh thread likely).
+
+### ⚠️ #6 — MANDATORY DOCUMENT SEND FLOW (owner 2026-09-18, DESIGN CAPTURED, build AFTER B4/next)
+Not a blunt wall re-enable. The wall redirect is down since CR-123·A1 (it bounced Pamela out
+of her own lease). The owner's actual design:
+- **The contract Send button becomes state-aware, mirroring Invite.** Send modal renders
+  conditionally on: invitation-URL logged? · auth set up? · ≥1 user session? · any unsigned
+  assigned docs?
+  1. No invite + no auth + no session → "Invite and include contract", REQUIRE specifying the
+     contract's signing order relative to unsigned assigned docs.
+  2. Set up + session + no other unsigned docs → plain "Send."
+  3. Set up + session + has unsigned docs → "Send," ask where to SEQUENCE the contract.
+- **Documents go as ONE packet, signed together, emailed as a set only once all are signed.**
+- **Correct order = CONTRACT FIRST, then its dependent docs** (the Pamela bug was demanding the
+  ancillary docs before the contract — but those are only required IF the contract is signed;
+  if the lessor declines the contract they shouldn't sign the others). The system had two
+  competing flows and chose the wrong one; unify to one flow with contract-first sequencing.
 
 ---
 
