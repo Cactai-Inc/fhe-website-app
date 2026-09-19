@@ -189,9 +189,13 @@ removed NO_SLAUGHTER_ELECTION + TRIAL_INSURANCE_RESPONSIBLE, insurance/risk reve
   (7 buckets via staff_orders_board), Payments page (4 states via staff_payments_board),
   both staff-only/anon-revoked (20260918T1000), nav rows added, Payment review kept as
   the reconcile/confirm queue.
-- **B3 calendar follow-ups, B4 Lessons system, B5 ATN build** — see below.
-- **Dashboard mirror (D of B0)** — the compact CalendarDayView on the dashboard (a Today's-tasks zone
-  exists; the full day rundown/workspace mirror is not yet built).
+- ✅ **B3 calendar follow-ups — closed by B0** (2026-09-18). C6 desktop width + Day view
+  shipped in B0; no new calendar bugs remained on the list.
+- ✅ **Dashboard mirror (D of B0) — satisfied by existing zones** (2026-09-18). C1 "Today"
+  (sessions) + C1b "Today's tasks" already surface the day compactly and each links to
+  `/app/calendar?view=day`. A third full rundown/workspace embed would duplicate the Day
+  view (D18) and violate the self-arranging-surface principle (D13 exception) — not built.
+- **B4 Lessons system, B5 ATN build** — DISCUSS-FIRST, awaiting the owner (see below).
 
 ---
 
