@@ -118,6 +118,31 @@ edits (location→structured, §3.4 disclosure gate + Buyer Acceptance section, 
 date split + N/A, §7 trial insurance/return reword, §8.2 title/risk, §8.4 auto no-slaughter + ack,
 removed NO_SLAUGHTER_ELECTION + TRIAL_INSURANCE_RESPONSIBLE, insurance/risk reversal).
 
+### ✅ CONTRACT ITEMS — ALL DONE 2026-09-18 (commits f8fb6660, 6353d940; DB live+archived)
+- CR-1 stable gate homes: every §gate field now lives on an always-visible empty-body
+  anchor clause (`*_GATE`), so answering never removes the control; PENDING placeholders
+  removed; blank required gate still blocks signing. (20260918T0200)
+- CR-2 §5.3 installment schedule → `installment_schedule` structured builder (amount/due/
+  notes rows). CR-3 §3.4 → `incident_list` builder (category menu no Other, +start date,
+  +end date w/ still-present, free text). Composers + defs live. (20260918T0300/0400)
+- CR-4 §3.5: Yes/No now above the gated text (via CR-1 anchor); duplicate buyer-ack
+  sentence removed (lives in Buyer Acceptance section); asterisk rides the label line.
+- CR-5 §1: filled test horse b6a00ca9 reg#/current_location; the HORSE.* "duplicate
+  template_tokens" was a non-issue (tokens are unique per template_id).
+- CR-6 §2 cascading: satisfied by the existing conditional_on gate system + CR-1
+  stabilization (required-field check already respects gate state).
+- CR-7 §12 assignment: EXPLAIN-only item (no code). Purpose: consent-to-assign protects
+  the Seller's remedies under an installment/trial arrangement; on a paid-in-full sale it
+  is a standard boilerplate restriction. Owner to decide if it needs changing.
+- CR-8 LOCK MODEL: PartyControlsCard → 3-level access picker (Full/Suggestions/Read-only);
+  engine default flipped so a party with NO controls row = full access (4 readers +
+  last-editor guard, 20260918T0600); Add-item moved next to Requests; Scroll next to Save;
+  read-only party sees Comments only.
+- CR-9 minted HORSE_SALE_V2 v1→2 (20260918T0700; D33 — 0 executed docs).
+- CR-10 insurance/risk reversal audited on BOS + lease: both already correct (lease =
+  Lessor bears risk while holding title; BOS passes risk to Buyer who holds title post-
+  conveyance). Fixed two lease clauses that opened a sentence with "Because". (20260918T0500)
+
 ### CONTRACT ITEMS STILL OPEN (the CR list to work through next)
 1. **Verify the installment gate can be undone** (no→yes→no). Give every section gate ONE stable home
    (its subsection's first line) regardless of which consequence is active if still flaky.
