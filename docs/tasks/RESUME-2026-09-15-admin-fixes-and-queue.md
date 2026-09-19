@@ -209,7 +209,16 @@ removed NO_SLAUGHTER_ELECTION + TRIAL_INSURANCE_RESPONSIBLE, insurance/risk reve
   scheduled-jobs.yml. ⚠️ CRONS NEED CRON_SECRET in Vercel + GitHub for atn-* to actually fire.
 - **B4 Lessons system** — DISCUSS-FIRST, awaiting the owner (deepest; owner: fresh thread likely).
 
-### ⚠️ #6 — MANDATORY DOCUMENT SEND FLOW (owner 2026-09-18, DESIGN CAPTURED, build AFTER B4/next)
+### ✅ #6 — STATE-AWARE SEND FLOW — DONE 2026-09-18 (commit e28ecdc8)
+Send modal now renders per party from contract_send_state (20260918T1600, anon revoked):
+no account/never-signed-in → "Invite and include this contract"; has account → "Send";
+where the party carries unsigned assigned docs, the modal shows the order (contract first,
+then those) and states they arrive as one set. The server already builds the sequenced
+packet at execution (ensure_contract_role_documents, contract=seq 1) and branches invite-
+vs-send in contract-invite — this made both visible/correct in the UI. The wall redirect
+stays down (CR-123·A1); the packet-as-one-email + signing-set walk enforces the order.
+
+### ⚠️ #6 — ORIGINAL DESIGN NOTE (kept for reference)
 Not a blunt wall re-enable. The wall redirect is down since CR-123·A1 (it bounced Pamela out
 of her own lease). The owner's actual design:
 - **The contract Send button becomes state-aware, mirroring Invite.** Send modal renders
