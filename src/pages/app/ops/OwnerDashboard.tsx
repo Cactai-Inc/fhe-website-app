@@ -26,6 +26,7 @@ import {
   MoneyHealthZone, MirrorZone, DealsZone, PipelineZone, HygieneZone,
 } from '../../../components/app/dashboard/BusinessZones';
 import { NotificationsZone } from '../../../components/app/dashboard/NotificationsZone';
+import { AtnGrid } from '../../../components/app/dashboard/AtnGrid';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { timeOfDayWord } from '../../../lib/formatDateTime';
 
@@ -212,6 +213,11 @@ export default function OwnerDashboard() {
             : <BusinessRibbon k={businessKpis} revenue={revenue} />}
         </div>
       </header>
+
+      {/* ATN grid (owner, 2026-09-13): the Alerts / Notifications / Tasks rows sit
+          between the KPI ribbon and the zones. Hidden rows self-manage; Tasks is
+          always shown. A fixed structure above the dynamic zones, not a zone. */}
+      <AtnGrid />
 
       {loading && (
         <p className="py-8 text-center text-sm text-green-800/50">Reading the day&hellip;</p>
