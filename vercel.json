@@ -22,6 +22,18 @@
     {
       "path": "/api/mint-monthly-allotments",
       "schedule": "20 8 * * *"
+    },
+    {
+      "path": "/api/atn-reminders",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/atn-weather",
+      "schedule": "30 14 * * *"
+    },
+    {
+      "path": "/api/atn-weekly-digest",
+      "schedule": "0 15 * * 1"
     }
   ],
   "redirects": [
