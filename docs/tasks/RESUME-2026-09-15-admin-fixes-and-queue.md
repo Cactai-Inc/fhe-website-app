@@ -165,6 +165,15 @@ removed NO_SLAUGHTER_ELECTION + TRIAL_INSURANCE_RESPONSIBLE, insurance/risk reve
 10. **Apply the same insurance/risk reversal to HORSE_BILL_OF_SALE and HORSE_LEASE_V2** where analogous
     clauses exist (this session did HORSE_SALE_V2 only). Audit each for "Buyer bears risk before title".
 
+### ✅ NON-CONTRACT ITEMS 5 & 6 — DONE 2026-09-18 (commits 04e06470, 2bf1247c)
+- Item 5 new-task modal: Horse Care rename + 6 new categories + "+ Add a type" free-text;
+  Date/Start/End row on 15-min steps; horse→client auto-link (owner/lessee contact_id);
+  alpha sort; CLI code hidden; "Assign to". (categories 20260918T0800)
+- Item 6 client record: FILED UNDER moved to the bottom; danger zone renamed
+  "Account status & removal" with Deactivate/Reactivate · Archive · Remove-and-block;
+  audit trail → own page /app/records/person/:id/audit (contact_audit_trail RPC,
+  20260918T0900, anon revoked).
+
 ### NON-CONTRACT ITEMS STILL QUEUED (from earlier this session)
 - **Item 5 — new-task modal fixes:** category "Horse Care (our horses)"→"Horse Care"; add Feeding,
   Shopping, Research, Travel, Events, Meetings + a self-author "Other / + add a type" free-text; add an
