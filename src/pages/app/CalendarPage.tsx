@@ -617,7 +617,15 @@ export default function CalendarPage() {
           />
         </div>
       ) : (
-      <div className="bg-white border border-green-800/10 rounded-lg overflow-x-auto">
+      {/* The week grid is wider than a phone (min-w-[720px]); this is its own
+          horizontal scroll region so the later days are reachable by swiping
+          WITHIN it. `body { overflow-x: clip }` (index.css, the page-fit guard)
+          otherwise swallows a nested auto-scroller's overflow on iOS, which is
+          what stopped the week from sliding. `touch-action: pan-x pan-y` hands the
+          horizontal pan to this element explicitly, and `overscroll-x: contain`
+          keeps the gesture from bubbling out to the clipped body. */}
+      <div className="bg-white border border-green-800/10 rounded-lg overflow-x-auto overscroll-x-contain"
+        style={{ touchAction: 'pan-x pan-y', WebkitOverflowScrolling: 'touch' }}>
         {view === 'week' ? (
           <WeekGrid
             weekStart={range.from}
