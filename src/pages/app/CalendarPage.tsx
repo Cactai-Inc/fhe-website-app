@@ -409,6 +409,37 @@ export default function CalendarPage() {
     );
   }
 
+  /* SWIPE BETWEEN WEEKS (owner, 2026-09-25). A decisive horizontal drag changes the
+     week — the gesture the Prev/Next buttons duplicate. It only fires when the
+     inner grid can't absorb the drag itself: if the 720px grid is scrolled to its
+     matching edge (or fits entirely), a further swipe that way flips the week.
+     A left-swipe (finger moves left, deltaX < 0) advances; right-swipe goes back.
+     Vertical-dominant drags are ignored so scrolling the day never changes weeks. */
+  const weekScrollRef = useRef<HTMLDivElement>(null);
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+  function onSwipeStart(e: React.TouchEvent) {
+    const t = e.touches[0];
+    swipe.current = { x: t.clientX, y: t.clientY };
+  }
+  function onSwipeEnd(e: React.TouchEvent) {
+    const s = swipe.current;
+    swipe.current = null;
+    if (!s) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // not a horizontal swipe
+    const el = weekScrollRef.current;
+    if (el) {
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      // Only flip when the inner scroll is at the edge the swipe pushes toward, so
+      // a within-week scroll is never hijacked mid-scroll.
+      if (dx < 0 && el.scrollLeft < maxScroll - 4) return; // still room to scroll right
+      if (dx > 0 && el.scrollLeft > 4) return;             // still room to scroll left
+    }
+    shift(dx < 0 ? 1 : -1);
+  }
+
   // PLUSPASS — "+ Booking": staff get the same full editor a grid click opens
   // (onEmptyClick); a client gets the same "request this open time" flow.
   function onCreateBooking() {
@@ -617,15 +648,9 @@ export default function CalendarPage() {
           />
         </div>
       ) : (
-      {/* The week grid is wider than a phone (min-w-[720px]); this is its own
-          horizontal scroll region so the later days are reachable by swiping
-          WITHIN it. `body { overflow-x: clip }` (index.css, the page-fit guard)
-          otherwise swallows a nested auto-scroller's overflow on iOS, which is
-          what stopped the week from sliding. `touch-action: pan-x pan-y` hands the
-          horizontal pan to this element explicitly, and `overscroll-x: contain`
-          keeps the gesture from bubbling out to the clipped body. */}
-      <div className="bg-white border border-green-800/10 rounded-lg overflow-x-auto overscroll-x-contain"
-        style={{ touchAction: 'pan-x pan-y', WebkitOverflowScrolling: 'touch' }}>
+      <div ref={weekScrollRef} className="bg-white border border-green-800/10 rounded-lg overflow-x-auto overscroll-x-contain"
+        onTouchStart={view === 'week' ? onSwipeStart : undefined}
+        onTouchEnd={view === 'week' ? onSwipeEnd : undefined}>
         {view === 'week' ? (
           <WeekGrid
             weekStart={range.from}

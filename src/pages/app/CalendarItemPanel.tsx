@@ -75,6 +75,13 @@ export function CalendarItemPanel({
 }) {
   const editing = !!item?.id;
   const isBooking = item?.kind === 'lesson' || item?.kind === 'care';
+  /* ⚠️ A NEW item opens EMPTY (owner, 2026-09-25): "+ Booking" and an empty-cell
+     click must not inherit a half-finished booking from a previous session. The
+     old key `calendar.item.new` was SHARED across every fresh create, so the last
+     abandoned draft (its client, "my next lesson") rehydrated into every new
+     modal, and Clear could not win against it. A per-open id keeps THIS open safe
+     from an accidental close while never restoring a different create's draft. */
+  const newDraftId = useRef(`new.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`);
   /* An existing booking opens read-only; the editor is one Edit click away.
      Anything else (new item, block, appointment) opens in the editor. */
   const [mode, setMode] = useState<PanelMode>(editing && isBooking ? 'view' : 'edit');
@@ -476,7 +483,7 @@ export function CalendarItemPanel({
     isFlexible, locationId, address, travelBefore, travelAfter, notes, weeks,
   };
   const draft = useFormDraft(
-    `calendar.item.${item?.id ?? 'new'}`,
+    `calendar.item.${item?.id ?? newDraftId.current}`,
     draftShape,
     (d) => {
       if (d.type) setType(d.type as ItemType);
