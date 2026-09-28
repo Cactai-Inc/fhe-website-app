@@ -207,8 +207,13 @@ const ROLE_WORD_SELF: Record<string, string> = {
   LESSOR: 'the Lessor', LESSEE: 'the Lessee', SELLER: 'the Seller',
   BUYER: 'the Buyer', COBUYER: 'the Co-Buyer',
 };
-/** The tip on a field the viewing party owns, addressed to them directly. */
-function ownFieldTip(cb: FieldCallbacks): string {
+/** The tip on a field the viewing party owns, addressed to them directly.
+ *  A DEAL (shared deal-term) field belongs to EITHER party, so it does not name
+ *  the viewer's role — it says either party may complete it (owner, CR-126 C2). */
+function ownFieldTip(f: ContractField, cb: FieldCallbacks): string {
+  if ((f.owner_role ?? '').toUpperCase() === 'DEAL') {
+    return 'Either party may complete this section.';
+  }
   const role = (cb.myRoles?.[0] ?? '').toUpperCase();
   const who = ROLE_WORD_SELF[role];
   return who ? `This is for you, as ${who}, to fill in.` : 'This is for you to fill in.';
@@ -264,7 +269,7 @@ function OwnedField({
       <div className="rounded-md bg-green-100/50 ring-1 ring-green-300/60 px-2 py-1.5">
         <div className="flex items-start gap-1.5">
           <div className="min-w-0 flex-1">{children}</div>
-          <ExplainTip text={ownFieldTip(cb)} underline={false}
+          <ExplainTip text={ownFieldTip(f, cb)} underline={false}
             className="mt-0.5 inline-flex items-center text-green-700/80 hover:text-green-800 shrink-0">
             <Info size={14} aria-hidden="true" />
           </ExplainTip>
@@ -275,7 +280,7 @@ function OwnedField({
   return (
     <span className="inline-flex items-baseline flex-wrap gap-y-1 rounded-md bg-green-100/70 ring-1 ring-green-300/70 px-1 py-0.5 align-middle">
       {children}
-      <ExplainTip text={ownFieldTip(cb)} underline={false}
+      <ExplainTip text={ownFieldTip(f, cb)} underline={false}
         className="ml-1 inline-flex items-center align-middle text-green-700/80 hover:text-green-800">
         <Info size={14} aria-hidden="true" />
       </ExplainTip>
@@ -407,6 +412,34 @@ function describeGate(
   if (!cond) return generic;
   const phrase = describeGatePart(cond, fieldByKey);
   return phrase ? `This is included when ${phrase}.` : generic;
+}
+
+/** CR-126 B4 — the Sex-match disclosure notice ("This is included when Sex is Mare
+ *  or …") explains why an eligibility gate (e.g. the breeding Include control) is
+ *  INACTIVE. Once the Sex condition IS met, the control is active and the notice is
+ *  redundant — the owner wants it shown ONLY when Sex does NOT match. True here when
+ *  the clause's gate carries a HORSE.SEX condition that is currently SATISFIED, so
+ *  the caller suppresses the "This is included when …" line. */
+function eligibilityGateSatisfied(
+  cond: import('../../lib/contracts').FieldConditional | null | undefined,
+  valueByKey: Record<string, string>,
+): boolean {
+  if (!cond) return false;
+  // Find the HORSE.SEX sub-conditions and evaluate ONLY those. If they are met, the
+  // eligibility half of the gate holds and the notice is redundant.
+  const sexLeaves: import('../../lib/contracts').FieldConditional[] = [];
+  const collect = (c: import('../../lib/contracts').FieldConditional | undefined) => {
+    if (!c) return;
+    if (c.field_key === 'HORSE.SEX') sexLeaves.push(c);
+    c.all?.forEach(collect);
+    c.any?.forEach(collect);
+  };
+  collect(cond);
+  if (sexLeaves.length === 0) return false;
+  // Any matching Sex leaf means the eligibility condition is satisfied (the leaves
+  // are OR-combined in the gate: Mare OR Stallion OR Colt OR Filly).
+  const sex = (valueByKey['HORSE.SEX'] ?? '').trim();
+  return sexLeaves.some((leaf) => (leaf.equals ?? []).includes(sex));
 }
 
 /** A "[Pending — …]" placeholder clause: gated to show only while its driving
@@ -1318,7 +1351,12 @@ export function ClauseDocument({
                         {gateControls.map(renderOrphan)}
                       </div>
                     )}
-                    {gatedOff && !sectionAllOptional && !gateOnlyForParty && (
+                    {/* CR-126 B4: hide the Sex-match notice once the Sex condition is
+                        satisfied — the Include control is then active and the "why the
+                        gate is inactive" explanation is redundant. Shown only when Sex
+                        does NOT match one of the eligible values. */}
+                    {gatedOff && !sectionAllOptional && !gateOnlyForParty
+                      && !eligibilityGateSatisfied(clause.conditional_on, valueByKey) && (
                       <p className="text-[11px] text-green-700/90 mb-0.5">
                         {clause.caption || describeGate(clause.conditional_on, fieldByKey)}
                       </p>

@@ -87,8 +87,6 @@ export default function NewContractPage() {
   // Lock model default: both parties have full access until restricted.
   const [controlsA, setControlsA] = useState<Controls>(DEFAULT_CONTROLS);
   const [controlsB, setControlsB] = useState<Controls>(DEFAULT_CONTROLS);
-  const [amount, setAmount] = useState('');
-  const [deposit, setDeposit] = useState('');
   // Both types: the horse step is a dropdown of the horse-owning party's horses
   // + "Add a new horse" (the intake form, in a modal).
   const [sellerHorses, setSellerHorses] = useState<HorseIntakeRecord[]>([]);
@@ -188,11 +186,8 @@ export default function NewContractPage() {
         : type === 'bill_of_sale'
           // partyA = Buyer, partyB = Seller (roles order in TYPES).
           ? await startBillOfSaleStandalone({ buyerContactId: partyA, sellerContactId: partyB || null, horseId: chosenHorse || null })
-          : await startSaleContract(
-              partyA, partyB, chosenHorse,
-              amount ? Number(amount.replace(/[$,]/g, '')) : undefined,
-              deposit ? Number(deposit.replace(/[$,]/g, '')) : undefined,
-            );
+          // CR-126 B2: price + deposit are filled in the contract body, not here.
+          : await startSaleContract(partyA, partyB, chosenHorse);
       const docId = result.document_id;
       // Started from a purchase context (?purchase=<id>) → record the traceable
       // purchase↔contract link. Best-effort: never blocks contract creation.
@@ -428,21 +423,11 @@ export default function NewContractPage() {
         </div>
       </section>
 
-      {type === 'purchase' && (
-        <section className="bg-white border border-green-800/10 rounded-xl p-4 mb-4">
-          <h2 className="font-serif text-green-800 text-base mb-3">Terms (optional)</h2>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div>
-              <span className="form-label">Purchase price</span>
-              <input className="form-input" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="$" />
-            </div>
-            <div>
-              <span className="form-label">Deposit</span>
-              <input className="form-input" value={deposit} onChange={(e) => setDeposit(e.target.value)} placeholder="$" />
-            </div>
-          </div>
-        </section>
-      )}
+      {/* CR-126 B2: price + deposit are NOT captured here. They are ordinary PRICE-
+          section terms filled in the contract body with everything else — capturing
+          them at creation put money on the first step before the parties or the
+          horse were even settled. The create step is just parties + horse; the
+          document's Price section is where the amounts are entered. */}
 
       {err && <p role="alert" className="form-error mb-3">{err}</p>}
 

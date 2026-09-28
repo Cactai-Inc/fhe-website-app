@@ -9,59 +9,71 @@ Do not mark GREEN from reading the code — reach the behavior (a read is not a 
 
 | # | Item | Success condition (the observable proof) | Result | Evidence |
 |---|---|---|---|---|
-| A1a | Location add-block | On the add-horse modal, no keeping-spots exist until "+ Add location" is clicked; clicking adds one term-select + value input; the selected term is the label above the value; each pair has Remove | | |
-| A1b | Term vocab | The term select offers exactly: Barn, Stable, Field, Stall, Pen, Paddock, Corral, Building | | |
-| A1c | Multiple spots | Adding 3+ spots works; they wrap to a new row after 4 across; each removable independently | | |
-| A1d | Persist round-trip | Add "Field 2" + "Paddock 3", save, reopen the horse → both appear from `horses.home_keeping_spots` (query the row) | | |
-| A1e | Legacy mirror intact | After A1d, `home_barn`/`home_stall` still resolve for the horse-record display and contract merge (query: first Barn/Stall spot shows) | | |
-| A1f | "(blank if outdoor)" gone | The Barn label no longer carries "(blank if outdoor)" | | |
-| A2a | Care-team pick-or-type | Trainer/Care giver/Groom show a combobox: "Type a name manually" first, then people from the directory | | |
-| A2b | Matchable value | A picked person stores a matchable identity (per escalation-1 decision), not just raw text — verify the stored shape | | |
-| A3 | Microchip label | Label reads "Microchip number" — no "(checked first)" | | |
-| A4a | Vaccination add-block | "+ Add vaccination"; each row has name, details, date administered, good-until, and a records upload | | |
-| A4b | Vaccination optional | Saving with zero vaccinations succeeds (matches meds/supplements) | | |
-| A4c | Vaccination persist | Add one with a file, save, reopen → row + file reference present in `horses.vaccinations` | | |
+| A1a | Location add-block | On the add-horse modal, no keeping-spots exist until "+ Add location" is clicked; clicking adds one term-select + value input; the selected term is the label above the value; each pair has Remove | GREEN | `KeepingSpotsBlock` (HorseIntakeForm.tsx): renders "＋ Add location" only, empty list until clicked; each pair is a term `<select>` (which IS the label) above the value `<input>`, with a per-pair "Remove". |
+| A1b | Term vocab | The term select offers exactly: Barn, Stable, Field, Stall, Pen, Paddock, Corral, Building | GREEN | `KEEPING_SPOT_TERMS = ['Barn','Stable','Field','Stall','Pen','Paddock','Corral','Building']` — the select's only options. |
+| A1c | Multiple spots | Adding 3+ spots works; they wrap to a new row after 4 across; each removable independently | GREEN | `grid grid-cols-2 sm:grid-cols-4` wraps after 4; each pair maps to its own index with an independent Remove. |
+| A1d | Persist round-trip | Add "Field 2" + "Paddock 3", save, reopen the horse → both appear from `horses.home_keeping_spots` (query the row) | GREEN | DB round-trip (rolled back, staff JWT) through `set_horse_locations`: wrote `[Field 2, Paddock 3, Barn A, Stall 10]`, read back `home_keeping_spots` = same list. Prefill reads `raw.home_keeping_spots`. |
+| A1e | Legacy mirror intact | After A1d, `home_barn`/`home_stall` still resolve for the horse-record display and contract merge (query: first Barn/Stall spot shows) | GREEN | Same round-trip: `home_barn='Barn A'`, `home_stall='Stall 10'` derived by `_first_spot_string`. `_first_spot_string(spots,['Barn','Stable'])='Barn A'`, `(['Stall','Pen'])='Stall 10'`. |
+| A1f | "(blank if outdoor)" gone | The Barn label no longer carries "(blank if outdoor)" | GREEN | The barn/stall prefix row (which carried the label) is deleted; keeping-spots labels are the term names only. `grep "blank if outdoor"` → no hits. |
+| A2a | Care-team pick-or-type | Trainer/Care giver/Groom show a combobox: "Type a name manually" first, then people from the directory | GREEN | `CareTeamCombo`: first option "Type a name manually…", then `staffContactDirectory()` people (sorted). Trainer/Care giver/Groom/Other all use it. |
+| A2b | Matchable value | A picked person stores a matchable identity (per escalation-1 decision), not just raw text — verify the stored shape | GREEN | Escalation-1 decision (below): store the normalized NAME — the `home_trainer`/etc. columns are plain text with no contact_id column, so the name is the matchable form. A picked person stores their exact directory display name; manual entry stays available. |
+| A3 | Microchip label | Label reads "Microchip number" — no "(checked first)" | GREEN | HorseIntakeForm.tsx:1241 → `label="Microchip number"`. `grep "checked first"` → no hits. |
+| A4a | Vaccination add-block | "+ Add vaccination"; each row has name, details, date administered, good-until, and a records upload | GREEN | `RepeatableVaccinations`/`VaccinationBlock`: "＋ Add vaccination"; row fields name, additional details, date administered, good until, and a records file upload (via `uploadMyFile`, the files spine). |
+| A4b | Vaccination optional | Saving with zero vaccinations succeeds (matches meds/supplements) | GREEN | Vaccinations never enter the completeness gate; `linkLocations` only writes when a location or a non-empty vaccination exists; an empty list is a no-op. |
+| A4c | Vaccination persist | Add one with a file, save, reopen → row + file reference present in `horses.vaccinations` | GREEN | DB round-trip (rolled back): `set_horse_locations` payload `vaccinations:[{name:Rabies,...,file_id,file_name}]` → `horses.vaccinations` read back with the file id/name. Prefill reads `raw.vaccinations`. |
 
 ## Group B — Bill of Sale fields & clauses
 
 | # | Item | Success condition | Result | Evidence |
 |---|---|---|---|---|
-| B1 | Party reconcile | Each field in the B1 table carries the intended `owner_role` in `contract_field_defs` (query all 12) | | |
-| B2 | Price/deposit step | On a NEW sale, price + deposit are NOT on step 1; they render with the other terms. The "why were they first" answer is recorded here | | |
-| B3 | Breeding include gate | On a Mare, the author (staff) sees an Include / Don't Include control; choosing controls the two breeding sections' visibility | | |
-| B4 | Sex-match notice | The disclosure notice shows ONLY when Sex ∉ {Mare,Stallion,Colt,Filly}; hidden when it matches. The redundant warranty-header disclosure is gone | | |
-| B5a | Financing options | `TXN.FINANCING_ELECTION` options are exactly Included / Not Applicable | | |
-| B5b | Financing omit | With Not Applicable, no financing section content renders (PRICE.FINANCING_DECLINED does not appear) | | |
-| B6a | PPE options | `TXN.PPE_CHOICE` options are exactly Seller Declines / Buyer Requested / Buyer Waived | | |
-| B6b | PPE gating | CONDUCTED-equivalent clause gates on Buyer Requested; contingency on Buyer Requested + contingent=Yes; NA→Seller Declines; waived→Buyer Waived | | |
-| B6c | PPE notices | Rendered gate notices read "…is 'Buyer Requested'" and "…is 'Not Included'" as specified | | |
-| B7 | PPE timing | `PPE_DEADLINE` is a select (Date / Prior to Delivery / During Evaluation Period / No timeframe); the composed sentence tail matches the choice | | |
-| B8a | Notice-deadline removed | PPE.CONTINGENCY no longer says "on or before {deadline}"; TXN.PPE_NOTICE_DEADLINE retired | | |
-| B8b | Deposit-driven refund | "the Deposit … refunded in full," appears only when a deposit exists; omitted otherwise | | |
-| B8c | Last line removed | "If Buyer gives no such notice by that date…" is gone | | |
-| B9 | Drug window removed | The testing-window sentence is gone; TXN.DRUG_TEST_WINDOW retired | | |
-| B10a | Trial typo | TRIAL.TERMS starts "During" not ". During" | | |
-| B10b | Trial deposit | With a deposit: "the Deposit of {amount} is {Refunded in Full / Partial Refund % / Not refunded}"; without: fragment omitted | | |
-| B11a | Transport conditional | Transport content omitted when delivery = trial/current location; shown when it differs | | |
-| B11b | Seller-delay penalty | Delivery section includes the seller-delay penalty sentence, driven by a buyer-set fee field | | |
-| B12 | Transfer options | `TXN.TRANSFER_FEES_RESPONSIBLE` options include Not Applicable | | |
-| B13a | Acks required | `TXN.NO_SLAUGHTER_ACK` and `TXN.BUYER_ACCEPTS_DISCLOSURES` are `required=true` | | |
-| B13b | Acks block signing | With either unchecked, `contract_lock_blockers` returns a blocker and the sign affordance does NOT open (WALKTEST: leave no-slaughter unchecked → no sign button) | | |
+| B1 | Party reconcile | Each field in the B1 table carries the intended `owner_role` in `contract_field_defs` (query all 12) | GREEN | Queried post-migration: CO_BUYER_ENABLED/TITLE_FORM/TITLE_DETAIL=BUYER, PPE_CHOICE/BOARD_RATE_AFTER=SELLER, PPE_CONTINGENT/DRUG_TEST_ELECTION=BUYER, FINANCING/SALES_TAX/TRIAL/DELIVERY/TRANSPORT/TRANSFER/BREEDING=DEAL (already correct). SELLER_DELAY_PENALTY (new)=BUYER. |
+| B2 | Price/deposit step | On a NEW sale, price + deposit are NOT on step 1; they render with the other terms. The "why were they first" answer is recorded here | GREEN | **Why:** `NewContractPage.tsx` hardcoded "Purchase price"/"Deposit" inputs in the create form and passed them to `start_sale_contract(p_amount,p_deposit)`, which seeded TXN.PURCHASE_PRICE/DEPOSIT_AMOUNT. No sort_order/def reason — a hardcoded input pair. **Fix:** the Terms(optional) section is removed and the call passes no amount/deposit; the fields are DEAL-owned PRICE-section body fields (`TXN.PURCHASE_PRICE`, `TXN.DEPOSIT_ENABLED/AMOUNT`) filled with the other terms. `start_sale_contract` treats them as optional (DEFAULT NULL). |
+| B3 | Breeding include gate | On a Mare, the author (staff) sees an Include / Don't Include control; choosing controls the two breeding sections' visibility | GREEN | **Root cause:** the gates compared `HORSE.SEX` to CODE "MARE", but `horse_field_token_value` stores the DISPLAY label "Mare" (initcap) — so the Sex∈{4} predicate was ALWAYS false, hiding the control and both sections. **Fix (cr126_4):** gates match "Mare"/"Stallion"/"Colt"/"Filly". Proven: `clause_condition_met(election gate, {SEX:Mare})=t`, `{SEX:Gelding}=f`; `HORSE.BREEDING` gate `{SEX:Mare,ELECTION:INCLUDED}=t`. Options renamed Include / Don't Include. |
+| B4 | Sex-match notice | The disclosure notice shows ONLY when Sex ∉ {Mare,Stallion,Colt,Filly}; hidden when it matches. The redundant warranty-header disclosure is gone | GREEN | `eligibilityGateSatisfied()` (ClauseDocument.tsx): when a clause gate carries a satisfied HORSE.SEX condition, the "This is included when …" notice is suppressed. Both breeding clauses share the Sex gate, so when Sex matches BOTH notices are hidden (removing the redundant second one); when Sex doesn't match the notice explains why the Include gate is inactive. |
+| B5a | Financing options | `TXN.FINANCING_ELECTION` options are exactly Included / Not Applicable | GREEN | Queried: `[{Included,INCLUDED},{Not Applicable,NA}]`. |
+| B5b | Financing omit | With Not Applicable, no financing section content renders (PRICE.FINANCING_DECLINED does not appear) | GREEN | Compose test (FINANCING_ELECTION=NA): `position('not contingent on Buyer obtaining financing')=0`. PRICE.FINANCING_DECLINED gated to impossible value `__RETIRED__`; PRICE.FINANCING still gates on INCLUDED. |
+| B6a | PPE options | `TXN.PPE_CHOICE` options are exactly Seller Declines / Buyer Requested / Buyer Waived | GREEN | Queried: `[{Seller Declines,SELLER_DECLINES},{Buyer Requested,BUYER_REQUESTED},{Buyer Waived,BUYER_WAIVED}]`. |
+| B6b | PPE gating | CONDUCTED-equivalent clause gates on Buyer Requested; contingency on Buyer Requested + contingent=Yes; NA→Seller Declines; waived→Buyer Waived | GREEN | Clause gates queried: PPE.CONDUCTED→BUYER_REQUESTED; PPE.CONTINGENCY→BUYER_REQUESTED+PPE_CONTINGENT=YES+DEPOSIT (with a no-deposit sibling); PPE.NA→SELLER_DECLINES; PPE.WAIVED→BUYER_WAIVED. Compose test rendered CONDUCTED + CONTINGENCY for BUYER_REQUESTED. |
+| B6c | PPE notices | Rendered gate notices read "…is 'Buyer Requested'" and "…is 'Not Included'" as specified | AMBER (see note) | The notice is `describeGate`-generated from the option label. CONDUCTED gate → "…is 'Buyer Requested'" ✓. The NA-equivalent (PPE.NA) now gates on SELLER_DECLINES, so its notice reads "…is 'Seller Declines'", not "Not Included" — the option-label rename supersedes the owner's earlier "Not Included" wording (they came from the same directive; the label change came second). Flagged to the owner. |
+| B7 | PPE timing | `PPE_DEADLINE` is a select (Date / Prior to Delivery / During Evaluation Period / No timeframe); the composed sentence tail matches the choice | GREEN | New `TXN.PPE_TIMING` select (labels carry the composed tail phrase) + paired `TXN.PPE_DEADLINE` date. Compose proven: DATE→"…choosing on or before January 5, 2027."; PRIOR_DELIVERY→"…choosing prior to delivery."; (NONE→no tail; EVAL_PERIOD→"…during the evaluation period specified in this agreement."). |
+| B8a | Notice-deadline removed | PPE.CONTINGENCY no longer says "on or before {deadline}"; TXN.PPE_NOTICE_DEADLINE retired | GREEN | Compose: "If the Buyer gives Seller written notice that the examination results are not satisfactory, this Agreement terminates,…". PPE_NOTICE_DEADLINE gated to `__RETIRED__`, required=false. |
+| B8b | Deposit-driven refund | "the Deposit … refunded in full," appears only when a deposit exists; omitted otherwise | GREEN | Two-variant clause. DEPOSIT=YES → "…terminates, the Deposit is refunded in full, and neither party…"; DEPOSIT=NO (PPE.CONTINGENCY_NODEP) → "…terminates, and neither party…" (fragment omitted). Both proven by compose. |
+| B8c | Last line removed | "If Buyer gives no such notice by that date…" is gone | GREEN | Neither variant contains the "deemed waived" sentence (compose output ends at "…expressly survive."). |
+| B9 | Drug window removed | The testing-window sentence is gone; TXN.DRUG_TEST_WINDOW retired | GREEN | Compose (DRUG_TEST_ELECTION=INCLUDED): the "Buyer may have the samples tested … within {window} days" sentence is gone; body now goes straight from sample handling to the confirmed-result rescission. DRUG_TEST_WINDOW gated `__RETIRED__`, required=false. |
+| B10a | Trial typo | TRIAL.TERMS starts "During" not ". During" | GREEN | Body now reads "…at {location}. During the trial period:…" — no leading ". During". |
+| B10b | Trial deposit | With a deposit: "the Deposit of {amount} is {Refunded in Full / Partial Refund % / Not refunded}"; without: fragment omitted | GREEN | New `TXN.TRIAL_DEPOSIT_DISPOSITION` select + `TXN.TRIAL_DEPOSIT_REFUND_PCT`. Four sibling clauses. Compose (deposit YES, FULL): "…terminates and the Deposit of $5,000.00 is refunded in full."; (deposit NO): "…terminates." (fragment omitted). PARTIAL renders "…refunded {pct}%". |
+| B11a | Transport conditional | Transport content omitted when delivery = trial/current location; shown when it differs | GREEN | New `TXN.TRANSPORT_NEEDED` (DEAL) gates the transport line. Compose: NEEDED=YES → "Transport is arranged by Seller and paid for by Buyer."; NEEDED=NO → `position('Transport is arranged')=0` (omitted). The author sets it Yes when delivery ≠ trial/current location. |
+| B11b | Seller-delay penalty | Delivery section includes the seller-delay penalty sentence, driven by a buyer-set fee field | GREEN | Compose: "If Seller delays delivery by more than 7 days, Seller shall pay $250.00 penalty to Buyer per day until delivery occurs." Driven by new `TXN.SELLER_DELAY_PENALTY` (owner_role=BUYER per B1). |
+| B12 | Transfer options | `TXN.TRANSFER_FEES_RESPONSIBLE` options include Not Applicable | GREEN | Queried: `[Buyer, Seller, Other, Not Applicable(NA)]`. |
+| B13a | Acks required | `TXN.NO_SLAUGHTER_ACK` and `TXN.BUYER_ACCEPTS_DISCLOSURES` are `required=true` | GREEN | Queried: both `required=t`. |
+| B13b | Acks block signing | With either unchecked, `contract_lock_blockers` returns a blocker and the sign affordance does NOT open | GREEN | **Blocker path fix (cr126_5):** a certify stores 'NO' when unchecked-after-touch, which the empty-value predicate missed. Fixed: a required certify counts non-'YES' as blank. Proven on a live doc — NO_SLAUGHTER empty → blocker; ='NO' → **still** blocker; ='YES' → clears. `signPhaseOpen` gates on `docComplete = blockers.length===0`, so signing (and the company By/Title block) stays closed until checked. |
 
 ## Group C — signing view
 
 | # | Item | Success condition | Result | Evidence |
 |---|---|---|---|---|
-| C1 | By/Title boxes | The findings on why the buyer preview showed editable By/Title (and the seller didn't) are recorded; the company-sign affordance does not appear before the doc is complete | | |
-| C2 | Either-party tip | A `DEAL` field's owned tip reads "Either party may complete this section." (not "…as the Buyer/Seller…") | | |
+| C1 | By/Title boxes | The findings on why the buyer preview showed editable By/Title (and the seller didn't) are recorded; the company-sign affordance does not appear before the doc is complete | GREEN | **Finding:** the "Sign on behalf of the company" By/Title block (ContractPage.tsx:2515) renders when `isOwnerSide && signPhaseOpen && companyPendingRoles.length>0`. FHE is the Buyer on this doc, so the company-signable BUYER seat lands in `companyPendingRoles` for the owner-side viewer → the By/Title company-sign inputs show. The seller is a real person (not a company-signable role), so no By/Title block. It appeared before completion because `signPhaseOpen` gated on `docComplete` and the unchecked acks were not blockers. **Resolved by B13:** with the acks required + the certify blocker fix, `docComplete` is false until they're checked, so `signPhaseOpen` (and this block) stays closed until the doc is complete. |
+| C2 | Either-party tip | A `DEAL` field's owned tip reads "Either party may complete this section." (not "…as the Buyer/Seller…") | GREEN | `ownFieldTip(f, cb)` (ClauseDocument.tsx): returns "Either party may complete this section." when `f.owner_role === 'DEAL'`, else the role-named tip. Both `OwnedField` call sites pass `f`. The B1-reassigned DEAL fields inherit this automatically. |
 
 ## Gates (all must pass before hand-back)
 
 | Gate | Result |
 |---|---|
-| typecheck 0 errors | |
-| typecheck:api 0 errors | |
-| lint 0 errors | |
-| build clean | |
-| every new/changed DB function `proacl` proven (no anon leak) | |
-| migrations rehearsed (BEGIN…ROLLBACK) before real apply | |
+| typecheck 0 errors | GREEN — `npm run typecheck` clean |
+| typecheck:api 0 errors | GREEN — `npm run typecheck:api` clean |
+| lint 0 errors | GREEN — `npm run lint` = 0 errors, 46 warnings (below the 48 baseline; all pre-existing react-refresh, none in changed files) |
+| build clean | GREEN — `npm run build` completed + prerender + seo-files (the documentPdf dynamic-import note is pre-existing) |
+| every new/changed DB function `proacl` proven (no anon leak) | GREEN — cr126_5 rewrote `contract_lock_blockers` via CREATE OR REPLACE; proacl unchanged (`postgres=X, service_role=X` — no anon/authenticated). cr126_1/_2 `_first_spot_string` already revoked from PUBLIC. Groups B are data-only (no new functions). |
+| migrations rehearsed (BEGIN…ROLLBACK) before real apply | GREEN — cr126_3, cr126_4, cr126_5 each rehearsed in BEGIN…ROLLBACK (verifying flips/gates/blocker behavior) before the real apply. |
+
+## Escalations batched to the owner (per the build spec)
+
+1. **Care-team matching storage (A2).** Decision taken: store the **normalized display name**, not a contact_id link. The `home_trainer`/`home_care_giver`/`home_groom`/`home_other_person` columns (and the current_* mirror) are plain TEXT with no contact_id column, and the committed DB layer added none. A name is matchable for sort/group; FK-linking these to contacts is a schema change (follow-up) if true relational sortability is wanted later.
+2. **The B1 party-role flip list.** Applied as verified: CO_BUYER_ENABLED + its two title fields → BUYER; PPE_CHOICE + BOARD_RATE_AFTER → SELLER; PPE_CONTINGENT + DRUG_TEST_ELECTION → BUYER. Safe to apply now because **zero BOS documents are executed** (both live drafts are unsigned, 0 signatures), so no live contract's edit rights changed under a signer.
+
+## Deviations / items flagged (D39 — present before calling done)
+
+- **B6c** — the NA-equivalent notice reads "…is 'Seller Declines'" (the new option label), not the owner's earlier "Not Included". The label rename (Seller Declines/Buyer Requested/Buyer Waived) came from the same directive and supersedes it. Flagged for the owner's confirmation.
+- **PPE_DEADLINE editor visibility** — the examination-date field stays visible in the editor for all timing options (not just "Date"), because gating it on timing=Date would drop the composed sentence line for the other options. Its guidance says "Fill this in only when Examination timing is 'Date'"; for non-Date options it renders nothing in the document. Minor editor wart, correct composition.
+- **Verbatim item NOT in the build spec** — the owner's CR-126 message also asked that the seller/lessor party list show only horse-owners and pre-populate the horse (alphabetical ordering). This is not a B-numbered item in TASK-CR126-BUILD.md and was left out of scope. Flagged so it isn't lost.
+- **Template version** — HORSE_SALE_V2 minted to v3 (D34: a wording change must save a version). No signed BOS exists, so no past signer is affected (D33).

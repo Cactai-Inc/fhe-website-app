@@ -106,18 +106,29 @@ export type HorseRecordOutcome =
 
 /** Resolve/set a horse's Home + Current locations (by name) to real location rows.
  *  Called after the horse form saves so the three-location model is populated. */
+/** One keeping spot: a term from the fixed vocabulary (Barn, Stable, Field, Stall,
+ *  Pen, Paddock, Corral, Building) and the value the person typed for it. The list
+ *  replaces the old single barn/stall pair — a horse can be kept in any number of
+ *  named spots on one property. */
+export interface KeepingSpot { term: string; value: string }
+
 /** A findable location: the place (name + structured address) plus THIS horse's
- *  detail there (barn/stall, notes, on-site people). */
+ *  detail there (keeping spots, notes, on-site people). */
 export interface HorseLocationDetail {
   name?: string;
   address_line1?: string;
   city?: string;
   state?: string;
   postal?: string;
-  /** Composite "Barn A" / "Stable A" (prefix select + typed value); blank when the
-   *  property has outdoor stalls only. */
+  /** The unbounded keeping-spots list (CR-126) — the new source of truth the form
+   *  writes and reads. `home.keeping_spots` / `current.keeping_spots` land in
+   *  horses.home_keeping_spots / current_keeping_spots. */
+  keeping_spots?: KeepingSpot[];
+  /** LEGACY READ-ONLY MIRROR: composite "Barn A" derived by the DB from the first
+   *  Barn/Stable spot. The form no longer writes it — set_horse_locations derives
+   *  home_barn/current_barn from keeping_spots. Kept so existing readers resolve. */
   barn?: string;
-  /** Composite "Stall 16" / "Pen 16". */
+  /** LEGACY READ-ONLY MIRROR: first Stall/Pen spot, derived by the DB. */
   stall?: string;
   notes?: string;
   trainer?: string;
@@ -125,14 +136,36 @@ export interface HorseLocationDetail {
   groom?: string;
   other?: string;
 }
-/** Persist a horse's home and (optional) current location. `current` null/omitted
- *  means the horse is at its home location. */
+
+/** A vaccination record (CR-126) — all optional, mirrors the medications pattern.
+ *  Persisted as one entry of horses.vaccinations via set_horse_locations'
+ *  payload.vaccinations. `file_id` references a row in `files` (the records copy). */
+export interface HorseVaccination {
+  name?: string;
+  details?: string;
+  /** ISO date the vaccination was administered. */
+  date_administered?: string;
+  /** ISO date the vaccination is good until. */
+  good_until?: string;
+  /** files.id of the uploaded records copy, if any. */
+  file_id?: string;
+  /** Display filename of the uploaded records copy (for showing without a re-fetch). */
+  file_name?: string;
+}
+/** Persist a horse's home and (optional) current location, plus its vaccinations
+ *  list. `current` null/omitted means the horse is at its home location.
+ *  `vaccinations` omitted (undefined) leaves the stored list unchanged; an empty
+ *  array clears it. */
 export async function setHorseLocations(
   horseId: string, home: HorseLocationDetail, current?: HorseLocationDetail | null,
+  vaccinations?: HorseVaccination[],
 ): Promise<void> {
   const { error } = await supabase.rpc('set_horse_locations', {
     p_horse_id: horseId,
-    p_payload: { home, current: current ?? null },
+    p_payload: {
+      home, current: current ?? null,
+      ...(vaccinations !== undefined ? { vaccinations } : {}),
+    },
   });
   if (error) throw new DbError(error, 'Saving the horse locations');
 }
@@ -437,6 +470,9 @@ export const HORSE_INTAKE_COLUMNS =
   + 'vet_name, vet_phone, vet_business_name, vet_address_line1, vet_city, vet_state, vet_postal, '
   + 'farrier_name, farrier_phone, medical_history, behavioral_history, known_conditions, '
   + 'euthanasia_authorization, training_history, competition_history, '
+  + 'home_keeping_spots, current_keeping_spots, vaccinations, '
+  + 'home_trainer, home_care_giver, home_groom, home_other_person, '
+  + 'current_trainer, current_care_giver, current_groom, current_other_person, '
   + 'lessee_name_text, lease_start, lease_end, current_owner_contact_id';
 
 export type HorseIntakeRecord = Record<string, unknown> & { id: string };
