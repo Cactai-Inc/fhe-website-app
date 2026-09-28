@@ -183,6 +183,72 @@ export async function deleteCalendarItem(id: string, scope: 'one' | 'future' | '
   return data as number;
 }
 
+/** A staff booking draft — a booking saved with status 'draft' (an accidental
+ *  close auto-saves one; "Save draft" makes one deliberately). Never shown to a
+ *  client. Listed on the drafts interstitial to finish or discard. */
+export interface BookingDraft {
+  id: string;
+  kind: string;
+  starts_at: string;
+  ends_at: string | null;
+  all_day: boolean;
+  notes: string | null;
+  client_id: string | null;
+  horse_id: string | null;
+  offering_id: string | null;
+  location_id: string | null;
+  created_at: string;
+  updated_at: string;
+  client_name: string | null;
+  offering_name: string | null;
+  horse_name: string | null;
+}
+
+/** Every draft booking in the org (staff-only). */
+export async function listBookingDrafts(): Promise<BookingDraft[]> {
+  const { data, error } = await supabase.rpc('list_booking_drafts');
+  if (error) throw error;
+  return (data ?? []) as BookingDraft[];
+}
+
+/** Hard-delete selected drafts (owner ruling: drafts are hard deletes). Only rows
+ *  that are genuinely drafts are removed; a committed id is ignored. Returns the
+ *  count actually deleted. */
+export async function hardDeleteBookingDrafts(ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const { data, error } = await supabase.rpc('hard_delete_booking_drafts', { p_ids: ids });
+  if (error) throw error;
+  return (data ?? 0) as number;
+}
+
+/** A real booking that overlaps a proposed time — for the "already booked at this
+ *  time" warning before staff double-book a slot. */
+export interface OverlappingBooking {
+  id: string;
+  kind: string;
+  status: string;
+  starts_at: string;
+  ends_at: string | null;
+  client_id: string | null;
+  horse_id: string | null;
+  client_name: string | null;
+  offering_name: string | null;
+  horse_name: string | null;
+}
+
+/** Committed bookings clashing with [from,to). `excludeId` ignores the row being
+ *  edited. Staff may proceed regardless (parallel lessons are allowed) — this only
+ *  surfaces what is there so the warning can name it. */
+export async function bookingsOverlapping(
+  fromISO: string, toISO: string, excludeId?: string | null,
+): Promise<OverlappingBooking[]> {
+  const { data, error } = await supabase.rpc('bookings_overlapping', {
+    p_from: fromISO, p_to: toISO, p_exclude_id: excludeId ?? null,
+  });
+  if (error) throw error;
+  return (data ?? []) as OverlappingBooking[];
+}
+
 export async function closeDay(dateISO: string, reason?: string): Promise<void> {
   const { error } = await supabase.rpc('close_day', { p_date: dateISO, p_reason: reason ?? null });
   if (error) throw error;

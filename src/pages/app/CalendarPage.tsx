@@ -31,9 +31,11 @@ import {
   updateMyPendingBooking,
   withdrawMyPendingBooking,
   fetchMyStandingSlots,
+  listBookingDrafts,
   type OpenChangeRequest,
   type MyPendingChange,
   type StandingSlot,
+  type BookingDraft,
 } from '../../lib/ops/api-calendar';
 import { StandingSlotPicker } from '../../components/app/StandingSlotPicker';
 import { serviceLabel, standingSlotSummary } from '../../lib/standingSlots';
@@ -47,6 +49,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { listStableHorses, type StableHorse } from '../../lib/stable';
 import { formatSessionWhen, formatTimeRange } from '../../lib/formatDateTime';
 import { CalendarItemPanel } from './CalendarItemPanel';
+import { BookingDraftsPanel } from '../../components/app/BookingDraftsPanel';
 import { CalendarSettingsPanel } from './CalendarSettingsPanel';
 import { CalendarDayView } from '../../components/app/CalendarDayView';
 import { TaskModal } from '../../components/app/TaskModal';
@@ -225,6 +228,11 @@ export default function CalendarPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<CalendarItem | null>(null);
   const [editing, setEditing] = useState<{ item: CalendarItem | null; start?: Date } | null>(null);
+  /* Booking drafts (owner, 2026-09-27). A staff create-attempt routes THROUGH the
+     drafts panel when any draft exists — pick one up, or start fresh. `draftGate`
+     holds the create-attempt's start time until that choice is made. */
+  const [draftCount, setDraftCount] = useState(0);
+  const [draftGate, setDraftGate] = useState<{ start?: Date } | null>(null);
   /* Tasks scheduled in the visible range — shown alongside bookings in the Day
      view (and, untimed, in its "to do today" strip). Staff-only. */
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -293,6 +301,14 @@ export default function CalendarPage() {
       .then(setTasks).catch(() => setTasks([]));
   }, [isStaff, range.from, range.to]);
   useEffect(() => { loadTasks(); }, [loadTasks]);
+
+  // How many booking drafts wait to be resumed/queued. Drives whether a create
+  // attempt shows the drafts panel first. Staff-only; drafts never reach a client.
+  const loadDrafts = useCallback(() => {
+    if (!isStaff) { setDraftCount(0); return; }
+    listBookingDrafts().then((d) => setDraftCount(d.length)).catch(() => setDraftCount(0));
+  }, [isStaff]);
+  useEffect(() => { loadDrafts(); }, [loadDrafts]);
 
   // BUYANDBOOK §4.3 — THE HORIZON, MATERIALISED ON READ. There is no scheduler:
   // `pg_cron` is not installed and the Vercel crons were never created, so nothing
@@ -389,8 +405,16 @@ export default function CalendarPage() {
        staff can drag it back in the panel; a real back-to-back is unrealistic
        for a 60-min lesson, so a clean schedule starts them apart. Not enforced. */
     const suggested = applyGapDefault(s, items);
-    if (isStaff) setEditing({ item: null, start: suggested });
+    if (isStaff) beginCreate(suggested);
     else setRequesting(suggested); // client: request this open time
+  }
+
+  /* A staff create-attempt (an empty-cell click or "+ Booking"). If drafts exist,
+     show the drafts panel first (resume one, or start fresh); otherwise go
+     straight to a new booking modal. */
+  function beginCreate(start?: Date) {
+    if (draftCount > 0) setDraftGate({ start });
+    else setEditing({ item: null, start });
   }
 
   // the hour band from business hours (fallback 10–18), for the week grid rows.
@@ -444,7 +468,7 @@ export default function CalendarPage() {
   // (onEmptyClick); a client gets the same "request this open time" flow.
   function onCreateBooking() {
     const start = nextBookableSlot(openHour, closeHour);
-    if (isStaff) setEditing({ item: null, start });
+    if (isStaff) beginCreate(start);
     else setRequesting(start);
   }
 
@@ -677,12 +701,26 @@ export default function CalendarPage() {
           onBuy={() => { setSelected(null); setBuying(true); }}
         />
       )}
+      {/* Booking drafts interstitial — shown when a staff create-attempt happens and
+          drafts exist. Resume one, start fresh, or edit/delete the list. Emptying it
+          falls through to a new booking. */}
+      {draftGate && (
+        <BookingDraftsPanel
+          onOpenDraft={(d: BookingDraft) => {
+            setDraftGate(null);
+            setEditing({ item: { ...d, status: 'draft' } as CalendarItem });
+          }}
+          onCreateNew={() => { const g = draftGate; setDraftGate(null); setEditing({ item: null, start: g?.start }); }}
+          onClose={() => setDraftGate(null)}
+          onEmptied={() => { const g = draftGate; setDraftGate(null); setEditing({ item: null, start: g?.start }); loadDrafts(); }}
+        />
+      )}
       {editing && (
         <CalendarItemPanel
           item={editing.item}
           defaultStart={editing.start}
-          onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); void load(); }}
+          onClose={() => { setEditing(null); loadDrafts(); }}
+          onSaved={() => { setEditing(null); void load(); loadDrafts(); }}
         />
       )}
       {taskModal && (

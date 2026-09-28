@@ -26,12 +26,14 @@ import {
   setRecurringDays,
   generateMonthlyLessons,
   fetchBookingFeeCharges,
+  bookingsOverlapping,
   type CalendarItem,
   type CalendarLocation,
   type ClientPurchaseOption,
   type InstructorOption,
   type MonthlyPlan,
   type BookingFeeCharge,
+  type OverlappingBooking,
 } from '../../lib/ops/api-calendar';
 
 /*
@@ -95,6 +97,9 @@ export function CalendarItemPanel({
   const [locations, setLocations] = useState<CalendarLocation[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Bookings clashing with the chosen time — populated when a committed save is
+  // attempted over an occupied slot; the mini-modal offers Go back / Proceed.
+  const [overlap, setOverlap] = useState<OverlappingBooking[] | null>(null);
   const done = useRef(false); // submitted/deleted → don't autosave a draft on close
   const [intakeSent, setIntakeSent] = useState(false); // A4 — horse-intake request sent to client
 
@@ -366,10 +371,23 @@ export function CalendarItemPanel({
   const needsClientToCommit =
     type === 'offering' && !isFlexible && selectedOffering?.segment !== 'horse' && !clientId;
 
-  async function submit(asDraft: boolean) {
+  async function submit(asDraft: boolean, confirmedOverlap = false) {
     if (!asDraft && needsClientToCommit) {
       setError('Pick the client this lesson is for — or create one — before booking it.');
       return;
+    }
+    /* CONFLICT WARNING (owner, 2026-09-27). Staff MAY book two clients into one
+       slot — parallel lessons are legitimate — but not by accident. A committed
+       save whose time overlaps an existing booking surfaces what is there and asks
+       Go back / Proceed first. A draft never warns (it is not on the calendar). */
+    if (!asDraft && !confirmedOverlap) {
+      const s = fromLocalInput(start); const e = fromLocalInput(end);
+      if (s && e) {
+        try {
+          const clashes = await bookingsOverlapping(s, e, item?.id ?? null);
+          if (clashes.length > 0) { setOverlap(clashes); return; }
+        } catch { /* if the check fails, don't block the booking */ }
+      }
     }
     setBusy(true);
     setError(null);
@@ -404,7 +422,33 @@ export function CalendarItemPanel({
      (`draft` below), so an accidental close, a reload or a browser-back loses
      nothing — WITHOUT a row appearing on anybody's calendar. `Save draft` is
      still there, and pressing it is still the affirmative act that commits one. */
-  function handleClose() {
+  /* ⚠️ CLOSE AUTO-SAVES A DRAFT (owner, 2026-09-27). Closing a NEW booking with
+     something filled in keeps a `status='draft'` booking, so it turns up on the
+     drafts panel to finish later or recover after an accidental close — the queue
+     the owner asked for. It does NOT notify or show the client (drafts are
+     staff-only). An EDIT of an existing item closes without writing (its stored
+     row already stands); `done` is set by submit/delete/discard so those never
+     double-save. `Discard` below is the clean exit that saves nothing. */
+  async function handleClose() {
+    if (!done.current && !editing && hasDraftContent()) {
+      try { await saveCalendarItem(buildPayload(true)); } catch { /* fall through to close */ }
+    }
+    draft.clear();
+    onClose();
+  }
+
+  /** Enough entered to be worth keeping as a draft — any real field beyond the
+   *  default start/end the modal opened with. */
+  function hasDraftContent(): boolean {
+    return !!(clientId || horseId || offeringId || notes.trim() || purchaseId
+      || type === 'unavailable' || type === 'appointment');
+  }
+
+  /** Discard: leave without saving anything, and drop any autosaved browser draft.
+   *  `done` suppresses the close-time draft save. */
+  function discard() {
+    done.current = true;
+    draft.clear();
     onClose();
   }
 
@@ -960,12 +1004,55 @@ export function CalendarItemPanel({
               Save draft
             </button>
           )}
+          {/* Discard: a clean exit that saves nothing, including no auto-draft on
+              close. Distinct from closing, which keeps a draft for recovery. */}
+          {!editing && (
+            <button type="button" className="text-sm text-secondary px-3 py-2 hover:bg-green-800/5 rounded-md" disabled={busy} onClick={discard}>
+              Discard
+            </button>
+          )}
           {editing && (
             <button type="button" className="text-sm text-red-700 px-3 py-2 hover:bg-red-50 rounded-md" disabled={busy} onClick={() => void remove()}>
               Delete
             </button>
           )}
         </div>
+        )}
+
+        {/* CONFLICT WARNING — this time already has a booking. Staff may proceed
+            (parallel lessons are allowed) or go back to change the time. */}
+        {overlap && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 p-4"
+            role="dialog" aria-modal="true">
+            <div className="bg-cream rounded-2xl border border-green-800/15 shadow-lg w-full max-w-sm p-5">
+              <p className="font-serif text-lg text-green-900 mb-1">Already booked at this time</p>
+              <p className="text-[13px] text-muted mb-3">
+                This time overlaps {overlap.length === 1 ? 'a booking' : `${overlap.length} bookings`}.
+                You can still book alongside {overlap.length === 1 ? 'it' : 'them'}, or go back and change the time.
+              </p>
+              <ul className="mb-4 flex flex-col gap-1.5">
+                {overlap.map((o) => (
+                  <li key={o.id} className="text-[13px] text-green-900 rounded-lg border border-green-800/12 bg-white px-3 py-2">
+                    <span className="font-medium">{o.client_name ?? o.horse_name ?? 'A booking'}</span>
+                    {(o.offering_name ?? o.kind) ? ` — ${o.offering_name ?? o.kind}` : ''}
+                    <span className="block text-[11px] text-muted">
+                      {new Date(o.starts_at).toLocaleString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                      {o.ends_at ? `–${new Date(o.ends_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}` : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex gap-2">
+                <button type="button" className="btn-secondary flex-1 justify-center" onClick={() => setOverlap(null)}>
+                  Go back
+                </button>
+                <button type="button" className="btn-primary flex-1 justify-center"
+                  onClick={() => { setOverlap(null); void submit(false, true); }}>
+                  Proceed
+                </button>
+              </div>
+            </div>
+          </div>
         )}
     </Modal>
   );
