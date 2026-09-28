@@ -4727,6 +4727,30 @@ when viewing as the buyer all the fields i mentioned where it says its for the s
 (per-item verification — an item is DONE only when its cross-check passes). Two escalations batched to
 the owner: care-team matching storage, and the party-role flip list.
 
+**BUILT + VERIFIED (2026-09-28, commit `042aaea8` on `task/cr126-horse-and-bos`).** Every A/B/C item
+GREEN except B6c (AMBER — see below). Migrations cr126_3 (fields/gating/clauses), cr126_4 (breeding gate),
+cr126_5 (required-certify blocker) rehearsed then applied; HORSE_SALE_V2 minted to v3 (D34). Gates:
+typecheck/typecheck:api/lint 0 errors, build clean, proacl unchanged on the rewritten
+`contract_lock_blockers`.
+- **B3 root cause found:** the breeding gates compared `HORSE.SEX` to the CODE "MARE", but
+  `horse_field_token_value` stores the DISPLAY label "Mare" (initcap) — so Sex ∈ {4} was ALWAYS false and
+  the include control + both sections were hidden. Fixed to match display values. Same code-vs-label trap
+  `sync_contract_fields_from_defs` already documents for HORSE.%.
+- **B13 blocker path was the real hole:** a `certify` checkbox stores 'NO' when unchecked-after-touch, and
+  the `required_fields` predicate only counted an EMPTY value as missing — so a required ack could be
+  unchecked ('NO') and not block. Fixed: a required certify counts non-'YES' as blank. This is what
+  actually closes the "sign before complete" bug (making the acks required was only half).
+- **B2 answer:** price/deposit were on step 1 because `NewContractPage.tsx` hardcoded the inputs and passed
+  them to `start_sale_contract`; no sort_order reason. Removed; they're body PRICE fields now.
+- **C1:** the company By/Title block gates on `docComplete`; the B13 fix keeps it closed until the acks are
+  checked. Buyer saw it (FHE is Buyer → company-signable BUYER seat); seller didn't (real person).
+- **AMBER B6c:** the NA-equivalent notice reads "…is 'Seller Declines'" (the new label), not the owner's
+  earlier "Not Included" — the label rename superseded that wording. **Owner confirmation wanted.**
+- **Escalations resolved:** (1) care-team stored as normalized name (columns are text, no contact_id
+  column). (2) B1 flips applied — safe because ZERO BOS documents are executed (both live drafts unsigned).
+- **Verbatim item left out of scope (flagged):** "seller list = horse-owners + pre-populate the horse,
+  alphabetical" was in the owner's message but is not a B-numbered build-spec item.
+
 ## CR-125 — 2026-09-12: admin cannot delete/cancel orders or bookings, cannot hard-delete a test account, two different account-page layouts; and the Bill of Sale needs its conditions, gating, signability and counterparty signing flow reviewed
 **SAID (owner, verbatim):**
 > *"Lets investigate some functionality that is missing in the app.*
