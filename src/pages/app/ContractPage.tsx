@@ -1322,6 +1322,28 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     }
   }, [id, coBuyerPick, coBuyerEntry, load]);
 
+  // ── sale: the way out of the election itself. The card above only ever adds
+  //    a co-buyer — there was no path back to "no co-buyer" from here. This
+  //    flips TXN.CO_BUYER_ENABLED to NO through the same generic field write
+  //    the PARTIES-section dropdown already uses; set_contract_field's teardown
+  //    hook handles removing any co-buyer party (there is none yet — the card
+  //    only shows while the second BUYER slot is still empty). ──
+  const removeCoBuyerElection = useCallback(async () => {
+    if (!id) return;
+    setCoBuyerBusy(true);
+    try {
+      await setContractField(id, 'TXN.CO_BUYER_ENABLED', 'NO');
+      setCoBuyerEntry({});
+      setCoBuyerPick('');
+      await load({ blank: false });
+      setChangeKey((k) => k + 1);
+    } catch (e) {
+      setError(errMessage(e, 'Could not remove the co-buyer election.'));
+    } finally {
+      setCoBuyerBusy(false);
+    }
+  }, [id, load]);
+
   if (error && !detail) return <p role="alert" className="form-error">{error}</p>;
   if (!detail || !doc) return <p className="body-text text-muted text-sm">Loading the contract…</p>;
 
@@ -2130,11 +2152,18 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               ))}
             </div>
           )}
-          <button type="button" disabled={coBuyerBusy || (!coBuyerPick && !(coBuyerEntry.first_name || coBuyerEntry.last_name))}
-            className="btn-outline-gold text-xs disabled:opacity-60"
-            onClick={() => void addCoBuyer()}>
-            {coBuyerBusy ? 'Adding…' : 'Add co-buyer'}
-          </button>
+          <div className="flex gap-2">
+            <button type="button" disabled={coBuyerBusy || (!coBuyerPick && !(coBuyerEntry.first_name || coBuyerEntry.last_name))}
+              className="btn-outline-gold text-xs disabled:opacity-60"
+              onClick={() => void addCoBuyer()}>
+              {coBuyerBusy ? 'Adding…' : 'Add co-buyer'}
+            </button>
+            <button type="button" disabled={coBuyerBusy}
+              className="btn-secondary text-xs disabled:opacity-60"
+              onClick={() => void removeCoBuyerElection()}>
+              Not adding a co-buyer
+            </button>
+          </div>
         </div>
       )}
 

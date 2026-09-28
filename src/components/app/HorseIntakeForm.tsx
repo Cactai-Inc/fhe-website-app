@@ -12,6 +12,8 @@ import {
 } from '../../lib/ops/api-calendar';
 import { listHorseBreeds, listHorseColors, listLookupOptions, addLookupValue } from '../../lib/api';
 import { adminClientAccounts, type ClientAccountRow } from '../../lib/admin';
+import { useFieldNormalizer } from '../../lib/formState';
+import type { NormalizeKind } from '../../lib/normalize';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePropertyTerm } from '../../contexts/BrandProvider';
 import { withArticle } from '../../lib/propertyTerm';
@@ -255,6 +257,7 @@ function PersonBlock({
   const secondAnswered = na || second.value === NA || filled(second.value);
   const setNa = (on: boolean) => { name.onChange(on ? NA : ''); second.onChange(on ? NA : ''); };
   const cls = (bad: boolean) => `${input}${showError && bad ? ' border-red-400' : ''}`;
+  const normalize = useFieldNormalizer();
   return (
     <div className={`${span ? 'sm:col-span-2' : ''} rounded-lg border border-green-800/10 p-3`}>
       <div className="flex items-center justify-between mb-2">
@@ -267,13 +270,15 @@ function PersonBlock({
         <div>
           <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{name.label}{name.required ? ' *' : ''}</label>
           <input className={cls(!answered)} disabled={na} value={na ? '' : (name.value ?? '')} placeholder={name.placeholder}
-            onChange={(e) => name.onChange(e.target.value)} />
+            onChange={(e) => name.onChange(e.target.value)}
+            onBlur={normalize(`${title}-name`, 'name', name.value ?? '', name.onChange)} />
         </div>
         <div>
           <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{second.label}{second.required ? ' *' : ''}</label>
           <input type={second.kind} inputMode={second.kind} className={cls(!!second.required && !secondAnswered)} disabled={na}
             value={na ? '' : (second.value ?? '')} placeholder={second.placeholder}
-            onChange={(e) => second.onChange(e.target.value)} />
+            onChange={(e) => second.onChange(e.target.value)}
+            onBlur={normalize(`${title}-second`, second.kind === 'tel' ? 'phone' : 'email', second.value ?? '', second.onChange)} />
         </div>
       </div>
     </div>
@@ -300,6 +305,9 @@ function VetBlock({
   const setNa = (on: boolean) => parts.forEach((k) => set(k)(on ? NA : ''));
   const val = (k: keyof HorseIntakePayload) => (na ? '' : ((f[k] as string | undefined) ?? ''));
   const cls = (bad: boolean) => `${input}${showError && bad ? ' border-red-400' : ''}`;
+  const normalize = useFieldNormalizer();
+  const onBlurNorm = (k: keyof HorseIntakePayload, kind: NormalizeKind) =>
+    normalize(k as string, kind, val(k), set(k));
   return (
     <div className="sm:col-span-2 rounded-lg border border-green-800/10 p-3">
       <div className="flex items-center justify-between mb-2">
@@ -310,20 +318,27 @@ function VetBlock({
       </div>
       <div className="grid sm:grid-cols-2 gap-2">
         <div><L>Veterinarian name *</L>
-          <input className={cls(!answered)} disabled={na} value={val('vet_name')} placeholder="Dr. name" onChange={(e) => set('vet_name')(e.target.value)} /></div>
+          <input className={cls(!answered)} disabled={na} value={val('vet_name')} placeholder="Dr. name" onChange={(e) => set('vet_name')(e.target.value)}
+            onBlur={onBlurNorm('vet_name', 'name')} /></div>
         <div><L>Business / practice name</L>
-          <input className={cls(false)} disabled={na} value={val('vet_business_name')} placeholder="Practice name" onChange={(e) => set('vet_business_name')(e.target.value)} /></div>
+          <input className={cls(false)} disabled={na} value={val('vet_business_name')} placeholder="Practice name" onChange={(e) => set('vet_business_name')(e.target.value)}
+            onBlur={onBlurNorm('vet_business_name', 'name')} /></div>
         <div><L>Phone *</L>
-          <input type="tel" inputMode="tel" className={cls(!phoneAnswered)} disabled={na} value={val('vet_phone')} placeholder="(555) 555-5555" onChange={(e) => set('vet_phone')(e.target.value)} /></div>
+          <input type="tel" inputMode="tel" className={cls(!phoneAnswered)} disabled={na} value={val('vet_phone')} placeholder="(555) 555-5555" onChange={(e) => set('vet_phone')(e.target.value)}
+            onBlur={onBlurNorm('vet_phone', 'phone')} /></div>
         <div><L>Street address</L>
-          <input className={cls(false)} disabled={na} value={val('vet_address_line1')} placeholder="123 Barn Rd" onChange={(e) => set('vet_address_line1')(e.target.value)} /></div>
+          <input className={cls(false)} disabled={na} value={val('vet_address_line1')} placeholder="123 Barn Rd" onChange={(e) => set('vet_address_line1')(e.target.value)}
+            onBlur={onBlurNorm('vet_address_line1', 'street')} /></div>
         <div><L>City</L>
-          <input className={cls(false)} disabled={na} value={val('vet_city')} placeholder="San Diego" onChange={(e) => set('vet_city')(e.target.value)} /></div>
+          <input className={cls(false)} disabled={na} value={val('vet_city')} placeholder="San Diego" onChange={(e) => set('vet_city')(e.target.value)}
+            onBlur={onBlurNorm('vet_city', 'city')} /></div>
         <div className="grid grid-cols-2 gap-2">
           <div><L>State</L>
-            <input className={cls(false)} disabled={na} value={val('vet_state')} placeholder="CA" onChange={(e) => set('vet_state')(e.target.value)} /></div>
+            <input className={cls(false)} disabled={na} value={val('vet_state')} placeholder="CA" onChange={(e) => set('vet_state')(e.target.value)}
+              onBlur={onBlurNorm('vet_state', 'region')} /></div>
           <div><L>ZIP</L>
-            <input className={cls(false)} inputMode="numeric" disabled={na} value={val('vet_postal')} placeholder="92109" onChange={(e) => set('vet_postal')(e.target.value)} /></div>
+            <input className={cls(false)} inputMode="numeric" disabled={na} value={val('vet_postal')} placeholder="92109" onChange={(e) => set('vet_postal')(e.target.value)}
+              onBlur={onBlurNorm('vet_postal', 'postal')} /></div>
         </div>
       </div>
     </div>
@@ -332,7 +347,18 @@ function VetBlock({
 
 /** PREFIX INPUT — a standardized composite: a small dropdown that picks the label
  *  (e.g. Barn / Stable) + a typed value, producing one string like "Barn A". Reduces
- *  variance and speeds entry. The value is stored/read as "<prefix> <value>". */
+ *  variance and speeds entry. The value is stored/read as "<prefix> <value>".
+ *
+ *  Both the barn and stall prefix lists used to be closed — Barn/Stable, Stall/Pen,
+ *  nothing else — with no escape, unlike every other select in this form (which all
+ *  offer known-list-plus-"Other (enter manually)…"). The underlying columns
+ *  (horses.current_barn/current_stall etc.) are plain free text with no constraint
+ *  behind that limit; it was purely this control. A horse kept at a pasture,
+ *  paddock, or turnout had no way to say so. `otherMode` is owned by the PARENT
+ *  (LocationEntry) rather than derived from the string here, because PrefixSelect
+ *  and PrefixValue are two separate controls sharing one piece of state — an empty
+ *  "Other" value and an empty "unanswered, default to the first prefix" value are
+ *  the same string and cannot be told apart without it. */
 // Parse/compose a composite "<prefix> <value>" (e.g. "Barn A"). Split into two
 // standalone controls (PrefixSelect + PrefixValue) so they can sit as separate items
 // in a row rather than a nested composite.
@@ -343,20 +369,43 @@ function parsePrefix(value: string | undefined, prefixes: string[]) {
   return { prefix, rest };
 }
 const composePrefix = (p: string, rest: string) => (rest.trim() ? `${p} ${rest.trim()}` : '');
+/** A stored value that doesn't start with any known prefix word is an existing
+ *  "Other" entry (typed before this escape existed, or via direct data entry) —
+ *  used only to pick the right INITIAL otherMode, once, on mount. */
+const isOtherPrefix = (value: string | undefined, prefixes: string[]) => {
+  const trimmed = (value ?? '').trim();
+  return !!trimmed && !prefixes.includes(trimmed.split(/\s+/)[0]);
+};
 
-function PrefixSelect({ prefixes, value, onChange }: { prefixes: string[]; value?: string; onChange: (v: string) => void }) {
+function PrefixSelect({
+  prefixes, value, onChange, otherMode, onOtherMode,
+}: {
+  prefixes: string[]; value?: string; onChange: (v: string) => void;
+  otherMode: boolean; onOtherMode: (on: boolean) => void;
+}) {
   const { prefix, rest } = parsePrefix(value, prefixes);
   return (
-    <select className={input} value={prefix} onChange={(e) => onChange(composePrefix(e.target.value, rest))}>
+    <select className={input} value={otherMode ? OTHER : prefix}
+      onChange={(e) => {
+        if (e.target.value === OTHER) { onOtherMode(true); onChange(''); return; }
+        onOtherMode(false);
+        onChange(composePrefix(e.target.value, rest));
+      }}>
       {prefixes.map((p) => <option key={p} value={p}>{p}</option>)}
+      <option value={OTHER}>Other (enter manually)…</option>
     </select>
   );
 }
-function PrefixValue({ prefixes, value, onChange, placeholder }: { prefixes: string[]; value?: string; onChange: (v: string) => void; placeholder?: string }) {
+function PrefixValue({
+  prefixes, value, onChange, placeholder, otherMode,
+}: {
+  prefixes: string[]; value?: string; onChange: (v: string) => void; placeholder?: string; otherMode: boolean;
+}) {
   const { prefix, rest } = parsePrefix(value, prefixes);
   return (
-    <input className={input} value={rest} placeholder={placeholder}
-      onChange={(e) => onChange(composePrefix(prefix, e.target.value))} />
+    <input className={input} value={otherMode ? (value ?? '') : rest}
+      placeholder={otherMode ? 'e.g. Pasture 3' : placeholder}
+      onChange={(e) => onChange(otherMode ? e.target.value : composePrefix(prefix, e.target.value))} />
   );
 }
 
@@ -380,6 +429,9 @@ function LocationEntry({
 }) {
   const set = (patch: Partial<HorseLocationDetail>) => onChange({ ...v, ...patch });
   const bad = showError && !filled(v.name);
+  const normalize = useFieldNormalizer();
+  const onBlurNorm = (k: keyof HorseLocationDetail, kind: NormalizeKind) =>
+    normalize(`${title}-${k}`, kind, (v[k] as string | undefined) ?? '', (val) => set({ [k]: val }));
   /* ⚠️ THE LOCATION NAME IS A MATCHED VALUE, SO THE LIST IS PRIMARY (PAMELA §B
      rule 1). `set_horse_locations` → `_resolve_location` matches the typed name
      against `locations` and CREATES a row when nothing matches — so "Carmel Creek
@@ -391,6 +443,10 @@ function LocationEntry({
   const isKnown = !!v.name && known.some((o) => o.value === v.name);
   const [otherOpen, setOtherOpen] = useState(!!v.name && !isKnown);
   const showOther = otherOpen || (!!v.name && !isKnown) || known.length === 0;
+  const BARN_PREFIXES = ['Barn', 'Stable'];
+  const STALL_PREFIXES = ['Stall', 'Pen'];
+  const [barnOther, setBarnOther] = useState(() => isOtherPrefix(v.barn, BARN_PREFIXES));
+  const [stallOther, setStallOther] = useState(() => isOtherPrefix(v.stall, STALL_PREFIXES));
   return (
     <div className="rounded-lg border border-green-800/15 p-3">
       {title && <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold mb-0.5">{title}</p>}
@@ -423,36 +479,48 @@ function LocationEntry({
           )}
         </div>
         <div className="sm:col-span-2"><L>Street address</L>
-          <input className={input} value={v.address_line1 ?? ''} placeholder="123 Ranch Rd" onChange={(e) => set({ address_line1: e.target.value })} /></div>
+          <input className={input} value={v.address_line1 ?? ''} placeholder="123 Ranch Rd" onChange={(e) => set({ address_line1: e.target.value })}
+            onBlur={onBlurNorm('address_line1', 'street')} /></div>
         <div><L>City</L>
-          <input className={input} value={v.city ?? ''} placeholder="San Diego" onChange={(e) => set({ city: e.target.value })} /></div>
+          <input className={input} value={v.city ?? ''} placeholder="San Diego" onChange={(e) => set({ city: e.target.value })}
+            onBlur={onBlurNorm('city', 'city')} /></div>
         <div className="grid grid-cols-2 gap-2">
-          <div><L>State</L><input className={input} value={v.state ?? ''} placeholder="CA" onChange={(e) => set({ state: e.target.value })} /></div>
-          <div><L>ZIP</L><input className={input} inputMode="numeric" value={v.postal ?? ''} placeholder="92109" onChange={(e) => set({ postal: e.target.value })} /></div>
+          <div><L>State</L><input className={input} value={v.state ?? ''} placeholder="CA" onChange={(e) => set({ state: e.target.value })}
+            onBlur={onBlurNorm('state', 'region')} /></div>
+          <div><L>ZIP</L><input className={input} inputMode="numeric" value={v.postal ?? ''} placeholder="92109" onChange={(e) => set({ postal: e.target.value })}
+            onBlur={onBlurNorm('postal', 'postal')} /></div>
         </div>
         {/* Barn + Stall as four items in one row: prefix select + typed value for each. */}
         <div className="sm:col-span-2 grid grid-cols-4 gap-2 items-end">
           <div className="min-w-0"><L>Barn <span className="text-muted normal-case">(blank if outdoor)</span></L>
-            <PrefixSelect prefixes={['Barn', 'Stable']} value={v.barn} onChange={(barn) => set({ barn })} /></div>
+            <PrefixSelect prefixes={BARN_PREFIXES} value={v.barn} onChange={(barn) => set({ barn })}
+              otherMode={barnOther} onOtherMode={setBarnOther} /></div>
           <div className="min-w-0"><L>&nbsp;</L>
-            <PrefixValue value={v.barn} prefixes={['Barn', 'Stable']} placeholder="e.g. A" onChange={(barn) => set({ barn })} /></div>
+            <PrefixValue value={v.barn} prefixes={BARN_PREFIXES} placeholder="e.g. A" onChange={(barn) => set({ barn })}
+              otherMode={barnOther} /></div>
           <div className="min-w-0"><L>Stall</L>
-            <PrefixSelect prefixes={['Stall', 'Pen']} value={v.stall} onChange={(stall) => set({ stall })} /></div>
+            <PrefixSelect prefixes={STALL_PREFIXES} value={v.stall} onChange={(stall) => set({ stall })}
+              otherMode={stallOther} onOtherMode={setStallOther} /></div>
           <div className="min-w-0"><L>&nbsp;</L>
-            <PrefixValue value={v.stall} prefixes={['Stall', 'Pen']} placeholder="e.g. 16" onChange={(stall) => set({ stall })} /></div>
+            <PrefixValue value={v.stall} prefixes={STALL_PREFIXES} placeholder="e.g. 16" onChange={(stall) => set({ stall })}
+              otherMode={stallOther} /></div>
         </div>
         <div className="sm:col-span-2"><L>Notes</L>
           <textarea rows={2} className={`${input} resize-y`} value={v.notes ?? ''}
             placeholder="information that would be helpful in finding this location"
             onChange={(e) => set({ notes: e.target.value })} /></div>
         <div><L>Trainer</L>
-          <input className={input} value={v.trainer ?? ''} placeholder="Name (optional)" onChange={(e) => set({ trainer: e.target.value })} /></div>
+          <input className={input} value={v.trainer ?? ''} placeholder="Name (optional)" onChange={(e) => set({ trainer: e.target.value })}
+            onBlur={onBlurNorm('trainer', 'name')} /></div>
         <div><L>Care giver</L>
-          <input className={input} value={v.care_giver ?? ''} placeholder="Name (optional)" onChange={(e) => set({ care_giver: e.target.value })} /></div>
+          <input className={input} value={v.care_giver ?? ''} placeholder="Name (optional)" onChange={(e) => set({ care_giver: e.target.value })}
+            onBlur={onBlurNorm('care_giver', 'name')} /></div>
         <div><L>Groom</L>
-          <input className={input} value={v.groom ?? ''} placeholder="Name (optional)" onChange={(e) => set({ groom: e.target.value })} /></div>
+          <input className={input} value={v.groom ?? ''} placeholder="Name (optional)" onChange={(e) => set({ groom: e.target.value })}
+            onBlur={onBlurNorm('groom', 'name')} /></div>
         <div><L>Other</L>
-          <input className={input} value={v.other ?? ''} placeholder="Role — name (optional)" onChange={(e) => set({ other: e.target.value })} /></div>
+          <input className={input} value={v.other ?? ''} placeholder="Role — name (optional)" onChange={(e) => set({ other: e.target.value })}
+            onBlur={onBlurNorm('other', 'name')} /></div>
       </div>
     </div>
   );
@@ -608,6 +676,10 @@ export function HorseIntakeForm({
   // a blocked write surfaces). lastSavedRef tracks what the server has.
   const recordIdRef = useRef<string | null>(horseId ?? null);
   const lastSavedRef = useRef<HorseIntakePayload>({});
+  // What the server last held for home/current location, as a comparable
+  // snapshot — location lives in its own state (homeLoc/currentLoc, not `f`),
+  // so it needs its own "has this changed since the last save" tracking.
+  const lastSavedLocRef = useRef<string>(JSON.stringify({ home: {}, current: null }));
   const savingRef = useRef(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   // What the database actually said when an autosave failed (was discarded).
@@ -709,25 +781,33 @@ export function HorseIntakeForm({
         recordIdRef.current = horseId;
         const rec = detail?.record;
         if (rec) {
+          let homeVal: HorseLocationDetail = {};
           if (rec.home_location?.name || rec.home_barn || rec.home_stall) {
-            setHomeLoc({
+            homeVal = {
               name: rec.home_location?.name ?? '', address_line1: rec.home_location?.address_line1 ?? '',
               city: rec.home_location?.city ?? '', state: rec.home_location?.state ?? '',
               postal: rec.home_location?.postal ?? '',
               barn: rec.home_barn ?? '', stall: rec.home_stall ?? '', notes: rec.home_notes ?? '',
               trainer: rec.home_trainer ?? '', care_giver: rec.home_care_giver ?? '',
               groom: rec.home_groom ?? '', other: rec.home_other ?? '',
-            });
+            };
+            setHomeLoc(homeVal);
           }
+          let currentVal: HorseLocationDetail | null = null;
           if (rec.current_location?.name && rec.current_location.name !== rec.home_location?.name) {
             setCurrentDiffers(true);
-            setCurrentLoc({
+            currentVal = {
               name: rec.current_location.name, address_line1: rec.current_location.address_line1 ?? '',
               city: rec.current_location.city ?? '', state: rec.current_location.state ?? '',
               postal: rec.current_location.postal ?? '',
               barn: rec.current_barn ?? '', stall: rec.current_stall ?? '',
-            });
+            };
+            setCurrentLoc(currentVal);
           }
+          // Seed the "last saved" snapshot from what was just loaded, so the
+          // first blur after opening an existing record doesn't read as a
+          // change and fire a redundant save.
+          lastSavedLocRef.current = JSON.stringify({ home: homeVal, current: currentVal });
         }
         if (medRows.length) {
           setMeds(medRows.filter((m) => m.kind !== 'SUPPLEMENT'));
@@ -740,7 +820,12 @@ export function HorseIntakeForm({
   }, [horseId]);
 
   /** AUTOSAVE (fires on every blur inside the form): sparse-patch only the
-   *  changed columns. 'N/A' on a typed column persists as cleared. */
+   *  changed columns, plus home/current location — which used to be the one
+   *  section of this form that DIDN'T autosave (it only ever saved from the
+   *  final submit button's linkLocations, so leaving the location fields and
+   *  navigating away — exactly what every other field's blur behavior trains
+   *  a person to trust — silently lost whatever was typed there).
+   *  'N/A' on a typed column persists as cleared. */
   async function autosave() {
     const id = recordIdRef.current;
     if (!id || savingRef.current) return;
@@ -750,11 +835,20 @@ export function HorseIntakeForm({
       const prev = (lastSavedRef.current[k] as string | undefined) ?? '';
       if (cur !== prev) patch[k] = (TYPED_KEYS.has(k) && cur === NA) ? '' : cur;
     }
-    if (Object.keys(patch).length === 0) return;
+    const current = resolveCurrentLoc();
+    const locSnapshot = JSON.stringify({ home: homeLoc, current });
+    const locChanged = locSnapshot !== lastSavedLocRef.current
+      && (filled(homeLoc.name) || filled(current?.name));
+    const hasPatch = Object.keys(patch).length > 0;
+    if (!hasPatch && !locChanged) return;
     savingRef.current = true;
     setSaveState('saving');
     try {
-      await updateHorseRecord(id, patch);   // raises on a blocked write — never silent
+      if (hasPatch) await updateHorseRecord(id, patch);   // raises on a blocked write — never silent
+      if (locChanged) {
+        await setHorseLocations(id, homeLoc, current);
+        lastSavedLocRef.current = locSnapshot;
+      }
       lastSavedRef.current = { ...f };
       setSaveErr(null);
       setSaveState('saved');
@@ -799,6 +893,18 @@ export function HorseIntakeForm({
   const leased = f.is_leased === 'yes';
   // This record is always the OWNER's (creator or staff-assigned client) — there is no
   // lessee-creator path.
+
+  // The one precedence rule for "where is the horse right now", shared by autosave()
+  // and submit()'s linkLocations so the two paths can never disagree on it:
+  //   temporary current (a >48h stay during the lease)
+  //   → lease location (when leased)
+  //   → the general "different location" alternate (when NOT leased)
+  //   → null (current mirrors home — set_horse_locations does that itself).
+  const resolveCurrentLoc = (): HorseLocationDetail | null =>
+    (leased && tempLocOpen && filled(tempLoc.name)) ? tempLoc :
+    (leased && filled(leaseLoc.name)) ? leaseLoc :
+    (!leased && currentDiffers) ? currentLoc :
+    null;
 
   // Every applicable field must be answered (filled or N/A). Names are special:
   // at least one of registered/barn must be a REAL name (not N/A).
@@ -910,20 +1016,18 @@ export function HorseIntakeForm({
     }
     setBusy(true);
     try {
-      // Persist home + the resolved CURRENT location once the record exists. Precedence:
-      //   temporary current (a >48h stay during the lease)
-      //   → lease location (when leased)
-      //   → the general "different location" alternate (when NOT leased)
-      //   → home (current === home when nothing else applies).
+      // Persist home + the resolved CURRENT location once the record exists.
+      // Fires whenever EITHER side has something to save — home alone used to
+      // gate this, so a current-only entry (home left blank, e.g. a horse
+      // that's simply always "at" one place with no separate home concept
+      // filled in) silently saved nothing at all.
       const linkLocations = async (horseId: string) => {
-        if (!filled(homeLoc.name)) return;
-        const current =
-          (leased && tempLocOpen && filled(tempLoc.name)) ? tempLoc :
-          (leased && filled(leaseLoc.name)) ? leaseLoc :
-          (!leased && currentDiffers) ? currentLoc :
-          null;
-        try { await setHorseLocations(horseId, homeLoc, current); }
-        catch { /* record saved; locations best-effort */ }
+        const current = resolveCurrentLoc();
+        if (!filled(homeLoc.name) && !filled(current?.name)) return;
+        try {
+          await setHorseLocations(horseId, homeLoc, current);
+          lastSavedLocRef.current = JSON.stringify({ home: homeLoc, current });
+        } catch { /* record saved; locations best-effort */ }
       };
       // Persist the repeatable medications + supplements (blank blocks are dropped
       // server-side). Best-effort — the record is already saved.
