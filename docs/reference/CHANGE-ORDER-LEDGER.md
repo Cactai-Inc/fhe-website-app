@@ -4706,7 +4706,26 @@ Same thing for the delivery section, this information should be able to be set b
 when viewing as the buyer all the fields i mentioned where it says its for the seller but it should be for either party it says its the buyer to fill in, so the same change to the tip needs to be made here "either party may complete this section". In the PPE, the Pre-purchase examination selection (the first selection the one that will gate the entire section) is appropriately shown to the buyer for selection, as are the contingency and drug testing selections. Similarly confusing for me to the section at the bottom of the contract page when in the edit mode screen, in the view as buyer view the signing section shows two boxes, one for "By:" and one for "Title:" and both show as editable (they are empty but can receive my input now), unclear what typing into them results in. this is not shown the same way for the seller view. can you look into why this is happening and if its only because im the buyer and if its just adding my information in preparation for signing, because the contract still has missing information so its not signable and since this is preview mode it says "Buyer signs here — they type their full legal name. (Preview — sign disabled.)" on both buyer and seller views in the preview mode.
 ```
 
-**Not yet investigated.** This is a large multi-item review spanning the horse-intake modal and the Bill of Sale contract fields, their `responsibility`/party assignment, their gating conditions, and their rendered section text. Several items depend on the CR-121·A3 signing model (ruled, not built). ORCH captures verbatim; the investigation and the build are separate acts.
+**INVESTIGATED (ORCH, 2026-09-28). DB foundation built + applied; full build spec written.**
+- **Microchip "(checked first)":** it is the server-side dedup key (microchip matched before a new
+  horse is created). Internal detail leaked into a user label → remove the parenthetical.
+- **"Sign for French Heritage Equestrian" button:** records the COMPANY's signature (staff sign for
+  the faceless company party; name+title print as By/Title). It appeared before the doc was complete
+  because signing opens when there are zero lock blockers, and —
+- **the no-slaughter + disclosures acknowledgment checkboxes are `required: false`**, so they are not
+  lock blockers, so the doc reads "complete" with them unchecked and signing opens. **That is the bug**;
+  they must be required. (Owner was right the box should gate signing and doesn't.)
+- **Party responsibility ("for the seller to complete"):** `owner_role='DEAL'` renders as the viewer's
+  own field (never "other party"), so any field showing as seller-owned genuinely carries
+  `owner_role='SELLER'`/`BUYER` in the defs. The reconcile of each flagged field is the build's first task.
+- **The "This is included when…" notice is UI-GENERATED** from the field's gate + option labels
+  (`ClauseDocument.describeGate`), not clause text — so several requested "text changes" follow
+  automatically from changing option labels or gate conditions.
+**DB done (committed `task/cr126-horse-and-bos`):** keeping_spots + vaccinations jsonb lists on `horses`
+(the medications pattern), `set_horse_locations` rewritten to persist them and mirror legacy barn/stall.
+**Spec: `docs/tasks/TASK-CR126-BUILD.md` (Groups A/B/C) + `docs/tasks/TASK-CR126-SUCCESS-CHECK.md`**
+(per-item verification — an item is DONE only when its cross-check passes). Two escalations batched to
+the owner: care-team matching storage, and the party-role flip list.
 
 ## CR-125 — 2026-09-12: admin cannot delete/cancel orders or bookings, cannot hard-delete a test account, two different account-page layouts; and the Bill of Sale needs its conditions, gating, signability and counterparty signing flow reviewed
 **SAID (owner, verbatim):**
