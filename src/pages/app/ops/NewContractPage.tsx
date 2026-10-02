@@ -57,6 +57,12 @@ const TYPES: { id: ContractType; label: string; hint: string; roles: [string, st
 type Controls = PartyControlValues;
 const DEFAULT_CONTROLS = DEFAULT_PARTY_CONTROLS;
 
+/** A horse's display label for the picker — nickname, else registered name, else id.
+ *  Used for alphabetical ordering and the auto-selected first horse (CR-126). */
+function horseLabel(h: HorseIntakeRecord): string {
+  return String(h.nickname ?? '') || String(h.registered_name ?? '') || String(h.id ?? '');
+}
+
 export default function NewContractPage() {
   useDocumentTitle('New contract');
   const [type, setType] = useState<ContractType>('lease');
@@ -122,6 +128,21 @@ export default function NewContractPage() {
   const t = TYPES.find((x) => x.id === type)!;
   const [roleA, roleB] = t.roles;
 
+  // CR-126 verbatim: the seller/lessor (partyB) list shows ONLY people who own a
+  // horse in the system — selecting a non-owner as the seller can never populate a
+  // horse. Derived from the loaded horse records (no new RPC): a contact is offered
+  // as a seller/lessor iff they own at least one horse. The company is included only
+  // when it actually owns one, by the same rule. contractPartyOptions is already
+  // alphabetical (company first, then last/first name), so the filtered list stays
+  // ordered. The buyer/lessee (partyA) list is unchanged — a buyer needn't own one.
+  const horseOwnerIds = new Set(
+    horses.map((h) => h.owner_contact_id).filter((x): x is string => !!x));
+  const sellerPartyOptions = contacts.filter((c) => horseOwnerIds.has(c.id));
+  // The horse comes from an existing record (so the seller must be a horse-owner)
+  // for sale & BOS always, and for a lease only in "From records" mode.
+  const sellerFromRecords = type === 'purchase' || type === 'bill_of_sale'
+    || (type === 'lease' && horseMode === 'pick');
+
   useEffect(() => {
     contractPartyOptions().then(setContacts).catch(() => setContacts([]));
     staffHorseRecords().then(setHorses).catch(() => setHorses([]));
@@ -130,17 +151,46 @@ export default function NewContractPage() {
     listLeaseTemplates().then(setLeaseTemplates).catch(() => setLeaseTemplates([]));
   }, []);
   useEffect(() => { setHorseParty(roleB); }, [roleB]);
+  // When the seller list restricts to horse-owners (switching to a sale/BOS, or to a
+  // lease "From records"), drop a previously-chosen seller who owns no horse — a
+  // restricted <select> has no option for them and would render blank. Guarded on the
+  // horse list having loaded so a valid seller is never cleared before the data is in.
+  useEffect(() => {
+    if (sellerFromRecords && partyB && horses.length > 0 && !horseOwnerIds.has(partyB)) {
+      setPartyB('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sellerFromRecords, partyB, horses]);
   useEffect(() => {
     // The horse-owning party is partyB on both types (LESSOR / SELLER), so the
     // dropdown lists THEIR horses on both. Previously only the sale did this and
     // the lease offered every horse in the barn.
     if (partyB) {
-      contactHorseRecords(partyB).then(setSellerHorses).catch(() => setSellerHorses([]));
+      contactHorseRecords(partyB)
+        .then((rows) => {
+          // Alphabetical by display name (CR-126 verbatim: lists are alphabetical).
+          const sorted = [...rows].sort((a, b) => horseLabel(a).localeCompare(horseLabel(b)));
+          setSellerHorses(sorted);
+          // Picking the seller/lessor pre-populates the horse — default to the first
+          // on the (alphabetical) list (owner: "if they own more than one it should
+          // just default to selecting the first on the list"). Staff can still change
+          // it. Only auto-select for the modes that read sellerHorses (sale, BOS, and
+          // the lease "From records" pick), and only when a horse isn't already
+          // chosen — the add-horse modal selects the just-created one and sets this
+          // party, and that explicit choice must not be overwritten.
+          const picksFromSeller = type === 'purchase' || type === 'bill_of_sale'
+            || (type === 'lease' && horseMode === 'pick');
+          setHorseId((prev) => {
+            if (prev && sorted.some((h) => String(h.id) === prev)) return prev;  // keep an explicit pick
+            return picksFromSeller && sorted.length > 0 ? String(sorted[0].id) : '';
+          });
+        })
+        .catch(() => { setSellerHorses([]); setHorseId(''); });
     } else {
       setSellerHorses([]);
+      setHorseId('');
     }
-    setHorseId('');
-  }, [type, partyB]);
+  }, [type, partyB, horseMode]);
 
   /** The modal saved: adopt the horse, and — when the horse-owning party was not
    *  chosen yet — adopt the OWNER it was assigned to as that party (owner,
@@ -153,7 +203,15 @@ export default function NewContractPage() {
     setHorseId(newHorseId);
     const owner = ownerContactId || partyB;
     if (!partyB && ownerContactId) setPartyB(ownerContactId);
-    if (owner) contactHorseRecords(owner).then(setSellerHorses).catch(() => {});
+    if (owner) {
+      contactHorseRecords(owner)
+        .then((rows) => setSellerHorses([...rows].sort((a, b) => horseLabel(a).localeCompare(horseLabel(b)))))
+        .catch(() => {});
+    }
+    // Refresh the master horse list so the (possibly new) owner now appears in the
+    // horse-owner–filtered seller dropdown — otherwise partyB would hold an id the
+    // restricted <select> has no option for, and render blank.
+    staffHorseRecords().then(setHorses).catch(() => {});
   }
 
   const ready = !!partyA && !!partyB && (type === 'purchase' || type === 'bill_of_sale'
@@ -240,10 +298,13 @@ export default function NewContractPage() {
     }
   }
 
-  const partySelect = (value: string, onChange: (v: string) => void, label: string) => (
+  const partySelect = (
+    value: string, onChange: (v: string) => void, label: string,
+    options: PartyOption[] = contacts, emptyLabel = 'Choose…',
+  ) => (
     <select className="form-input" value={value} onChange={(e) => onChange(e.target.value)} aria-label={label}>
-      <option value="">Choose…</option>
-      {contacts.map((c) => (
+      <option value="">{options.length === 0 ? emptyLabel : 'Choose…'}</option>
+      {options.map((c) => (
         <option key={c.id} value={c.id}>{c.name || c.email || c.id}{c.email && c.name ? ` — ${c.email}` : ''}</option>
       ))}
     </select>
@@ -305,7 +366,17 @@ export default function NewContractPage() {
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <span className="form-label">{roleLabel(roleB)}</span>
-            {partySelect(partyB, setPartyB, roleLabel(roleB))}
+            {/* The seller/lessor list is restricted to horse-owners whenever the horse
+                comes FROM RECORDS (sale & BOS always; lease in "From records" mode).
+                In the lease "A party fills it in" mode the lessor supplies the horse
+                details themselves, so any party may be the lessor — the full list. */}
+            {sellerFromRecords
+              ? partySelect(partyB, setPartyB, roleLabel(roleB), sellerPartyOptions,
+                  `No horse owners on file yet — add the ${roleLabel(roleB).toLowerCase()}’s horse first`)
+              : partySelect(partyB, setPartyB, roleLabel(roleB))}
+            {sellerFromRecords && (
+              <p className="text-[11px] text-muted mt-1">Only people who own a horse in the system.</p>
+            )}
           </div>
           <div>
             <span className="form-label">{roleLabel(roleA)}</span>
@@ -334,7 +405,7 @@ export default function NewContractPage() {
               </option>
               {sellerHorses.map((h) => (
                 <option key={h.id} value={h.id}>
-                  {[String(h.nickname ?? '') || String(h.registered_name ?? ''), String(h.breed ?? '')].filter(Boolean).join(' · ') || h.id}
+                  {[horseLabel(h), String(h.breed ?? '')].filter(Boolean).join(' · ') || h.id}
                 </option>
               ))}
             </select>
@@ -379,14 +450,17 @@ export default function NewContractPage() {
                     : (horses.length === 0 ? 'No horse records yet' : 'Choose a horse…')}
                 </option>
                 {/* Scoped to the horse-owning party once one is chosen; every horse
-                    record otherwise, so the picker is never empty before then. */}
+                    record otherwise, so the picker is never empty before then. Both
+                    branches alphabetical (sellerHorses is pre-sorted on load). */}
                 {(partyB ? sellerHorses.map((h) => ({
                   id: String(h.id),
-                  label: [String(h.nickname ?? '') || String(h.registered_name ?? ''), String(h.breed ?? '')].filter(Boolean).join(' · ') || String(h.id),
-                })) : horses.map((h) => ({
-                  id: h.id,
-                  label: [h.nickname || h.registered_name, h.breed, h.owner_name || h.owner_name_text].filter(Boolean).join(' · '),
-                }))).map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  label: [horseLabel(h), String(h.breed ?? '')].filter(Boolean).join(' · ') || String(h.id),
+                })) : [...horses]
+                  .sort((a, b) => (a.nickname || a.registered_name || '').localeCompare(b.nickname || b.registered_name || ''))
+                  .map((h) => ({
+                    id: h.id,
+                    label: [h.nickname || h.registered_name, h.breed, h.owner_name || h.owner_name_text].filter(Boolean).join(' · '),
+                  }))).map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
               </select>
               <button type="button" onClick={() => setIntakeOpen(true)}
                 className="px-3.5 py-2 rounded-lg text-xs font-sans bg-green-800/10 text-green-800 hover:bg-green-800/20 focus-ring">
