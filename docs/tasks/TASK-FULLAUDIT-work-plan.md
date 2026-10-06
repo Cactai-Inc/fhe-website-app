@@ -1,9 +1,27 @@
 # TASK-FULLAUDIT — work plan (FOR OWNER REVIEW & APPROVAL)
 
-**Status: AWAITING APPROVAL. No audit analysis begins until the owner signs off (owner ruling).**
+**Status: APPROVED 2026-10-05 (owner: "approved but check it against any changes made to the repo
+before proceeding"). Re-verified against the repo; updates folded in below. The fresh audit thread
+still gates its deep analysis on this approval — THIS thread produces artifacts only and stops.**
 Companion files: `TASK-FULLAUDIT-mission-and-requirements.md` (the verbatim directive),
 `TASK-FULLAUDIT-worktree-report.md` (worktree rulings). The handoff prompt is at the bottom of
 this file.
+
+> ⚠️ **RE-VERIFICATION 2026-10-05 — what changed since the plan was written (2026-09-27):**
+> - **A full CR-126 arc landed** (commits through `724170ee`): horse-add modal (keeping-spots as an
+>   unbounded jsonb list, care-team pickers, vaccinations, microchip label), Bill-of-Sale overhaul
+>   (party reconcile, gating options, clause composition, required acks), seller/lessor = horse-owners
+>   with horse pre-population, bidirectional owner↔horse matching. **These staff-ops surfaces are now
+>   IN SCOPE for the audit** (horse-add modal, Bill of Sale, the matching logic).
+> - **Two new memories sharpen the contract seed findings** and must be carried in:
+>   `fhe-clause-composer-gates-whole-lines` (conditional wording = sibling clauses, NOT inline gated
+>   tokens; `render_as_subitem` folds continuation) and `fhe-horse-token-values-are-display-labels`
+>   (gate on "Mare" not "MARE" — a code gate silently never fires; this bit CR-126 B3). These
+>   generalise the gate/vocab seed findings in §5.
+> - **Worktrees are already pruned** (only the main checkout remains); branch refs survive. Owner
+>   ruled: leave branches alone; **F0 (anon-revoke) is folded into THIS audit**, not merged.
+> - **F0 confirmed STILL OPEN:** 211 public functions anon-executable (unchanged).
+> - Report still not started (correct — fresh thread's job).
 
 ---
 
@@ -38,9 +56,11 @@ thread from the handoff below.
 
 ## 2. Priority order (owner: staff/ops first)
 1. **Staff / ops surfaces** — the daily drivers, most-reported gaps:
-   Calendar · Lessons (hub, plans, packages, credits, sessions) · Records (clients, leads,
-   directory, horses, person record, audit) · Orders · Payments · Payment review · Contracts
-   (authoring, send, sign, deal set) · Dashboard (KPIs, ATN grid, zones) · Team · Admin
+   Calendar (incl. the booking modal, drafts interstitial, swipe-between-weeks, double-booking
+   conflict warning — all added this session) · Lessons (hub, plans, packages, credits, sessions) ·
+   Records (clients, leads, directory, horses, person record, audit) · **horse-add modal + Bill of
+   Sale (the CR-126 arc) + the seller/lessor↔horse matching** · Orders · Payments · Payment review ·
+   Contracts (authoring, send, sign, deal set) · Dashboard (KPIs, ATN grid, zones) · Team · Admin
    (products/catalog editor, templates, page visibility, modules) · Tasks.
 2. **Member-facing** — onboarding / signing wall · booking & requests · My Lessons · My Orders ·
    My Payments · My Stable · account & profile · community feed.
@@ -78,30 +98,55 @@ Nothing is auto-fixed. Each finding is written so the owner can approve/modify/d
 later remediation task can act on it directly.
 
 ## 5. Seed findings already identified (carry into the report)
-- **F0 — unmerged anon-revoke hardening.** `task/grants-b` cut anon-executable functions 326→134;
-  main still has 211 anon-executable public functions. Re-derive the safe revoke set against
-  today's schema. (From the worktree report.)
+- **F0 — unmerged anon-revoke hardening (SECURITY; owner folded this into the audit 2026-10-05).**
+  `task/grants-b` cut anon-executable functions 326→134; **main still has 211 (confirmed
+  2026-10-05, unchanged).** ⚠️ **Do NOT merge the branch** — it is a month stale and the schema has
+  since gained ~20 functions (ATN, orders/payments, audit, booking-drafts, CR-126) a stale ACL
+  snapshot cannot know about, and a DROP+CREATE since then silently re-grants anon (memory
+  `fhe-revoke-from-public-is-not-enough`). **Re-derive the safe revoke set against TODAY's 211**:
+  classify each as public-read (keep) vs writer/staff/privileged (revoke anon). `task/grants-v`
+  found grants-b wrong on exactly one of 196 rows (item 6 edit 4) — a precedent that the set must
+  be re-proven, not trusted. This is the audit's highest-severity seed.
 - **F-calendar-clip — body `overflow-x: clip` vs nested scrollers.** The page-fit guard clips
   descendant horizontal scrollers on iOS; audit every `overflow-x` region for the same victimhood.
+  (This session added `touch-action`/`overscroll-x` guards + a swipe-to-change-week to the calendar
+  week grid — verify those held and whether other wide scrollers, e.g. DataTable, still clip.)
 - **F-lessons-deadroute — `/app/records/lessons` is a dead redirect target** (a 404): the whole
   lessons system redirects there and is unreachable; the built loop (plans → lesson → progress →
   roll-forward) works but nothing links to it, and Claire's dashboard "Notes loop" points at it.
 - **F-activity-vocab — `activity_checklists`** seed data (Warm-up/Gymnastics/Course/Cool-down)
   does not match the owner's program terminology and all 31 rows are `active`; trainers see labels
-  they don't use. (Owner flagged during B4.)
+  they don't use. (Owner flagged during B4; a vocab rework + category framework was mid-design.)
+- **F-gate-code-vs-label — a clause gate on a HORSE.* value must gate on the DISPLAY LABEL, not the
+  code** (memory `fhe-horse-token-values-are-display-labels`): `HORSE.SEX` stores/returns "Mare",
+  not "MARE", so a gate written against the code **silently never fires** (bit CR-126 B3 / breeding
+  warranty). Audit every `conditional_on` that references a HORSE.* field for a code-vs-label
+  mismatch — a whole class of clauses that never appear.
+- **F-clause-composition-shape — conditional wording is sibling clauses, not inline gated tokens**
+  (memory `fhe-clause-composer-gates-whole-lines`): the composer gates whole lines/clauses;
+  `render_as_subitem` folds a continuation. Audit contract templates for wording built as inline
+  gated tokens where it should be sibling clauses — the pattern that produces mis-rendered or
+  never-rendered contract text.
 
 ## 6. Success statement — WHEN it is written
-Per the owner: **the success statement is the FIRST task AFTER plan approval**, written by the
-fresh thread. It defines, concretely and measurably, what "done" is for this audit (coverage,
-depth evidence, finding quality bar, the connectivity + centralization deliverables) so the final
-report can be measured against it and nothing is skipped. It is NOT written now — approval first.
+Per the owner: **the success statement is the FIRST task of the FRESH thread** (the plan is now
+approved, 2026-10-05). The fresh thread writes `docs/reports/TASK-FULLAUDIT-SUCCESS.md` before any
+deep analysis — the concrete, measurable definition of "done" (coverage of every routed surface,
+evidence of UI→code depth, the finding-quality bar, the connectivity + centralization
+deliverables) — then measures the final report against it so nothing is skipped. THIS thread does
+not write it; it is the fresh thread's opening act.
 
 ## 7. What THIS thread did and did NOT do
-- DID: fixed the calendar bugs (week swipe + empty new-item modal, commits 517db211, a9ad6ee3);
-  wrote the verbatim capture; wrote the worktree report + rulings; wrote this plan; wrote the
-  handoff prompt (below).
-- DID NOT: begin the audit, write the success statement, prune any worktree, or change any other
-  application code. Those wait on approval and the fresh thread.
+- DID (2026-09-25): fixed the calendar week-slide + empty new-item modal (commits 517db211,
+  a9ad6ee3); wrote the verbatim capture, the worktree report + rulings, this plan, and the handoff.
+- DID (2026-09-27, the same arc): built the booking-drafts queue/recovery + clean discard + the
+  same-slot double-booking conflict warning (commit 39267dd4) at the owner's request — these are
+  now part of the surface the audit inspects.
+- DID (2026-10-05): re-verified the plan against the moved repo, folded in the CR-126 scope, the
+  two contract-gating seed findings, and the worktree/F0 status; the owner APPROVED the plan.
+- DID NOT: begin the audit, write the success statement, touch any branch/worktree, change any
+  security grant, or change any other application code. Those are the fresh thread's (and the
+  owner's, for grants) to carry — this thread stops at the artifacts.
 
 ---
 
@@ -110,18 +155,21 @@ report can be measured against it and nothing is skipped. It is NOT written now 
 > You are running **TASK-FULLAUDIT**, a full-depth, UI-downward defect & completeness audit of the
 > entire FHE application. **Read these first, in order:**
 > 1. `docs/tasks/TASK-FULLAUDIT-mission-and-requirements.md` — the owner's directive VERBATIM and
->    the run decisions (findings-only; staff/ops first; block on plan approval).
+>    the run decisions (findings-only; staff/ops first; plan already approved 2026-10-05).
 > 2. `docs/tasks/TASK-FULLAUDIT-work-plan.md` — the approved plan (this file). Follow §1 method,
 >    §2 priority, §3 pass structure, §4 deliverable.
-> 3. `docs/tasks/TASK-FULLAUDIT-worktree-report.md` — worktree rulings + seed finding F0.
+> 3. `docs/tasks/TASK-FULLAUDIT-worktree-report.md` — worktree rulings + seed finding F0. Worktrees
+>    are already pruned and branches are left alone (owner); F0 (the anon-revoke security gap, 211
+>    functions still anon-executable) is folded into THIS audit — re-derive it against today's
+>    schema and report it, do NOT merge the stale branch.
 > 4. `CLAUDE.md` and the memory index — the D-rules and prior decisions. Treat rules as inputs:
 >    where one conflicts with best practice, author the finding to best practice and NOTE the rule.
 >
 > **Your FIRST act:** write `docs/reports/TASK-FULLAUDIT-SUCCESS.md` — the concrete, measurable
 > definition of what a complete audit looks like (coverage of every routed surface, evidence of
 > UI→code depth, the finding-quality bar, and the connectivity + centralization deliverables). You
-> will measure your final report against it. Then confirm the plan is approved (the owner gates
-> this) before deep analysis.
+> will measure your final report against it. **The plan is already APPROVED (owner, 2026-10-05)**,
+> so proceed to the audit once the success statement is written — no further approval gate.
 >
 > **Then run the audit** into `docs/reports/TASK-FULLAUDIT-REPORT.md`, staff/ops surfaces first,
 > walking the nav/router in order, per §3. **Change no application code** — this is findings only;

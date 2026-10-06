@@ -1,9 +1,27 @@
-# TASK-FULLAUDIT — worktree inventory & rulings (2026-09-25)
+# TASK-FULLAUDIT — worktree inventory & rulings (2026-09-25; re-verified 2026-10-05)
 
-18 registered worktrees. **Every worktree DIRECTORY is gone from disk** (`git worktree list`
-marks all 18 `prunable`) — only git's administrative registration and the branch commits
-remain. So no worktree has live in-flight edits; the question is only whether each BRANCH holds
-unmerged work worth keeping before the registration is pruned.
+> ⚠️ **UPDATE 2026-10-05 — worktrees ALREADY PRUNED; branch refs survive; owner ruling applied.**
+> `git worktree list` now shows ONLY the main checkout (on `task/cr126-horse-and-bos`). The 18
+> dead worktree registrations are gone — the pruning the owner expected happened. But the branch
+> refs survived the prune (prune removes the registration, not the branch): still present are
+> `bundle/grants`, `task/cr119-a`, `task/grants-a-spec` (merged), `task/grants-b`, `task/grants-v`,
+> `task/supplies-a`, plus remote `origin/bundle/grants`.
+> **Owner decisions (2026-10-05):** (1) the unmerged anon-revoke security work is **FOLDED INTO
+> THE AUDIT as seed finding F0** — the fresh thread re-derives the correct revoke set against
+> today's schema and reports it; this thread changes no grants. (2) **Leave all branch refs
+> alone** — harmless, owner will clean them when ready. **No branch action is taken.**
+> **F0 is confirmed STILL OPEN:** measured 2026-10-05, **211 public functions are anon-executable**
+> (unchanged from 2026-09-25; `task/grants-b` would cut it to ~134 but was never merged, and is
+> stale — the schema gained ~20 functions since it branched: the ATN system, orders/payments/
+> audit RPCs, booking-drafts RPCs, CR-126 horse/BOS functions). Replaying the branch is WRONG;
+> re-derive. `task/grants-v` verified grants-b "DOES NOT HOLD on item 6 edit 4 only" — 195 of 196
+> revokes were proven correct, one was wrong.
+
+---
+
+**Original inventory (2026-09-25), kept for the record:** 18 registered worktrees, every
+DIRECTORY already gone from disk, all `prunable` — only git's registration and the branch
+commits remained. No worktree had live edits; the question was which BRANCHES held unmerged work.
 
 ## Summary ruling
 - **14 of 18 point at commits already MERGED into main** → prune freely, nothing is lost.
