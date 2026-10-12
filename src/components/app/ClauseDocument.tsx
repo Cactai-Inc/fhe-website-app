@@ -492,20 +492,47 @@ function isRetiredGate(
   return !!(cond.all?.some(isRetiredGate) || cond.any?.some(isRetiredGate));
 }
 
-/** A clause whose gate hinges ONLY on SYSTEM-computed fields (e.g. TXN.TRANSPORT_APPLIES,
- *  derived from a location comparison — not an author choice). A gated-off COMPUTED
- *  clause must be hidden outright, author view included — unlike a normal optional
- *  branch, there is no control for the author to toggle, so a muted preview is noise
- *  (it is what showed the transport sentence when delivery = origin). Returns true
- *  only when every driver field is SYSTEM-owned; a gate mixing a real choice falls
- *  through to the normal preview rules. */
-function gateIsSystemComputed(
+/** A gated-off clause whose gate fails ONLY because of a SYSTEM-computed field
+ *  (e.g. TXN.TRANSPORT_APPLIES / TXN.TRIAL_AT_CURRENT, derived from a location
+ *  comparison — not an author choice). Such a clause must be hidden outright, author
+ *  view included: there is no control for the author to toggle, so a muted preview is
+ *  noise (it is what showed the transport sentence when delivery = origin, and the
+ *  "other" trial variant). True when at least one SYSTEM driver is unmet and EVERY
+ *  unmet driver is SYSTEM-owned — a gate still failing on a real choice (e.g. the
+ *  trial isn't enabled) falls through to the normal preview rules. */
+function gateFailsOnlyOnSystem(
   cond: import('../../lib/contracts').FieldConditional | null | undefined,
   fieldByKey: Map<string, ContractField>,
+  valueByKey: Record<string, string>,
 ): boolean {
   const keys = [...gateTriggerKeys(cond)];
   if (keys.length === 0) return false;
-  return keys.every((k) => (fieldByKey.get(k)?.owner_role ?? '').toUpperCase() === 'SYSTEM');
+  let sawUnmetSystem = false;
+  for (const k of keys) {
+    const f = fieldByKey.get(k);
+    if (!f) continue;
+    // is THIS leaf satisfied? build a one-field gate from the clause's own leaves
+    const met = clauseConditionMet(leafFor(cond, k), valueByKey);
+    if (met) continue;                    // satisfied driver — ignore
+    if ((f.owner_role ?? '').toUpperCase() !== 'SYSTEM') return false;  // a real choice is unmet
+    sawUnmetSystem = true;
+  }
+  return sawUnmetSystem;
+}
+
+/** Extract the sub-condition(s) for one field_key from a gate, as a single gate the
+ *  evaluator can test in isolation (used to ask "is this one leaf satisfied?"). */
+function leafFor(
+  cond: import('../../lib/contracts').FieldConditional | null | undefined,
+  key: string,
+): import('../../lib/contracts').FieldConditional | null {
+  if (!cond) return null;
+  if (cond.field_key === key) return cond;
+  for (const c of [...(cond.all ?? []), ...(cond.any ?? [])]) {
+    const found = leafFor(c, key);
+    if (found) return found;
+  }
+  return null;
 }
 
 /** Does this gate hinge on a selection the VIEWER still has to make? True when
@@ -1071,6 +1098,13 @@ export function ClauseDocument({
       // transport applies when the two are KNOWN to differ (match === false).
       m['TXN.TRANSPORT_APPLIES'] = match === false ? 'YES' : 'NO';
     }
+    // CR-126: TXN.TRIAL_AT_CURRENT — YES when the trial location matches the horse's
+    // current location, so the editor shows the "Current Location" trial variant live.
+    const trial = byKey.get('TXN.TRIAL_LOCATION');
+    if (trial) {
+      const atCurrent = locationsMatch(trial, byKey.get('HORSE.CURRENT_LOCATION'));
+      m['TXN.TRIAL_AT_CURRENT'] = atCurrent === true ? 'YES' : 'NO';
+    }
     return m;
   }, [fields]);
 
@@ -1252,11 +1286,11 @@ export function ClauseDocument({
           // shown, not even as an author preview, so the owner does not see a muted
           // "This is included when … is '__RETIRED__'" leftover.
           if (isRetiredGate(c.conditional_on)) return false;
-          // A clause gated only on a SYSTEM-computed field (e.g. transport, derived
-          // from the location comparison) is hidden outright when the gate is unmet —
+          // A clause gated off only because of a SYSTEM-computed field (transport /
+          // trial-at-current, derived from a location comparison) is hidden outright —
           // there is nothing for the author to toggle, so no muted preview.
-          if (gateIsSystemComputed(c.conditional_on, fieldByKey)
-              && !clauseConditionMet(c.conditional_on, valueByKey)) return false;
+          if (!clauseConditionMet(c.conditional_on, valueByKey)
+              && gateFailsOnlyOnSystem(c.conditional_on, fieldByKey, valueByKey)) return false;
           const hasFields = (fieldsByClause.get(c.clauseKey) ?? []).length > 0;
           const hasContent = !!(c.body && c.body.trim()) || hasFields;
           if (!hasContent) return false;
