@@ -553,6 +553,115 @@ function ShareAmount({
   );
 }
 
+/** COST_SPLIT (CR-126 #5) — a two-party cost allocation with two mutually-exclusive
+ *  input sets, vertical `Party: value` layout (owner's mockup):
+ *    Seller: __%   Buyer: __%        ← enter one, the other auto-fills to 100−it
+ *    Seller: $__   Buyer: $__        ← once one has a figure, the OTHER party's field
+ *                                      offers {dollar, "Remaining cost"}
+ *  Typing into the percentage set deactivates the dollar set and vice versa; clearing
+ *  both re-enables both. `mode` is stored so the composer knows which set is live. */
+function CostSplit({
+  f, onSaveStructured, disabled,
+}: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
+  const s = f.structured ?? {};
+  const pct = s.pct ?? {};
+  const usd = s.usd ?? {};
+  // Which set holds any input right now (drives which set is active).
+  const pctFilled = !!(pct.buyer || pct.seller);
+  const usdFilled = !!(usd.buyer?.amount || usd.buyer?.remaining || usd.seller?.amount || usd.seller?.remaining);
+  const mode = s.mode || (pctFilled ? 'PCT' : usdFilled ? 'USD' : '');
+  const pctActive = !disabled && (mode === 'PCT' || mode === '');
+  const usdActive = !disabled && (mode === 'USD' || mode === '');
+
+  const setPct = (who: 'buyer' | 'seller', v: string) => {
+    const other = who === 'buyer' ? 'seller' : 'buyer';
+    const raw = v.replace(/[^0-9.]/g, '');
+    const next: typeof pct = { ...pct, [who]: raw };
+    // Auto-fill the other party to 100 − this, when this is a valid number.
+    const n = Number(raw);
+    if (raw !== '' && Number.isFinite(n)) {
+      const rem = Math.max(0, 100 - n);
+      next[other] = Number.isInteger(rem) ? String(rem) : String(rem);
+    } else if (raw === '') {
+      next[other] = '';
+    }
+    const anyPct = !!(next.buyer || next.seller);
+    void onSaveStructured(f.field_key, { ...s, pct: next, usd: {}, mode: anyPct ? 'PCT' : '' });
+  };
+  const setUsdAmount = (who: 'buyer' | 'seller', v: string) => {
+    const raw = v.replace(/[^0-9.]/g, '');
+    const next = { ...usd, [who]: { amount: raw, remaining: false } };
+    const anyUsd = !!(next.buyer?.amount || next.buyer?.remaining || next.seller?.amount || next.seller?.remaining);
+    void onSaveStructured(f.field_key, { ...s, usd: next, pct: {}, mode: anyUsd ? 'USD' : '' });
+  };
+  const setUsdRemaining = (who: 'buyer' | 'seller') => {
+    const next = { ...usd, [who]: { amount: '', remaining: true } };
+    void onSaveStructured(f.field_key, { ...s, usd: next, pct: {}, mode: 'USD' });
+  };
+  // The "other" party's USD field becomes a {dollar | Remaining cost} chooser once
+  // THIS party has a dollar figure. Before that, both are plain dollar inputs.
+  const oneHasUsd = (who: 'buyer' | 'seller') => !!(usd[who === 'buyer' ? 'seller' : 'buyer']?.amount);
+
+  const row = (label: string, control: React.ReactNode) => (
+    <div className="flex items-center gap-2">
+      <span className="w-16 shrink-0 text-[13px] text-green-900">{label}:</span>
+      {control}
+    </div>
+  );
+  const pctInput = (who: 'buyer' | 'seller') => (
+    <span className="inline-flex items-center gap-1">
+      <input className={`${inputCls} w-24`} inputMode="decimal" disabled={!pctActive}
+        value={pct[who] ?? ''} placeholder="0" onChange={(e) => setPct(who, e.target.value)} />
+      <span className="text-[13px] text-muted">%</span>
+    </span>
+  );
+  const usdInput = (who: 'buyer' | 'seller') => {
+    const mine = usd[who] ?? {};
+    const offerRemaining = oneHasUsd(who) && !mine.amount;
+    if (mine.remaining) {
+      return (
+        <span className="inline-flex items-center gap-2 text-[13px] text-green-900">
+          the remaining cost
+          <button type="button" className="text-[11px] text-muted hover:text-red-700 underline"
+            disabled={!usdActive} onClick={() => setUsdAmount(who, '')}>change</button>
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <span className="text-[13px] text-muted">$</span>
+        <input className={`${inputCls} w-28`} inputMode="decimal" disabled={!usdActive}
+          value={mine.amount ?? ''} placeholder="0.00" onChange={(e) => setUsdAmount(who, e.target.value)} />
+        {offerRemaining && (
+          <button type="button" className="text-[11px] text-gold-800 underline whitespace-nowrap"
+            disabled={!usdActive} onClick={() => setUsdRemaining(who)}>or remaining cost</button>
+        )}
+      </span>
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-3 w-full">
+      <div className={`flex flex-col gap-1.5 ${pctActive ? '' : 'opacity-40'}`}>
+        <p className="text-[10px] uppercase tracking-wide text-muted">By percentage</p>
+        {row('Seller', pctInput('seller'))}
+        {row('Buyer', pctInput('buyer'))}
+      </div>
+      <div className={`flex flex-col gap-1.5 ${usdActive ? '' : 'opacity-40'}`}>
+        <p className="text-[10px] uppercase tracking-wide text-muted">By dollar amount</p>
+        {row('Seller', usdInput('seller'))}
+        {row('Buyer', usdInput('buyer'))}
+      </div>
+      {(pctFilled || usdFilled) && !disabled && (
+        <button type="button" className="self-start text-[11px] text-muted hover:text-red-700 underline"
+          onClick={() => void onSaveStructured(f.field_key, { ...s, pct: {}, usd: {}, mode: '' })}>
+          Clear
+        </button>
+      )}
+    </div>
+  );
+}
+
 function RevealText({
   f, onSaveStructured, disabled,
 }: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
@@ -1109,6 +1218,9 @@ function FieldControl({
   if (fmt === 'share_amount') {
     return <ShareAmount f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
   }
+  if (fmt === 'cost_split') {
+    return <CostSplit f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
+  }
   if (fmt === 'reveal_text') {
     return <RevealText f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
   }
@@ -1580,7 +1692,7 @@ export function InlineFieldControl({
 
   // Structured / multi-part formats can't collapse to a single inline token —
   // render the block control, but inline-block and compact so it stays in flow.
-  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'installment_schedule', 'incident_list', 'contacts_list', 'reveal_text', 'certify', 'add_text', 'share_amount'].includes(fmt)
+  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'installment_schedule', 'incident_list', 'contacts_list', 'reveal_text', 'certify', 'add_text', 'share_amount', 'cost_split'].includes(fmt)
     || kind === 'responsibility' || kind === 'week_grid';
   if (isStructured) {
     // add_text renders as a FLEX row: collapsed it's the "+ Add …" button with

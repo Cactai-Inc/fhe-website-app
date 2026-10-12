@@ -108,6 +108,16 @@ export interface FieldStructured {
   // share_amount composite: which unit `amount` is in — 'USD' or 'PCT'. Stored, never
   // inferred: a fixed contribution and a proportion are different agreements.
   unit?: string;
+  // cost_split (CR-126 #5 — trial board-cost allocation). `mode` chooses the set in
+  // use: 'PCT' (enter one party's %, the other is 100−it) or 'USD' (a dollar figure
+  // per party; one side may be "the remaining cost"). The two sets are mutually
+  // exclusive — entering one deactivates the other.
+  mode?: string;
+  pct?: { buyer?: string; seller?: string };
+  usd?: {
+    buyer?: { amount?: string; remaining?: boolean };
+    seller?: { amount?: string; remaining?: boolean };
+  };
   // person / provider / contact-block
   name?: string; company?: string; phone?: string; email?: string; website?: string;
   // address
