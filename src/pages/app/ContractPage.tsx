@@ -2506,21 +2506,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
               of the org; this only surfaces the affordance for roles that
               branch actually accepts (company_signable_roles), never for an
               individual party staff doesn't represent. */}
-          {/* Staff sign on behalf of the company. CR-126 #8: the By (name) and Title
-              are the in-contract {ROLE}.ENTITY_SIGNER_NAME / _TITLE fields the author
-              fills in the signature block of the document itself — there is no second
-              set of inputs here. This button reads those values and signs; if either
-              is blank it points the author back to the document to fill them, so there
-              is exactly one place to enter them. */}
+          {/* Staff sign on behalf of the company. CR-126 #8: there is NO second set of
+              By/Title inputs and no echo of them here — they are the in-contract
+              {ROLE}.ENTITY_SIGNER_NAME / _TITLE fields in the document's own signature
+              block, and this is only the button that commits the signature using those
+              values. If either is still blank the button is disabled with a pointer to
+              fill them in the document above. */}
           {isOwnerSide && signPhaseOpen && companyPendingRoles.length > 0 && (
             <div className="border-t border-green-800/10 pt-4">
-              <p className="text-sm text-secondary mb-1">Sign on behalf of the company</p>
-              <p className="form-hint mb-3">
-                {companyContactName} has no hand of its own — you sign for it. The
-                &ldquo;By&rdquo; name and title come from the signature block in the document above;
-                fill them there, then sign. The signature is recorded in the audit trail.
-              </p>
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-2">
                 {companyPendingRoles.map((r) => {
                   const rl = r.charAt(0) + r.slice(1).toLowerCase();
                   const name = (valueMap[`${r}.ENTITY_SIGNER_NAME`] ?? '').trim();
@@ -2528,20 +2522,15 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   const ready = name.length > 0 && title.length > 0;
                   return (
                     <div key={r} className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm text-green-900 w-20 shrink-0">{rl}</span>
-                      {ready ? (
-                        <span className="text-sm text-green-900">
-                          By <strong>{name}</strong>, {title}
-                        </span>
-                      ) : (
-                        <span className="text-sm text-gold-800">
-                          Fill &ldquo;By&rdquo; and &ldquo;Title&rdquo; in the signature block above first.
-                        </span>
-                      )}
                       <button type="button" className="btn-primary text-sm" disabled={!ready}
                         onClick={() => void act(() => signAndContinue(r, name, title))}>
-                        <PenLine size={14} /> Sign for {companyContactName}
+                        <PenLine size={14} /> Sign for {companyContactName} as {rl}
                       </button>
+                      {!ready && (
+                        <span className="text-sm text-gold-800">
+                          Fill the &ldquo;By&rdquo; and &ldquo;Title&rdquo; boxes in the signature block above first.
+                        </span>
+                      )}
                     </div>
                   );
                 })}

@@ -1716,6 +1716,21 @@ export function InlineFieldControl({
         </span>
       );
     }
+    /* cost_split sits INLINE in a sentence ("…the costs … are borne by
+       {{TXN.TRIAL_BOARD_COST}};"), so the clause prose already introduces it — no
+       label above (that printed "Trial board & care costs borne by" mid-sentence).
+       It takes its own block line (clear-both, like week_grid) so the % / $ rows
+       don't start under the tail of the sentence, and the required marker rides the
+       first row rather than dangling on its own line. */
+    if (fmt === 'cost_split') {
+      return (
+        <span className="block clear-both w-full mt-2 mb-1.5 ml-0 pl-0">
+          <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
+            onSaveStructured={onSaveStructured} disabled={disabled} />
+          {marks && <span className="text-[11px]">{marks}</span>}
+        </span>
+      );
+    }
     /* week_grid is a full-width BLOCK on its own line. It was still rendering
        INSIDE the clause's inline text run, so although `block` gave it its own
        line, that line started where the prose left off — which read as an indent

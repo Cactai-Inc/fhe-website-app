@@ -456,6 +456,58 @@ function isUnansweredPlaceholder(
   return !!(cond.all?.some(isUnansweredPlaceholder) || cond.any?.some(isUnansweredPlaceholder));
 }
 
+/** Client-side mirror of the SQL `locations_match` (CR-126 #7), so the editor gates
+ *  the transport sentence in real time instead of waiting for a server recompose.
+ *  Compares a delivery field against an origin field using structured {name,…} when
+ *  present and the composed text otherwise; matches on the normalised NAME, falling
+ *  back to a stripped-text prefix test. Returns null (unknown) when either side is
+ *  empty, so an unanswered location never forces a transport decision. */
+function locationsMatch(
+  a: ContractField | undefined, b: ContractField | undefined,
+): boolean | null {
+  const strip = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const name = (f?: ContractField) => strip((f?.structured?.name ?? '').trim());
+  const full = (f?: ContractField) => strip((f?.value ?? '').trim());
+  const aName = name(a); const bName = name(b);
+  const aFull = full(a); const bFull = full(b);
+  if (aFull === '' || bFull === '') return null;
+  if (aName !== '' && bName !== '') return aName === bName;
+  if (aName !== '') return bFull.startsWith(aName);
+  if (bName !== '') return aFull.startsWith(bName);
+  return aFull === bFull;
+}
+
+/** A RETIRED clause: gated on the reserved sentinel value `__RETIRED__`, which no
+ *  field can ever hold. The clause is kept in the data (D16/D32 — nothing is
+ *  deleted) but is dead: it must not render in the final document NOR as a muted
+ *  author preview (a retired clause showing "This is included when … is
+ *  '__RETIRED__'" is noise and leaks the sentinel). Suppressed everywhere, author
+ *  view included — unlike a real alternative branch, which the author keeps seeing. */
+const RETIRED_SENTINEL = '__RETIRED__';
+function isRetiredGate(
+  cond: import('../../lib/contracts').FieldConditional | null | undefined,
+): boolean {
+  if (!cond) return false;
+  if (cond.equals?.includes(RETIRED_SENTINEL)) return true;
+  return !!(cond.all?.some(isRetiredGate) || cond.any?.some(isRetiredGate));
+}
+
+/** A clause whose gate hinges ONLY on SYSTEM-computed fields (e.g. TXN.TRANSPORT_APPLIES,
+ *  derived from a location comparison — not an author choice). A gated-off COMPUTED
+ *  clause must be hidden outright, author view included — unlike a normal optional
+ *  branch, there is no control for the author to toggle, so a muted preview is noise
+ *  (it is what showed the transport sentence when delivery = origin). Returns true
+ *  only when every driver field is SYSTEM-owned; a gate mixing a real choice falls
+ *  through to the normal preview rules. */
+function gateIsSystemComputed(
+  cond: import('../../lib/contracts').FieldConditional | null | undefined,
+  fieldByKey: Map<string, ContractField>,
+): boolean {
+  const keys = [...gateTriggerKeys(cond)];
+  if (keys.length === 0) return false;
+  return keys.every((k) => (fieldByKey.get(k)?.owner_role ?? '').toUpperCase() === 'SYSTEM');
+}
+
 /** Does this gate hinge on a selection the VIEWER still has to make? True when
  *  at least one driver field is unanswered AND owned by the viewer. Drives the
  *  party-side preview rule: decision support for your own pending choice, and
@@ -1003,6 +1055,22 @@ export function ClauseDocument({
   const valueByKey = useMemo(() => {
     const m: Record<string, string> = {};
     for (const f of fields) m[f.field_key] = f.responsibility?.party ?? f.value ?? '';
+    // CR-126 #7: TXN.TRANSPORT_APPLIES is a SYSTEM field the SQL composer derives in
+    // recompose_document_fields, so the SERVER body gates correctly — but the live
+    // editor gates against these loaded values, where it would be stale until a
+    // round-trip. Recompute it here so the transport sentence appears/disappears the
+    // moment the author changes a location. Mirrors locations_match: transport
+    // applies only when delivery is KNOWN to differ from the handoff origin (the
+    // trial location if a trial is elected, else the horse's current location).
+    const byKey = new Map(fields.map((f) => [f.field_key, f]));
+    const del = byKey.get('TXN.DELIVERY_LOCATION');
+    if (del) {
+      const trialOn = (m['TXN.TRIAL_ENABLED'] ?? '').toUpperCase() === 'YES';
+      const origin = trialOn ? byKey.get('TXN.TRIAL_LOCATION') : byKey.get('HORSE.CURRENT_LOCATION');
+      const match = locationsMatch(del, origin);
+      // transport applies when the two are KNOWN to differ (match === false).
+      m['TXN.TRANSPORT_APPLIES'] = match === false ? 'YES' : 'NO';
+    }
     return m;
   }, [fields]);
 
@@ -1180,6 +1248,15 @@ export function ClauseDocument({
           // A gated-off "[Pending — …]" placeholder is dead weight once its
           // question is answered — never preview it muted.
           if (isUnansweredPlaceholder(c.conditional_on)) return false;
+          // A retired clause (gated on the __RETIRED__ sentinel) is dead data — never
+          // shown, not even as an author preview, so the owner does not see a muted
+          // "This is included when … is '__RETIRED__'" leftover.
+          if (isRetiredGate(c.conditional_on)) return false;
+          // A clause gated only on a SYSTEM-computed field (e.g. transport, derived
+          // from the location comparison) is hidden outright when the gate is unmet —
+          // there is nothing for the author to toggle, so no muted preview.
+          if (gateIsSystemComputed(c.conditional_on, fieldByKey)
+              && !clauseConditionMet(c.conditional_on, valueByKey)) return false;
           const hasFields = (fieldsByClause.get(c.clauseKey) ?? []).length > 0;
           const hasContent = !!(c.body && c.body.trim()) || hasFields;
           if (!hasContent) return false;
