@@ -553,17 +553,20 @@ function ShareAmount({
   );
 }
 
-/** COST_SPLIT (CR-126 #5) — a two-party cost allocation with two mutually-exclusive
- *  input sets, vertical `Party: value` layout (owner's mockup):
+/** COST_SPLIT (CR-126 #5) — who is responsible for a cost, with a split option.
+ *  A top-level select (the GATE) chooses Buyer / Seller / Split; only "Split" reveals
+ *  the two-party allocation mechanism, two mutually-exclusive input sets in the
+ *  owner's vertical `Party: value` layout:
  *    Seller: __%   Buyer: __%        ← enter one, the other auto-fills to 100−it
  *    Seller: $__   Buyer: $__        ← once one has a figure, the OTHER party's field
  *                                      offers {dollar, "Remaining cost"}
- *  Typing into the percentage set deactivates the dollar set and vice versa; clearing
- *  both re-enables both. `mode` is stored so the composer knows which set is live. */
+ *  Typing into the percentage set deactivates the dollar set and vice versa. `party`
+ *  stores BUYER / SELLER / SPLIT; `mode` stores which split set is live. */
 function CostSplit({
   f, onSaveStructured, disabled,
 }: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
   const s = f.structured ?? {};
+  const party = s.party ?? '';
   const pct = s.pct ?? {};
   const usd = s.usd ?? {};
   // Which set holds any input right now (drives which set is active).
@@ -573,6 +576,12 @@ function CostSplit({
   const pctActive = !disabled && (mode === 'PCT' || mode === '');
   const usdActive = !disabled && (mode === 'USD' || mode === '');
 
+  // The top-level responsibility choice. Switching AWAY from Split clears the split
+  // inputs (they're meaningless for a single party); switching TO Split keeps them.
+  const setParty = (p: string) => {
+    if (p === 'SPLIT') void onSaveStructured(f.field_key, { ...s, party: p });
+    else void onSaveStructured(f.field_key, { party: p });   // drop pct/usd/mode
+  };
   const setPct = (who: 'buyer' | 'seller', v: string) => {
     const other = who === 'buyer' ? 'seller' : 'buyer';
     const raw = v.replace(/[^0-9.]/g, '');
@@ -586,17 +595,17 @@ function CostSplit({
       next[other] = '';
     }
     const anyPct = !!(next.buyer || next.seller);
-    void onSaveStructured(f.field_key, { ...s, pct: next, usd: {}, mode: anyPct ? 'PCT' : '' });
+    void onSaveStructured(f.field_key, { ...s, party: 'SPLIT', pct: next, usd: {}, mode: anyPct ? 'PCT' : '' });
   };
   const setUsdAmount = (who: 'buyer' | 'seller', v: string) => {
     const raw = v.replace(/[^0-9.]/g, '');
     const next = { ...usd, [who]: { amount: raw, remaining: false } };
     const anyUsd = !!(next.buyer?.amount || next.buyer?.remaining || next.seller?.amount || next.seller?.remaining);
-    void onSaveStructured(f.field_key, { ...s, usd: next, pct: {}, mode: anyUsd ? 'USD' : '' });
+    void onSaveStructured(f.field_key, { ...s, party: 'SPLIT', usd: next, pct: {}, mode: anyUsd ? 'USD' : '' });
   };
   const setUsdRemaining = (who: 'buyer' | 'seller') => {
     const next = { ...usd, [who]: { amount: '', remaining: true } };
-    void onSaveStructured(f.field_key, { ...s, usd: next, pct: {}, mode: 'USD' });
+    void onSaveStructured(f.field_key, { ...s, party: 'SPLIT', usd: next, pct: {}, mode: 'USD' });
   };
   // The "other" party's USD field becomes a {dollar | Remaining cost} chooser once
   // THIS party has a dollar figure. Before that, both are plain dollar inputs.
@@ -642,21 +651,33 @@ function CostSplit({
 
   return (
     <div className="flex flex-col gap-3 w-full">
-      <div className={`flex flex-col gap-1.5 ${pctActive ? '' : 'opacity-40'}`}>
-        <p className="text-[10px] uppercase tracking-wide text-muted">By percentage</p>
-        {row('Seller', pctInput('seller'))}
-        {row('Buyer', pctInput('buyer'))}
-      </div>
-      <div className={`flex flex-col gap-1.5 ${usdActive ? '' : 'opacity-40'}`}>
-        <p className="text-[10px] uppercase tracking-wide text-muted">By dollar amount</p>
-        {row('Seller', usdInput('seller'))}
-        {row('Buyer', usdInput('buyer'))}
-      </div>
-      {(pctFilled || usdFilled) && !disabled && (
-        <button type="button" className="self-start text-[11px] text-muted hover:text-red-700 underline"
-          onClick={() => void onSaveStructured(f.field_key, { ...s, pct: {}, usd: {}, mode: '' })}>
-          Clear
-        </button>
+      {/* THE GATE: who is responsible. Only "Split" reveals the allocation mechanism. */}
+      <select className={`${inputCls} max-w-xs`} disabled={disabled} value={party}
+        onChange={(e) => setParty(e.target.value)}>
+        <option value="">{SELECT_PLACEHOLDER}</option>
+        <option value="BUYER">Buyer</option>
+        <option value="SELLER">Seller</option>
+        <option value="SPLIT">Split between Buyer and Seller</option>
+      </select>
+      {party === 'SPLIT' && (
+        <div className="flex flex-col gap-3 pl-1 border-l-2 border-green-800/15 ml-0.5">
+          <div className={`flex flex-col gap-1.5 ${pctActive ? '' : 'opacity-40'}`}>
+            <p className="text-[10px] uppercase tracking-wide text-muted">By percentage</p>
+            {row('Seller', pctInput('seller'))}
+            {row('Buyer', pctInput('buyer'))}
+          </div>
+          <div className={`flex flex-col gap-1.5 ${usdActive ? '' : 'opacity-40'}`}>
+            <p className="text-[10px] uppercase tracking-wide text-muted">By dollar amount</p>
+            {row('Seller', usdInput('seller'))}
+            {row('Buyer', usdInput('buyer'))}
+          </div>
+          {(pctFilled || usdFilled) && !disabled && (
+            <button type="button" className="self-start text-[11px] text-muted hover:text-red-700 underline"
+              onClick={() => void onSaveStructured(f.field_key, { ...s, party: 'SPLIT', pct: {}, usd: {}, mode: '' })}>
+              Clear split
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
