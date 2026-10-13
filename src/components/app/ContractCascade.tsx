@@ -444,6 +444,19 @@ function LocationField({
     const n = name.trim().toLowerCase();
     return curName !== '' && n !== '' && (curName === n || curName.startsWith(n + ','));
   };
+  // One label per location, de-duplicated: the stored address often already begins
+  // with the name ("Carmel Creek Ranch, …"), so repeating "name — address" printed
+  // the name twice. Drop the name when the address already leads with it. When the
+  // location IS the horse's current one, the "Current Location" prefix REPLACES the
+  // name (owner: it should replace the first instance of the name).
+  const locLabel = (name: string, address?: string | null) => {
+    const addr = (address ?? '').trim();
+    const nameLeads = addr !== '' && addr.toLowerCase().startsWith(name.trim().toLowerCase());
+    const current = isCurrent(name);
+    if (current) return addr !== '' ? `Current Location — ${addr}` : `Current Location — ${name}`;
+    if (addr === '') return name;
+    return nameLeads ? addr : `${name} — ${addr}`;
+  };
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -458,17 +471,16 @@ function LocationField({
         }}>
         <option value="">Select a known location…</option>
         {known.map((k) => (
-          <option key={k.id} value={k.id}>
-            {isCurrent(k.name) ? 'Current Location — ' : ''}{k.name}{k.address ? ` — ${k.address}` : ''}
-          </option>
+          <option key={k.id} value={k.id}>{locLabel(k.name, k.address)}</option>
         ))}
         <option value={MANUAL_LOCATION}>Enter an address manually…</option>
       </select>
-      {/* A known location is picked → show the resolved address it will print, so
-          the selection is not a bare name with the address hidden. */}
+      {/* A known location is picked → show the resolved address it will print (the
+          same de-duplicated / "Current Location" label the option uses), so the
+          selection is not a bare name with the address hidden. */}
       {!manual && matched && (
         <p className="text-[12.5px] text-green-800/80">
-          {[s.name, s.line1].filter(Boolean).join(' — ') || s.name}
+          {locLabel(s.name ?? '', s.line1)}
         </p>
       )}
       {/* Manual entry → the editable name + address fields. */}
