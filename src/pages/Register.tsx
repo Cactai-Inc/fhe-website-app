@@ -6,7 +6,7 @@ import {
   invitationReplacementNotice, requestInvitationResend,
   type RetiredLinkNotice,
 } from '../lib/api';
-import { redeemContractInvitation } from '../lib/contracts';
+import { redeemContractInvitation, invitedAccountState } from '../lib/contracts';
 import { signInWithGoogle } from '../lib/auth';
 import { toErrorMessage } from '../lib/ops/errors';
 import { OAUTH_PROVIDERS } from '../lib/authConfig';
@@ -59,6 +59,15 @@ export default function Register() {
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   // Where the CURRENT invitation went, for someone holding a retired link.
   const [notice, setNotice] = useState<RetiredLinkNotice | null>(null);
+  // The contract this invite carries, captured from the account-state probe so a
+  // sign-in offer routes straight to the document rather than back to /activate
+  // (which is what created the earlier loop). Null for a non-contract invite.
+  const [docId, setDocId] = useState<string | null>(null);
+  // Where a "Sign in" offer should land: the contract when we know it, else back to
+  // this activation link (the old default) for a non-contract invite.
+  const signInFrom = isContractInvite
+    ? (docId ? `/app/contracts/${docId}` : `/activate?token=${token}&kind=contract`)
+    : undefined;
   const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
   // Gmail invites lead with Google only — the password form stays one click
   // away for the rare Gmail user who wants a password anyway.
@@ -98,6 +107,30 @@ export default function Register() {
       setState('invalid');
       return;
     }
+    // CR-126 — ROUTE BY ACCOUNT STATE BEFORE THE SIGNUP FORM (owner). An invited
+    // email that ALREADY has an account with at least one session is an established
+    // account-holder: send them to LOGIN (carrying the contract), not the
+    // set-password/activation flow. An email with no account, or an account that has
+    // never had a session (provisioned but never activated), stays on the
+    // set-password + personal-info flow below — which ends on the contract. Either
+    // way, never the /sign door chooser. Best-effort: a failure falls through to the
+    // normal invitation flow, so this can only help, never block.
+    (async () => {
+      try {
+        const st = await invitedAccountState(token);
+        if (!active) return;
+        if (st.document_id) setDocId(st.document_id);
+        if (st.found && st.has_account && st.has_session) {
+          const dest = st.document_id ? `/app/contracts/${st.document_id}` : '/app';
+          navigate('/login', { replace: true, state: { from: dest } });
+          return;
+        }
+      } catch { /* fall through to the normal invitation flow */ }
+      if (!active) return;
+      runValidate();
+    })();
+
+    function runValidate() {
     validateInvitation(token)
       .then(async (inv) => {
         if (!active) return;
@@ -141,6 +174,7 @@ export default function Register() {
         setState('ready');
       })
       .catch(() => active && setState('invalid'));
+    }
     return () => {
       active = false;
     };
@@ -300,7 +334,7 @@ export default function Register() {
                 to their document, but only once we know who they are. */}
             <Link
               to="/login"
-              state={isContractInvite ? { from: `/activate?token=${token}&kind=contract` } : undefined}
+              state={signInFrom ? { from: signInFrom } : undefined}
               className="btn-primary"
             >
               Sign In
@@ -387,7 +421,7 @@ export default function Register() {
                   <Link
                     to="/login"
                     state={isContractInvite
-                      ? { from: `/activate?token=${token}&kind=contract` }
+                      ? { from: signInFrom }
                       : undefined}
                     className="underline underline-offset-2 font-medium"
                   >

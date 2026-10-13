@@ -523,6 +523,23 @@ export async function redeemContractInvitation(token: string): Promise<string> {
   return (data as { document_id: string }).document_id;
 }
 
+/** CR-126 — the account state behind an invitation token, used by the activation page
+ *  to route an established account-holder to LOGIN and a new/never-activated one to
+ *  the set-password flow (never to the /sign chooser). Keyed by the token (proof), so
+ *  it never leaks an arbitrary email's account state. */
+export interface InvitedAccountState {
+  found: boolean;
+  email?: string;
+  document_id?: string | null;
+  has_account?: boolean;
+  has_session?: boolean;
+}
+export async function invitedAccountState(token: string): Promise<InvitedAccountState> {
+  const { data, error } = await supabase.rpc('invited_account_state', { p_token: token });
+  if (error) throw error;
+  return (data ?? { found: false }) as InvitedAccountState;
+}
+
 /** TASK-ROLEBUNDLE — what each party on this contract owes BY VIRTUE OF THE ROLE
  *  THEY HOLD ON IT (D31's "one known event": the event is this contract, the role
  *  decides the bundle).
