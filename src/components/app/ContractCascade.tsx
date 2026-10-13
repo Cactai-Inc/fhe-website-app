@@ -412,11 +412,15 @@ function resolveOption(
  *  this one control, so they are consistent and self-extending. */
 const MANUAL_LOCATION = '__manual__';
 function LocationField({
-  value, disabled, onSave,
+  value, disabled, onSave, currentLocationName,
 }: {
   value: FieldStructured;
   disabled: boolean;
   onSave: (s: FieldStructured) => void;
+  /** The horse's current-location NAME (CR-126). The matching option in the list is
+   *  prefixed "Current Location —" so the author can see which place the horse is
+   *  already at. */
+  currentLocationName?: string;
 }) {
   const [known, setKnown] = useState<CalendarLocation[]>([]);
   const s = value ?? {};
@@ -432,6 +436,14 @@ function LocationField({
   // A known location whose name matches the current value (so the dropdown shows
   // the right selection after a save/reload).
   const matched = known.find((k) => k.name === s.name && !manual);
+  // Is a given known location the horse's CURRENT location? Match on name (the
+  // current-location value is the composed "<name>, <address>…", so compare the
+  // leading name segment case-insensitively).
+  const curName = (currentLocationName ?? '').trim().toLowerCase();
+  const isCurrent = (name: string) => {
+    const n = name.trim().toLowerCase();
+    return curName !== '' && n !== '' && (curName === n || curName.startsWith(n + ','));
+  };
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -445,7 +457,11 @@ function LocationField({
           else onSave({});
         }}>
         <option value="">Select a known location…</option>
-        {known.map((k) => <option key={k.id} value={k.id}>{k.name}{k.address ? ` — ${k.address}` : ''}</option>)}
+        {known.map((k) => (
+          <option key={k.id} value={k.id}>
+            {isCurrent(k.name) ? 'Current Location — ' : ''}{k.name}{k.address ? ` — ${k.address}` : ''}
+          </option>
+        ))}
         <option value={MANUAL_LOCATION}>Enter an address manually…</option>
       </select>
       {/* A known location is picked → show the resolved address it will print, so
@@ -1211,8 +1227,8 @@ function IncidentListBuilder({
 
 /** A single field's control, chosen by format_type (preferred) or input_kind. */
 function FieldControl({
-  f, onSave, onSaveResponsibility, onSaveStructured, disabled,
-}: { f: ContractField; onSave: SaveFn; onSaveResponsibility: SaveRespFn; onSaveStructured: SaveStructFn; disabled: boolean }) {
+  f, onSave, onSaveResponsibility, onSaveStructured, disabled, currentLocationName,
+}: { f: ContractField; onSave: SaveFn; onSaveResponsibility: SaveRespFn; onSaveStructured: SaveStructFn; disabled: boolean; currentLocationName?: string }) {
   const [local, setLocal] = useState(f.value ?? '');
   const editingRef = useRef(false);
   // Re-sync local input state when the server value changes (after a save + parent
@@ -1361,6 +1377,7 @@ function FieldControl({
         value={f.structured ?? {}}
         disabled={disabled}
         onSave={(sv) => void onSaveStructured(f.field_key, sv)}
+        currentLocationName={currentLocationName}
       />
     );
   }
@@ -1660,13 +1677,15 @@ function fieldDisplayValue(f: ContractField): string {
  *  (party / contact / pair / location) fall back to the block FieldControl inside
  *  a compact inline-block wrapper, since they can't collapse to a single word. */
 export function InlineFieldControl({
-  f: rawField, editable, onSave, onSaveResponsibility, onSaveStructured,
+  f: rawField, editable, onSave, onSaveResponsibility, onSaveStructured, currentLocationName,
 }: {
   f: ContractField;
   editable: boolean;
   onSave: SaveFn;
   onSaveResponsibility: SaveRespFn;
   onSaveStructured: SaveStructFn;
+  /** The horse's current-location name — flagged in a location picker's list (CR-126). */
+  currentLocationName?: string;
   /** Accepted for call-site compatibility; the inline comment bubble was removed. */
 }) {
   /* A RETIRED (inactive) option value is filtered out HERE, in the one component
@@ -1786,7 +1805,7 @@ export function InlineFieldControl({
       <span className="block clear-both w-full mt-3 mb-1.5 ml-0 pl-0">
         <span className="block text-[11px] text-muted mb-1">{label}{marks}</span>
         <FieldControl f={f} onSave={onSave} onSaveResponsibility={onSaveResponsibility}
-          onSaveStructured={onSaveStructured} disabled={disabled} />
+          onSaveStructured={onSaveStructured} disabled={disabled} currentLocationName={currentLocationName} />
       </span>
     );
   }

@@ -651,12 +651,18 @@ function renderToken(
     // what locks a duration UNIT until its number is entered — the gte gate.)
     const selfGateMet = clauseConditionMet(field.conditional_on, valueByKey);
     const mine = fieldIsMine(field, cb);
+    // For a location picker, pass the horse's current-location name so the matching
+    // option in the list is flagged "Current Location —" (CR-126). The HORSE.* token
+    // value is the composed "<name>, <address>…"; LocationField matches on the name.
+    const curLoc = field.format_type === 'location'
+      ? (valueByKey['HORSE.CURRENT_LOCATION'] ?? '') : undefined;
     return (
       <OwnedField key={key} f={field} cb={cb} active={selfGateMet}>
         <InlineFieldControl f={fieldWithAvailableOptions(field, valueByKey)}
           editable={cb.editable && selfGateMet && mine}
           onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
-          onSaveResponsibility={cb.onSaveResponsibility as never} />
+          onSaveResponsibility={cb.onSaveResponsibility as never}
+          currentLocationName={curLoc} />
       </OwnedField>
     );
   }
