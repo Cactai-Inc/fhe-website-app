@@ -121,31 +121,6 @@ export async function listStableHorses(asCompany?: boolean): Promise<StableHorse
   return ((data ?? []) as StableHorseRow[]).map(toStableHorse);
 }
 
-export async function addStableHorse(
-  input: Partial<StableHorse> & { name: string },
-  asCompany?: boolean,
-): Promise<string> {
-  const { data, error } = await supabase.rpc('my_stable_add_horse', {
-    p_name: input.name,
-    p_barn_name: input.nickname ?? null,
-    p_breed: input.breed ?? null,
-    p_sex: input.sex ?? null,
-    p_height: input.height_hh ?? null,
-    p_dob: input.age_or_foaling ?? null,   // date string or null
-    p_color: input.color ?? null,
-    p_location: input.location ?? null,
-    // Markings go to horses.markings (their real column, read by the intake
-    // form, the record page and the HORSE.MARKINGS token). They used to be
-    // concatenated with `discipline` into p_notes → medical_history, which both
-    // lost them and polluted a clinical field. There is no discipline column.
-    p_markings: input.markings ?? null,
-    p_notes: null,
-    p_as_company: asCompany ?? null,
-  });
-  if (error) throw error;
-  return data as string;
-}
-
 export async function updateStableHorse(id: string, patch: Partial<StableHorse>): Promise<void> {
   const { error } = await supabase.rpc('my_stable_update_horse', {
     p_id: id,

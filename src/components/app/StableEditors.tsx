@@ -1,28 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Plus, Check } from 'lucide-react';
 import { Modal } from '../ops/kit/Modal';
-import { useFieldNormalizer, useFormDraft, type SaveStatus } from '../../lib/formState';
+import { useFormDraft, type SaveStatus } from '../../lib/formState';
 import { toErrorMessage } from '../../lib/ops/errors';
 import {
-  addStableHorse, addStableItem, addVendor, listVendors,
-  type StableItemKind, type StableItemOwnerKind, type StableOwnership, type Vendor,
+  addStableItem, addVendor, listVendors,
+  type StableItemKind, type StableItemOwnerKind, type Vendor,
 } from '../../lib/stable';
-import { fetchLocations, addMyLocation, type CalendarLocation } from '../../lib/ops/api-calendar';
 
 /**
- * MY STABLE editors — purpose-built add forms that WRITE real rows.
- *   AddHorseModal  → addStableHorse
- *   AddItemModal   → addStableItem (gear|supply), with a VendorPicker that either
- *                    selects an existing shared vendor or adds a new one (addVendor)
- *                    with an optional "share to community Resources" toggle.
- * ⚠️ TASK-FIX4 §3 — CONVERGED ON THE SHARED `ops/kit/Modal`. `Shell` used to be a
- * hand-rolled overlay whose backdrop carried `onClick={onClose}`, so a click
- * beside the box threw away a half-filled horse record. That is CR-68a, the
- * incident the owner reported on 2026-08-25. ⚠️ TASK-MODAL2 D1 is now the rule
- * for every caller: **nothing but a control closes a dialog** — not the
- * backdrop, not Escape — and what was typed is in browser storage regardless.
- * ⚠️ It was also `variant="sheet"`; D2 eliminated the sheet, so it is a centre
- * box like everything else.
+ * MY STABLE editors — the add forms for gear and supplies.
+ *   AddItemModal → addStableItem (gear|supply), with a VendorPicker that either
+ *                  selects an existing shared vendor or adds a new one (addVendor)
+ *                  with an optional "share to community Resources" toggle.
+ * Both close only by a control — never the backdrop, never Escape — and what was
+ * typed lives in browser storage so an accidental close loses nothing.
  */
 
 const inputCls = 'w-full px-3 py-2.5 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring';
@@ -42,117 +34,6 @@ function Shell({ title, onClose, onClear, saveStatus, children }: {
       onClear={onClear} saveStatus={saveStatus} panelClassName="bg-cream">
       {children}
     </Modal>
-  );
-}
-
-const EMPTY_HORSE = {
-  name: '', nickname: '', breed: '', sex: '', height_hh: '', age_or_foaling: '',
-  color: '', discipline: '', markings: '', location: 'Carmel Creek Ranch',
-};
-
-export function AddHorseModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const [f, setF] = useState({ ...EMPTY_HORSE });
-  const [ownership, setOwnership] = useState<StableOwnership>('owned');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [locations, setLocations] = useState<CalendarLocation[]>([]);
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
-  const normalize = useFieldNormalizer();
-
-  /* TASK-FIX4 §6 — what was typed survives a reload, a browser-back and an
-     accidental close. ⚠️ Persisting is not submitting: nothing reaches
-     `addStableHorse` until `Save horse` is pressed. */
-  const draft = useFormDraft('stable.add-horse', { ...f, ownership }, (d) => {
-    setF((p) => ({ ...p, ...d }));
-    if (d.ownership) setOwnership(d.ownership as StableOwnership);
-  });
-
-  function clearForm() {
-    setF({ ...EMPTY_HORSE });
-    setOwnership('owned');
-    setErr(null);
-    draft.clear();
-  }
-
-  const loadLocations = () => fetchLocations().then((locs) => { setLocations(locs); return locs; }).catch(() => [] as CalendarLocation[]);
-  useEffect(() => {
-    loadLocations().then((locs) => {
-      const def = locs.find((l) => l.is_default);
-      if (def) setF((p) => (p.location && p.location !== 'Carmel Creek Ranch') ? p : { ...p, location: def.name });
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function addLocation() {
-    const name = window.prompt('New location name');
-    if (!name?.trim()) return;
-    const addr = window.prompt('Address (optional)') ?? undefined;
-    try {
-      await addMyLocation(name.trim(), addr?.trim() || undefined);
-      await loadLocations();
-      setF((p) => ({ ...p, location: name.trim() }));
-    } catch { /* keep selection */ }
-  }
-
-  async function submit() {
-    if (!f.name.trim()) { setErr('A name is required.'); return; }
-    setBusy(true); setErr(null);
-    try {
-      await addStableHorse({ ...f, ownership });
-      draft.clear();
-      onDone(); onClose();
-    } catch (e) { setErr(toErrorMessage(e, 'Could not save.')); }
-    finally { setBusy(false); }
-  }
-
-  return (
-    <Shell title="Add a horse" onClose={onClose} onClear={clearForm} saveStatus={draft.status}>
-      <div className="flex flex-col gap-3">
-        {/* TASK-FIX4 §4 — the name is normalised ON BLUR, in front of them, and
-            a correction they then make is never re-normalised. */}
-        <div><FieldLabel>Name</FieldLabel><input className={inputCls} value={f.name} onChange={set('name')}
-          onBlur={normalize('horse.name', 'name', f.name, (v) => setF((p) => ({ ...p, name: v })))}
-          placeholder="Registered or full name" /></div>
-        <div><FieldLabel>Barn name</FieldLabel><input className={inputCls} value={f.nickname} onChange={set('nickname')}
-          onBlur={normalize('horse.nickname', 'name', f.nickname, (v) => setF((p) => ({ ...p, nickname: v })))}
-          placeholder="Everyday name" /></div>
-        <div className="grid grid-cols-2 gap-3">
-          <div><FieldLabel>Breed</FieldLabel><input className={inputCls} value={f.breed} onChange={set('breed')} placeholder="Warmblood" /></div>
-          <div><FieldLabel>Sex</FieldLabel><input className={inputCls} value={f.sex} onChange={set('sex')} placeholder="Gelding" /></div>
-          <div><FieldLabel>Height</FieldLabel><input className={inputCls} value={f.height_hh} onChange={set('height_hh')} placeholder="16.1hh" /></div>
-          <div><FieldLabel>Age / foaling</FieldLabel><input className={inputCls} value={f.age_or_foaling} onChange={set('age_or_foaling')} placeholder="11 yrs / 2015" /></div>
-          <div><FieldLabel>Color</FieldLabel><input className={inputCls} value={f.color} onChange={set('color')} placeholder="Bay" /></div>
-          {/* Discipline removed 2026-07-30: there is no `discipline` column on
-              horses, so this input collected text that was concatenated into
-              medical_history and never read back. Reinstate it here only
-              alongside a real column. */}
-        </div>
-        <div>
-          <FieldLabel>Ownership</FieldLabel>
-          <div className="flex gap-2">
-            {(['owned', 'leased'] as const).map((o) => (
-              <button key={o} type="button" onClick={() => setOwnership(o)}
-                className={`flex-1 py-2 rounded-lg border text-sm capitalize ${ownership === o ? 'bg-green-50 border-green-300 text-green-800 font-medium' : 'border-green-800/15 text-secondary hover:bg-green-50'}`}>{o}</button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <FieldLabel>Location</FieldLabel>
-          <select className={inputCls} value={f.location}
-            onChange={(e) => { if (e.target.value === '__add') { void addLocation(); } else setF({ ...f, location: e.target.value }); }}>
-            {!locations.some((l) => l.name === f.location) && f.location && <option value={f.location}>{f.location}</option>}
-            {locations.map((l) => <option key={l.id} value={l.name}>{l.name}{l.is_mine ? ' (mine)' : ''}</option>)}
-            <option value="__add">+ Add a location…</option>
-          </select>
-        </div>
-        <div><FieldLabel>Markings / notes</FieldLabel><input className={inputCls} value={f.markings} onChange={set('markings')} placeholder="Optional" /></div>
-        {err && <p className="text-sm text-red-700">{err}</p>}
-        <button type="button" onClick={submit} disabled={busy}
-          className="w-full py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center justify-center gap-2 disabled:opacity-60">
-          {busy && <Loader2 size={16} className="animate-spin" />} Save horse
-        </button>
-      </div>
-    </Shell>
   );
 }
 

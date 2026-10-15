@@ -7,16 +7,15 @@ import { toErrorMessage } from '../../../lib/ops/errors';
 /**
  * A SHARED LIST — THE ONE THING THAT KEEPS A FLAT ROW, AND WHY.
  *
- * TASK-SURFACEEDITOR §4: *"A flat list stays useful only as the fallback for a
- * vocabulary with no single surface to render."* These five are exactly that.
- * Horse breed, colour, markings, registration organisation and passport country
- * are used by the horse record, the horse intake form AND the contracts — there
- * is no one surface to open them on, because they appear on several. Every other
- * menu in the app now lives on the form or the document it belongs to.
+ * A flat list is the fallback for a vocabulary with no single surface to render.
+ * Horse breed, colour, registration organisation and passport country are used by
+ * the horse record, the horse intake form AND the contracts — there is no one
+ * surface to open them on, because they appear on several. Every other menu in the
+ * app lives on the form or the document it belongs to.
  *
- * ⚠️ RETIRING IS SWITCHING OFF, NEVER DELETING: `horses.breed` and `horses.color`
- * are foreign keys and records already carry these codes. An inactive value
- * leaves every dropdown and stays valid where it is already used (D32).
+ * `horses.breed` and `horses.color` are foreign keys and records already carry
+ * these codes, so a value is retired by switching it off — never by deleting it —
+ * which leaves every dropdown and stays valid where it is already used.
  */
 export function SharedListSurface({ menu, onError }: { menu: MenuSummary; onError: (m: string) => void }) {
   const [open, setOpen] = useState(false);

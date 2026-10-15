@@ -12,15 +12,15 @@ import { SupersededEditor } from '../../../../components/ops/editor/SupersededEd
  * (`menu_inventory`, `menu_vocabulary_values`, `set_menu_value`,
  * `set_form_field_options`). What moved is where you reach it: a form's menus are
  * on the form, a contract's menus are on the clause that asks the question, and
- * the five SHARED lists — breed, colour, markings, registration organisation,
- * passport country — keep a flat list of their own in the Editor, because they
- * are used in several places at once and genuinely have no single home.
+ * the SHARED lists — breed, colour, registration organisation, passport country —
+ * keep a flat list of their own in the Editor, because they are used in several
+ * places at once and genuinely have no single home.
  */
 export default function AdminMenusPage() {
   return (
     <SupersededEditor
       was="Menus"
-      now="Menus are edited where they appear now. A form's choices are on the form, a contract's choices are on the clause that asks the question, and the five shared lists — breed, colour, markings, registration organisation, passport country — are in the Editor under Shared lists."
+      now="Menus are edited where they appear now. A form's choices are on the form, a contract's choices are on the clause that asks the question, and the shared lists — breed, colour, registration organisation, passport country — are in the Editor under Shared lists."
     />
   );
 }

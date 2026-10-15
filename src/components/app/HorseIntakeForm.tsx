@@ -815,7 +815,6 @@ export function HorseIntakeForm({
   // code, so these MUST be selects from the reference tables.
   const [breeds, setBreeds] = useState<LookupCode[]>([]);
   const [colors, setColors] = useState<LookupCode[]>([]);
-  const [markingOpts, setMarkingOpts] = useState<LookupCode[]>([]);
   const [regOrgOpts, setRegOrgOpts] = useState<LookupCode[]>([]);
   const [passportCountryOpts, setPassportCountryOpts] = useState<LookupCode[]>([]);
 
@@ -840,7 +839,6 @@ export function HorseIntakeForm({
     }
     listHorseBreeds().then(setBreeds).catch(() => setBreeds([]));
     listHorseColors().then(setColors).catch(() => setColors([]));
-    listLookupOptions('horse_markings').then(setMarkingOpts).catch(() => setMarkingOpts([]));
     listLookupOptions('horse_registration_org').then(setRegOrgOpts).catch(() => setRegOrgOpts([]));
     listLookupOptions('horse_passport_country').then(setPassportCountryOpts).catch(() => setPassportCountryOpts([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1398,7 +1396,8 @@ export function HorseIntakeForm({
           invalid={showError && !isKnownCode(f.color, colorOpts)}
           options={colorOpts} lookupKey="horse_colors" onOptionAdded={(o) => setColors((prev) => addOpt(prev, o))} placeholder="Color"
           hint="Not listed? Choose “Other (enter manually)” and type it — it joins the list." />
-        <SelectOrOther label="Markings" value={f.markings} onChange={set('markings')} showError={false} options={toOpts(markingOpts)} lookupKey="horse_markings" onOptionAdded={(o) => setMarkingOpts((prev) => addOpt(prev, o))} placeholder="Describe the markings" />
+        <Field span label="Markings" textarea value={f.markings} onChange={set('markings')} showError={false}
+          placeholder="Describe the markings exactly as written on the registration certificate (e.g. Star pointed at bottom; left hind coronet white, lower on inside…)" />
         <Field label="Sex" value={f.sex} onChange={set('sex')} showError={showError} required
           options={[
             { value: 'MARE', label: 'Mare' }, { value: 'GELDING', label: 'Gelding' },

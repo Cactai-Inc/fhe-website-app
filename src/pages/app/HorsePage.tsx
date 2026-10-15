@@ -428,7 +428,7 @@ const TEXT_FIELDS: { k: string; label: string; area?: boolean; opts?: 'breeds' |
   { k: 'registered_name', label: 'Full Name (registered name, if registered)' },
   { k: 'breed', label: 'Breed', opts: 'breeds' },
   { k: 'color', label: 'Color', opts: 'colors' },
-  { k: 'markings', label: 'Markings' },
+  { k: 'markings', label: 'Markings', area: true },
   { k: 'sex', label: 'Sex' },
   { k: 'height', label: 'Height' },
   { k: 'fair_market_value', label: 'Fair market value' },

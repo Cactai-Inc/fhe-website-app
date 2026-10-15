@@ -18,7 +18,6 @@ import {
 const LOOKUP_LABELS: Record<string, string> = {
   horse_breeds: 'Horse breed',
   horse_colors: 'Horse color',
-  horse_markings: 'Horse markings',
   horse_registration_org: 'Registration organization',
   horse_passport_country: 'Passport country',
 };
