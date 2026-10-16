@@ -15,6 +15,7 @@ import {
   type AdminMemberRow, type MemberRole, type PendingStaffInvite,
 } from '../../../lib/admin';
 import { setDashboardFocus } from '../../../lib/ops/api-dashboard';
+import { contactDesignations, setContactDesignation, DESIGNATION_LABELS, type Designation } from '../../../lib/horses';
 import { InviteResultPanel } from '../../../components/app/InviteResultPanel';
 import { InvitationHistoryPanel } from '../../../components/app/InvitationHistoryPanel';
 
@@ -136,6 +137,40 @@ function RosterSection({
 
 /** Click-into record for one team member: edit identity/contact, change role,
  *  demote to client, suspend, or delete. Admin-only actions are gated. */
+const ALL_DESIGNATIONS: Designation[] = ['trainer', 'groom', 'care_giver', 'instructor', 'support_staff', 'outside_provider'];
+
+/** Toggle the designations a person carries. Each is a horse-picker/booking filter. */
+function DesignationsEditor({ contactId }: { contactId: string }) {
+  const [have, setHave] = useState<Set<Designation>>(new Set());
+  const [busy, setBusy] = useState<Designation | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    contactDesignations(contactId).then((ds) => { if (active) setHave(new Set(ds)); }).catch(() => {});
+    return () => { active = false; };
+  }, [contactId]);
+  async function toggle(d: Designation) {
+    const on = !have.has(d);
+    setBusy(d); setErr(null);
+    try {
+      await setContactDesignation(contactId, d, on);
+      setHave((prev) => { const next = new Set(prev); if (on) next.add(d); else next.delete(d); return next; });
+    } catch (e) { setErr(toErrorMessage(e, 'Could not update that designation.')); }
+    finally { setBusy(null); }
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {ALL_DESIGNATIONS.map((d) => (
+        <button key={d} type="button" disabled={busy === d} onClick={() => void toggle(d)}
+          className={`text-xs rounded-full px-3 py-1.5 border focus-ring ${have.has(d) ? 'bg-green-800 text-white border-green-800' : 'border-green-800/20 text-secondary hover:bg-green-50'}`}>
+          {DESIGNATION_LABELS[d]}
+        </button>
+      ))}
+      {err && <p className="w-full text-xs text-red-700">{err}</p>}
+    </div>
+  );
+}
+
 function TeamMemberPanel({
   member, canManage, onClose, onChanged,
 }: { member: AdminMemberRow; canManage: boolean; onClose: () => void; onChanged: () => void }) {
@@ -254,6 +289,17 @@ function TeamMemberPanel({
                   {busy ? 'Saving…' : 'Save record'}
                 </button>
               </div>
+
+              {member.contact_id && (
+                <div className="flex flex-col gap-2 border-t border-green-800/10 pt-4">
+                  <p className="form-label">Designations</p>
+                  <p className="text-xs text-muted">
+                    What this person can be selected as on horse records and when assigning
+                    staff to a booking. Only people with a matching designation appear on those pickers.
+                  </p>
+                  <DesignationsEditor contactId={member.contact_id} />
+                </div>
+              )}
 
               {/* ── Default dashboard ── DASHBOARDBUILD §2.2 / D13.
                   THE SETTINGS SCREEN the ruling asks for: *"we can set the

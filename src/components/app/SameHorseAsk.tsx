@@ -29,11 +29,13 @@ import type { HorseIntakePayload } from '../../lib/horses';
 /** Inquiry question → the horse-record field it fills. The OVERLAP §C10b names
  *  (age, breed, behaviour, health) and nothing beyond it: a question that has no
  *  faithful home on the record is left for the client to answer here. */
-const FIELD_FOR_QUESTION: Record<string, keyof HorseIntakePayload> = {
-  'What is the age of the horse?': 'date_of_birth',
-  'What breed is the horse?': 'breed',
-  'Does the horse have any behaviour issues?': 'behavioral_history',
-  'Has the horse had any injuries or current health issues?': 'medical_history',
+/** Inquiry question → how its answer seeds the record. A scalar field takes the
+ *  answer directly; a list field takes it as a single first entry with the given key. */
+const FIELD_FOR_QUESTION: Record<string, { key: keyof HorseIntakePayload; list?: string }> = {
+  'What is the age of the horse?': { key: 'date_of_birth' },
+  'What breed is the horse?': { key: 'breed' },
+  'Does the horse have any behaviour issues?': { key: 'behavioral_history_list', list: 'concern' },
+  'Has the horse had any injuries or current health issues?': { key: 'medical_history_list', list: 'summary' },
 };
 
 /** What the client said, mapped onto record fields.
@@ -52,9 +54,10 @@ export function prefillFromAnswers(
   for (const [question, answer] of Object.entries(clientHorse)) {
     if (!answer || !answer.trim()) continue;
     shown.push([question, answer]);
-    const field = FIELD_FOR_QUESTION[question];
-    if (!field || field === 'date_of_birth') continue;   // see the note above
-    (values as Record<string, string>)[field] = answer;
+    const map = FIELD_FOR_QUESTION[question];
+    if (!map || map.key === 'date_of_birth') continue;   // see the note above
+    if (map.list) (values as Record<string, unknown>)[map.key] = [{ [map.list]: answer }];
+    else (values as Record<string, unknown>)[map.key] = answer;
   }
   return { values, shown };
 }

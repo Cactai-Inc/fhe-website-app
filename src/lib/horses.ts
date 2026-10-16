@@ -52,6 +52,20 @@ export function errorText(e: unknown, fallback: string): string {
 /** The standardized intake payload (matched pair to the record; every field maps
  *  to a column — supabase/horse_record/horse_intake_form.md). All optional except
  *  a name; blanks stay blank. */
+/** One entry in a narrative list (medical history, conditions, etc.). The text key
+ *  varies by list (summary/concern/condition/entry); extra keys are allowed. */
+export type NarrativeEntry = Record<string, string>;
+
+/** An injury the horse caused to a person — a disclosure with a change log. */
+export interface InjuryEntry {
+  date?: string;
+  person_type?: 'rider' | 'non-rider';
+  description?: string;
+  outcome?: string;
+  /** Append-only change log: who changed what, when. */
+  changes?: { at: string; by?: string; note?: string }[];
+}
+
 export interface HorseIntakePayload {
   owner_name_text?: string;
   owner_email?: string;
@@ -75,24 +89,17 @@ export interface HorseIntakePayload {
   date_of_birth?: string;
   height?: string;
   fair_market_value?: string;
-  home_location?: string;
   current_location?: string;
-  vet_name?: string;
-  vet_phone?: string;
-  vet_business_name?: string;
-  vet_address_line1?: string;
-  vet_city?: string;
-  vet_state?: string;
-  vet_postal?: string;
-  farrier_name?: string;
-  farrier_phone?: string;
-  medical_history?: string;
-  behavioral_history?: string;
-  known_conditions?: string;
   /** Owner's emergency-euthanasia authorization: 'A' authorize | 'B' do not. */
   euthanasia_authorization?: 'A' | 'B';
-  training_history?: string;
-  competition_history?: string;
+  /** Field keys the owner marked "add later" — present but not yet supplied. */
+  pending_fields?: string[];
+  medical_history_list?: NarrativeEntry[];
+  behavioral_history_list?: NarrativeEntry[];
+  known_conditions_list?: NarrativeEntry[];
+  training_history_list?: NarrativeEntry[];
+  competition_history_list?: NarrativeEntry[];
+  injuries_to_humans?: InjuryEntry[];
   claim_note?: string;
   /** Staff-only: assign the record to this client account. Honored by the backend
    *  only when the caller is staff; ignored (record binds to caller) otherwise. */
@@ -112,29 +119,17 @@ export type HorseRecordOutcome =
  *  named spots on one property. */
 export interface KeepingSpot { term: string; value: string }
 
-/** A findable location: the place (name + structured address) plus THIS horse's
- *  detail there (keeping spots, notes, on-site people). */
+/** A findable location: the place (name + structured address) plus this horse's
+ *  keeping spots and notes there. The care team lives on the horse's providers
+ *  (horse_relationships), not on the location. */
 export interface HorseLocationDetail {
   name?: string;
   address_line1?: string;
   city?: string;
   state?: string;
   postal?: string;
-  /** The unbounded keeping-spots list (CR-126) — the new source of truth the form
-   *  writes and reads. `home.keeping_spots` / `current.keeping_spots` land in
-   *  horses.home_keeping_spots / current_keeping_spots. */
   keeping_spots?: KeepingSpot[];
-  /** LEGACY READ-ONLY MIRROR: composite "Barn A" derived by the DB from the first
-   *  Barn/Stable spot. The form no longer writes it — set_horse_locations derives
-   *  home_barn/current_barn from keeping_spots. Kept so existing readers resolve. */
-  barn?: string;
-  /** LEGACY READ-ONLY MIRROR: first Stall/Pen spot, derived by the DB. */
-  stall?: string;
   notes?: string;
-  trainer?: string;
-  care_giver?: string;
-  groom?: string;
-  other?: string;
 }
 
 /** A vaccination record (CR-126) — all optional, mirrors the medications pattern.
@@ -157,18 +152,118 @@ export interface HorseVaccination {
  *  `vaccinations` omitted (undefined) leaves the stored list unchanged; an empty
  *  array clears it. */
 export async function setHorseLocations(
-  horseId: string, home: HorseLocationDetail, current?: HorseLocationDetail | null,
+  horseId: string, current: HorseLocationDetail,
   vaccinations?: HorseVaccination[],
 ): Promise<void> {
   const { error } = await supabase.rpc('set_horse_locations', {
     p_horse_id: horseId,
     p_payload: {
-      home, current: current ?? null,
+      current,
       ...(vaccinations !== undefined ? { vaccinations } : {}),
     },
   });
   if (error) throw new DbError(error, 'Saving the horse locations');
 }
+
+/** Care provider / emergency contact as stored on horse_relationships. */
+export interface HorseProvider {
+  id: string;
+  type: 'VET' | 'FARRIER' | 'TRAINER' | 'GROOM' | 'CARE_GIVER' | 'EMERGENCY_CONTACT' | 'OTHER';
+  role?: 'primary' | 'alternate' | 'current' | 'specialist' | null;
+  role_label?: string | null;
+  name?: string | null;
+  business_name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address_line1?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postal?: string | null;
+  linked?: boolean;
+  created_at?: string;
+  ended_at?: string | null;
+}
+
+/** A dated horse-location history row. */
+export interface HorseLocationHistory {
+  id: string;
+  name: string | null;
+  address_line1: string | null;
+  city: string | null;
+  state: string | null;
+  postal: string | null;
+  start_on: string | null;
+  end_on: string | null;
+}
+
+export async function addHorseProvider(p: {
+  horse_id: string; relationship: HorseProvider['type']; provider_role?: string; role_label?: string;
+  party_contact_id?: string; party_name_text?: string; business_name?: string; phone?: string; email?: string;
+  address_line1?: string; city?: string; state?: string; postal?: string;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('add_horse_provider', { p });
+  if (error) throw new DbError(error, 'Adding the provider');
+  return data as string;
+}
+
+export async function linkHorseProvider(id: string, contactId: string): Promise<void> {
+  const { error } = await supabase.rpc('link_horse_provider', { p_id: id, p_contact: contactId });
+  if (error) throw new DbError(error, 'Linking the provider');
+}
+
+export async function endHorseProvider(id: string): Promise<void> {
+  const { error } = await supabase.rpc('end_horse_provider', { p_id: id });
+  if (error) throw new DbError(error, 'Ending the provider');
+}
+
+export async function setHorseCurrentLocation(p: {
+  horse_id: string; name?: string; address_line1?: string; city?: string; state?: string; postal?: string;
+  keeping_spots?: KeepingSpot[]; notes?: string; start_on?: string; update_known?: boolean;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('set_horse_current_location', { p });
+  if (error) throw new DbError(error, 'Setting the location');
+  return data as string;
+}
+
+export async function addHorseEmergencyContact(p: {
+  horse_id: string; email?: string; name?: string; phone?: string;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('add_horse_emergency_contact', { p });
+  if (error) throw new DbError(error, 'Adding the emergency contact');
+  return data as string;
+}
+
+export async function matchAccountByEmail(email: string): Promise<{ matched?: boolean; display_name?: string; rate_limited?: boolean }> {
+  const { data, error } = await supabase.rpc('match_account_by_email', { p_email: email });
+  if (error) throw new DbError(error, 'Checking the account');
+  return data as { matched?: boolean; display_name?: string; rate_limited?: boolean };
+}
+
+export async function endHorseLease(horseId: string): Promise<void> {
+  const { error } = await supabase.rpc('end_horse_lease', { p_horse: horseId });
+  if (error) throw new DbError(error, 'Ending the lease');
+}
+
+/** Designations (staff only). */
+export type Designation = 'trainer' | 'groom' | 'care_giver' | 'instructor' | 'support_staff' | 'outside_provider';
+export async function peopleWithDesignation(d: Designation): Promise<{ contact_id: string; display_name: string }[]> {
+  const { data, error } = await supabase.rpc('people_with_designation', { p_designation: d });
+  if (error) throw new DbError(error, 'Loading people');
+  return (data ?? []) as { contact_id: string; display_name: string }[];
+}
+export async function setContactDesignation(contactId: string, d: Designation, on: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_contact_designation', { p_contact: contactId, p_designation: d, p_on: on });
+  if (error) throw new DbError(error, 'Updating the designation');
+}
+export async function contactDesignations(contactId: string): Promise<Designation[]> {
+  const { data, error } = await supabase.rpc('contact_designations', { p_contact: contactId });
+  if (error) throw new DbError(error, 'Loading designations');
+  return (data ?? []) as Designation[];
+}
+export const DESIGNATION_LABELS: Record<Designation, string> = {
+  trainer: 'Trainer', groom: 'Groom', care_giver: 'Care giver',
+  instructor: 'Instructor', support_staff: 'Support staff', outside_provider: 'Outside provider',
+};
 
 export async function createHorseRecord(p: HorseIntakePayload): Promise<HorseRecordOutcome> {
   const { data, error } = await supabase.rpc('create_horse_record', { p: scrubHorseSentinels(p) });
@@ -184,17 +279,19 @@ export interface HorsePageDetail {
     date_of_birth: string | null; height: string | null;
     registration_number: string | null; registration_org: string | null; microchip_id: string | null;
     passport_number: string | null; passport_country: string | null; fair_market_value: number | null;
-    home_location: { name?: string; address_line1?: string; city?: string; state?: string; postal?: string } | null;
-    home_barn: string | null; home_stall: string | null; home_notes: string | null;
-    home_trainer: string | null; home_care_giver: string | null; home_groom: string | null; home_other: string | null;
-    current_location: { name?: string; address_line1?: string; city?: string; state?: string; postal?: string } | null;
-    current_barn: string | null; current_stall: string | null;
-    vet_name: string | null; vet_phone: string | null; vet_business_name: string | null;
-    farrier_name: string | null; farrier_phone: string | null;
-    medical_history: string | null; behavioral_history: string | null; known_conditions: string | null;
-    training_history: string | null; competition_history: string | null; euthanasia_authorization: string | null;
+    current_location: { name?: string; address_line1?: string; city?: string; state?: string; postal?: string; keeping_spots?: KeepingSpot[]; notes?: string; start_on?: string } | null;
+    medical_history_list: NarrativeEntry[]; behavioral_history_list: NarrativeEntry[];
+    known_conditions_list: NarrativeEntry[]; training_history_list: NarrativeEntry[];
+    competition_history_list: NarrativeEntry[]; injuries_to_humans: InjuryEntry[];
+    pending_fields: string[]; euthanasia_authorization: string | null;
     owner_name: string | null; lessee_name: string | null; lease_start: string | null; lease_end: string | null;
   };
+  /** Current active care providers + emergency contacts. */
+  providers: HorseProvider[];
+  /** Ended providers, newest end first. */
+  provider_history: HorseProvider[];
+  /** Ended location rows, newest end first. */
+  location_history: HorseLocationHistory[];
   /** A11: true only when the signed-in viewer IS the stamped lessee. */
   viewer_is_lessee: boolean;
   /** A12: schedule captured in the currently-active executed lease document, read through at display time. Null when no active lease. */
@@ -220,8 +317,9 @@ export async function deleteStableHorse(horseId: string): Promise<void> {
   const { error } = await supabase.rpc('my_stable_delete_horse', { p_id: horseId });
   if (error) throw new DbError(error, 'Deleting the horse');
 }
-/** Update a horse record (owner/staff). Partial patch — only the keys present change. */
-export async function updateHorseRecord(horseId: string, patch: Record<string, string>): Promise<void> {
+/** Update a horse record (owner/staff). Partial patch — only the keys present change.
+ *  Values are strings for the identity columns, or arrays for the list/pending keys. */
+export async function updateHorseRecord(horseId: string, patch: Record<string, unknown>): Promise<void> {
   const { error } = await supabase.rpc('update_horse_record', { p_id: horseId, p: scrubHorseSentinels(patch) });
   if (error) throw new DbError(error, 'Saving the horse record');
 }
@@ -406,59 +504,32 @@ export function scrubHorseSentinels<T extends object>(p: T): T {
   return out as T;
 }
 
-/** Payload keys required because a horse onboarding document merges them. */
-export const HORSE_DOC_REQUIRED_KEYS: (keyof HorseIntakePayload)[] = [
-  'breed', 'color', 'sex', 'date_of_birth', 'height',
-  'microchip_id', 'registration_number', 'fair_market_value',
-  'vet_name', 'vet_phone', 'farrier_name', 'farrier_phone',
-  'known_conditions',
-];
+/** A horse record requires only a nickname; everything else is optional, and a
+ *  missing field a contract needs prints "To be provided" rather than blocking. */
+export const HORSE_DOC_REQUIRED_KEYS: (keyof HorseIntakePayload)[] = [];
 
-/** Human labels for the completeness "missing" list (ops surface). */
-export const HORSE_DOC_REQUIRED_LABELS: Record<string, string> = {
-  name: 'Name (registered or barn)',
+/** Human labels for field keys, used by pending-field and warning surfaces. */
+export const HORSE_FIELD_LABELS: Record<string, string> = {
+  registered_name: 'Name on Registration Certificate', nickname: 'Nickname',
+  registration_org: 'Registration organization', registration_number: 'Registration number',
+  microchip_id: 'Microchip', fair_market_value: 'Fair market value',
+  passport_number: 'Passport number', passport_country: 'Passport country',
   breed: 'Breed', color: 'Color', sex: 'Sex', date_of_birth: 'Date of birth',
-  height: 'Height', microchip_id: 'Microchip', registration_number: 'Registration number',
-  fair_market_value: 'Fair market value', vet_name: 'Vet name', vet_phone: 'Vet phone',
-  farrier_name: 'Farrier name', farrier_phone: 'Farrier phone',
-  known_conditions: 'Known conditions', euthanasia_authorization: 'Euthanasia authorization',
-  location: 'Location',
+  height: 'Height', markings: 'Markings',
 };
 
 export interface HorseRecordCompleteness {
-  state: 'not_started' | 'partial' | 'complete';
-  /** Labels of the still-missing required fields. */
+  state: 'not_started' | 'complete';
   missing: string[];
   answered: number;
   total: number;
 }
 
-/** Completeness of a RAW horses row (codes, not display names) against the
- *  doc-derived required set. 'N/A' counts as answered. */
+/** A record exists once it has a name; there is no partial state to chase. */
 export function horseRecordCompleteness(rec: Record<string, unknown>): HorseRecordCompleteness {
   const answered = (v: unknown) => v != null && String(v).trim() !== '';
-  const missing: string[] = [];
-  let done = 0;
-  const checks: [string, boolean][] = [
-    ['name', answered(rec.nickname) || answered(rec.registered_name)],
-    ...HORSE_DOC_REQUIRED_KEYS.map((k) =>
-      [k as string, answered(rec[k as string])] as [string, boolean]),
-    /* ⚠️ EUTHANASIA IS NO LONGER A REQUIRED FIELD (owner, 2026-08-25). The block
-       was removed from the intake form the same day and the authorisation is now a
-       STATEMENT in the Emergency Vet Authorization, not a choice the client makes.
-       Leaving it counted here made every horse permanently "partially complete",
-       with staff invited to chase a field the form no longer has. */
-    ['location', answered(rec.current_location) || rec.current_location_id != null || rec.home_location_id != null],
-  ];
-  for (const [key, ok] of checks) {
-    if (ok) done += 1;
-    else missing.push(HORSE_DOC_REQUIRED_LABELS[key] ?? key);
-  }
-  // "Name" alone is structural (the record can't exist without one) — a record
-  // with nothing else answered reads as not started.
-  const state: HorseRecordCompleteness['state'] =
-    missing.length === 0 ? 'complete' : done <= 1 ? 'not_started' : 'partial';
-  return { state, missing, answered: done, total: checks.length };
+  const hasName = answered(rec.nickname) || answered(rec.registered_name);
+  return { state: hasName ? 'complete' : 'not_started', missing: hasName ? [] : ['Nickname'], answered: hasName ? 1 : 0, total: 1 };
 }
 
 /** RAW intake columns straight off the horses row (codes, not display names) —

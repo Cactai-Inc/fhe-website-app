@@ -265,11 +265,8 @@ export function ClientHorseRecordsCard({ contactId }: { contactId: string }) {
         {horses.map((h) => {
           const c = horseRecordCompleteness(h);
           const name = String(h.nickname || h.registered_name || 'Horse');
-          const badge = c.state === 'complete' ? 'Complete'
-            : c.state === 'partial' ? `Partially complete (${c.answered}/${c.total})`
-            : 'Not started';
-          const badgeCls = c.state === 'complete' ? 'bg-green-800 text-white'
-            : c.state === 'partial' ? 'bg-gold-600 text-white' : 'bg-cream-100 text-secondary';
+          const badge = c.state === 'complete' ? 'On file' : 'Not started';
+          const badgeCls = c.state === 'complete' ? 'bg-green-800 text-white' : 'bg-cream-100 text-secondary';
           const task = taskSent[h.id];
           return (
             <div key={h.id} className="border border-green-800/10 rounded-lg px-3 py-2.5">

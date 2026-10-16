@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { fromHere } from '../../lib/linkOrigin';
-import { FileText, CalendarDays, ClipboardList, PencilLine, Trash2, Activity } from 'lucide-react';
+import { FileText, CalendarDays, ClipboardList, PencilLine, Trash2, Activity, History } from 'lucide-react';
 import { useDocumentTitle } from '../../lib/hooks';
-import { horsePageDetail, deleteStableHorse, updateHorseRecord, type HorsePageDetail } from '../../lib/horses';
+import {
+  horsePageDetail, deleteStableHorse, updateHorseRecord, endHorseProvider, endHorseLease,
+  HORSE_FIELD_LABELS,
+  type HorsePageDetail, type HorseProvider,
+} from '../../lib/horses';
 import { listHorseBreeds, listHorseColors } from '../../lib/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { horseDeals, DEAL_TYPE_LABEL, type DealRow } from '../../lib/deals';
 import { usePropertyTerm } from '../../contexts/BrandProvider';
 import { withArticle } from '../../lib/propertyTerm';
@@ -39,11 +44,47 @@ function Detail({ label, value }: { label: string; value?: string | number | nul
   );
 }
 
-function composeLocation(loc: HorsePageDetail['record']['home_location'], barn?: string | null, stall?: string | null) {
+/** A labeled value that also shows a "Needs update" badge when the field is pending.
+ *  Unlike Detail, it renders even when empty IF pending, so the gap is visible. */
+function DetailP({ label, value, pending }: { label: string; value?: string | number | null; pending?: boolean }) {
+  const v = value === 0 ? '0' : value;
+  const empty = v === null || v === undefined || v === '';
+  if (empty && !pending) return null;
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wide text-muted mb-0.5">
+        {label}{pending && <span className="ml-2 text-gold-800 normal-case">Needs update</span>}
+      </p>
+      <p className="text-sm text-green-900">{empty ? '—' : String(v)}</p>
+    </div>
+  );
+}
+
+/** A narrative list rendered as a labeled bulleted block; hidden when empty. */
+function ListDetail({ label, items, field }: { label: string; items: Record<string, string>[]; field: string }) {
+  const vals = items.map((e) => e[field]).filter(Boolean);
+  if (vals.length === 0) return null;
+  return (
+    <div className="sm:col-span-2">
+      <p className="text-[10px] uppercase tracking-wide text-muted mb-0.5">{label}</p>
+      <ul className="flex flex-col gap-1">{vals.map((v, i) => <li key={i} className="text-sm text-green-900">{v}</li>)}</ul>
+    </div>
+  );
+}
+
+function composeLocation(loc: HorsePageDetail['record']['current_location']) {
   if (!loc?.name) return null;
   const addr = [loc.address_line1, loc.city, [loc.state, loc.postal].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-  const bs = [barn, stall].filter(Boolean).join(' · ');
-  return [loc.name, addr, bs].filter(Boolean).join(' — ');
+  const spots = (loc.keeping_spots ?? []).map((s) => `${s.term} ${s.value}`.trim()).filter(Boolean).join(' · ');
+  return [loc.name, addr, spots].filter(Boolean).join(' — ');
+}
+
+const PROVIDER_LABEL: Record<HorseProvider['type'], string> = {
+  VET: 'Veterinarian', FARRIER: 'Farrier', TRAINER: 'Trainer', GROOM: 'Groom',
+  CARE_GIVER: 'Care giver', EMERGENCY_CONTACT: 'Emergency contact', OTHER: 'Other',
+};
+function providerLine(p: HorseProvider): string {
+  return [p.name, p.business_name, p.phone, p.email].filter(Boolean).join(' · ');
 }
 
 export default function HorsePage() {
@@ -51,12 +92,15 @@ export default function HorsePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const propertyTerm = usePropertyTerm();
+  const { isStaff } = useAuth();
   const [detail, setDetail] = useState<HorsePageDetail | null>(null);
   const [deals, setDeals] = useState<Pick<DealRow, 'id' | 'display_code' | 'deal_type' | 'status' | 'created_at'>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('record');
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [showProviderHistory, setShowProviderHistory] = useState(false);
+  const [showLocationHistory, setShowLocationHistory] = useState(false);
 
   useDocumentTitle(detail?.record.nickname || detail?.record.registered_name || 'Horse');
 
@@ -85,6 +129,16 @@ export default function HorsePage() {
     setBusy(true);
     try { await deleteStableHorse(horseId); navigate('/app/account'); }
     catch (e) { setError(toErrorMessage(e, 'Could not remove the horse.')); setBusy(false); }
+  }
+
+  async function onEndProvider(id: string) {
+    if (!window.confirm('End this provider? It stays in the history, dated today.')) return;
+    try { await endHorseProvider(id); await load(); } catch (e) { setError(toErrorMessage(e, 'Could not end the provider.')); }
+  }
+  async function onEndLease() {
+    if (!horseId) return;
+    if (!window.confirm('End this lease? The lessee comes off the record (kept in history) and ownership reverts. Review the providers and location afterward.')) return;
+    try { await endHorseLease(horseId); await load(); } catch (e) { setError(toErrorMessage(e, 'Could not end the lease.')); }
   }
 
   if (error) return <div className="max-w-3xl mx-auto"><p role="alert" className="form-error">{error}</p></div>;
@@ -150,65 +204,107 @@ export default function HorsePage() {
 
           {tab === 'record' && (
             <div className="flex flex-col gap-5">
+              {(r.pending_fields?.length ?? 0) > 0 && (
+                <div className="rounded-xl border border-gold-400/60 bg-gold-50 p-4">
+                  <p className="text-[11px] tracking-wide uppercase text-gold-900 font-semibold mb-1">Pending information</p>
+                  <p className="text-sm text-gold-900/90">These fields were marked to add later and still need an update: {r.pending_fields.map((k) => HORSE_FIELD_LABELS[k] ?? k).join(', ')}.</p>
+                </div>
+              )}
+
               <Card title="Identity">
-                <Detail label="Nickname" value={r.nickname} />
-                <Detail label="Registered name" value={r.registered_name} />
-                <Detail label="Breed" value={r.breed} />
-                <Detail label="Color" value={r.color} />
-                <Detail label="Markings" value={r.markings} />
-                <Detail label="Sex" value={titleCase(r.sex)} />
-                <Detail label="Date of birth" value={fmtDate(r.date_of_birth)} />
-                <Detail label="Height" value={r.height} />
-                <Detail label="Registration #" value={r.registration_number} />
-                <Detail label="Registration org" value={r.registration_org} />
-                <Detail label="Microchip" value={r.microchip_id} />
-                <Detail label="Passport #" value={r.passport_number} />
-                <Detail label="Passport country" value={r.passport_country} />
-                <Detail label="Fair market value" value={r.fair_market_value != null ? `$${Number(r.fair_market_value).toLocaleString()}` : null} />
+                <DetailP label="Nickname" value={r.nickname} />
+                <DetailP label="Name on Registration Certificate" value={r.registered_name} pending={r.pending_fields?.includes('registered_name')} />
+                <DetailP label="Breed" value={r.breed} />
+                <DetailP label="Color" value={r.color} />
+                <DetailP label="Markings" value={r.markings} pending={r.pending_fields?.includes('markings')} />
+                <DetailP label="Sex" value={titleCase(r.sex)} />
+                <DetailP label="Date of birth" value={fmtDate(r.date_of_birth)} pending={r.pending_fields?.includes('date_of_birth')} />
+                <DetailP label="Height" value={r.height} />
+                <DetailP label="Registration #" value={r.registration_number} pending={r.pending_fields?.includes('registration_number')} />
+                <DetailP label="Registration org" value={r.registration_org} />
+                <DetailP label="Microchip" value={r.microchip_id} pending={r.pending_fields?.includes('microchip_id')} />
+                <DetailP label="Passport #" value={r.passport_number} pending={r.pending_fields?.includes('passport_number')} />
+                <DetailP label="Passport country" value={r.passport_country} />
+                <DetailP label="Fair market value" value={r.fair_market_value != null ? `$${Number(r.fair_market_value).toLocaleString()}` : null} pending={r.pending_fields?.includes('fair_market_value')} />
               </Card>
 
               <Card title="Location">
-                <Detail label="Home" value={composeLocation(r.home_location, r.home_barn, r.home_stall)} />
-                <Detail label="Currently at" value={composeLocation(r.current_location, r.current_barn, r.current_stall)} />
+                <Detail label="Currently at" value={composeLocation(r.current_location)} />
+                {r.current_location?.notes && <Detail label="Finding it" value={r.current_location.notes} />}
                 <Detail label="Owner" value={r.owner_name} />
                 {r.lessee_name && (
-                  /* CLOSEOUT §1.4: no end date = evergreen (until terminated),
-                     stated rather than silently omitted. */
                   detail.viewer_is_lessee
                     ? <Detail label="Your lease" value={`You lease this horse${r.lease_end ? ` through ${fmtDate(r.lease_end)}` : ' — evergreen (until terminated)'}`} />
                     : <Detail label="Leased to" value={`${r.lessee_name}${r.lease_end ? ` (through ${fmtDate(r.lease_end)})` : ' — evergreen (until terminated)'}`} />
                 )}
+                {detail.location_history.length > 0 && (
+                  <div className="sm:col-span-2">
+                    <button type="button" onClick={() => setShowLocationHistory((v) => !v)} className="inline-flex items-center gap-1 text-xs text-gold-800 underline">
+                      <History size={12} /> {showLocationHistory ? 'Hide' : 'View'} previous locations
+                    </button>
+                    {showLocationHistory && (
+                      <ul className="mt-2 flex flex-col gap-1">
+                        {detail.location_history.map((h) => (
+                          <li key={h.id} className="text-[13px] text-secondary">
+                            {[h.name, h.address_line1, h.city].filter(Boolean).join(', ')}
+                            <span className="text-muted"> — until {fmtDate(h.end_on)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+                {isStaff && r.lessee_name && (
+                  <div className="sm:col-span-2">
+                    <button type="button" onClick={() => void onEndLease()} className="text-xs text-red-700 hover:bg-red-50 rounded px-3 py-1.5 focus-ring">End lease</button>
+                  </div>
+                )}
               </Card>
 
               {detail.lease && (
-                /* A12: schedule captured in the executed lease document, read through at
-                   display time — not stamped on the horse. Absent when no lease is active. */
                 <Card title="Lease" full>
                   {detail.viewer_is_lessee
                     ? <Detail label="Term" value={`You lease this horse${detail.lease.lease_end ? ` through ${fmtDate(detail.lease.lease_end)}` : ' — evergreen (until terminated)'}`} />
                     : <Detail label="Term" value={`Leased to ${detail.lease.lessee_name}${detail.lease.lease_end ? ` (through ${fmtDate(detail.lease.lease_end)})` : ' — evergreen (until terminated)'}`} />}
                   <Detail label="Lease type" value={titleCase(detail.lease.lease_type)} />
-                  {detail.lease.days_used && (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wide text-muted mb-0.5">Reserved days</p>
-                      <p className="text-sm text-green-900 whitespace-pre-line">{detail.lease.days_used}</p>
-                    </div>
-                  )}
-                  {detail.lease.schedule_terms && (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wide text-muted mb-0.5">Additional schedule terms</p>
-                      <p className="text-sm text-green-900 whitespace-pre-line">{detail.lease.schedule_terms}</p>
-                    </div>
-                  )}
+                  {detail.lease.days_used && (<div><p className="text-[10px] uppercase tracking-wide text-muted mb-0.5">Reserved days</p><p className="text-sm text-green-900 whitespace-pre-line">{detail.lease.days_used}</p></div>)}
+                  {detail.lease.schedule_terms && (<div><p className="text-[10px] uppercase tracking-wide text-muted mb-0.5">Additional schedule terms</p><p className="text-sm text-green-900 whitespace-pre-line">{detail.lease.schedule_terms}</p></div>)}
                 </Card>
               )}
 
-              <Card title="Care team">
-                <Detail label="Veterinarian" value={[r.vet_name, r.vet_business_name, r.vet_phone].filter(Boolean).join(' · ')} />
-                <Detail label="Farrier" value={[r.farrier_name, r.farrier_phone].filter(Boolean).join(' · ')} />
-                <Detail label="Trainer" value={r.home_trainer} />
-                <Detail label="Care giver" value={r.home_care_giver} />
-                <Detail label="Groom" value={r.home_groom} />
+              <Card title="Current providers" full>
+                {detail.providers.length === 0 && <p className="text-sm text-muted">No providers on file yet.</p>}
+                {detail.providers.map((p) => (
+                  <div key={p.id} className="flex items-start justify-between gap-3 border-b border-green-800/5 pb-2 last:border-0">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-muted mb-0.5">
+                        {PROVIDER_LABEL[p.type]}{p.role_label ? ` — ${p.role_label}` : p.role ? ` — ${p.role}` : ''}
+                        {!p.linked && p.type !== 'OTHER' && <span className="ml-2 text-gold-800">Unlinked</span>}
+                      </p>
+                      <p className="text-sm text-green-900">{providerLine(p) || '—'}</p>
+                    </div>
+                    {isStaff && (
+                      <button type="button" onClick={() => void onEndProvider(p.id)} className="text-[11px] text-muted hover:text-red-700 underline shrink-0 mt-1">End</button>
+                    )}
+                  </div>
+                ))}
+                {detail.provider_history.length > 0 && (
+                  <div className="sm:col-span-2">
+                    <button type="button" onClick={() => setShowProviderHistory((v) => !v)} className="inline-flex items-center gap-1 text-xs text-gold-800 underline">
+                      <History size={12} /> {showProviderHistory ? 'Hide' : 'View'} provider history
+                    </button>
+                    {showProviderHistory && (
+                      <ul className="mt-2 flex flex-col gap-1">
+                        {detail.provider_history.map((p) => (
+                          <li key={p.id} className="text-[13px] text-secondary">
+                            {PROVIDER_LABEL[p.type]}: {providerLine(p)}
+                            <span className="text-muted"> — ended {fmtDate(p.ended_at)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </Card>
 
               {(meds.length > 0 || supplements.length > 0) && (
@@ -218,13 +314,25 @@ export default function HorsePage() {
                 </Card>
               )}
 
-              {(r.medical_history || r.behavioral_history || r.known_conditions || r.training_history || r.competition_history) && (
+              {(r.medical_history_list.length > 0 || r.behavioral_history_list.length > 0 || r.known_conditions_list.length > 0 || r.training_history_list.length > 0 || r.competition_history_list.length > 0 || r.injuries_to_humans.length > 0) && (
                 <Card title="Health & history" full>
-                  <Detail label="Medical history" value={r.medical_history} />
-                  <Detail label="Behavioral concerns" value={r.behavioral_history} />
-                  <Detail label="Known conditions" value={r.known_conditions} />
-                  <Detail label="Training history" value={r.training_history} />
-                  <Detail label="Competition history" value={r.competition_history} />
+                  <ListDetail label="Medical history" items={r.medical_history_list} field="summary" />
+                  <ListDetail label="Behavioral concerns" items={r.behavioral_history_list} field="concern" />
+                  <ListDetail label="Known conditions" items={r.known_conditions_list} field="condition" />
+                  <ListDetail label="Training history" items={r.training_history_list} field="entry" />
+                  <ListDetail label="Competition history" items={r.competition_history_list} field="entry" />
+                  {r.injuries_to_humans.length > 0 && (
+                    <div className="sm:col-span-2">
+                      <p className="text-[10px] uppercase tracking-wide text-muted mb-0.5">Injuries caused to humans</p>
+                      <ul className="flex flex-col gap-1">
+                        {r.injuries_to_humans.map((inj, i) => (
+                          <li key={i} className="text-sm text-green-900">
+                            {[inj.date, inj.person_type ? `(${inj.person_type})` : null, inj.description, inj.outcome ? `— ${inj.outcome}` : null].filter(Boolean).join(' ')}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </Card>
               )}
             </div>
@@ -425,7 +533,7 @@ const RECORD_INPUT = 'w-full px-3 py-2 rounded-lg border border-green-800/15 tex
  *  backed by; absent means free text. */
 const TEXT_FIELDS: { k: string; label: string; area?: boolean; opts?: 'breeds' | 'colors' }[] = [
   { k: 'nickname', label: 'Nickname' },
-  { k: 'registered_name', label: 'Full Name (registered name, if registered)' },
+  { k: 'registered_name', label: 'Name on Registration Certificate' },
   { k: 'breed', label: 'Breed', opts: 'breeds' },
   { k: 'color', label: 'Color', opts: 'colors' },
   { k: 'markings', label: 'Markings', area: true },
@@ -437,15 +545,6 @@ const TEXT_FIELDS: { k: string; label: string; area?: boolean; opts?: 'breeds' |
   { k: 'microchip_id', label: 'Microchip' },
   { k: 'passport_number', label: 'Passport #' },
   { k: 'passport_country', label: 'Passport country' },
-  { k: 'vet_name', label: 'Veterinarian' },
-  { k: 'vet_phone', label: 'Vet phone' },
-  { k: 'farrier_name', label: 'Farrier' },
-  { k: 'farrier_phone', label: 'Farrier phone' },
-  { k: 'medical_history', label: 'Medical history', area: true },
-  { k: 'behavioral_history', label: 'Behavioral concerns', area: true },
-  { k: 'known_conditions', label: 'Known conditions', area: true },
-  { k: 'training_history', label: 'Training history', area: true },
-  { k: 'competition_history', label: 'Competition history', area: true },
 ];
 
 function RecordEditor({
@@ -464,11 +563,6 @@ function RecordEditor({
     microchip_id: record.microchip_id ?? '', passport_number: record.passport_number ?? '',
     passport_country: record.passport_country ?? '',
     fair_market_value: record.fair_market_value != null ? String(record.fair_market_value) : '',
-    vet_name: record.vet_name ?? '', vet_phone: record.vet_phone ?? '',
-    farrier_name: record.farrier_name ?? '', farrier_phone: record.farrier_phone ?? '',
-    medical_history: record.medical_history ?? '', behavioral_history: record.behavioral_history ?? '',
-    known_conditions: record.known_conditions ?? '', training_history: record.training_history ?? '',
-    competition_history: record.competition_history ?? '',
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -519,7 +613,7 @@ function RecordEditor({
         <h2 className="font-serif text-green-800 text-lg">Edit record</h2>
         <button type="button" onClick={onCancel} className="text-xs text-muted underline">Cancel</button>
       </div>
-      <p className="text-[12px] text-muted mb-4">Location, medications, and lease are edited from their own sections.</p>
+      <p className="text-[12px] text-muted mb-4">Location, care providers, medications, histories, and the lease are edited from their own sections on the record.</p>
       {err && <p role="alert" className="form-error mb-3">{err}</p>}
       <div className="grid sm:grid-cols-2 gap-3">
         {TEXT_FIELDS.map((fd) => (fd.opts

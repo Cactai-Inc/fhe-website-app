@@ -3,37 +3,30 @@ import { Loader2, ShieldQuestion } from 'lucide-react';
 import {
   createHorseRecord, setHorseLocations, setHorseMedications,
   getHorseIntakeRecord, updateHorseRecord, horsePageDetail, listHorseMedications,
-  HORSE_DOC_REQUIRED_KEYS, HORSE_DOC_REQUIRED_LABELS, HORSE_SENTINEL_UNSAFE_KEYS, errorText,
+  errorText,
   type HorseIntakePayload, type HorseRecordOutcome, type HorseLocationDetail, type HorseMedication,
-  type KeepingSpot, type HorseVaccination,
+  type KeepingSpot, type HorseVaccination, type NarrativeEntry, type InjuryEntry,
 } from '../../lib/horses';
-import { staffContactDirectory } from '../../lib/api';
 import { uploadMyFile, type FileRow } from '../../lib/files';
 import {
   fetchLocations, fetchContactLocations,
   type CalendarLocation,
 } from '../../lib/ops/api-calendar';
-import { listHorseBreeds, listHorseColors, listLookupOptions, addLookupValue } from '../../lib/api';
+import { listHorseBreeds, listHorseColors, addLookupValue, listLookupOptions } from '../../lib/api';
 import { adminClientAccounts, type ClientAccountRow } from '../../lib/admin';
 import { useFieldNormalizer } from '../../lib/formState';
 import type { NormalizeKind } from '../../lib/normalize';
 import { useAuth } from '../../contexts/AuthContext';
-import { usePropertyTerm } from '../../contexts/BrandProvider';
-import { withArticle } from '../../lib/propertyTerm';
 import type { LookupCode } from '../../lib/ops/types';
 
 /**
  * HORSE RECORD INTAKE — the standardized form, the matched pair to the record and
  * the source of every {{HORSE.*}} on the vet-auth / care-release / lease docs.
  *
- * Owner rule: EVERY field must be answered — either filled in or explicitly
- * marked "N/A" (a horse genuinely may have no microchip, registration, meds…),
- * so a legal document never renders a silently-blank field. Each field carries an
- * N/A toggle; submit is blocked until all applicable fields are answered.
- *
- * ONE creation path: create_horse_record. A client's record binds to their own
- * account; STAFF pick the owning client via the in-form "Assign to account" picker
- * (create_horse_record honors owner_contact_id for staff only).
+ * Only a NICKNAME is required to create a record. Everything else is optional; a
+ * field left empty, or marked "Add later", is supplied later and prints
+ * "To be provided" in a contract that needs it. Care providers (vet, farrier,
+ * trainer, groom, care giver, emergency contact) are managed on the record itself.
  */
 
 const input = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100 disabled:text-muted';
@@ -49,13 +42,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-/** A required field with an N/A escape. When N/A is checked the control disables
- *  and the value becomes the sentinel "N/A" (a conscious answer, not a blank).
- *  `required` marks the label with the trailing asterisk this form already uses
- *  on the staff account picker — the owner asked for required to be visible
- *  BEFORE a failed save, not only after it. */
+/** A field with an optional N/A escape and an optional "Add later" flag. N/A marks
+ *  the field genuinely absent (stored as the sentinel); Add later marks it pending —
+ *  present but not yet supplied. Both disable the control. */
 function Field({
-  label, value, onChange, type = 'text', placeholder, options, span, textarea, showError, required, inputMode, onBlurFormat,
+  label, value, onChange, type = 'text', placeholder, options, span, textarea, inputMode, onBlurFormat,
+  na: naEnabled, addLater, pending, onPending,
 }: {
   label: string;
   value?: string;
@@ -65,171 +57,113 @@ function Field({
   options?: { value: string; label: string }[];
   span?: boolean;
   textarea?: boolean;
-  showError?: boolean;
-  required?: boolean;
   inputMode?: 'numeric' | 'tel' | 'email' | 'url' | 'text';
-  /** normalize the value on blur (e.g. currency) — returns the display string. */
   onBlurFormat?: (v: string) => string;
+  /** show an N/A checkbox */
+  na?: boolean;
+  /** show an "Add later" checkbox, tracked by `pending`/`onPending` */
+  addLater?: boolean;
+  pending?: boolean;
+  onPending?: (on: boolean) => void;
 }) {
   const na = value === NA;
-  const answered = na || filled(value);
-  const cls = `${input}${showError && !answered ? ' border-red-400' : ''}`;
+  const disabled = na || !!pending;
   return (
     <div className={span ? 'sm:col-span-2' : ''}>
-      <div className="flex items-center justify-between mb-1">
-        <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">{label}{required ? ' *' : ''}</label>
-        <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
-          <input type="checkbox" checked={na} onChange={(e) => onChange(e.target.checked ? NA : '')} /> N/A
-        </label>
+      <div className="flex items-center justify-between mb-1 gap-2">
+        <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">{label}</label>
+        <div className="flex items-center gap-2">
+          {addLater && (
+            <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
+              <input type="checkbox" checked={!!pending} onChange={(e) => { onPending?.(e.target.checked); if (e.target.checked && na) onChange(''); }} /> Add later
+            </label>
+          )}
+          {naEnabled && (
+            <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
+              <input type="checkbox" checked={na} onChange={(e) => { onChange(e.target.checked ? NA : ''); if (e.target.checked) onPending?.(false); }} /> N/A
+            </label>
+          )}
+        </div>
       </div>
       {options ? (
-        <select className={cls} disabled={na} value={na ? '' : (value ?? '')} onChange={(e) => onChange(e.target.value)}>
+        <select className={input} disabled={disabled} value={na ? '' : (value ?? '')} onChange={(e) => onChange(e.target.value)}>
           <option value="">Select…</option>
           {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       ) : textarea ? (
-        <textarea rows={2} className={`${cls} resize-y max-h-40`} disabled={na} value={na ? '' : (value ?? '')} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+        <textarea rows={2} className={`${input} resize-y max-h-40`} disabled={disabled} value={na ? '' : (value ?? '')} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
       ) : (
-        <input type={type} inputMode={inputMode} className={cls} disabled={na} value={na ? '' : (value ?? '')} placeholder={placeholder}
+        <input type={type} inputMode={inputMode} className={input} disabled={disabled} value={na ? '' : (value ?? '')} placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlurFormat ? (e) => { const out = onBlurFormat(e.target.value); if (out !== e.target.value) onChange(out); } : undefined} />
       )}
+      {pending && <p className="text-[10px] text-gold-800 mt-1">Marked to add later — this prints “To be provided” until filled in.</p>}
     </div>
   );
 }
 
 const OTHER = '__other__';
 
-/** Splice a just-added menu value into a loaded vocabulary, alphabetically, without
- *  re-reading the whole list — and never twice, since `add_lookup_value` returns the
- *  EXISTING code when the value was already there. */
 function addOpt(prev: LookupCode[], o: { value: string; label: string }): LookupCode[] {
   if (prev.some((x) => x.code === o.value)) return prev;
   const next = [...prev, { code: o.value, display_name: o.label, active: true, sort_order: 900 }];
   return next.sort((a, b) => a.display_name.localeCompare(b.display_name));
 }
 
-/* THE SAME ANTI-PATTERN THAT BROKE THE HORSE RECORD EDITOR (HorsePage.tsx), found
-   by the 2026-08-25 sweep. Three identical copies of this label wrapper were
-   defined INSIDE three component bodies, so each render minted a new component
-   type and React threw the <label> DOM away and rebuilt it.
-
-   ⚠️ Here it was NOT stealing focus, and the honest reason is position, not
-   design: these wrap the LABEL, and the <input> is its SIBLING —
-   `<div><L>Name</L><input/></div>` — so React remounted the label and left the
-   input alone. In `RecordEditor` the input was INSIDE the regenerated component,
-   which is why that one ate every keystroke. One stable module-level definition
-   fixes the waste here and removes the trap for whoever edits this file next. */
 function L({ children }: { children: React.ReactNode }) {
   return <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{children}</label>;
 }
 
-/** HEIGHT IN HANDS — a closed UNIT vocabulary, generated, not configured.
- *  A hand is four inches, so the only valid fractions are .0–.3 and the practical
- *  range for a horse or pony is 8–19 hands. Free text produced "16.2hh",
- *  "16.2 hands", "16'2" and "1.68m" for one fact; a list makes the stored value
- *  canonical without needing a lookup table (nothing here is a tenant's to edit —
- *  see D13 — so it deliberately does NOT become a fourth `lookup_options` key). */
+/** HEIGHT IN HANDS — a closed unit vocabulary, generated. A hand is four inches, so
+ *  the only valid fractions are .0–.3 and the practical range is 8–19 hands. */
 const HEIGHT_OPTIONS: { value: string; label: string }[] = (() => {
   const out: { value: string; label: string }[] = [];
-  for (let h = 8; h <= 19; h += 1) {
-    for (let i = 0; i <= 3; i += 1) {
-      const v = `${h}.${i} hh`;
-      out.push({ value: v, label: v });
-    }
-  }
+  for (let h = 8; h <= 19; h += 1) for (let i = 0; i <= 3; i += 1) { const v = `${h}.${i} hh`; out.push({ value: v, label: v }); }
   return out;
 })();
 
-/** SELECT-OR-OTHER: a dropdown of known options plus an "Other" escape that reveals
- *  a free-text box.
- *
- *  ⚠️ TYPING AN "OTHER" VALUE NOW ADDS IT TO THE MENU (owner, 2026-08-25), rather
- *  than queueing a suggestion for someone to promote later. It used to store the
- *  typed TEXT and file a `lookup_suggestion` — and for breed and colour that text
- *  could not be stored at all, because those columns are foreign keys to their
- *  lookup tables: the FK rejected the patch, the save failed, and the contract had
- *  nothing to import. (The `invalid` prop below exists to colour that failure red;
- *  it is now unreachable for a promoted value.)
- *
- *  `addLookupValue` returns the CODE, which is what goes in the field, so the value
- *  saves and the document prints it. Existing entries match case-insensitively, so
- *  this adds nothing when the value is already on the list. The review queue is not
- *  gone — it still exists for anything added this way, marked settled. */
+/** SELECT-OR-OTHER: a dropdown of known options plus an "Other" escape revealing a
+ *  free-text box. Typing an "Other" value adds it to the vocabulary and keeps the
+ *  code, so the record's foreign key accepts it and documents print it. */
 function SelectOrOther({
-  label, value, onChange, options, lookupKey, onOptionAdded, placeholder, span, showError, required, invalid, hint,
+  label, value, onChange, options, lookupKey, onOptionAdded, placeholder, span, invalid, hint,
 }: {
   label: string;
   value?: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
-  /** The vocabulary an "Other" entry is ADDED TO. OMITTED for a generated unit
-   *  list (height in hands) — there is no tenant vocabulary behind it, so there is
-   *  nothing to add to, and the typed value is simply stored. */
   lookupKey?: string;
-  /** Told when a value was added, so the caller can put it in the dropdown without
-   *  re-reading the whole vocabulary. */
   onOptionAdded?: (o: { value: string; label: string }) => void;
   placeholder?: string;
   span?: boolean;
-  showError?: boolean;
-  required?: boolean;
-  /** Answered, but with a value this field cannot store (a typed-in code that
-   *  isn't in the vocabulary) — marked like an unanswered required field. */
   invalid?: boolean;
   hint?: string;
 }) {
-  // Vocabularies that define a NONE code (passport country, registration org,
-  // markings) get the code, not the 'N/A' sentinel — the backend resolves NONE
-  // to its display text ("No passport", "Not registered") while a raw 'N/A'
-  // can only ever render as the literal sentinel.
-  const hasNone = options.some((o) => o.value === 'NONE');
-  const naStored = hasNone ? 'NONE' : NA;
-  const na = value === NA || (hasNone && value === 'NONE');
-  const isKnown = !!value && value !== NA && options.some((o) => o.value === value);
-  const isOther = !na && !!value && value !== NA && !isKnown;
+  const isKnown = !!value && options.some((o) => o.value === value);
+  const isOther = !!value && !isKnown;
   const [otherOpen, setOtherOpen] = useState(isOther);
-  const answered = na || filled(value);
-  const cls = `${input}${(showError && !answered) || invalid ? ' border-red-400' : ''}`;
-
-  const selectValue = na ? '' : otherOpen || isOther ? OTHER : (isKnown ? value : '');
+  const cls = `${input}${invalid ? ' border-red-400' : ''}`;
+  const selectValue = otherOpen || isOther ? OTHER : (isKnown ? value : '');
   return (
     <div className={span ? 'sm:col-span-2' : ''}>
-      <div className="flex items-center justify-between mb-1">
-        <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">{label}{required ? ' *' : ''}</label>
-        <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
-          <input type="checkbox" checked={na} onChange={(e) => { setOtherOpen(false); onChange(e.target.checked ? naStored : ''); }} /> N/A
-        </label>
-      </div>
-      <select className={cls} disabled={na} value={selectValue}
+      <L>{label}</L>
+      <select className={cls} value={selectValue}
         onChange={(e) => {
           if (e.target.value === OTHER) { setOtherOpen(true); onChange(''); }
           else { setOtherOpen(false); onChange(e.target.value); }
         }}>
         <option value="">Select…</option>
-        {/* Owner, 2026-08-25: the escape sits HIGH, not buried under a long
-            alphabetical list. The stored "Other / Crossbred" breed that used to
-            appear alongside it — the second "Other" — is switched off in the data. */}
         <option value={OTHER}>Other (enter manually)…</option>
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
-      {(otherOpen || isOther) && !na && (
-        <input className={`${cls} mt-1.5`} disabled={na} value={isKnown ? '' : (value ?? '')} placeholder={placeholder ?? 'Type the value'}
+      {(otherOpen || isOther) && (
+        <input className={`${cls} mt-1.5`} value={isKnown ? '' : (value ?? '')} placeholder={placeholder ?? 'Type the value'}
           onChange={(e) => onChange(e.target.value)}
           onBlur={(e) => {
             const v = e.target.value.trim();
             if (!v || !lookupKey) return;
-            /* Add it to the vocabulary and keep the CODE, not the text — the code
-               is what the record's foreign key will accept. Failure is swallowed
-               and the typed text is left in place: for a free-text vocabulary that
-               still saves, and for a key-constrained one the field's own `invalid`
-               state already says so. Nothing here may block the form. */
             void addLookupValue(lookupKey, v)
-              .then((r) => {
-                onOptionAdded?.({ value: r.code, label: r.display_name });
-                onChange(r.code);
-                setOtherOpen(false);
-              })
+              .then((r) => { onOptionAdded?.({ value: r.code, label: r.display_name }); onChange(r.code); setOtherOpen(false); })
               .catch(() => {});
           }} />
       )}
@@ -238,135 +172,11 @@ function SelectOrOther({
   );
 }
 
-/** PERSON BLOCK: a contact grouped as one structured unit — a name plus a second
- *  typed part (phone or email) — instead of two loose fields. Writes each part to its
- *  own underlying field (the columns stay separate); the grouping is what makes it read
- *  and behave as a single reusable contact. Shared N/A marks the whole contact absent. */
-function PersonBlock({
-  title, name, second, showError, span = true,
-}: {
-  title: string;
-  name: { label: string; value?: string; onChange: (v: string) => void; placeholder?: string; required?: boolean };
-  /** `required` — the second part is its own required answer (the farrier's phone
-   *  is a document-merged token). Without it the field could never turn red, so a
-   *  failed save named a problem with nothing on screen to point at. */
-  second: { label: string; kind: 'tel' | 'email'; value?: string; onChange: (v: string) => void; placeholder?: string; required?: boolean };
-  showError?: boolean;
-  span?: boolean;
-}) {
-  // N/A applies to the whole block: both parts become the sentinel together.
-  const na = name.value === NA && second.value === NA;
-  const answered = na || filled(name.value);
-  const secondAnswered = na || second.value === NA || filled(second.value);
-  const setNa = (on: boolean) => { name.onChange(on ? NA : ''); second.onChange(on ? NA : ''); };
-  const cls = (bad: boolean) => `${input}${showError && bad ? ' border-red-400' : ''}`;
-  const normalize = useFieldNormalizer();
-  return (
-    <div className={`${span ? 'sm:col-span-2' : ''} rounded-lg border border-green-800/10 p-3`}>
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] tracking-wide uppercase text-muted font-semibold">{title}</p>
-        <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
-          <input type="checkbox" checked={na} onChange={(e) => setNa(e.target.checked)} /> N/A
-        </label>
-      </div>
-      <div className="grid sm:grid-cols-2 gap-2">
-        <div>
-          <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{name.label}{name.required ? ' *' : ''}</label>
-          <input className={cls(!answered)} disabled={na} value={na ? '' : (name.value ?? '')} placeholder={name.placeholder}
-            onChange={(e) => name.onChange(e.target.value)}
-            onBlur={normalize(`${title}-name`, 'name', name.value ?? '', name.onChange)} />
-        </div>
-        <div>
-          <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">{second.label}{second.required ? ' *' : ''}</label>
-          <input type={second.kind} inputMode={second.kind} className={cls(!!second.required && !secondAnswered)} disabled={na}
-            value={na ? '' : (second.value ?? '')} placeholder={second.placeholder}
-            onChange={(e) => second.onChange(e.target.value)}
-            onBlur={normalize(`${title}-second`, second.kind === 'tel' ? 'phone' : 'email', second.value ?? '', second.onChange)} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** VET BLOCK: the veterinarian as a fuller contact — vet/practice name, business
- *  name, phone, and a structured address (street / city / state / ZIP). Each part
- *  writes to its own horses column; the block groups them and shares one N/A. Only
- *  the vet name is required to complete the block. */
-function VetBlock({
-  f, set, showError,
-}: {
-  f: HorseIntakePayload;
-  set: (k: keyof HorseIntakePayload) => (v: string) => void;
-  showError?: boolean;
-}) {
-  const parts: (keyof HorseIntakePayload)[] = ['vet_name', 'vet_phone', 'vet_business_name', 'vet_address_line1', 'vet_city', 'vet_state', 'vet_postal'];
-  const na = parts.every((k) => f[k] === NA);
-  const answered = na || filled(f.vet_name as string | undefined);
-  // The vet's PHONE is a document-merged token, so it is required too — and it
-  // had no error state at all, which is how a failed save could highlight nothing.
-  const phoneAnswered = na || f.vet_phone === NA || filled(f.vet_phone as string | undefined);
-  const setNa = (on: boolean) => parts.forEach((k) => set(k)(on ? NA : ''));
-  const val = (k: keyof HorseIntakePayload) => (na ? '' : ((f[k] as string | undefined) ?? ''));
-  const cls = (bad: boolean) => `${input}${showError && bad ? ' border-red-400' : ''}`;
-  const normalize = useFieldNormalizer();
-  const onBlurNorm = (k: keyof HorseIntakePayload, kind: NormalizeKind) =>
-    normalize(k as string, kind, val(k), set(k));
-  return (
-    <div className="sm:col-span-2 rounded-lg border border-green-800/10 p-3">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] tracking-wide uppercase text-muted font-semibold">Current Veterinarian</p>
-        <label className="flex items-center gap-1 text-[10px] text-muted cursor-pointer select-none">
-          <input type="checkbox" checked={na} onChange={(e) => setNa(e.target.checked)} /> N/A
-        </label>
-      </div>
-      <div className="grid sm:grid-cols-2 gap-2">
-        <div><L>Veterinarian name *</L>
-          <input className={cls(!answered)} disabled={na} value={val('vet_name')} placeholder="Dr. name" onChange={(e) => set('vet_name')(e.target.value)}
-            onBlur={onBlurNorm('vet_name', 'name')} /></div>
-        <div><L>Business / practice name</L>
-          <input className={cls(false)} disabled={na} value={val('vet_business_name')} placeholder="Practice name" onChange={(e) => set('vet_business_name')(e.target.value)}
-            onBlur={onBlurNorm('vet_business_name', 'name')} /></div>
-        <div><L>Phone *</L>
-          <input type="tel" inputMode="tel" className={cls(!phoneAnswered)} disabled={na} value={val('vet_phone')} placeholder="(555) 555-5555" onChange={(e) => set('vet_phone')(e.target.value)}
-            onBlur={onBlurNorm('vet_phone', 'phone')} /></div>
-        <div><L>Street address</L>
-          <input className={cls(false)} disabled={na} value={val('vet_address_line1')} placeholder="123 Barn Rd" onChange={(e) => set('vet_address_line1')(e.target.value)}
-            onBlur={onBlurNorm('vet_address_line1', 'street')} /></div>
-        <div><L>City</L>
-          <input className={cls(false)} disabled={na} value={val('vet_city')} placeholder="San Diego" onChange={(e) => set('vet_city')(e.target.value)}
-            onBlur={onBlurNorm('vet_city', 'city')} /></div>
-        <div className="grid grid-cols-2 gap-2">
-          <div><L>State</L>
-            <input className={cls(false)} disabled={na} value={val('vet_state')} placeholder="CA" onChange={(e) => set('vet_state')(e.target.value)}
-              onBlur={onBlurNorm('vet_state', 'region')} /></div>
-          <div><L>ZIP</L>
-            <input className={cls(false)} inputMode="numeric" disabled={na} value={val('vet_postal')} placeholder="92109" onChange={(e) => set('vet_postal')(e.target.value)}
-              onBlur={onBlurNorm('vet_postal', 'postal')} /></div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** KEEPING-SPOTS VOCABULARY (CR-126, owner). A horse is kept in one or more named
- *  spots on a property; the term is chosen from this fixed list and BECOMES the label
- *  above an empty value input. The old closed Barn/Stable + Stall/Pen pair could not
- *  express a pasture, paddock, or a horse kept in several spots. */
+/** KEEPING-SPOTS — a repeatable term:value list; the chosen term becomes the label
+ *  above an empty value input. */
 const KEEPING_SPOT_TERMS = ['Barn', 'Stable', 'Field', 'Stall', 'Pen', 'Paddock', 'Corral', 'Building'];
-
-/** KEEPING-SPOTS BLOCK (CR-126) — a repeatable term:value list, modelled on the
- *  medications "+ Add" pattern. Starts with a "+ Add location" button; each click
- *  adds one pair — a term SELECT whose chosen term becomes the LABEL above an empty
- *  value input, with a small Remove on each pair. Up to 4 pairs across a row, then
- *  wrap. Persists to home.keeping_spots / current.keeping_spots. */
-function KeepingSpotsBlock({
-  spots, onChange,
-}: {
-  spots: KeepingSpot[];
-  onChange: (spots: KeepingSpot[]) => void;
-}) {
-  const setSpot = (i: number, patch: Partial<KeepingSpot>) =>
-    onChange(spots.map((s, j) => (j === i ? { ...s, ...patch } : s)));
+function KeepingSpotsBlock({ spots, onChange }: { spots: KeepingSpot[]; onChange: (s: KeepingSpot[]) => void }) {
+  const setSpot = (i: number, patch: Partial<KeepingSpot>) => onChange(spots.map((s, j) => (j === i ? { ...s, ...patch } : s)));
   const removeSpot = (i: number) => onChange(spots.filter((_, j) => j !== i));
   const addSpot = () => onChange([...spots, { term: KEEPING_SPOT_TERMS[0], value: '' }]);
   return (
@@ -377,15 +187,11 @@ function KeepingSpotsBlock({
           {spots.map((s, i) => (
             <div key={i} className="rounded-lg border border-green-800/15 p-2 min-w-0">
               <div className="flex items-center justify-between gap-1 mb-1">
-                {/* The chosen term IS the label — a select that reads as the field's
-                    name, sitting above the empty value input it describes. */}
-                <select
-                  className="text-[10px] uppercase tracking-wide text-muted font-semibold bg-transparent focus-ring rounded px-0.5 -ml-0.5 max-w-full"
+                <select className="text-[10px] uppercase tracking-wide text-muted font-semibold bg-transparent focus-ring rounded px-0.5 -ml-0.5 max-w-full"
                   value={s.term} onChange={(e) => setSpot(i, { term: e.target.value })}>
                   {KEEPING_SPOT_TERMS.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
-                <button type="button" onClick={() => removeSpot(i)}
-                  className="text-[10px] text-muted hover:text-red-700 underline shrink-0">Remove</button>
+                <button type="button" onClick={() => removeSpot(i)} className="text-[10px] text-muted hover:text-red-700 underline shrink-0">Remove</button>
               </div>
               <input className={input} value={s.value ?? ''} placeholder={`e.g. ${s.term === 'Stall' || s.term === 'Pen' ? '16' : 'A'}`}
                 onChange={(e) => setSpot(i, { value: e.target.value })} />
@@ -393,162 +199,71 @@ function KeepingSpotsBlock({
           ))}
         </div>
       )}
-      <button type="button" onClick={addSpot}
-        className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">
-        ＋ Add location
-      </button>
+      <button type="button" onClick={addSpot} className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add keeping spot</button>
     </div>
   );
 }
 
-/** CARE-TEAM COMBOBOX (CR-126) — pick-or-type. The first option is always
- *  "Type a name manually" (revealing a free-text input); below it the people from
- *  the staff contact directory. Stores the normalized display name so the value is
- *  matchable for sorting/grouping (the underlying columns are plain text; there is
- *  no contact_id column for these, so a name is the matchable form). Manual entry
- *  always remains available. */
-const CARE_MANUAL = '__manual__';
-function CareTeamCombo({
-  label, value, onChange, people,
+/** LOCATION PICKER — on open shows only the selector. First option "Add new
+ *  location" reveals empty fields; picking a known location fills them, editable.
+ *  If the person edits a known location, a flag is raised so the save step can ask
+ *  whether to update the saved location. */
+function LocationPicker({
+  v, onChange, nameOptions, onEditedKnown,
 }: {
-  label: string;
-  value?: string;
-  onChange: (v: string) => void;
-  people: { id: string; name: string }[];
+  v: HorseLocationDetail;
+  onChange: (v: HorseLocationDetail) => void;
+  nameOptions: { value: string; label: string; address?: string | null; city?: string | null; state?: string | null; postal?: string | null }[];
+  /** called with true when a known location's address is edited */
+  onEditedKnown: (edited: boolean) => void;
 }) {
   const normalize = useFieldNormalizer();
-  const isKnownPerson = !!value && people.some((p) => p.name === value);
-  // Manual whenever there's a value that isn't one of the directory people.
-  const [manual, setManual] = useState(!!value && !isKnownPerson);
-  const selectValue = manual ? CARE_MANUAL : (isKnownPerson ? value : '');
+  const ADD_NEW = '__add_new__';
+  const known = nameOptions.filter((o) => o.value.trim());
+  const isKnown = !!v.name && known.some((o) => o.value === v.name);
+  const [mode, setMode] = useState<'picker' | 'fields'>(() => (filled(v.name) ? 'fields' : 'picker'));
+  const set = (patch: Partial<HorseLocationDetail>) => onChange({ ...v, ...patch });
+  const setAddr = (patch: Partial<HorseLocationDetail>) => { if (isKnown) onEditedKnown(true); set(patch); };
+  const onBlurNorm = (k: keyof HorseLocationDetail, kind: NormalizeKind) =>
+    normalize(`loc-${k}`, kind, (v[k] as string | undefined) ?? '', (val) => setAddr({ [k]: val }));
   return (
-    <div>
-      <L>{label}</L>
-      <select className={input} value={selectValue}
+    <div className="rounded-lg border border-green-800/15 p-3">
+      <L>Location</L>
+      <select className={input}
+        value={mode === 'picker' ? '' : (isKnown ? v.name! : ADD_NEW)}
         onChange={(e) => {
-          if (e.target.value === CARE_MANUAL) { setManual(true); onChange(''); return; }
-          setManual(false);
-          onChange(e.target.value);
+          if (e.target.value === '') { setMode('picker'); onChange({}); onEditedKnown(false); return; }
+          if (e.target.value === ADD_NEW) { setMode('fields'); onChange({}); onEditedKnown(false); return; }
+          const picked = known.find((o) => o.value === e.target.value);
+          setMode('fields'); onEditedKnown(false);
+          onChange({ name: e.target.value, address_line1: picked?.address ?? '', city: picked?.city ?? '', state: picked?.state ?? '', postal: picked?.postal ?? '' });
         }}>
-        <option value="">Select…</option>
-        <option value={CARE_MANUAL}>Type a name manually…</option>
-        {people.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
+        <option value="">Select a location…</option>
+        <option value={ADD_NEW}>Add new location…</option>
+        {known.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
-      {manual && (
-        <input className={`${input} mt-1.5`} value={isKnownPerson ? '' : (value ?? '')} placeholder="Name (optional)"
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={normalize(`careteam-${label}`, 'name', value ?? '', onChange)} />
+      {mode === 'fields' && (
+        <div className="grid sm:grid-cols-2 gap-2 mt-2">
+          <div className="sm:col-span-2"><L>Location name</L>
+            <input className={input} value={v.name ?? ''} placeholder="e.g. Carmel Creek Ranch" onChange={(e) => set({ name: e.target.value })} /></div>
+          <div className="sm:col-span-2"><L>Street address</L>
+            <input className={input} value={v.address_line1 ?? ''} placeholder="123 Ranch Rd" onChange={(e) => setAddr({ address_line1: e.target.value })} onBlur={onBlurNorm('address_line1', 'street')} /></div>
+          <div><L>City</L><input className={input} value={v.city ?? ''} placeholder="San Diego" onChange={(e) => setAddr({ city: e.target.value })} onBlur={onBlurNorm('city', 'city')} /></div>
+          <div className="grid grid-cols-2 gap-2">
+            <div><L>State</L><input className={input} value={v.state ?? ''} placeholder="CA" onChange={(e) => setAddr({ state: e.target.value })} onBlur={onBlurNorm('state', 'region')} /></div>
+            <div><L>ZIP</L><input className={input} inputMode="numeric" value={v.postal ?? ''} placeholder="92109" onChange={(e) => setAddr({ postal: e.target.value })} onBlur={onBlurNorm('postal', 'postal')} /></div>
+          </div>
+          <KeepingSpotsBlock spots={v.keeping_spots ?? []} onChange={(keeping_spots) => set({ keeping_spots })} />
+          <div className="sm:col-span-2"><L>Notes</L>
+            <textarea rows={2} className={`${input} resize-y`} value={v.notes ?? ''} placeholder="information that would help in finding this location" onChange={(e) => set({ notes: e.target.value })} /></div>
+        </div>
       )}
     </div>
   );
 }
 
-
-/** LOCATION ENTRY — a fully findable location: name + structured address (on the
- *  shared place), plus THIS horse's barn/stall, findability notes, and on-site people
- *  (trainer / care giver / groom / other). A bare name like "Carmel Creek Ranch" isn't
- *  enough to find a horse; the address + barn/stall are what make it locatable. */
-function LocationEntry({
-  title, heading, v, onChange, showError, required, nameOptions, people = [],
-}: {
-  title: string;
-  heading: string;
-  v: HorseLocationDetail;
-  onChange: (v: HorseLocationDetail) => void;
-  showError?: boolean;
-  required?: boolean;
-  /** The places already on file. `address` rides along so PICKING one fills the
-   *  address too — see the matching note below. */
-  nameOptions: { value: string; label: string; address?: string | null }[];
-  /** Directory people offered in the care-team pick-or-type combos (CR-126 A2). */
-  people?: { id: string; name: string }[];
-}) {
-  const set = (patch: Partial<HorseLocationDetail>) => onChange({ ...v, ...patch });
-  const bad = showError && !filled(v.name);
-  const normalize = useFieldNormalizer();
-  const onBlurNorm = (k: keyof HorseLocationDetail, kind: NormalizeKind) =>
-    normalize(`${title}-${k}`, kind, (v[k] as string | undefined) ?? '', (val) => set({ [k]: val }));
-  /* ⚠️ THE LOCATION NAME IS A MATCHED VALUE, SO THE LIST IS PRIMARY (PAMELA §B
-     rule 1). `set_horse_locations` → `_resolve_location` matches the typed name
-     against `locations` and CREATES a row when nothing matches — so "Carmel Creek
-     Ranch" and "Carmel Creek ranch " become two places, and the horse is filed at
-     the one nobody else uses. That is a match failure that never raises, which is
-     worse than the breed/color FK error, not better. Same mechanism as
-     SelectOrOther: the known list is the control, free text is the named escape. */
-  const known = nameOptions.filter((o) => o.value.trim());
-  const isKnown = !!v.name && known.some((o) => o.value === v.name);
-  const [otherOpen, setOtherOpen] = useState(!!v.name && !isKnown);
-  const showOther = otherOpen || (!!v.name && !isKnown) || known.length === 0;
-  return (
-    <div className="rounded-lg border border-green-800/15 p-3">
-      {title && <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold mb-0.5">{title}</p>}
-      {heading && <p className="text-[10px] text-muted mb-2.5">{heading}</p>}
-      <div className="grid sm:grid-cols-2 gap-2">
-        <div className="sm:col-span-2"><L>Location name{required ? ' *' : ''}</L>
-          {known.length > 0 && (
-            <select className={`${input}${bad ? ' border-red-400' : ''}`}
-              value={showOther ? OTHER : (isKnown ? v.name! : '')}
-              onChange={(e) => {
-                if (e.target.value === OTHER) { setOtherOpen(true); set({ name: '' }); return; }
-                setOtherOpen(false);
-                const picked = known.find((o) => o.value === e.target.value);
-                // Picking a place on file brings its address with it — the point
-                // of the list is that the same place is the same row every time.
-                set({
-                  name: e.target.value,
-                  ...(picked?.address && !filled(v.address_line1) ? { address_line1: picked.address } : {}),
-                });
-              }}>
-              <option value="">Select…</option>
-              {known.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              <option value={OTHER}>Other (enter manually)…</option>
-            </select>
-          )}
-          {showOther && (
-            <input className={`${input}${known.length > 0 ? ' mt-1.5' : ''}${bad ? ' border-red-400' : ''}`}
-              value={isKnown ? '' : (v.name ?? '')}
-              placeholder="e.g. Carmel Creek Ranch" onChange={(e) => set({ name: e.target.value })} />
-          )}
-        </div>
-        <div className="sm:col-span-2"><L>Street address</L>
-          <input className={input} value={v.address_line1 ?? ''} placeholder="123 Ranch Rd" onChange={(e) => set({ address_line1: e.target.value })}
-            onBlur={onBlurNorm('address_line1', 'street')} /></div>
-        <div><L>City</L>
-          <input className={input} value={v.city ?? ''} placeholder="San Diego" onChange={(e) => set({ city: e.target.value })}
-            onBlur={onBlurNorm('city', 'city')} /></div>
-        <div className="grid grid-cols-2 gap-2">
-          <div><L>State</L><input className={input} value={v.state ?? ''} placeholder="CA" onChange={(e) => set({ state: e.target.value })}
-            onBlur={onBlurNorm('state', 'region')} /></div>
-          <div><L>ZIP</L><input className={input} inputMode="numeric" value={v.postal ?? ''} placeholder="92109" onChange={(e) => set({ postal: e.target.value })}
-            onBlur={onBlurNorm('postal', 'postal')} /></div>
-        </div>
-        {/* Keeping spots (CR-126): a repeatable term:value list — the chosen term
-            becomes the label above its value. Replaces the old barn/stall pair. */}
-        <KeepingSpotsBlock spots={v.keeping_spots ?? []} onChange={(keeping_spots) => set({ keeping_spots })} />
-        <div className="sm:col-span-2"><L>Notes</L>
-          <textarea rows={2} className={`${input} resize-y`} value={v.notes ?? ''}
-            placeholder="information that would be helpful in finding this location"
-            onChange={(e) => set({ notes: e.target.value })} /></div>
-        <CareTeamCombo label="Trainer" value={v.trainer} onChange={(trainer) => set({ trainer })} people={people} />
-        <CareTeamCombo label="Care giver" value={v.care_giver} onChange={(care_giver) => set({ care_giver })} people={people} />
-        <CareTeamCombo label="Groom" value={v.groom} onChange={(groom) => set({ groom })} people={people} />
-        <CareTeamCombo label="Other" value={v.other} onChange={(other) => set({ other })} people={people} />
-      </div>
-    </div>
-  );
-}
-
-/** A single medication/supplement block: name, dosage, instructions, cost, structured
- *  supplier (website/phone[/Rx]), and order quantity (units + days supply). rx_info is
- *  shown for medications only. */
-function MedicationBlock({
-  v, kind, onChange, onRemove,
-}: {
-  v: HorseMedication;
-  kind: 'MEDICATION' | 'SUPPLEMENT';
-  onChange: (v: HorseMedication) => void;
-  onRemove: () => void;
-}) {
+/** A medication/supplement block. */
+function MedicationBlock({ v, kind, onChange, onRemove }: { v: HorseMedication; kind: 'MEDICATION' | 'SUPPLEMENT'; onChange: (v: HorseMedication) => void; onRemove: () => void }) {
   const set = (patch: Partial<HorseMedication>) => onChange({ ...v, ...patch });
   const noun = kind === 'SUPPLEMENT' ? 'supplement' : 'medication';
   return (
@@ -560,59 +275,31 @@ function MedicationBlock({
       <div className="grid sm:grid-cols-2 gap-2">
         <div><L>Name</L><input className={input} value={v.name ?? ''} placeholder={`${noun} name`} onChange={(e) => set({ name: e.target.value })} /></div>
         <div><L>Dosage</L><input className={input} value={v.dosage ?? ''} placeholder="e.g. 10 mg" onChange={(e) => set({ dosage: e.target.value })} /></div>
-        <div className="sm:col-span-2"><L>Instructions</L>
-          <input className={input} value={v.instructions ?? ''} placeholder="e.g. one scoop AM/PM with feed" onChange={(e) => set({ instructions: e.target.value })} /></div>
+        <div className="sm:col-span-2"><L>Instructions</L><input className={input} value={v.instructions ?? ''} placeholder="e.g. one scoop AM/PM with feed" onChange={(e) => set({ instructions: e.target.value })} /></div>
         <div><L>Order quantity (units)</L><input className={input} value={v.order_units ?? ''} placeholder="e.g. 30 tablets" onChange={(e) => set({ order_units: e.target.value })} /></div>
         <div><L>Days supply</L><input className={input} inputMode="numeric" value={v.days_supply ?? ''} placeholder="e.g. 30" onChange={(e) => set({ days_supply: e.target.value })} /></div>
         <div><L>Cost (per order)</L>
-          <input className={input} inputMode="numeric" value={v.cost ?? ''} placeholder="$0.00"
-            onChange={(e) => set({ cost: e.target.value })}
+          <input className={input} inputMode="numeric" value={v.cost ?? ''} placeholder="$0.00" onChange={(e) => set({ cost: e.target.value })}
             onBlur={(e) => { const n = Number(e.target.value.replace(/[$,\s]/g, '')); if (Number.isFinite(n) && e.target.value.trim()) set({ cost: n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) }); }} /></div>
         <div><L>Supplier website</L><input type="url" className={input} value={v.supplier_website ?? ''} placeholder="https://…" onChange={(e) => set({ supplier_website: e.target.value })} /></div>
         <div><L>Supplier phone</L><input type="tel" className={input} value={v.supplier_phone ?? ''} placeholder="(555) 555-5555" onChange={(e) => set({ supplier_phone: e.target.value })} /></div>
-        {kind === 'MEDICATION' && (
-          <div><L>Rx info</L><input className={input} value={v.rx_info ?? ''} placeholder="Rx #, prescriber" onChange={(e) => set({ rx_info: e.target.value })} /></div>
-        )}
+        {kind === 'MEDICATION' && (<div><L>Rx info</L><input className={input} value={v.rx_info ?? ''} placeholder="Rx #, prescriber" onChange={(e) => set({ rx_info: e.target.value })} /></div>)}
       </div>
     </div>
   );
 }
 
-/** A repeatable list of medication or supplement blocks, with an "add" button. */
-function RepeatableMeds({
-  kind, items, onChange,
-}: {
-  kind: 'MEDICATION' | 'SUPPLEMENT';
-  items: HorseMedication[];
-  onChange: (items: HorseMedication[]) => void;
-}) {
+function RepeatableMeds({ kind, items, onChange }: { kind: 'MEDICATION' | 'SUPPLEMENT'; items: HorseMedication[]; onChange: (i: HorseMedication[]) => void }) {
   const noun = kind === 'SUPPLEMENT' ? 'supplement' : 'medication';
   return (
     <div className="sm:col-span-2 flex flex-col gap-2">
-      {items.map((it, i) => (
-        <MedicationBlock key={i} v={it} kind={kind}
-          onChange={(nv) => onChange(items.map((x, j) => (j === i ? nv : x)))}
-          onRemove={() => onChange(items.filter((_, j) => j !== i))} />
-      ))}
-      <button type="button" onClick={() => onChange([...items, { kind }])}
-        className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">
-        ＋ Add {noun}
-      </button>
+      {items.map((it, i) => (<MedicationBlock key={i} v={it} kind={kind} onChange={(nv) => onChange(items.map((x, j) => (j === i ? nv : x)))} onRemove={() => onChange(items.filter((_, j) => j !== i))} />))}
+      <button type="button" onClick={() => onChange([...items, { kind }])} className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add {noun}</button>
     </div>
   );
 }
 
-/** A single vaccination block (CR-126) — name, additional details, date administered,
- *  good-until, and a file upload for the records copy. All optional, mirrors the
- *  medications pattern. The upload goes through the files spine (uploadMyFile) and the
- *  returned file id/name is stored on the row. */
-function VaccinationBlock({
-  v, onChange, onRemove,
-}: {
-  v: HorseVaccination;
-  onChange: (v: HorseVaccination) => void;
-  onRemove: () => void;
-}) {
+function VaccinationBlock({ v, onChange, onRemove }: { v: HorseVaccination; onChange: (v: HorseVaccination) => void; onRemove: () => void }) {
   const set = (patch: Partial<HorseVaccination>) => onChange({ ...v, ...patch });
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
@@ -620,15 +307,9 @@ function VaccinationBlock({
   const onPick = async (file: File | undefined) => {
     if (!file) return;
     setUploading(true); setUploadErr(null);
-    try {
-      const row: FileRow = await uploadMyFile(file, `Vaccination record — ${v.name || file.name}`);
-      set({ file_id: row.id, file_name: row.filename });
-    } catch (e) {
-      setUploadErr(errorText(e, 'Could not upload the file.'));
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = '';
-    }
+    try { const row: FileRow = await uploadMyFile(file, `Vaccination record — ${v.name || file.name}`); set({ file_id: row.id, file_name: row.filename }); }
+    catch (e) { setUploadErr(errorText(e, 'Could not upload the file.')); }
+    finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
   };
   return (
     <div className="rounded-lg border border-green-800/15 p-3">
@@ -646,14 +327,11 @@ function VaccinationBlock({
           {v.file_id ? (
             <div className="flex items-center gap-2 text-[13px] text-green-900">
               <span className="truncate">{v.file_name ?? 'Uploaded file'}</span>
-              <button type="button" onClick={() => set({ file_id: undefined, file_name: undefined })}
-                className="text-[11px] text-muted hover:text-red-700 underline shrink-0">Remove file</button>
+              <button type="button" onClick={() => set({ file_id: undefined, file_name: undefined })} className="text-[11px] text-muted hover:text-red-700 underline shrink-0">Remove file</button>
             </div>
           ) : (
             <>
-              <input ref={fileRef} type="file" disabled={uploading}
-                className="block w-full text-[12px] text-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-gold-400 file:bg-gold-50 file:text-gold-800 file:text-xs file:cursor-pointer"
-                onChange={(e) => void onPick(e.target.files?.[0])} />
+              <input ref={fileRef} type="file" disabled={uploading} className="block w-full text-[12px] text-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-gold-400 file:bg-gold-50 file:text-gold-800 file:text-xs file:cursor-pointer" onChange={(e) => void onPick(e.target.files?.[0])} />
               {uploading && <p className="text-[11px] text-muted mt-1">Uploading…</p>}
             </>
           )}
@@ -664,195 +342,140 @@ function VaccinationBlock({
   );
 }
 
-/** A repeatable list of vaccination blocks, with an "add" button. All optional. */
-function RepeatableVaccinations({
-  items, onChange,
-}: {
-  items: HorseVaccination[];
-  onChange: (items: HorseVaccination[]) => void;
-}) {
+function RepeatableVaccinations({ items, onChange }: { items: HorseVaccination[]; onChange: (i: HorseVaccination[]) => void }) {
   return (
     <div className="sm:col-span-2 flex flex-col gap-2">
-      {items.map((it, i) => (
-        <VaccinationBlock key={i} v={it}
-          onChange={(nv) => onChange(items.map((x, j) => (j === i ? nv : x)))}
-          onRemove={() => onChange(items.filter((_, j) => j !== i))} />
-      ))}
-      <button type="button" onClick={() => onChange([...items, {}])}
-        className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">
-        ＋ Add vaccination
-      </button>
+      {items.map((it, i) => (<VaccinationBlock key={i} v={it} onChange={(nv) => onChange(items.map((x, j) => (j === i ? nv : x)))} onRemove={() => onChange(items.filter((_, j) => j !== i))} />))}
+      <button type="button" onClick={() => onChange([...items, {}])} className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add vaccination</button>
     </div>
   );
 }
 
-/** Columns update_horse_record accepts as a sparse patch (autosave allowlist). */
+/** A repeatable single-text-field list (medical history, conditions, etc.) — the
+ *  shared Add-button pattern. `field` is the object key each entry stores. */
+function NarrativeList({ noun, field, placeholder, items, onChange }: {
+  noun: string; field: string; placeholder: string; items: NarrativeEntry[]; onChange: (i: NarrativeEntry[]) => void;
+}) {
+  return (
+    <div className="sm:col-span-2 flex flex-col gap-2">
+      {items.map((it, i) => (
+        <div key={i} className="flex gap-2 items-start">
+          <textarea rows={2} className={`${input} resize-y`} value={it[field] ?? ''} placeholder={placeholder}
+            onChange={(e) => onChange(items.map((x, j) => (j === i ? { ...x, [field]: e.target.value } : x)))} />
+          <button type="button" onClick={() => onChange(items.filter((_, j) => j !== i))} className="text-[11px] text-muted hover:text-red-700 underline mt-2 shrink-0">Remove</button>
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...items, { [field]: '' }])} className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add {noun}</button>
+    </div>
+  );
+}
+
+/** Injuries the horse caused to a person — a structured disclosure list. */
+function InjuryList({ items, onChange }: { items: InjuryEntry[]; onChange: (i: InjuryEntry[]) => void }) {
+  const set = (i: number, patch: Partial<InjuryEntry>) => onChange(items.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  return (
+    <div className="sm:col-span-2 flex flex-col gap-2">
+      {items.map((it, i) => (
+        <div key={i} className="rounded-lg border border-green-800/15 p-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold">injury disclosure</p>
+            <button type="button" onClick={() => onChange(items.filter((_, j) => j !== i))} className="text-[11px] text-muted hover:text-red-700 underline">Remove</button>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-2">
+            <div><L>Date</L><input type="date" className={input} value={it.date ?? ''} onChange={(e) => set(i, { date: e.target.value })} /></div>
+            <div><L>Person</L>
+              <select className={input} value={it.person_type ?? ''} onChange={(e) => set(i, { person_type: e.target.value as InjuryEntry['person_type'] })}>
+                <option value="">Select…</option><option value="rider">Rider</option><option value="non-rider">Non-rider</option>
+              </select></div>
+            <div className="sm:col-span-2"><L>Description</L><textarea rows={2} className={`${input} resize-y`} value={it.description ?? ''} placeholder="What happened" onChange={(e) => set(i, { description: e.target.value })} /></div>
+            <div className="sm:col-span-2"><L>Outcome</L><input className={input} value={it.outcome ?? ''} placeholder="e.g. treated on site; no lasting injury" onChange={(e) => set(i, { outcome: e.target.value })} /></div>
+          </div>
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...items, {}])} className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add injury disclosure</button>
+    </div>
+  );
+}
+
+/** Patch keys update_horse_record accepts (identity columns + list/pending keys). */
 const PATCHABLE_KEYS: (keyof HorseIntakePayload)[] = [
   'registered_name', 'nickname', 'breed', 'color', 'markings', 'sex',
   'date_of_birth', 'height', 'registration_number', 'registration_org',
   'microchip_id', 'passport_number', 'passport_country', 'fair_market_value',
-  'vet_name', 'vet_phone', 'vet_business_name', 'vet_address_line1', 'vet_city',
-  'vet_state', 'vet_postal', 'farrier_name', 'farrier_phone',
-  'medical_history', 'behavioral_history', 'known_conditions',
-  'euthanasia_authorization', 'training_history', 'competition_history',
+  'euthanasia_authorization',
 ];
-// Columns that can't hold the 'N/A' sentinel (typed, CHECK-constrained, or a
-// foreign key into the breed/color vocabularies) — persist those as cleared.
-// The set lives in lib/horses.ts so the create path and the patch path can't
-// drift: it was the create path missing this that blocked a real owner.
-const TYPED_KEYS = new Set<keyof HorseIntakePayload>(HORSE_SENTINEL_UNSAFE_KEYS);
+const LIST_KEYS: (keyof HorseIntakePayload)[] = [
+  'pending_fields', 'medical_history_list', 'behavioral_history_list', 'known_conditions_list',
+  'training_history_list', 'competition_history_list', 'injuries_to_humans',
+];
+// Columns that cannot hold the 'N/A' sentinel.
+const TYPED_KEYS = new Set<keyof HorseIntakePayload>(['date_of_birth', 'fair_market_value', 'sex', 'euthanasia_authorization', 'breed', 'color']);
 
 export function HorseIntakeForm({
-  onDone, submitLabel = 'Add horse', ownerContactId, horseId, prefill, createEarly = false,
+  onDone, submitLabel = 'Add horse', ownerContactId, horseId, prefill,
 }: {
-  /**
-   * Fires on created OR match_found (both attach an id); pending-review shows in-form.
-   *
-   * PAMELA §B — the second argument is the CONTACT this record was assigned to.
-   * A caller that opened this form without knowing whose horse it is (the contract
-   * modal, when no lessor is picked yet) learns it here: the staff account picker
-   * below is the ask, and its answer is what the contract's lessor becomes.
-   */
   onDone: (horseId: string, ownerContactId?: string) => void;
   submitLabel?: string;
-  /** Optional PRESET of the owning account (e.g. a staff page that already knows the
-   *  client). Staff can still change it via the in-form account picker; ignored for
-   *  non-staff callers (the record always binds to them). */
   ownerContactId?: string;
-  /** EDIT/REVIEW mode: load this existing record prefilled — the member reviews
-   *  what's on file, completes the required fields, and every field autosaves
-   *  on blur (partial progress survives a skip). */
   horseId?: string;
-  /** CAREPATH §C10b — the overlapping fields already answered on the INQUIRY,
-   *  seeded into a NEW record so the client is not asked twice for what they
-   *  told us a week ago.
-   *
-   *  ⚠️ ONLY REACHES HERE AFTER THE CLIENT SAID "yes, this is that horse". The
-   *  caller asks; this form never assumes (§C10b: "we dont assume the inquiry
-   *  about horse clipping and the inquiry about evaluation… are related to the
-   *  same horse"). Values are ordinary editable field values — visible, and
-   *  corrected in place if we got it wrong. Ignored in EDIT mode: a record on
-   *  file is a stronger source than an inquiry. */
   prefill?: Partial<HorseIntakePayload>;
-  /**
-   * PAMELA §B rule 2 — CREATE ON THE NAME, COMPLETE AFTERWARDS.
-   *
-   * Owner, 2026-08-23: *"filling in even just the name should add the new record
-   * for that horse."* The answer-or-N/A completeness gate exists so the two horse
-   * ONBOARDING documents never render a silently-blank field — but a lease author
-   * capturing a horse mid-contract is not generating those documents, and holding
-   * the record hostage to a fair-market value and a vet phone is what sent the
-   * owner looking for a shortcut in the first place.
-   *
-   * It is not a second save discipline: the record is created by the SAME
-   * `create_horse_record` call, and the autosave-on-blur path this form already
-   * runs in edit mode takes over the moment it exists, so every remaining field
-   * persists as it is filled. Only the SUBMIT GATE moves — `create_horse_record`
-   * itself requires exactly a name.
-   */
+  /** Accepted for call-site compatibility; the form always creates on a nickname. */
   createEarly?: boolean;
 }) {
   const { isStaff } = useAuth();
-  const propertyTerm = usePropertyTerm();
-  const [f, setF] = useState<HorseIntakePayload>(
-    () => (horseId ? { is_leased: 'no' } : { is_leased: 'no', ...(prefill ?? {}) }));
+  const [f, setF] = useState<HorseIntakePayload>(() => (horseId ? { is_leased: 'no' } : { is_leased: 'no', ...(prefill ?? {}) }));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [showError, setShowError] = useState(false);
-  // Bumped on every REJECTED submit so the scroll-to-the-first-problem effect
-  // re-fires even when the error state was already on. On a form this long the
-  // first red border is routinely far off-screen, so the message alone read as
-  // "it tells me nothing is wrong but won't save".
   const [errorPulse, setErrorPulse] = useState(0);
   const formRef = useRef<HTMLDivElement>(null);
-  // AUTOSAVE-ON-BLUR: once a record exists (edit mode, or right after the first
-  // successful create), leaving any field persists the changed columns via the
-  // update_horse_record sparse patch (it RAISES rather than silently no-ops, so
-  // a blocked write surfaces). lastSavedRef tracks what the server has.
   const recordIdRef = useRef<string | null>(horseId ?? null);
   const lastSavedRef = useRef<HorseIntakePayload>({});
-  // What the server last held for home/current location, as a comparable
-  // snapshot — location lives in its own state (homeLoc/currentLoc, not `f`),
-  // so it needs its own "has this changed since the last save" tracking.
-  const lastSavedLocRef = useRef<string>(JSON.stringify({ home: {}, current: null }));
-  // What the server last held for the vaccinations list (CR-126), so a blur only
-  // re-writes it when it actually changed — set_horse_locations carries it.
+  const lastSavedLocRef = useRef<string>(JSON.stringify({}));
   const lastSavedVaccRef = useRef<string>(JSON.stringify([]));
   const savingRef = useRef(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  // What the database actually said when an autosave failed (was discarded).
   const [saveErr, setSaveErr] = useState<string | null>(null);
   const [locations, setLocations] = useState<CalendarLocation[]>([]);
-  // Staff-only: the account this record is assigned to. The record binds to the
-  // creating account UNLESS staff assigns it to another client here. For a client
-  // caller this stays empty and the backend binds the horse to them.
   const [accounts, setAccounts] = useState<ClientAccountRow[]>([]);
   const [assignTo, setAssignTo] = useState<string>(ownerContactId ?? '');
-  // Rich location model: home always; current only when it differs from home.
-  const [homeLoc, setHomeLoc] = useState<HorseLocationDetail>({});
-  const [currentLoc, setCurrentLoc] = useState<HorseLocationDetail>({});
-  const [currentDiffers, setCurrentDiffers] = useState(false);
-  // Repeatable medications + supplements (each a block).
+  const [loc, setLoc] = useState<HorseLocationDetail>({});
+  const [locEditedKnown, setLocEditedKnown] = useState(false);
   const [meds, setMeds] = useState<HorseMedication[]>([]);
   const [supplements, setSupplements] = useState<HorseMedication[]>([]);
-  // Repeatable vaccinations (CR-126) — all optional, persisted on horses.vaccinations.
   const [vaccinations, setVaccinations] = useState<HorseVaccination[]>([]);
-  // Directory people for the care-team pick-or-type combos (CR-126 A2). Staff only —
-  // the RPC is staff-gated; a client caller gets an empty list (manual entry only).
-  const [directoryPeople, setDirectoryPeople] = useState<{ id: string; name: string }[]>([]);
-  // Lease: whether the leased state came from an executed contract (read-only), the
-  // lease location (= current location during the term), and an optional temporary
-  // current location (a >48h stay elsewhere during the lease).
-  const [leaseLoc, setLeaseLoc] = useState<HorseLocationDetail>({});
-  const [tempLocOpen, setTempLocOpen] = useState(false);
-  const [tempLoc, setTempLoc] = useState<HorseLocationDetail>({});
-  // On a NEW horse there's no contract yet, so the checkbox is always manual here.
-  // (The contract-driven read-only state applies when viewing an existing leased horse.)
-  const leaseFromContract = false;
-  // Reference lookups — breed & color are CODES the backend resolves to display
-  // names for {{HORSE.BREED}}/{{HORSE.COLOR}}. A free-text value never matches a
-  // code, so these MUST be selects from the reference tables.
+  const [showPassport, setShowPassport] = useState(false);
   const [breeds, setBreeds] = useState<LookupCode[]>([]);
   const [colors, setColors] = useState<LookupCode[]>([]);
   const [regOrgOpts, setRegOrgOpts] = useState<LookupCode[]>([]);
   const [passportCountryOpts, setPassportCountryOpts] = useState<LookupCode[]>([]);
 
-  // Staff assigning to a client → that CLIENT's locations; otherwise the caller's.
+  const pendingSet = new Set(f.pending_fields ?? []);
+  const setPendingField = (key: string, on: boolean) => {
+    const next = new Set(f.pending_fields ?? []);
+    if (on) next.add(key); else next.delete(key);
+    setF((p) => ({ ...p, pending_fields: Array.from(next) }));
+  };
+
   const loadLocations = () =>
     (assignTo ? fetchContactLocations(assignTo) : fetchLocations())
       .then((locs) => { setLocations(locs); return locs; })
       .catch(() => { setLocations([]); return [] as CalendarLocation[]; });
   useEffect(() => {
-    loadLocations();   // populates the location-name suggestions; no auto-pre-fill
-    // Staff get the client-account list for the assign-to picker + the directory
-    // people offered in the care-team combos (the directory RPC is staff-gated).
-    if (isStaff) {
-      adminClientAccounts().then(setAccounts).catch(() => setAccounts([]));
-      staffContactDirectory()
-        .then((rows) => setDirectoryPeople(
-          rows
-            .map((r) => ({ id: r.id, name: [r.first_name, r.last_name].filter(Boolean).join(' ').trim() }))
-            .filter((p) => p.name)
-            .sort((a, b) => a.name.localeCompare(b.name))))
-        .catch(() => setDirectoryPeople([]));
-    }
+    loadLocations();
+    if (isStaff) adminClientAccounts().then(setAccounts).catch(() => setAccounts([]));
     listHorseBreeds().then(setBreeds).catch(() => setBreeds([]));
     listHorseColors().then(setColors).catch(() => setColors([]));
     listLookupOptions('horse_registration_org').then(setRegOrgOpts).catch(() => setRegOrgOpts([]));
     listLookupOptions('horse_passport_country').then(setPassportCountryOpts).catch(() => setPassportCountryOpts([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Staff changed the assigned account → reload that client's locations.
   useEffect(() => {
-    if (!isStaff) return;
-    loadLocations();
+    if (isStaff) loadLocations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignTo]);
 
-  // EDIT/REVIEW mode: prefill from the existing record (raw codes for the
-  // selects), its locations (display detail), and its medication list.
   const [loadingRecord, setLoadingRecord] = useState(Boolean(horseId));
   useEffect(() => {
     if (!horseId) return;
@@ -866,6 +489,7 @@ export function HorseIntakeForm({
         ]);
         if (!active || !raw) return;
         const s = (v: unknown) => (v == null ? '' : String(v));
+        const arr = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
         const next: HorseIntakePayload = {
           is_leased: raw.lessee_name_text ? 'yes' : 'no',
           nickname: s(raw.nickname), registered_name: s(raw.registered_name),
@@ -874,130 +498,73 @@ export function HorseIntakeForm({
           passport_country: s(raw.passport_country), breed: s(raw.breed), color: s(raw.color),
           markings: s(raw.markings), sex: s(raw.sex),
           date_of_birth: s(raw.date_of_birth).slice(0, 10), height: s(raw.height),
-          fair_market_value: raw.fair_market_value == null ? ''
-            : Number(raw.fair_market_value).toLocaleString('en-US', { style: 'currency', currency: 'USD' }),
-          vet_name: s(raw.vet_name), vet_phone: s(raw.vet_phone),
-          vet_business_name: s(raw.vet_business_name), vet_address_line1: s(raw.vet_address_line1),
-          vet_city: s(raw.vet_city), vet_state: s(raw.vet_state), vet_postal: s(raw.vet_postal),
-          farrier_name: s(raw.farrier_name), farrier_phone: s(raw.farrier_phone),
-          medical_history: s(raw.medical_history), behavioral_history: s(raw.behavioral_history),
-          known_conditions: s(raw.known_conditions),
-          euthanasia_authorization: (raw.euthanasia_authorization === 'A' || raw.euthanasia_authorization === 'B')
-            ? raw.euthanasia_authorization : undefined,
-          training_history: s(raw.training_history), competition_history: s(raw.competition_history),
+          fair_market_value: raw.fair_market_value == null ? '' : Number(raw.fair_market_value).toLocaleString('en-US', { style: 'currency', currency: 'USD' }),
+          euthanasia_authorization: (raw.euthanasia_authorization === 'A' || raw.euthanasia_authorization === 'B') ? raw.euthanasia_authorization : undefined,
+          pending_fields: arr<string>(raw.pending_fields),
+          medical_history_list: arr<NarrativeEntry>(raw.medical_history_list),
+          behavioral_history_list: arr<NarrativeEntry>(raw.behavioral_history_list),
+          known_conditions_list: arr<NarrativeEntry>(raw.known_conditions_list),
+          training_history_list: arr<NarrativeEntry>(raw.training_history_list),
+          competition_history_list: arr<NarrativeEntry>(raw.competition_history_list),
+          injuries_to_humans: arr<InjuryEntry>(raw.injuries_to_humans),
           lessee_name_text: s(raw.lessee_name_text),
           lease_start: s(raw.lease_start).slice(0, 10), lease_end: s(raw.lease_end).slice(0, 10),
         };
         setF(next);
         lastSavedRef.current = { ...next };
         recordIdRef.current = horseId;
-        // The keeping-spots lists, care-team, and vaccinations come off the RAW
-        // record (CR-126 added those columns); the place name + address come off
-        // horse_page_detail's resolved location. `home_barn`/`home_stall` on the
-        // detail are the DB-derived legacy mirror — no longer read for prefill,
-        // since keeping_spots is the source of truth the form now edits.
-        const spots = (x: unknown): KeepingSpot[] => Array.isArray(x)
-          ? (x as unknown[]).filter((o): o is KeepingSpot =>
-              !!o && typeof o === 'object' && 'term' in (o as object))
-          : [];
-        const homeSpots = spots(raw.home_keeping_spots);
-        const currentSpots = spots(raw.current_keeping_spots);
-        const rec = detail?.record;
-        let homeVal: HorseLocationDetail = {};
-        if (rec?.home_location?.name || homeSpots.length || raw.home_trainer || raw.home_care_giver) {
-          homeVal = {
-            name: rec?.home_location?.name ?? '', address_line1: rec?.home_location?.address_line1 ?? '',
-            city: rec?.home_location?.city ?? '', state: rec?.home_location?.state ?? '',
-            postal: rec?.home_location?.postal ?? '',
-            keeping_spots: homeSpots, notes: rec?.home_notes ?? '',
-            trainer: s(raw.home_trainer), care_giver: s(raw.home_care_giver),
-            groom: s(raw.home_groom), other: s(raw.home_other_person),
+        if (s(raw.passport_number) || s(raw.passport_country)) setShowPassport(true);
+        const cur = detail?.record?.current_location;
+        if (cur?.name) {
+          const lv: HorseLocationDetail = {
+            name: cur.name, address_line1: cur.address_line1 ?? '', city: cur.city ?? '',
+            state: cur.state ?? '', postal: cur.postal ?? '', keeping_spots: cur.keeping_spots ?? [], notes: cur.notes ?? '',
           };
-          setHomeLoc(homeVal);
+          setLoc(lv);
+          lastSavedLocRef.current = JSON.stringify(lv);
         }
-        let currentVal: HorseLocationDetail | null = null;
-        if (rec?.current_location?.name && rec.current_location.name !== rec.home_location?.name) {
-          setCurrentDiffers(true);
-          currentVal = {
-            name: rec.current_location.name, address_line1: rec.current_location.address_line1 ?? '',
-            city: rec.current_location.city ?? '', state: rec.current_location.state ?? '',
-            postal: rec.current_location.postal ?? '',
-            keeping_spots: currentSpots,
-            trainer: s(raw.current_trainer), care_giver: s(raw.current_care_giver),
-            groom: s(raw.current_groom), other: s(raw.current_other_person),
-          };
-          setCurrentLoc(currentVal);
-        }
-        // Seed the "last saved" snapshot from what was just loaded, so the
-        // first blur after opening an existing record doesn't read as a
-        // change and fire a redundant save.
-        lastSavedLocRef.current = JSON.stringify({ home: homeVal, current: currentVal });
-        if (medRows.length) {
-          setMeds(medRows.filter((m) => m.kind !== 'SUPPLEMENT'));
-          setSupplements(medRows.filter((m) => m.kind === 'SUPPLEMENT'));
-        }
-        if (Array.isArray(raw.vaccinations)) {
-          const vacc = (raw.vaccinations as HorseVaccination[]).filter((x) => x && typeof x === 'object');
-          setVaccinations(vacc);
-          lastSavedVaccRef.current = JSON.stringify(vacc);
-        }
-      } catch { /* form stays blank; the record may not be readable */ }
+        if (medRows.length) { setMeds(medRows.filter((m) => m.kind !== 'SUPPLEMENT')); setSupplements(medRows.filter((m) => m.kind === 'SUPPLEMENT')); }
+        if (Array.isArray(raw.vaccinations)) { const vacc = (raw.vaccinations as HorseVaccination[]).filter((x) => x && typeof x === 'object'); setVaccinations(vacc); lastSavedVaccRef.current = JSON.stringify(vacc); }
+      } catch { /* form stays blank */ }
       finally { if (active) setLoadingRecord(false); }
     })();
     return () => { active = false; };
   }, [horseId]);
 
-  /** AUTOSAVE (fires on every blur inside the form): sparse-patch only the
-   *  changed columns, plus home/current location — which used to be the one
-   *  section of this form that DIDN'T autosave (it only ever saved from the
-   *  final submit button's linkLocations, so leaving the location fields and
-   *  navigating away — exactly what every other field's blur behavior trains
-   *  a person to trust — silently lost whatever was typed there).
-   *  'N/A' on a typed column persists as cleared. */
   async function autosave() {
     const id = recordIdRef.current;
     if (!id || savingRef.current) return;
-    const patch: Record<string, string> = {};
+    const patch: Record<string, unknown> = {};
     for (const k of PATCHABLE_KEYS) {
       const cur = (f[k] as string | undefined) ?? '';
       const prev = (lastSavedRef.current[k] as string | undefined) ?? '';
       if (cur !== prev) patch[k] = (TYPED_KEYS.has(k) && cur === NA) ? '' : cur;
     }
-    const current = resolveCurrentLoc();
-    const locSnapshot = JSON.stringify({ home: homeLoc, current });
+    for (const k of LIST_KEYS) {
+      const cur = JSON.stringify(f[k] ?? []);
+      const prev = JSON.stringify(lastSavedRef.current[k] ?? []);
+      if (cur !== prev) patch[k] = f[k] ?? [];
+    }
+    const locSnapshot = JSON.stringify(loc);
     const cleanVacc = vaccinations.filter((v) => filled(v.name) || filled(v.details) || v.file_id);
     const vaccSnapshot = JSON.stringify(cleanVacc);
     const vaccChanged = vaccSnapshot !== lastSavedVaccRef.current;
-    const locChanged = locSnapshot !== lastSavedLocRef.current
-      && (filled(homeLoc.name) || filled(current?.name));
-    const hasPatch = Object.keys(patch).length > 0;
-    if (!hasPatch && !locChanged && !vaccChanged) return;
-    savingRef.current = true;
-    setSaveState('saving');
+    const locChanged = locSnapshot !== lastSavedLocRef.current && filled(loc.name);
+    if (Object.keys(patch).length === 0 && !locChanged && !vaccChanged) return;
+    savingRef.current = true; setSaveState('saving');
     try {
-      if (hasPatch) await updateHorseRecord(id, patch);   // raises on a blocked write — never silent
-      // set_horse_locations carries keeping_spots, care-team AND vaccinations, so
-      // a vaccinations-only change still goes through it (home name is not needed
-      // for a vaccinations write — pass what we have).
+      if (Object.keys(patch).length) await updateHorseRecord(id, patch);
       if (locChanged || vaccChanged) {
-        await setHorseLocations(id, homeLoc, current, vaccChanged ? cleanVacc : undefined);
+        await setHorseLocations(id, loc, vaccChanged ? cleanVacc : undefined);
         lastSavedLocRef.current = locSnapshot;
         if (vaccChanged) lastSavedVaccRef.current = vaccSnapshot;
       }
       lastSavedRef.current = { ...f };
-      setSaveErr(null);
-      setSaveState('saved');
-    } catch (e) {
-      setSaveErr(errorText(e, 'Could not save your last change.'));
-      setSaveState('error');
-    } finally {
-      savingRef.current = false;
-    }
+      setSaveErr(null); setSaveState('saved');
+    } catch (e) { setSaveErr(errorText(e, 'Could not save your last change.')); setSaveState('error'); }
+    finally { savingRef.current = false; }
   }
 
-  // Take the member TO the first thing that needs them. Runs on every rejected
-  // submit, preferring the first flagged field and falling back to the message
-  // itself when the rejection came from the server rather than a field.
   useEffect(() => {
     if (!errorPulse) return;
     const root = formRef.current;
@@ -1008,211 +575,54 @@ export function HorseIntakeForm({
   const toOpts = (rows: LookupCode[]) => rows.map((r) => ({ value: r.code, label: r.display_name }));
   const breedOpts = toOpts(breeds);
   const colorOpts = toOpts(colors);
-  const accountLabel = (a: ClientAccountRow) =>
-    a.display_name || [a.first_name, a.last_name].filter(Boolean).join(' ') || a.email || 'Account';
+  const accountLabel = (a: ClientAccountRow) => a.display_name || [a.first_name, a.last_name].filter(Boolean).join(' ') || a.email || 'Account';
   const locationNameOpts = locations.map((l) => ({ value: l.name, label: l.name, address: l.address }));
-  // Known locations for the temporary-location picker: the horse's own entries (home,
-  // lease) + any location records from the system, MINUS the current lease location
-  // (offering the current location as a "temporary" choice is meaningless). Each carries
-  // its full detail so picking one fills the temporary block.
-  const knownLocations: HorseLocationDetail[] = [
-    homeLoc,
-    ...locations.map((l) => ({ name: l.name, address_line1: l.address ?? undefined })),
-  ].filter((k) => filled(k.name) && k.name !== leaseLoc.name);
-  const knownLocationOpts = knownLocations
-    .filter((k, i, a) => a.findIndex((x) => x.name === k.name) === i)   // de-dup by name
-    .map((k) => ({ value: k.name!, label: k.name! }));
 
   const set = (k: keyof HorseIntakePayload) => (v: string) => setF((p) => ({ ...p, [k]: v }));
+  const setList = (k: keyof HorseIntakePayload) => (v: unknown[]) => setF((p) => ({ ...p, [k]: v }));
 
-  const leased = f.is_leased === 'yes';
-  // This record is always the OWNER's (creator or staff-assigned client) — there is no
-  // lessee-creator path.
+  const isKnownCode = (v: string | undefined, opts: { value: string }[]) => !v || v === NA || opts.some((o) => o.value === v);
+  const hasRealName = filled(f.nickname) || filled(f.registered_name);
 
-  // The one precedence rule for "where is the horse right now", shared by autosave()
-  // and submit()'s linkLocations so the two paths can never disagree on it:
-  //   temporary current (a >48h stay during the lease)
-  //   → lease location (when leased)
-  //   → the general "different location" alternate (when NOT leased)
-  //   → null (current mirrors home — set_horse_locations does that itself).
-  const resolveCurrentLoc = (): HorseLocationDetail | null =>
-    (leased && tempLocOpen && filled(tempLoc.name)) ? tempLoc :
-    (leased && filled(leaseLoc.name)) ? leaseLoc :
-    (!leased && currentDiffers) ? currentLoc :
-    null;
-
-  // Every applicable field must be answered (filled or N/A). Names are special:
-  // at least one of registered/barn must be a REAL name (not N/A).
-  const answered = (v?: string) => v === NA || filled(v);
-  // A person block's secondary part (phone/email) is satisfied once its name partner
-  // is answered — a named contact needn't also carry a phone to complete the form.
-  const secondaryOk = (name?: string, second?: string) => answered(second) || answered(name);
-  // REQUIRED = exactly the fields the two horse onboarding documents merge
-  // (HORSE_EMERGENCY_VET + RELEASE_HORSE_CARE tokens — HORSE_DOC_REQUIRED_KEYS)
-  // plus the name/euthanasia/location structural requirements below. Everything
-  // else (registration org, passport, markings, histories) is optional.
-  const alwaysKeys: (keyof HorseIntakePayload)[] = HORSE_DOC_REQUIRED_KEYS;
-  // Medications & supplements are repeatable and OPTIONAL (a horse may have none);
-  // they're not part of the answer-or-N/A completeness gate.
-  // When leased (off-system), the lessee name + lease start are required.
-  // CLOSEOUT §1.4 (owner-ruled): the end date is NOT — an empty end date is an
-  // evergreen lease that runs until terminated, a legitimate permanent state.
-  const condKeys: (keyof HorseIntakePayload)[] = [
-    ...(leased ? (['lessee_name_text', 'lease_start'] as (keyof HorseIntakePayload)[]) : []),
-  ];
-  const hasRealName = filled(f.registered_name) || filled(f.nickname);
-  const nameAnswered = answered(f.registered_name) && answered(f.nickname);
-  // The owner (who owns this record) always makes the emergency euthanasia authorization.
-  /* Removed from the form 2026-08-25 — so it can no longer block completeness.
-     Kept as a constant rather than deleted so the shape of the gate below stays
-     readable and the column keeps its meaning for anything that already has a value. */
-  const euthanasiaAnswered = true;
-  // Vet/farrier phones are doc-merged tokens → required (covered by alwaysKeys);
-  // only the lessee's email keeps the name-satisfies-the-pair relaxation.
-  const secondariesOk = !leased || secondaryOk(f.lessee_name_text, f.lessee_email);
-  // Staff must assign the record to an account before it can be created.
-  const accountChosen = !isStaff || !!assignTo;
-  // Home must be named. When NOT leased and "different location" is on, the alternate
-  // must be named. When leased off-system, the lease location (= current) must be named
-  // (a contract-driven lease supplies it, so no manual requirement there).
-  const locationsOk = filled(homeLoc.name)
-    && (leased || !currentDiffers || filled(currentLoc.name))
-    && (!leased || leaseFromContract || filled(leaseLoc.name));
-  const complete = hasRealName && nameAnswered && euthanasiaAnswered && secondariesOk && accountChosen && locationsOk
-    && alwaysKeys.every((k) => answered(f[k] as string | undefined))
-    && condKeys.every((k) => answered(f[k] as string | undefined));
-
-  // The still-unanswered required fields, BY NAME. The message used to say only
-  // that something was missing, which on a form this long is not findable.
-  const CONDITIONAL_LABELS: Record<string, string> = {
-    lessee_name_text: 'Lessee name', lease_start: 'Lease start', lease_end: 'Lease end',
-  };
-  const missingRequired = (): string[] => {
-    const out: string[] = [];
-    if (!hasRealName || !nameAnswered) out.push('Name (nickname or registered)');
-    for (const k of [...alwaysKeys, ...condKeys]) {
-      if (!answered(f[k] as string | undefined)) {
-        out.push(HORSE_DOC_REQUIRED_LABELS[k as string] ?? CONDITIONAL_LABELS[k as string] ?? String(k));
-      }
-    }
-    if (!filled(homeLoc.name)) out.push('Home location name');
-    if (!leased && currentDiffers && !filled(currentLoc.name)) out.push('Current location name');
-    if (leased && !leaseFromContract && !filled(leaseLoc.name)) out.push('Lease location name');
-    if (leased && !secondariesOk) out.push('Lessee name or email');
-    return out;
-  };
-
-  // BREED and COLOR are FOREIGN KEYS into the reference vocabularies, so a value
-  // typed into "Other (enter manually)" cannot be stored — the INSERT fails with
-  // horses_breed_fkey / horses_color_fkey and the member only ever saw "Could not
-  // save the horse record." Caught here, at the field, with the list option named.
-  const isKnownCode = (v: string | undefined, opts: { value: string }[]) =>
-    !v || v === NA || opts.some((o) => o.value === v);
-  const unlistedVocab = (): string | null => {
-    if (breedOpts.length && !isKnownCode(f.breed, breedOpts)) return 'Breed';
-    if (colorOpts.length && !isKnownCode(f.color, colorOpts)) return 'Color';
-    return null;
-  };
-
-  /** Reject this submit: mark the fields, say why, and take them to the first one. */
-  function reject(message: string) {
-    setShowError(true);
-    setErr(message);
-    setErrorPulse((n) => n + 1);
-  }
+  function reject(message: string) { setShowError(true); setErr(message); setErrorPulse((n) => n + 1); }
 
   async function submit() {
     setErr(null);
-    if (isStaff && !assignTo) {
-      reject('Choose the account this horse belongs to.');
-      return;
-    }
-    if (!hasRealName) {
-      reject('Give the horse a nickname or a registered name (N/A can’t apply to both).');
-      return;
-    }
-    /* createEarly: the record is created on the name alone and everything below
-       keeps saving as it is filled (autosave-on-blur, same as edit mode). The
-       euthanasia + answer-or-N/A gates still apply on every OTHER caller, where
-       this submit is also the moment the horse's onboarding documents get made. */
-    if (!createEarly) {
-      if (!complete) {
-        const missing = missingRequired();
-        reject('Please answer every required field — fill it in or mark it N/A.'
-          + (missing.length ? ` Still needed: ${missing.join(', ')}.` : ''));
-        return;
-      }
-    }
-    const unlisted = unlistedVocab();
-    if (unlisted) {
-      reject(`${unlisted} has to be chosen from the list — a typed-in value can’t be saved. `
-        + `Pick the closest match, or "Other", and we’ll pass your entry to ${withArticle(propertyTerm)}.`);
-      return;
-    }
+    if (isStaff && !assignTo) { reject('Choose the account this horse belongs to.'); return; }
+    if (!hasRealName) { reject('Give the horse a nickname.'); return; }
+    if (breedOpts.length && !isKnownCode(f.breed, breedOpts)) { reject('Breed has to be chosen from the list — pick the closest match or "Other".'); return; }
+    if (colorOpts.length && !isKnownCode(f.color, colorOpts)) { reject('Color has to be chosen from the list — pick the closest match or "Other".'); return; }
     setBusy(true);
     try {
-      // Persist home + the resolved CURRENT location once the record exists.
-      // Fires whenever EITHER side has something to save — home alone used to
-      // gate this, so a current-only entry (home left blank, e.g. a horse
-      // that's simply always "at" one place with no separate home concept
-      // filled in) silently saved nothing at all.
-      const linkLocations = async (horseId: string) => {
-        const current = resolveCurrentLoc();
+      const linkExtras = async (hid: string) => {
         const cleanVacc = vaccinations.filter((v) => filled(v.name) || filled(v.details) || v.file_id);
-        // Save when there's a location OR any vaccinations to persist.
-        if (!filled(homeLoc.name) && !filled(current?.name) && cleanVacc.length === 0) return;
-        try {
-          await setHorseLocations(horseId, homeLoc, current, cleanVacc);
-          lastSavedLocRef.current = JSON.stringify({ home: homeLoc, current });
-          lastSavedVaccRef.current = JSON.stringify(cleanVacc);
-        } catch { /* record saved; locations best-effort */ }
-      };
-      // Persist the repeatable medications + supplements (blank blocks are dropped
-      // server-side). Best-effort — the record is already saved.
-      const linkMeds = async (horseId: string) => {
+        if (filled(loc.name) || cleanVacc.length) {
+          try { await setHorseLocations(hid, loc, cleanVacc); lastSavedLocRef.current = JSON.stringify(loc); lastSavedVaccRef.current = JSON.stringify(cleanVacc); } catch { /* record saved */ }
+        }
         const items = [...meds, ...supplements].filter((m) => filled(m.name));
-        if (!items.length) return;
-        try { await setHorseMedications(horseId, items); } catch { /* record saved */ }
+        if (items.length) { try { await setHorseMedications(hid, items); } catch { /* record saved */ } }
       };
-      // EDIT/REVIEW mode: the record exists — flush every changed column (the
-      // same sparse patch autosave uses, but awaited and surfaced), then the
-      // locations + medications, and hand the id back.
       const editingId = recordIdRef.current;
       if (editingId) {
-        const patch: Record<string, string> = {};
+        const patch: Record<string, unknown> = {};
         for (const k of PATCHABLE_KEYS) {
           const cur = (f[k] as string | undefined) ?? '';
           const prev = (lastSavedRef.current[k] as string | undefined) ?? '';
           if (cur !== prev) patch[k] = (TYPED_KEYS.has(k) && cur === NA) ? '' : cur;
         }
+        for (const k of LIST_KEYS) patch[k] = f[k] ?? [];
         if (Object.keys(patch).length) await updateHorseRecord(editingId, patch);
         lastSavedRef.current = { ...f };
-        await linkLocations(editingId);
-        await linkMeds(editingId);
+        await linkExtras(editingId);
         onDone(editingId, assignTo || ownerContactId || undefined);
         return;
       }
-      // ONE path. Staff assigning to a client passes owner_contact_id; the backend
-      // honors it only for staff. A client caller never sets it — the horse binds to them.
-      const payload: HorseIntakePayload = isStaff && assignTo
-        ? { ...f, owner_contact_id: assignTo }
-        : f;
+      const payload: HorseIntakePayload = isStaff && assignTo ? { ...f, owner_contact_id: assignTo } : f;
       const out: HorseRecordOutcome = await createHorseRecord(payload);
       if (out.outcome === 'match_pending_review') setPending(true);
-      else {
-        recordIdRef.current = out.horse_id;
-        lastSavedRef.current = { ...f };
-        await linkLocations(out.horse_id); await linkMeds(out.horse_id);
-        onDone(out.horse_id, assignTo || ownerContactId || undefined);
-      }
-    } catch (e) {
-      // The database's own message — see DbError in lib/horses.ts. Before that
-      // this branch printed a generic sentence and threw the diagnosis away.
-      setErr(errorText(e, 'Could not save the horse record.'));
-      setErrorPulse((n) => n + 1);
-    } finally {
-      setBusy(false);
-    }
+      else { recordIdRef.current = out.horse_id; lastSavedRef.current = { ...f }; await linkExtras(out.horse_id); onDone(out.horse_id, assignTo || ownerContactId || undefined); }
+    } catch (e) { setErr(errorText(e, 'Could not save the horse record.')); setErrorPulse((n) => n + 1); }
+    finally { setBusy(false); }
   }
 
   if (pending) {
@@ -1220,260 +630,119 @@ export function HorseIntakeForm({
       <div className="text-center py-8 px-4">
         <ShieldQuestion size={32} className="text-gold-800 mx-auto mb-3" />
         <p className="font-serif text-green-800 text-lg mb-1.5">This horse may already be on file.</p>
-        <p className="text-sm text-muted max-w-md mx-auto">
-          We've opened a review with {withArticle(propertyTerm)}. Upload your lease or ownership
-          paperwork from your Documents and we'll link the record to your account once verified.
-        </p>
+        <p className="text-sm text-muted max-w-md mx-auto">We've opened a review. Upload your lease or ownership paperwork from your Documents and we'll link the record to your account once verified.</p>
       </div>
     );
   }
+  if (loadingRecord) return <p className="text-sm text-muted py-4">Loading the horse record…</p>;
 
-  if (loadingRecord) {
-    return <p className="text-sm text-muted py-4">Loading the horse record…</p>;
-  }
+  const leased = f.is_leased === 'yes';
 
   return (
-    // AUTOSAVE: focus leaving ANY field inside the form persists the changed
-    // columns (blur bubbles as focusout). Diff-based — no-op when unchanged.
     <div ref={formRef} className="flex flex-col gap-1" onBlur={() => void autosave()}>
-      {/* Account-type-first: STAFF must pick the account this record belongs to; a
-          CLIENT's record binds to their own account automatically (no picker). */}
       {isStaff && (
         <div className="rounded-lg border border-gold-500/40 bg-gold-50 p-3 mb-2">
-          <label className="block text-[11px] tracking-wide uppercase text-gold-900 font-semibold mb-1">
-            Assign this horse to an account *
-          </label>
-          <select
-            className={`${input} bg-white${showError && !assignTo ? ' border-red-400' : ''}`}
-            value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
+          <label className="block text-[11px] tracking-wide uppercase text-gold-900 font-semibold mb-1">Assign this horse to an account *</label>
+          <select className={`${input} bg-white${showError && !assignTo ? ' border-red-400' : ''}`} value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
             <option value="">Select the client account…</option>
-            {accounts
-              .filter((a) => a.contact_id)
-              .map((a) => <option key={a.contact_id!} value={a.contact_id!}>{accountLabel(a)}{a.email ? ` — ${a.email}` : ''}</option>)}
+            {accounts.filter((a) => a.contact_id).map((a) => <option key={a.contact_id!} value={a.contact_id!}>{accountLabel(a)}{a.email ? ` — ${a.email}` : ''}</option>)}
           </select>
           <p className="text-[10px] text-gold-900/80 mt-1">The record will be owned by the selected client.</p>
         </div>
       )}
 
       <p className="text-xs text-muted mb-1">
-        {createEarly ? (
-          <>
-            A <strong>nickname or registered name</strong> is all it takes to create the
-            record — everything below can be completed now or later, and saves as you go.
-            Fields marked <strong>*</strong> are the ones the horse’s legal documents merge.
-          </>
-        ) : (
-          <>
-            Fields marked <strong>*</strong> feed your horse’s legal documents and are
-            required — fill them in or mark them <strong>N/A</strong>. Everything else is
-            optional but welcome. Your progress saves as you go — you can leave and pick
-            this up later.
-          </>
-        )}
+        Only a <strong>nickname</strong> is required. Everything else is optional — you can fill it in now or later.
+        A field you leave empty, or mark <strong>Add later</strong>, prints “To be provided” on a contract that needs it.
       </p>
 
-      <Section title="Location">
-        <div className="sm:col-span-2 flex flex-col gap-3">
-          <LocationEntry title="Home location" heading="Where the horse normally resides for boarding."
-            v={homeLoc} onChange={setHomeLoc} showError={showError} required nameOptions={locationNameOpts} people={directoryPeople} />
-          {/* The general "different location" alternate applies ONLY when the horse is
-              NOT leased. When leased, the lease location (below) IS the current location,
-              so this is hidden — showing it too would be redundant or contradictory. */}
-          {!leased && (
-            <>
-              <label className="flex items-center gap-2 text-[13px] text-green-900 cursor-pointer select-none">
-                <input type="checkbox" checked={currentDiffers} onChange={(e) => setCurrentDiffers(e.target.checked)} />
-                The horse is currently at a different location
-              </label>
-              {currentDiffers && (
-                <LocationEntry title="Current location" heading="Where the horse actually is right now."
-                  v={currentLoc} onChange={setCurrentLoc} showError={showError} required nameOptions={locationNameOpts} people={directoryPeople} />
-              )}
-            </>
-          )}
-          {leased && (
-            <p className="text-[11px] text-muted">
-              This horse is leased — its current location is set under <strong>Lease</strong> below.
-            </p>
-          )}
-        </div>
-      </Section>
-
-      {/* Lease — this record belongs to the horse's OWNER (the creating account or the
-          staff-assigned client), so there's no "owner vs lessee" choice. A checkbox
-          marks the horse as currently leased: it reveals the lessee + term + lease
-          location for an OFF-SYSTEM lease. When an executed lease contract exists for
-          the horse, this state is set from the contract (and reverts at term end). */}
-      <Section title="Lease">
-        <label className="sm:col-span-2 flex items-center gap-2 text-[13px] text-green-900 cursor-pointer select-none">
-          <input type="checkbox" checked={leased} disabled={leaseFromContract}
-            onChange={(e) => setF((p) => ({ ...p, is_leased: e.target.checked ? 'yes' : 'no' }))} />
-          This horse is currently leased
-          {leaseFromContract && <span className="text-[11px] text-muted">(from an executed lease contract)</span>}
-        </label>
-        {leased && (
-          <div className="sm:col-span-2 flex flex-col gap-3">
-            <div className="grid sm:grid-cols-2 gap-3">
-              <PersonBlock title="Lessee" showError={showError} span={false}
-                name={{ label: 'Lessee name', value: f.lessee_name_text, onChange: set('lessee_name_text'), placeholder: 'Full name', required: true }}
-                second={{ label: 'Lessee email', kind: 'email', value: f.lessee_email, onChange: set('lessee_email'), placeholder: 'name@example.com' }} />
-              <div className="grid grid-cols-2 gap-2 self-start">
-                <Field label="Lease start" type="date" value={f.lease_start} onChange={set('lease_start')} showError={showError} required />
-                <Field label="Lease end (empty = evergreen)" type="date" value={f.lease_end} onChange={set('lease_end')} showError={showError} />
-              </div>
-            </div>
-            {/* The lease location IS the horse's current location during the term. From
-                the contract (read-only) when one exists; entered here for off-system leases. */}
-            {leaseFromContract ? (
-              <div className="rounded-lg border border-green-800/15 bg-cream-100/40 p-3">
-                <p className="text-[11px] tracking-wide uppercase text-muted font-semibold mb-1">Lease location (current)</p>
-                <p className="text-sm text-green-900">{leaseLoc.name || 'From the lease contract'}</p>
-                <p className="text-[10px] text-muted mt-0.5">Set by the executed lease contract.</p>
-              </div>
-            ) : (
-              <LocationEntry title="Lease location (current)" heading="Where the horse resides during the lease term — this is its current location."
-                v={leaseLoc} onChange={setLeaseLoc} showError={showError} required nameOptions={locationNameOpts} people={directoryPeople} />
-            )}
-
-            {/* Temporary current location: an explicit override for a >48h stay during
-                the lease (show, vet, another boarding property). Pick from the horse's
-                known locations (excluding the current lease location) or add a new one. */}
-            {!tempLocOpen ? (
-              <button type="button" onClick={() => setTempLocOpen(true)}
-                className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">
-                ＋ Add temporary current location
-              </button>
-            ) : (
-              <div className="rounded-lg border border-gold-400/50 p-3 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold">Temporary current location</p>
-                  <button type="button" onClick={() => { setTempLocOpen(false); setTempLoc({}); }} className="text-[11px] text-muted hover:text-red-700 underline">Remove</button>
-                </div>
-                <p className="text-[10px] text-muted">A stay of more than 48 hours away from the lease location (show, vet, another barn).</p>
-                {knownLocationOpts.length > 0 && (
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-wide text-muted mb-1">Pick a known location, or enter one below</label>
-                    <select className={input}
-                      value={knownLocationOpts.some((o) => o.value === tempLoc.name) ? tempLoc.name : ''}
-                      onChange={(e) => {
-                        const picked = knownLocations.find((k) => k.name === e.target.value);
-                        setTempLoc(picked ?? {});
-                      }}>
-                      <option value="">— choose or enter below —</option>
-                      {knownLocationOpts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                  </div>
-                )}
-                <LocationEntry title="" heading="" v={tempLoc} onChange={setTempLoc} showError={false} nameOptions={locationNameOpts} people={directoryPeople} />
-              </div>
-            )}
+      <Section title="Horse identity">
+        <Field label="Name on Registration Certificate" value={f.registered_name} onChange={set('registered_name')}
+          addLater pending={pendingSet.has('registered_name')} onPending={(on) => setPendingField('registered_name', on)} />
+        <Field label="Nickname" value={f.nickname} onChange={set('nickname')} placeholder="Everyday name (e.g. Beau)" />
+        <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" onOptionAdded={(o) => setRegOrgOpts((prev) => addOpt(prev, o))} placeholder="Registry name" />
+        <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')}
+          addLater pending={pendingSet.has('registration_number')} onPending={(on) => setPendingField('registration_number', on)} />
+        <Field label="Microchip number" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" na
+          addLater pending={pendingSet.has('microchip_id')} onPending={(on) => setPendingField('microchip_id', on)} />
+        <Field label="Fair market value" type="text" inputMode="numeric" value={f.fair_market_value} onChange={set('fair_market_value')} placeholder="$0.00"
+          addLater pending={pendingSet.has('fair_market_value')} onPending={(on) => setPendingField('fair_market_value', on)}
+          onBlurFormat={(v) => { const n = Number(v.replace(/[$,\s]/g, '')); return Number.isFinite(n) && v.trim() !== '' ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : v; }} />
+        {showPassport ? (
+          <>
+            <Field label="Passport number" value={f.passport_number} onChange={set('passport_number')}
+              addLater pending={pendingSet.has('passport_number')} onPending={(on) => setPendingField('passport_number', on)} />
+            <SelectOrOther label="Passport country" value={f.passport_country} onChange={set('passport_country')} options={toOpts(passportCountryOpts)} lookupKey="horse_passport_country" onOptionAdded={(o) => setPassportCountryOpts((prev) => addOpt(prev, o))} placeholder="Country" />
+          </>
+        ) : (
+          <div className="sm:col-span-2">
+            <button type="button" onClick={() => setShowPassport(true)} className="text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add passport</button>
           </div>
         )}
       </Section>
 
-      <Section title="Horse identity">
-        <Field label="Nickname" value={f.nickname} onChange={set('nickname')} showError={showError} required placeholder="Everyday name (e.g. Beau)" />
-        <Field label="Full Name (registered name, if registered)" value={f.registered_name} onChange={set('registered_name')} showError={showError} required />
-        <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')} showError={showError} required />
-        <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} showError={false} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" onOptionAdded={(o) => setRegOrgOpts((prev) => addOpt(prev, o))} placeholder="Registry name" />
-        <Field span label="Microchip number" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" showError={showError} required />
-        <Field label="Passport number" value={f.passport_number} onChange={set('passport_number')} showError={false} />
-        <SelectOrOther label="Passport country" value={f.passport_country} onChange={set('passport_country')} showError={false} options={toOpts(passportCountryOpts)} lookupKey="horse_passport_country" onOptionAdded={(o) => setPassportCountryOpts((prev) => addOpt(prev, o))} placeholder="Country" />
-        <Field label="Current fair market value" type="text" inputMode="numeric" value={f.fair_market_value}
-          onChange={set('fair_market_value')} placeholder="$0.00" showError={showError} required
-          onBlurFormat={(v) => {
-            const n = Number(v.replace(/[$,\s]/g, ''));
-            return Number.isFinite(n) && v.trim() !== '' ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : v;
-          }} />
-      </Section>
-
       <Section title="Description">
-        <SelectOrOther label="Breed" value={f.breed} onChange={set('breed')} showError={showError} required
-          invalid={showError && !isKnownCode(f.breed, breedOpts)}
-          options={breedOpts} lookupKey="horse_breeds" onOptionAdded={(o) => setBreeds((prev) => addOpt(prev, o))} placeholder="Breed name"
-          hint="Not listed? Choose “Other (enter manually)” and type it — it joins the list." />
-        <SelectOrOther label="Color" value={f.color} onChange={set('color')} showError={showError} required
-          invalid={showError && !isKnownCode(f.color, colorOpts)}
-          options={colorOpts} lookupKey="horse_colors" onOptionAdded={(o) => setColors((prev) => addOpt(prev, o))} placeholder="Color"
-          hint="Not listed? Choose “Other (enter manually)” and type it — it joins the list." />
-        <Field span label="Markings" textarea value={f.markings} onChange={set('markings')} showError={false}
+        <SelectOrOther label="Breed" value={f.breed} onChange={set('breed')} invalid={showError && !isKnownCode(f.breed, breedOpts)} options={breedOpts} lookupKey="horse_breeds" onOptionAdded={(o) => setBreeds((prev) => addOpt(prev, o))} placeholder="Breed name" hint="Not listed? Choose “Other (enter manually)” and type it — it joins the list." />
+        <SelectOrOther label="Color" value={f.color} onChange={set('color')} invalid={showError && !isKnownCode(f.color, colorOpts)} options={colorOpts} lookupKey="horse_colors" onOptionAdded={(o) => setColors((prev) => addOpt(prev, o))} placeholder="Color" hint="Not listed? Choose “Other (enter manually)” and type it — it joins the list." />
+        <Field span label="Markings" textarea value={f.markings} onChange={set('markings')} addLater pending={pendingSet.has('markings')} onPending={(on) => setPendingField('markings', on)}
           placeholder="Describe the markings exactly as written on the registration certificate (e.g. Star pointed at bottom; left hind coronet white, lower on inside…)" />
-        <Field label="Sex" value={f.sex} onChange={set('sex')} showError={showError} required
-          options={[
-            { value: 'MARE', label: 'Mare' }, { value: 'GELDING', label: 'Gelding' },
-            { value: 'STALLION', label: 'Stallion' }, { value: 'FILLY', label: 'Filly' },
-            { value: 'COLT', label: 'Colt' },
-          ]} />
-        <Field label="Date of birth" type="date" value={f.date_of_birth} onChange={set('date_of_birth')} showError={showError} required />
-        {/* Height: display-only (there is no HORSE.HEIGHT contract token), so this
-            is the judgement half of PAMELA §B rule 1 — a list is FASTER and gives
-            one canonical spelling, with free text kept for the unusual case. */}
-        <SelectOrOther label="Height" value={f.height} onChange={set('height')} showError={showError} required
-          options={HEIGHT_OPTIONS} placeholder="e.g. 16.2 hh"
-          hint="Hands and inches — pick from the list, or enter it your own way." />
+        <Field label="Sex" value={f.sex} onChange={set('sex')} options={[
+          { value: 'MARE', label: 'Mare' }, { value: 'GELDING', label: 'Gelding' }, { value: 'STALLION', label: 'Stallion' }, { value: 'FILLY', label: 'Filly' }, { value: 'COLT', label: 'Colt' },
+        ]} />
+        <Field label="Date of birth" type="date" value={f.date_of_birth} onChange={set('date_of_birth')} addLater pending={pendingSet.has('date_of_birth')} onPending={(on) => setPendingField('date_of_birth', on)} />
+        <SelectOrOther label="Height" value={f.height} onChange={set('height')} options={HEIGHT_OPTIONS} placeholder="e.g. 16.2 hh" hint="Hands and inches — pick from the list, or enter it your own way." />
       </Section>
 
-      <Section title="History">
-        <Field label="Training history" value={f.training_history} onChange={set('training_history')} showError={false} />
-        <Field label="Competition history" value={f.competition_history} onChange={set('competition_history')} showError={false} />
+      <Section title="Location">
+        <div className="sm:col-span-2">
+          <LocationPicker v={loc} onChange={setLoc} nameOptions={locationNameOpts} onEditedKnown={setLocEditedKnown} />
+          {locEditedKnown && <p className="text-[10px] text-gold-800 mt-1">You edited a saved location — on save you’ll be asked whether to update it everywhere.</p>}
+        </div>
       </Section>
 
-      {/* Health & history — the three narrative fields grouped together (they were
-          previously split by the medication fields). Each is distinct:
-          medical history = past surgeries/treatments; behavior = temperament/handling
-          concerns; conditions = current or recurring issues. */}
-      <Section title="Health &amp; history">
-        <Field span label="Medical history (past surgeries, injuries, treatments)" textarea
-          value={f.medical_history} onChange={set('medical_history')} showError={false}
-          placeholder="e.g. colic surgery 2022; suspensory injury, fully recovered" />
-        <Field span label="Behavioral concerns (temperament, handling)" textarea
-          value={f.behavioral_history} onChange={set('behavioral_history')} showError={false}
-          placeholder="e.g. cross-ties well; spooky in wind" />
-        <Field span label="Known conditions (current or recurring)" textarea required
-          value={f.known_conditions} onChange={set('known_conditions')} showError={showError}
-          placeholder="e.g. allergic to cedar bedding; prone to right-front bruising when jumping" />
+      <Section title="Lease">
+        <label className="sm:col-span-2 flex items-center gap-2 text-[13px] text-green-900 cursor-pointer select-none">
+          <input type="checkbox" checked={leased} onChange={(e) => setF((p) => ({ ...p, is_leased: e.target.checked ? 'yes' : 'no' }))} />
+          This horse is currently leased
+        </label>
+        {leased && (
+          <div className="sm:col-span-2 grid sm:grid-cols-2 gap-3">
+            <div><L>Lessee name</L><input className={input} value={f.lessee_name_text ?? ''} placeholder="Full name" onChange={(e) => set('lessee_name_text')(e.target.value)} /></div>
+            <div><L>Lessee email</L><input type="email" className={input} value={f.lessee_email ?? ''} placeholder="name@example.com" onChange={(e) => set('lessee_email')(e.target.value)} /></div>
+            <div><L>Lease start</L><input type="date" className={input} value={f.lease_start ?? ''} onChange={(e) => set('lease_start')(e.target.value)} /></div>
+            <div><L>Lease end (empty = evergreen)</L><input type="date" className={input} value={f.lease_end ?? ''} onChange={(e) => set('lease_end')(e.target.value)} /></div>
+          </div>
+        )}
       </Section>
 
-      <Section title="Medications">
-        <RepeatableMeds kind="MEDICATION" items={meds} onChange={setMeds} />
-      </Section>
+      <Section title="History"><div className="sm:col-span-2 grid gap-3">
+        <div><L>Training history</L><NarrativeList noun="training entry" field="entry" placeholder="e.g. started under saddle 2021; schooling 1.10m" items={f.training_history_list ?? []} onChange={setList('training_history_list')} /></div>
+        <div><L>Competition history</L><NarrativeList noun="competition entry" field="entry" placeholder="e.g. 2023 regional championship, 2nd" items={f.competition_history_list ?? []} onChange={setList('competition_history_list')} /></div>
+      </div></Section>
 
-      <Section title="Supplements">
-        <RepeatableMeds kind="SUPPLEMENT" items={supplements} onChange={setSupplements} />
-      </Section>
+      <Section title="Health &amp; history"><div className="sm:col-span-2 grid gap-3">
+        <div><L>Medical history (past surgeries, injuries, treatments)</L><NarrativeList noun="entry" field="summary" placeholder="e.g. colic surgery 2022; suspensory injury, fully recovered" items={f.medical_history_list ?? []} onChange={setList('medical_history_list')} /></div>
+        <div><L>Behavioral concerns (temperament, handling)</L><NarrativeList noun="concern" field="concern" placeholder="e.g. cross-ties well; spooky in wind" items={f.behavioral_history_list ?? []} onChange={setList('behavioral_history_list')} /></div>
+        <div><L>Known conditions (current or recurring)</L><NarrativeList noun="condition" field="condition" placeholder="e.g. allergic to cedar bedding" items={f.known_conditions_list ?? []} onChange={setList('known_conditions_list')} /></div>
+        <div><L>Injuries caused to humans (riders and non-riders)</L>
+          <p className="text-[10px] text-muted mb-1">Must be disclosed before a horse is leased, sold, used in lessons, or cared for by staff. Prints on sale and lease contracts.</p>
+          <InjuryList items={f.injuries_to_humans ?? []} onChange={setList('injuries_to_humans')} /></div>
+      </div></Section>
 
-      <Section title="Vaccinations">
-        <RepeatableVaccinations items={vaccinations} onChange={setVaccinations} />
-      </Section>
+      <Section title="Medications"><RepeatableMeds kind="MEDICATION" items={meds} onChange={setMeds} /></Section>
+      <Section title="Supplements"><RepeatableMeds kind="SUPPLEMENT" items={supplements} onChange={setSupplements} /></Section>
+      <Section title="Vaccinations"><RepeatableVaccinations items={vaccinations} onChange={setVaccinations} /></Section>
 
-      <Section title="Veterinary and Farrier">
-        <VetBlock f={f} set={set} showError={showError} />
-        <PersonBlock title="Current Farrier" showError={showError}
-          name={{ label: 'Farrier name', value: f.farrier_name, onChange: set('farrier_name'), placeholder: 'Farrier name', required: true }}
-          second={{ label: 'Phone', kind: 'tel', value: f.farrier_phone, onChange: set('farrier_phone'), placeholder: '(555) 555-5555', required: true }} />
-      </Section>
-
-      {/* ⚠️ THE EMERGENCY EUTHANASIA BLOCK WAS REMOVED HERE (owner, 2026-08-25).
-          It was asked on the client-facing intake, and the same component is mounted
-          from a CONTRACT — which he confirmed — so a client met it on both paths.
-
-          Removed from the FORM only. The authorisation itself is a real thing that
-          belongs in the horse's Emergency Vet Authorization document; this was the
-          wrong place to collect it, not a thing that stopped mattering. The column
-          and every value already stored are untouched (D32). */}
+      <p className="text-[11px] text-muted mt-2">Care providers — vet, farrier, trainer, groom, care giver, emergency contact — are added on the horse’s record after it’s created.</p>
 
       {err && <p className="form-error text-sm text-red-700 mt-2">{err}</p>}
       {saveState !== 'idle' && (
         <p className={`text-[11px] mt-1 ${saveState === 'error' ? 'text-red-700' : 'text-muted'}`} aria-live="polite">
-          {saveState === 'saving' ? 'Saving…'
-            : saveState === 'saved' ? 'Progress saved.'
-            : `${saveErr ?? 'Could not save your last change.'} It will retry when you leave the next field.`}
+          {saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Progress saved.' : `${saveErr ?? 'Could not save your last change.'} It will retry when you leave the next field.`}
         </p>
       )}
-      <button type="button" onClick={submit} disabled={busy}
-        className="w-full mt-3 py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center justify-center gap-2 disabled:opacity-60">
-        {busy && <Loader2 size={16} className="animate-spin" />}
-        {submitLabel}
+      <button type="button" onClick={submit} disabled={busy} className="w-full mt-3 py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center justify-center gap-2 disabled:opacity-60">
+        {busy && <Loader2 size={16} className="animate-spin" />} {submitLabel}
       </button>
     </div>
   );
