@@ -10,6 +10,7 @@ import {
 } from '../../lib/horses';
 import { listHorseBreeds, listHorseColors } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { ProviderEditor } from '../../components/app/ProviderEditor';
 import { horseDeals, DEAL_TYPE_LABEL, type DealRow } from '../../lib/deals';
 import { usePropertyTerm } from '../../contexts/BrandProvider';
 import { withArticle } from '../../lib/propertyTerm';
@@ -101,6 +102,7 @@ export default function HorsePage() {
   const [busy, setBusy] = useState(false);
   const [showProviderHistory, setShowProviderHistory] = useState(false);
   const [showLocationHistory, setShowLocationHistory] = useState(false);
+  const [addingProvider, setAddingProvider] = useState(false);
 
   useDocumentTitle(detail?.record.nickname || detail?.record.registered_name || 'Horse');
 
@@ -303,6 +305,13 @@ export default function HorsePage() {
                         ))}
                       </ul>
                     )}
+                  </div>
+                )}
+                {isStaff && (
+                  <div className="sm:col-span-2">
+                    {addingProvider
+                      ? <ProviderEditor horseId={horseId!} onAdded={() => void load()} onClose={() => setAddingProvider(false)} />
+                      : <button type="button" onClick={() => setAddingProvider(true)} className="text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add provider</button>}
                   </div>
                 )}
               </Card>

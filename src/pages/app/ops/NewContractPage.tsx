@@ -9,7 +9,7 @@ import { toErrorMessage } from '../../../lib/ops/errors';
 import {
   claimDocumentOrigination, setPartyControls, assignHorseSection,
 } from '../../../lib/contracts';
-import { staffHorseRecords, contractPartyOptions, type StaffHorseRecord, type PartyOption } from '../../../lib/horses';
+import { staffHorseRecords, contractPartyOptions, horsePendingContractFields, type StaffHorseRecord, type PartyOption } from '../../../lib/horses';
 import { AddHorseModal } from '../../../components/app/AddHorseModal';
 import {
   PartyControlsCard, DEFAULT_PARTY_CONTROLS, roleLabel,
@@ -248,11 +248,24 @@ export default function NewContractPage() {
         + 'change has to go through staff. Turn “Can edit deal terms” on for one of the parties.');
       return;
     }
+    // The horse is either picked/added above (both write a real `horses` row
+    // through the one intake path) or deliberately left to a party to fill in.
+    const chosenHorse = (type === 'purchase' || type === 'bill_of_sale' || horseMode === 'pick') ? horseId : undefined;
+
+    // Before generating, warn about identity fields this contract will print as
+    // "To be provided" — empty or marked add-later. The author may proceed.
+    if (chosenHorse) {
+      const pendingFields = await horsePendingContractFields(chosenHorse).catch(() => [] as string[]);
+      if (pendingFields.length > 0) {
+        const ok = window.confirm(
+          `This horse has information not yet filled in. The contract will print “To be provided” for:\n\n`
+          + pendingFields.map((f) => `• ${f}`).join('\n')
+          + `\n\nGenerate the contract anyway?`);
+        if (!ok) return;
+      }
+    }
     setBusy(true);
     try {
-      // The horse is either picked/added above (both write a real `horses` row
-      // through the one intake path) or deliberately left to a party to fill in.
-      const chosenHorse = (type === 'purchase' || type === 'bill_of_sale' || horseMode === 'pick') ? horseId : undefined;
       const result = type === 'lease'
         ? await startLeaseContract(partyA, partyB, chosenHorse, leaseTemplateKey || undefined)
         : type === 'bill_of_sale'

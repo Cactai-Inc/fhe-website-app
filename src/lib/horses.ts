@@ -312,6 +312,31 @@ export async function horsePageDetail(horseId: string): Promise<HorsePageDetail>
   if (error) throw new DbError(error, 'Loading the horse');
   return data as HorsePageDetail;
 }
+
+/** The field labels the horse marked "add later" or left empty among the identity
+ *  fields a contract prints — for the pre-generation warning. */
+export async function horsePendingContractFields(horseId: string): Promise<string[]> {
+  const detail = await horsePageDetail(horseId).catch(() => null);
+  if (!detail) return [];
+  const r = detail.record;
+  const pending = new Set(r.pending_fields ?? []);
+  const out: string[] = [];
+  // fields that appear on the horse-identity block of the lease/sale/BOS
+  const fields: [string, boolean][] = [
+    ['registered_name', filledStr(r.registered_name)],
+    ['markings', filledStr(r.markings)],
+    ['registration_number', filledStr(r.registration_number)],
+    ['microchip_id', filledStr(r.microchip_id)],
+    ['date_of_birth', filledStr(r.date_of_birth)],
+    ['height', filledStr(r.height)],
+    ['fair_market_value', r.fair_market_value != null],
+  ];
+  for (const [key, has] of fields) {
+    if (pending.has(key) || !has) out.push(HORSE_FIELD_LABELS[key] ?? key);
+  }
+  return out;
+}
+const filledStr = (v: unknown) => v != null && String(v).trim() !== '';
 /** Delete a horse from the caller's stable (owner/staff). */
 export async function deleteStableHorse(horseId: string): Promise<void> {
   const { error } = await supabase.rpc('my_stable_delete_horse', { p_id: horseId });
