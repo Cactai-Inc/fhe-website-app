@@ -1372,15 +1372,6 @@ export async function listLeaseTemplates(): Promise<ContractTemplate[]> {
   return (data ?? []) as ContractTemplate[];
 }
 
-/* generateDocument() removed 2026-07-30. It called generate_document with
- * `p_engagement_id`, a parameter no overload has had since `engagements` was
- * retired — every invocation would have failed on arity. It had no callers.
- * The live signature is
- *   generate_document(p_contact_id, p_template_key, p_contract_id, p_horse_id,
- *                     p_parties, p_service_type[, p_horse_ids])
- * and the real generation paths (onboarding, the contract engine) call it
- * through their own wrappers. */
-
 export async function getDocument(id: string): Promise<DocumentRow | null> {
   const { data, error } = await supabase
     .from('documents')

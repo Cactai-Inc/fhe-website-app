@@ -281,12 +281,6 @@ export interface DocumentTypeOption {
   has_clauses: boolean;
 }
 
-/** generate_document(p_engagement_id, p_template_key) → (document_id, merged_body). */
-export interface GeneratedDocument {
-  document_id: string;
-  merged_body: string;
-}
-
 export type PartyRole =
   | 'CLIENT' | 'BUYER' | 'SELLER' | 'LESSOR' | 'LESSEE' | 'OWNER' | 'RIDER'
   | 'PARTICIPANT' | 'PARENT' | 'GUARDIAN' | 'EMERGENCY_CONTACT'
