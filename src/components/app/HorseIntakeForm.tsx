@@ -3,9 +3,11 @@ import { Loader2, ShieldQuestion } from 'lucide-react';
 import {
   createHorseRecord, setHorseLocations, setHorseMedications,
   getHorseIntakeRecord, updateHorseRecord, horsePageDetail, listHorseMedications,
+  addHorseProvider, addHorseEmergencyContact, matchAccountByEmail, peopleWithDesignation,
   errorText,
   type HorseIntakePayload, type HorseRecordOutcome, type HorseLocationDetail, type HorseMedication,
-  type KeepingSpot, type HorseVaccination, type NarrativeEntry, type InjuryEntry,
+  type KeepingSpot, type HorseVaccination, type NarrativeEntry,
+  type HorseProvider, type Designation,
 } from '../../lib/horses';
 import { uploadMyFile, type FileRow } from '../../lib/files';
 import {
@@ -284,6 +286,7 @@ function MedicationBlock({ v, kind, onChange, onRemove }: { v: HorseMedication; 
         <div><L>Supplier website</L><input type="url" className={input} value={v.supplier_website ?? ''} placeholder="https://…" onChange={(e) => set({ supplier_website: e.target.value })} /></div>
         <div><L>Supplier phone</L><input type="tel" className={input} value={v.supplier_phone ?? ''} placeholder="(555) 555-5555" onChange={(e) => set({ supplier_phone: e.target.value })} /></div>
         {kind === 'MEDICATION' && (<div><L>Rx info</L><input className={input} value={v.rx_info ?? ''} placeholder="Rx #, prescriber" onChange={(e) => set({ rx_info: e.target.value })} /></div>)}
+        <div className="sm:col-span-2"><L>Conditions of use</L><input className={input} value={v.conditions_of_use ?? ''} placeholder="why / when it's given (e.g. for the kissing-spine condition)" onChange={(e) => set({ conditions_of_use: e.target.value })} /></div>
       </div>
     </div>
   );
@@ -351,48 +354,191 @@ function RepeatableVaccinations({ items, onChange }: { items: HorseVaccination[]
   );
 }
 
-/** A repeatable single-text-field list (medical history, conditions, etc.) — the
- *  shared Add-button pattern. `field` is the object key each entry stores. */
-function NarrativeList({ noun, field, placeholder, items, onChange }: {
-  noun: string; field: string; placeholder: string; items: NarrativeEntry[]; onChange: (i: NarrativeEntry[]) => void;
-}) {
-  return (
-    <div className="sm:col-span-2 flex flex-col gap-2">
-      {items.map((it, i) => (
-        <div key={i} className="flex gap-2 items-start">
-          <textarea rows={2} className={`${input} resize-y`} value={it[field] ?? ''} placeholder={placeholder}
-            onChange={(e) => onChange(items.map((x, j) => (j === i ? { ...x, [field]: e.target.value } : x)))} />
-          <button type="button" onClick={() => onChange(items.filter((_, j) => j !== i))} className="text-[11px] text-muted hover:text-red-700 underline mt-2 shrink-0">Remove</button>
-        </div>
-      ))}
-      <button type="button" onClick={() => onChange([...items, { [field]: '' }])} className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add {noun}</button>
-    </div>
-  );
-}
+/** A field spec for StructuredList. `description` is always first and required-in-
+ *  spirit (the entry's spine); every other field is optional. */
+type SLField = { k: string; label: string; kind: 'text' | 'date' | 'textarea' | 'select' | 'bool'; options?: { value: string; label: string }[]; placeholder?: string };
 
-/** Injuries the horse caused to a person — a structured disclosure list. */
-function InjuryList({ items, onChange }: { items: InjuryEntry[]; onChange: (i: InjuryEntry[]) => void }) {
-  const set = (i: number, patch: Partial<InjuryEntry>) => onChange(items.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+const SECTION_NAMES = ['Known conditions', 'Medical history', 'Behavior', 'Medications', 'Supplements', 'Injuries to the horse', 'Injuries to humans'];
+const crossRefHelp = (self: string) =>
+  `If this relates to anything in the other sections (${SECTION_NAMES.filter((s) => s !== self).join(', ')}), mention it in the description — e.g. a medication the horse takes because of this.`;
+
+/** A repeatable structured list: a card per entry, a required description plus the
+ *  section's optional fields. One shared shape across all disclosure sections. */
+function StructuredList({ noun, selfSection, fields, items, onChange }: {
+  noun: string; selfSection: string; fields: SLField[];
+  items: NarrativeEntry[]; onChange: (i: NarrativeEntry[]) => void;
+}) {
+  const set = (i: number, k: string, v: string | boolean) => onChange(items.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
+  const val = (it: NarrativeEntry, k: string) => (it[k] == null ? '' : String(it[k]));
   return (
     <div className="sm:col-span-2 flex flex-col gap-2">
       {items.map((it, i) => (
         <div key={i} className="rounded-lg border border-green-800/15 p-3">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold">injury disclosure</p>
+            <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold">{noun}</p>
             <button type="button" onClick={() => onChange(items.filter((_, j) => j !== i))} className="text-[11px] text-muted hover:text-red-700 underline">Remove</button>
           </div>
           <div className="grid sm:grid-cols-2 gap-2">
-            <div><L>Date</L><input type="date" className={input} value={it.date ?? ''} onChange={(e) => set(i, { date: e.target.value })} /></div>
-            <div><L>Person</L>
-              <select className={input} value={it.person_type ?? ''} onChange={(e) => set(i, { person_type: e.target.value as InjuryEntry['person_type'] })}>
-                <option value="">Select…</option><option value="rider">Rider</option><option value="non-rider">Non-rider</option>
-              </select></div>
-            <div className="sm:col-span-2"><L>Description</L><textarea rows={2} className={`${input} resize-y`} value={it.description ?? ''} placeholder="What happened" onChange={(e) => set(i, { description: e.target.value })} /></div>
-            <div className="sm:col-span-2"><L>Outcome</L><input className={input} value={it.outcome ?? ''} placeholder="e.g. treated on site; no lasting injury" onChange={(e) => set(i, { outcome: e.target.value })} /></div>
+            <div className="sm:col-span-2"><L>Description</L>
+              <textarea rows={2} className={`${input} resize-y`} value={val(it, 'description')} placeholder="Describe it" onChange={(e) => set(i, 'description', e.target.value)} />
+              <p className="text-[10px] text-muted mt-1">{crossRefHelp(selfSection)}</p>
+            </div>
+            {fields.map((fd) => (
+              <div key={fd.k} className={fd.kind === 'textarea' ? 'sm:col-span-2' : ''}><L>{fd.label}</L>
+                {fd.kind === 'select' ? (
+                  <select className={input} value={val(it, fd.k)} onChange={(e) => set(i, fd.k, e.target.value)}>
+                    <option value="">Select…</option>
+                    {(fd.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                ) : fd.kind === 'bool' ? (
+                  <label className="flex items-center gap-2 text-[13px] text-green-900 mt-1"><input type="checkbox" checked={it[fd.k] === true} onChange={(e) => set(i, fd.k, e.target.checked)} /> Yes</label>
+                ) : fd.kind === 'textarea' ? (
+                  <textarea rows={2} className={`${input} resize-y`} value={val(it, fd.k)} placeholder={fd.placeholder} onChange={(e) => set(i, fd.k, e.target.value)} />
+                ) : (
+                  <input type={fd.kind === 'date' ? 'date' : 'text'} className={input} value={val(it, fd.k)} placeholder={fd.placeholder} onChange={(e) => set(i, fd.k, e.target.value)} />
+                )}
+              </div>
+            ))}
           </div>
         </div>
       ))}
-      <button type="button" onClick={() => onChange([...items, {}])} className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add injury disclosure</button>
+      <button type="button" onClick={() => onChange([...items, {}])} className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add {noun}</button>
+    </div>
+  );
+}
+
+const STATUS_COND = [{ value: 'ongoing', label: 'Ongoing' }, { value: 'episodic', label: 'Episodic' }, { value: 'resolved', label: 'Resolved' }];
+const STATUS_MED = [{ value: 'completed', label: 'Completed' }, { value: 'ongoing', label: 'Ongoing' }];
+const STATUS_INJH = [{ value: 'ongoing', label: 'Ongoing' }, { value: 'resolved', label: 'Resolved' }];
+
+/** An initial care provider captured on the intake form, persisted after the horse
+ *  is created. For an emergency contact, `emailMatched` records that the typed email
+ *  resolved to an account, so it links server-side rather than creating a contact. */
+interface ProviderDraft {
+  type: HorseProvider['type'];
+  role?: string;
+  role_label?: string;
+  contact_id?: string;   // staff designation pick
+  name?: string;
+  business_name?: string;
+  phone?: string;
+  email?: string;
+  emailMatched?: boolean;
+}
+
+const PROVIDER_TYPES: { value: HorseProvider['type']; label: string }[] = [
+  { value: 'VET', label: 'Veterinarian' }, { value: 'FARRIER', label: 'Farrier' },
+  { value: 'TRAINER', label: 'Trainer' }, { value: 'GROOM', label: 'Groom' },
+  { value: 'CARE_GIVER', label: 'Care giver' }, { value: 'EMERGENCY_CONTACT', label: 'Emergency contact' },
+  { value: 'OTHER', label: 'Other' },
+];
+const DESIGNATION_FOR: Partial<Record<HorseProvider['type'], Designation>> = { TRAINER: 'trainer', GROOM: 'groom', CARE_GIVER: 'care_giver' };
+
+/** One provider draft row. Staff see a designation-filtered picker for the care-team
+ *  roles; clients type manually. Emergency contacts use the account-email match flow. */
+function ProviderDraftRow({ v, isStaff, onChange, onRemove }: {
+  v: ProviderDraft; isStaff: boolean; onChange: (v: ProviderDraft) => void; onRemove: () => void;
+}) {
+  const set = (patch: Partial<ProviderDraft>) => onChange({ ...v, ...patch });
+  const desig = DESIGNATION_FOR[v.type];
+  const [people, setPeople] = useState<{ contact_id: string; display_name: string }[]>([]);
+  const [manual, setManual] = useState(!v.contact_id);
+  const [matchState, setMatchState] = useState<'idle' | 'checking' | 'matched' | 'nomatch' | 'limited'>('idle');
+  const [matchedName, setMatchedName] = useState('');
+  const [hasAccount, setHasAccount] = useState<'' | 'yes' | 'no' | 'unsure'>('');
+  useEffect(() => {
+    if (isStaff && desig) peopleWithDesignation(desig).then(setPeople).catch(() => setPeople([]));
+    else setPeople([]);
+  }, [isStaff, desig]);
+  async function checkEmail() {
+    if (!v.email?.trim()) return;
+    setMatchState('checking');
+    try {
+      const r = await matchAccountByEmail(v.email.trim());
+      if (r.rate_limited) { setMatchState('limited'); set({ emailMatched: false }); }
+      else if (r.matched) { setMatchState('matched'); setMatchedName(r.display_name ?? ''); set({ emailMatched: true, name: r.display_name ?? v.name }); }
+      else { setMatchState('nomatch'); set({ emailMatched: false }); }
+    } catch { setMatchState('idle'); }
+  }
+  return (
+    <div className="rounded-lg border border-green-800/15 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <select className="text-[11px] uppercase tracking-wide text-gold-800 font-semibold bg-transparent focus-ring rounded px-0.5"
+          value={v.type} onChange={(e) => onChange({ type: e.target.value as HorseProvider['type'] })}>
+          {PROVIDER_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
+        <button type="button" onClick={onRemove} className="text-[11px] text-muted hover:text-red-700 underline">Remove</button>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-2">
+        {v.type === 'OTHER' && (
+          <div className="sm:col-span-2"><L>Role label</L><input className={input} value={v.role_label ?? ''} placeholder="e.g. ranch hand" onChange={(e) => set({ role_label: e.target.value })} /></div>
+        )}
+        {/* Emergency contact: Yes/No/Unsure + account email match */}
+        {v.type === 'EMERGENCY_CONTACT' ? (
+          <>
+            <div className="sm:col-span-2"><L>Does this person have an account with us?</L>
+              <div className="flex gap-2">
+                {(['yes', 'no', 'unsure'] as const).map((o) => (
+                  <button key={o} type="button" onClick={() => { setHasAccount(o); setMatchState('idle'); }}
+                    className={`flex-1 py-1.5 rounded-lg border text-xs capitalize ${hasAccount === o ? 'bg-green-50 border-green-300 text-green-800 font-medium' : 'border-green-800/15 text-secondary hover:bg-green-50'}`}>{o}</button>
+                ))}
+              </div>
+            </div>
+            {hasAccount === 'yes' && (
+              <div className="sm:col-span-2"><L>The email this person uses for their account with us</L>
+                <div className="flex gap-2">
+                  <input type="email" className={input} value={v.email ?? ''} onChange={(e) => { set({ email: e.target.value, emailMatched: false }); setMatchState('idle'); }} placeholder="name@example.com" />
+                  <button type="button" className="btn-outline-gold text-xs whitespace-nowrap" disabled={matchState === 'checking'} onClick={() => void checkEmail()}>Check</button>
+                </div>
+                {matchState === 'matched' && <p className="text-[11px] text-green-800 mt-1">Matched: {matchedName}</p>}
+                {matchState === 'nomatch' && <p className="text-[11px] text-muted mt-1">No account matches — enter the person’s name and phone below.</p>}
+                {matchState === 'limited' && <p className="text-[11px] text-red-700 mt-1">Too many lookups — try again shortly.</p>}
+              </div>
+            )}
+            {(hasAccount === 'no' || hasAccount === 'unsure' || matchState === 'nomatch') && (
+              <>
+                <div><L>Name</L><input className={input} value={v.name ?? ''} placeholder="Full name" onChange={(e) => set({ name: e.target.value })} /></div>
+                <div><L>Phone</L><input type="tel" className={input} value={v.phone ?? ''} placeholder="(555) 555-5555" onChange={(e) => set({ phone: e.target.value })} /></div>
+              </>
+            )}
+          </>
+        ) : (isStaff && desig) ? (
+          <>
+            <div className="sm:col-span-2"><L>Person</L>
+              <select className={input} value={manual ? '__manual__' : (v.contact_id ?? '')}
+                onChange={(e) => { if (e.target.value === '__manual__') { setManual(true); set({ contact_id: undefined }); } else { setManual(false); set({ contact_id: e.target.value, name: people.find((p) => p.contact_id === e.target.value)?.display_name }); } }}>
+                <option value="">Select a person…</option>
+                <option value="__manual__">Enter manually…</option>
+                {people.map((p) => <option key={p.contact_id} value={p.contact_id}>{p.display_name}</option>)}
+              </select>
+              {people.length === 0 && <p className="text-[10px] text-muted mt-1">No one carries this designation yet — set it on the Team page, or enter manually.</p>}
+            </div>
+            {manual && <div className="sm:col-span-2"><L>Name</L><input className={input} value={v.name ?? ''} placeholder="Person’s name" onChange={(e) => set({ name: e.target.value })} /></div>}
+            <div><L>Phone</L><input type="tel" className={input} value={v.phone ?? ''} onChange={(e) => set({ phone: e.target.value })} placeholder="(555) 555-5555" /></div>
+            <div><L>Email</L><input type="email" className={input} value={v.email ?? ''} onChange={(e) => set({ email: e.target.value })} placeholder="name@example.com" /></div>
+          </>
+        ) : (
+          <>
+            <div><L>Name</L><input className={input} value={v.name ?? ''} placeholder="Name" onChange={(e) => set({ name: e.target.value })} /></div>
+            {v.type === 'VET' && <div><L>Practice / business</L><input className={input} value={v.business_name ?? ''} placeholder="Practice name" onChange={(e) => set({ business_name: e.target.value })} /></div>}
+            <div><L>Phone</L><input type="tel" className={input} value={v.phone ?? ''} onChange={(e) => set({ phone: e.target.value })} placeholder="(555) 555-5555" /></div>
+            <div><L>Email</L><input type="email" className={input} value={v.email ?? ''} onChange={(e) => set({ email: e.target.value })} placeholder="name@example.com" /></div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProviderDraftList({ isStaff, items, onChange }: { isStaff: boolean; items: ProviderDraft[]; onChange: (i: ProviderDraft[]) => void }) {
+  return (
+    <div className="sm:col-span-2 flex flex-col gap-2">
+      {items.map((it, i) => (
+        <ProviderDraftRow key={i} v={it} isStaff={isStaff}
+          onChange={(nv) => onChange(items.map((x, j) => (j === i ? nv : x)))}
+          onRemove={() => onChange(items.filter((_, j) => j !== i))} />
+      ))}
+      <button type="button" onClick={() => onChange([...items, { type: 'VET' }])} className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add provider</button>
     </div>
   );
 }
@@ -406,7 +552,7 @@ const PATCHABLE_KEYS: (keyof HorseIntakePayload)[] = [
 ];
 const LIST_KEYS: (keyof HorseIntakePayload)[] = [
   'pending_fields', 'medical_history_list', 'behavioral_history_list', 'known_conditions_list',
-  'training_history_list', 'competition_history_list', 'injuries_to_humans',
+  'training_history_list', 'competition_history_list', 'injuries_to_humans', 'injuries_to_horse',
 ];
 // Columns that cannot hold the 'N/A' sentinel.
 const TYPED_KEYS = new Set<keyof HorseIntakePayload>(['date_of_birth', 'fair_market_value', 'sex', 'euthanasia_authorization', 'breed', 'color']);
@@ -445,6 +591,8 @@ export function HorseIntakeForm({
   const [meds, setMeds] = useState<HorseMedication[]>([]);
   const [supplements, setSupplements] = useState<HorseMedication[]>([]);
   const [vaccinations, setVaccinations] = useState<HorseVaccination[]>([]);
+  // Initial care providers captured here, persisted after the horse is created.
+  const [providers, setProviders] = useState<ProviderDraft[]>([]);
   const [showPassport, setShowPassport] = useState(false);
   const [breeds, setBreeds] = useState<LookupCode[]>([]);
   const [colors, setColors] = useState<LookupCode[]>([]);
@@ -506,7 +654,8 @@ export function HorseIntakeForm({
           known_conditions_list: arr<NarrativeEntry>(raw.known_conditions_list),
           training_history_list: arr<NarrativeEntry>(raw.training_history_list),
           competition_history_list: arr<NarrativeEntry>(raw.competition_history_list),
-          injuries_to_humans: arr<InjuryEntry>(raw.injuries_to_humans),
+          injuries_to_humans: arr<NarrativeEntry>(raw.injuries_to_humans),
+          injuries_to_horse: arr<NarrativeEntry>(raw.injuries_to_horse),
           lessee_name_text: s(raw.lessee_name_text),
           lease_start: s(raw.lease_start).slice(0, 10), lease_end: s(raw.lease_end).slice(0, 10),
         };
@@ -584,6 +733,33 @@ export function HorseIntakeForm({
   const isKnownCode = (v: string | undefined, opts: { value: string }[]) => !v || v === NA || opts.some((o) => o.value === v);
   const hasRealName = filled(f.nickname) || filled(f.registered_name);
 
+  /** Persist the initial providers after the horse exists. Best-effort per row — a
+   *  failed provider never blocks the record. Emergency contacts with a matched
+   *  account email link server-side; others create from name/phone. */
+  async function persistProviders(hid: string) {
+    for (const p of providers) {
+      const hasContent = p.contact_id || filled(p.name) || filled(p.email) || filled(p.phone);
+      if (!hasContent) continue;
+      try {
+        if (p.type === 'EMERGENCY_CONTACT') {
+          if (p.emailMatched && filled(p.email)) await addHorseEmergencyContact({ horse_id: hid, email: p.email!.trim() });
+          else await addHorseEmergencyContact({ horse_id: hid, name: p.name?.trim(), phone: p.phone?.trim() });
+        } else {
+          await addHorseProvider({
+            horse_id: hid, relationship: p.type,
+            provider_role: p.role || 'primary',
+            role_label: p.type === 'OTHER' ? (p.role_label?.trim() || undefined) : undefined,
+            party_contact_id: p.contact_id || undefined,
+            party_name_text: p.name?.trim() || undefined,
+            business_name: p.type === 'VET' ? (p.business_name?.trim() || undefined) : undefined,
+            phone: p.phone?.trim() || undefined,
+            email: p.email?.trim() || undefined,
+          });
+        }
+      } catch { /* record saved; a provider is best-effort */ }
+    }
+  }
+
   function reject(message: string) { setShowError(true); setErr(message); setErrorPulse((n) => n + 1); }
 
   async function submit() {
@@ -594,13 +770,18 @@ export function HorseIntakeForm({
     if (colorOpts.length && !isKnownCode(f.color, colorOpts)) { reject('Color has to be chosen from the list — pick the closest match or "Other".'); return; }
     setBusy(true);
     try {
+      // If a known location's address was edited, ask whether to also update the
+      // saved location everywhere (not just this horse's own copy).
+      const updateKnown = locEditedKnown && filled(loc.name)
+        && window.confirm('You changed the address of a saved location. Also update the saved location for everyone, or keep this change on this horse only?\n\nOK = update the saved location.  Cancel = this horse only.');
       const linkExtras = async (hid: string) => {
         const cleanVacc = vaccinations.filter((v) => filled(v.name) || filled(v.details) || v.file_id);
         if (filled(loc.name) || cleanVacc.length) {
-          try { await setHorseLocations(hid, loc, cleanVacc); lastSavedLocRef.current = JSON.stringify(loc); lastSavedVaccRef.current = JSON.stringify(cleanVacc); } catch { /* record saved */ }
+          try { await setHorseLocations(hid, loc, cleanVacc, updateKnown); lastSavedLocRef.current = JSON.stringify(loc); lastSavedVaccRef.current = JSON.stringify(cleanVacc); } catch { /* record saved */ }
         }
         const items = [...meds, ...supplements].filter((m) => filled(m.name));
         if (items.length) { try { await setHorseMedications(hid, items); } catch { /* record saved */ } }
+        await persistProviders(hid);
       };
       const editingId = recordIdRef.current;
       if (editingId) {
@@ -716,24 +897,63 @@ export function HorseIntakeForm({
       </Section>
 
       <Section title="History"><div className="sm:col-span-2 grid gap-3">
-        <div><L>Training history</L><NarrativeList noun="training entry" field="entry" placeholder="e.g. started under saddle 2021; schooling 1.10m" items={f.training_history_list ?? []} onChange={setList('training_history_list')} /></div>
-        <div><L>Competition history</L><NarrativeList noun="competition entry" field="entry" placeholder="e.g. 2023 regional championship, 2nd" items={f.competition_history_list ?? []} onChange={setList('competition_history_list')} /></div>
+        <div><L>Training history</L><StructuredList noun="training entry" selfSection="" fields={[{ k: 'entry', label: 'Detail', kind: 'text', placeholder: 'e.g. started under saddle 2021; schooling 1.10m' }]} items={f.training_history_list ?? []} onChange={setList('training_history_list')} /></div>
+        <div><L>Competition history</L><StructuredList noun="competition entry" selfSection="" fields={[{ k: 'entry', label: 'Detail', kind: 'text', placeholder: 'e.g. 2023 regional championship, 2nd' }]} items={f.competition_history_list ?? []} onChange={setList('competition_history_list')} /></div>
       </div></Section>
 
-      <Section title="Health &amp; history"><div className="sm:col-span-2 grid gap-3">
-        <div><L>Medical history (past surgeries, injuries, treatments)</L><NarrativeList noun="entry" field="summary" placeholder="e.g. colic surgery 2022; suspensory injury, fully recovered" items={f.medical_history_list ?? []} onChange={setList('medical_history_list')} /></div>
-        <div><L>Behavioral concerns (temperament, handling)</L><NarrativeList noun="concern" field="concern" placeholder="e.g. cross-ties well; spooky in wind" items={f.behavioral_history_list ?? []} onChange={setList('behavioral_history_list')} /></div>
-        <div><L>Known conditions (current or recurring)</L><NarrativeList noun="condition" field="condition" placeholder="e.g. allergic to cedar bedding" items={f.known_conditions_list ?? []} onChange={setList('known_conditions_list')} /></div>
-        <div><L>Injuries caused to humans (riders and non-riders)</L>
-          <p className="text-[10px] text-muted mb-1">Must be disclosed before a horse is leased, sold, used in lessons, or cared for by staff. Prints on sale and lease contracts.</p>
-          <InjuryList items={f.injuries_to_humans ?? []} onChange={setList('injuries_to_humans')} /></div>
+      <Section title="Health &amp; disclosures"><div className="sm:col-span-2 grid gap-4">
+        <div><L>Known conditions (ongoing or episodic health/soundness, not behavioral)</L>
+          <StructuredList noun="condition" selfSection="Known conditions" items={f.known_conditions_list ?? []} onChange={setList('known_conditions_list')} fields={[
+            { k: 'date_first_noticed', label: 'Date first noticed', kind: 'date' },
+            { k: 'status', label: 'Status', kind: 'select', options: STATUS_COND },
+            { k: 'triggers', label: 'Triggers', kind: 'text', placeholder: 'e.g. cold, hard ground' },
+            { k: 'accommodations', label: 'Accommodations (management notes)', kind: 'textarea', placeholder: 'e.g. special feed blend; turnout routine' },
+          ]} /></div>
+        <div><L>Medical history (treatments, past and ongoing)</L>
+          <StructuredList noun="entry" selfSection="Medical history" items={f.medical_history_list ?? []} onChange={setList('medical_history_list')} fields={[
+            { k: 'date', label: 'Date', kind: 'date' },
+            { k: 'type', label: 'Type (surgery / treatment / monitoring)', kind: 'text', placeholder: 'e.g. colic surgery' },
+            { k: 'status', label: 'Status', kind: 'select', options: STATUS_MED },
+          ]} /></div>
+        <div><L>Behavioral concerns</L>
+          <StructuredList noun="concern" selfSection="Behavior" items={f.behavioral_history_list ?? []} onChange={setList('behavioral_history_list')} fields={[
+            { k: 'trigger', label: 'Trigger', kind: 'text', placeholder: 'e.g. wind, clippers' },
+            { k: 'date_since', label: 'Since', kind: 'date' },
+          ]} /></div>
+        <div><L>Injuries to the horse (dated events)</L>
+          <StructuredList noun="injury to the horse" selfSection="Injuries to the horse" items={f.injuries_to_horse ?? []} onChange={setList('injuries_to_horse')} fields={[
+            { k: 'date', label: 'Date or date range', kind: 'text', placeholder: 'e.g. May 2024' },
+            { k: 'rider_involved', label: 'A rider was involved', kind: 'bool' },
+            { k: 'human_hurt', label: 'A human was hurt', kind: 'bool' },
+            { k: 'human_was_riding', label: '…and they were riding', kind: 'bool' },
+            { k: 'outcome', label: 'Outcome', kind: 'text' },
+            { k: 'status', label: 'Status', kind: 'select', options: STATUS_INJH },
+          ]} />
+          <p className="text-[10px] text-muted mt-1">An injury with lasting effects should also get a Known conditions entry.</p></div>
+        <div><L>Injuries to humans (serious, where the horse could be at fault)</L>
+          <p className="text-[10px] text-muted mb-1">Serious injuries only — an ordinary fall is not recorded. The entry's existence is the disclosure. Prints on sale and lease contracts.</p>
+          <StructuredList noun="injury to a human" selfSection="Injuries to humans" items={f.injuries_to_humans ?? []} onChange={setList('injuries_to_humans')} fields={[
+            { k: 'date', label: 'Date', kind: 'date' },
+            { k: 'was_riding', label: 'The person was riding', kind: 'bool' },
+            { k: 'outcome', label: 'Outcome', kind: 'text' },
+          ]} /></div>
       </div></Section>
+
+      <Section title="Care providers">
+        <p className="sm:col-span-2 text-[11px] text-muted -mt-1">
+          Vet, farrier, trainer, groom, care giver, an emergency backup contact, or anyone else.
+          {recordIdRef.current ? ' More can be added, changed, or ended on the horse’s record.' : ''}
+        </p>
+        {recordIdRef.current ? (
+          <p className="sm:col-span-2 text-[11px] text-muted">Providers already on this record are managed from the record’s Current providers section.</p>
+        ) : (
+          <ProviderDraftList isStaff={isStaff} items={providers} onChange={setProviders} />
+        )}
+      </Section>
 
       <Section title="Medications"><RepeatableMeds kind="MEDICATION" items={meds} onChange={setMeds} /></Section>
       <Section title="Supplements"><RepeatableMeds kind="SUPPLEMENT" items={supplements} onChange={setSupplements} /></Section>
       <Section title="Vaccinations"><RepeatableVaccinations items={vaccinations} onChange={setVaccinations} /></Section>
-
-      <p className="text-[11px] text-muted mt-2">Care providers — vet, farrier, trainer, groom, care giver, emergency contact — are added on the horse’s record after it’s created.</p>
 
       {err && <p className="form-error text-sm text-red-700 mt-2">{err}</p>}
       {saveState !== 'idle' && (

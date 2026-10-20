@@ -8,7 +8,7 @@ import {
   listStableHorses, listStableItems,
   type StableHorse, type StableItem, type StableItemOwnerKind,
 } from '../../lib/stable';
-import { companyContactId } from '../../lib/horses';
+import { companyContactId, myLeasedHorseEntries, type MyLeasedHorse } from '../../lib/horses';
 import { useAuth } from '../../contexts/AuthContext';
 import { AddItemModal } from './StableEditors';
 import { Modal } from '../ops/kit/Modal';
@@ -46,6 +46,13 @@ export function StableSection() {
   const [gear, setGear] = useState<StableItem[] | null>(null);
   const [supplies, setSupplies] = useState<StableItem[] | null>(null);
   const [modal, setModal] = useState<'horse' | 'gear' | 'supply' | null>(null);
+  // The viewer's own lessee-layer entries — kept forever, even after a lease ends
+  // (independent of lease read access). Only shown to non-staff (a member view).
+  const [leased, setLeased] = useState<MyLeasedHorse[]>([]);
+  useEffect(() => {
+    if (isStaff) { setLeased([]); return; }
+    myLeasedHorseEntries().then(setLeased).catch(() => setLeased([]));
+  }, [isStaff]);
 
   const loadHorses = () => listStableHorses(asCompany).then(setHorses).catch(() => setHorses([]));
   const loadGear = () => listStableItems('gear', ownerKind).then(setGear).catch(() => setGear([]));
@@ -128,6 +135,38 @@ export function StableSection() {
           </Link>
         ))}
       </div>
+
+      {leased.length > 0 && (
+        <>
+          <SectionLabel>Horses I’ve leased</SectionLabel>
+          <p className="text-[11px] text-muted -mt-1.5 mb-2">
+            Your own records for horses you lease or have leased. These stay with you, even after a lease ends.
+          </p>
+          <div className="flex flex-col gap-2.5">
+            {leased.map((lh) => (
+              <div key={lh.horse_id} className="bg-white border border-green-800/10 rounded-xl p-4">
+                <p className="font-serif text-green-800 text-base font-semibold leading-tight">
+                  {lh.name}
+                  {!lh.is_current_lessee && <span className="text-muted font-sans text-xs font-normal"> · lease ended</span>}
+                </p>
+                <ul className="mt-1.5 flex flex-col gap-1">
+                  {lh.entries.map((e) => (
+                    <li key={e.id} className="text-[13px] text-green-900">
+                      <span className="text-[10px] uppercase tracking-wide text-muted mr-1.5">{e.kind.replace(/_/g, ' ')}</span>
+                      {(() => {
+                        const d = e.data as Record<string, unknown>;
+                        const pick = (k: string) => (typeof d[k] === 'string' ? (d[k] as string) : '');
+                        return pick('text') || pick('summary') || pick('concern') || pick('condition') || pick('entry') || pick('description') || pick('name') || '';
+                      })()}
+                    </li>
+                  ))}
+                  {lh.entries.length === 0 && <li className="text-[13px] text-muted">No entries yet.</li>}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <SectionLabel>Gear</SectionLabel>
       <div className="flex flex-col gap-2">

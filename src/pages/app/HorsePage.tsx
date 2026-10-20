@@ -5,12 +5,13 @@ import { FileText, CalendarDays, ClipboardList, PencilLine, Trash2, Activity, Hi
 import { useDocumentTitle } from '../../lib/hooks';
 import {
   horsePageDetail, deleteStableHorse, updateHorseRecord, endHorseProvider, endHorseLease,
-  HORSE_FIELD_LABELS,
-  type HorsePageDetail, type HorseProvider,
+  setLesseeEntryHidden, horseHiddenLesseeEntries, deleteLesseeEntry, HORSE_FIELD_LABELS,
+  type HorsePageDetail, type HorseProvider, type LesseeEntry,
 } from '../../lib/horses';
 import { listHorseBreeds, listHorseColors } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { ProviderEditor } from '../../components/app/ProviderEditor';
+import { LesseeEntryEditor } from '../../components/app/LesseeEntryEditor';
 import { horseDeals, DEAL_TYPE_LABEL, type DealRow } from '../../lib/deals';
 import { usePropertyTerm } from '../../contexts/BrandProvider';
 import { withArticle } from '../../lib/propertyTerm';
@@ -62,8 +63,8 @@ function DetailP({ label, value, pending }: { label: string; value?: string | nu
 }
 
 /** A narrative list rendered as a labeled bulleted block; hidden when empty. */
-function ListDetail({ label, items, field }: { label: string; items: Record<string, string>[]; field: string }) {
-  const vals = items.map((e) => e[field]).filter(Boolean);
+function ListDetail({ label, items, field }: { label: string; items: Record<string, unknown>[]; field: string }) {
+  const vals = items.map((e) => (typeof e[field] === 'string' ? (e[field] as string) : '')).filter(Boolean);
   if (vals.length === 0) return null;
   return (
     <div className="sm:col-span-2">
@@ -88,6 +89,20 @@ function providerLine(p: HorseProvider): string {
   return [p.name, p.business_name, p.phone, p.email].filter(Boolean).join(' · ');
 }
 
+const LESSEE_KIND_LABEL: Record<LesseeEntry['kind'], string> = {
+  note: 'Note', provider: 'Provider', medical_history: 'Medical history', behavioral: 'Behavioral',
+  known_condition: 'Known condition', injury: 'Injury', training: 'Training', competition: 'Competition',
+  location_note: 'Location note',
+};
+/** A lessee entry's one-line content, from whatever text key its kind uses. */
+function lesseeEntryLine(e: LesseeEntry): string {
+  const d = e.data as Record<string, unknown>;
+  const pick = (k: string) => (typeof d[k] === 'string' ? (d[k] as string) : '');
+  if (e.kind === 'provider') return [pick('name'), pick('business_name'), pick('phone'), pick('email')].filter(Boolean).join(' · ');
+  if (e.kind === 'injury') return [pick('date'), pick('person_type'), pick('description'), pick('outcome')].filter(Boolean).join(' · ');
+  return pick('text') || pick('summary') || pick('concern') || pick('condition') || pick('entry') || pick('note') || JSON.stringify(d);
+}
+
 export default function HorsePage() {
   const { horseId } = useParams<{ horseId: string }>();
   const navigate = useNavigate();
@@ -103,6 +118,8 @@ export default function HorsePage() {
   const [showProviderHistory, setShowProviderHistory] = useState(false);
   const [showLocationHistory, setShowLocationHistory] = useState(false);
   const [addingProvider, setAddingProvider] = useState(false);
+  const [addingLesseeEntry, setAddingLesseeEntry] = useState(false);
+  const [hiddenLessee, setHiddenLessee] = useState<LesseeEntry[] | null>(null);
 
   useDocumentTitle(detail?.record.nickname || detail?.record.registered_name || 'Horse');
 
@@ -141,6 +158,17 @@ export default function HorsePage() {
     if (!horseId) return;
     if (!window.confirm('End this lease? The lessee comes off the record (kept in history) and ownership reverts. Review the providers and location afterward.')) return;
     try { await endHorseLease(horseId); await load(); } catch (e) { setError(toErrorMessage(e, 'Could not end the lease.')); }
+  }
+  async function onHideLesseeEntry(id: string) {
+    if (!window.confirm('Hide this lessee entry from your view? It is never deleted and the lessee keeps it.')) return;
+    try { await setLesseeEntryHidden(id, true); await load(); } catch (e) { setError(toErrorMessage(e, 'Could not hide the entry.')); }
+  }
+  async function onRevealHidden() {
+    if (!horseId) return;
+    try { setHiddenLessee(await horseHiddenLesseeEntries(horseId)); } catch (e) { setError(toErrorMessage(e, 'Could not load hidden entries.')); }
+  }
+  async function onUnhideLesseeEntry(id: string) {
+    try { await setLesseeEntryHidden(id, false); setHiddenLessee(null); await load(); } catch (e) { setError(toErrorMessage(e, 'Could not un-hide the entry.')); }
   }
 
   if (error) return <div className="max-w-3xl mx-auto"><p role="alert" className="form-error">{error}</p></div>;
@@ -323,23 +351,68 @@ export default function HorsePage() {
                 </Card>
               )}
 
-              {(r.medical_history_list.length > 0 || r.behavioral_history_list.length > 0 || r.known_conditions_list.length > 0 || r.training_history_list.length > 0 || r.competition_history_list.length > 0 || r.injuries_to_humans.length > 0) && (
-                <Card title="Health & history" full>
-                  <ListDetail label="Medical history" items={r.medical_history_list} field="summary" />
-                  <ListDetail label="Behavioral concerns" items={r.behavioral_history_list} field="concern" />
-                  <ListDetail label="Known conditions" items={r.known_conditions_list} field="condition" />
+              {(r.known_conditions_list.length > 0 || r.medical_history_list.length > 0 || r.behavioral_history_list.length > 0 || r.injuries_to_horse.length > 0 || r.injuries_to_humans.length > 0 || r.training_history_list.length > 0 || r.competition_history_list.length > 0) && (
+                <Card title="Health & disclosures" full>
+                  <ListDetail label="Known conditions" items={r.known_conditions_list} field="description" />
+                  <ListDetail label="Medical history" items={r.medical_history_list} field="description" />
+                  <ListDetail label="Behavioral concerns" items={r.behavioral_history_list} field="description" />
+                  <ListDetail label="Injuries to the horse" items={r.injuries_to_horse} field="description" />
+                  <ListDetail label="Injuries to humans" items={r.injuries_to_humans} field="description" />
                   <ListDetail label="Training history" items={r.training_history_list} field="entry" />
                   <ListDetail label="Competition history" items={r.competition_history_list} field="entry" />
-                  {r.injuries_to_humans.length > 0 && (
+                </Card>
+              )}
+
+              {(detail.lessee_entries.length > 0 || detail.viewer_is_lessee || detail.lessee_hidden_count > 0) && (
+                <Card title={detail.viewer_is_lessee ? 'My entries for this horse' : 'From the lessee'} full>
+                  <p className="sm:col-span-2 text-[11px] text-muted -mt-1">
+                    {detail.viewer_is_lessee
+                      ? 'Your own records for this horse. They don’t change the owner’s record; the owner sees them marked as yours.'
+                      : 'Entries the lessee recorded on their own layer. They do not change the owner’s record above.'}
+                  </p>
+                  {detail.lessee_entries.map((e) => (
+                    <div key={e.id} className="sm:col-span-2 flex items-start justify-between gap-3 border-b border-green-800/5 pb-2 last:border-0">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-muted mb-0.5">
+                          {LESSEE_KIND_LABEL[e.kind]}{!detail.viewer_is_lessee && <> · <span className="text-gold-800 normal-case">Added by {e.author ?? 'the lessee'}</span></>}
+                        </p>
+                        <p className="text-sm text-green-900">{lesseeEntryLine(e)}</p>
+                      </div>
+                      {!detail.viewer_is_lessee && !!r.owner_name && (
+                        <button type="button" onClick={() => void onHideLesseeEntry(e.id)} className="text-[11px] text-muted hover:text-red-700 underline shrink-0 mt-1">Hide</button>
+                      )}
+                      {detail.viewer_is_lessee && (
+                        <button type="button" onClick={() => void deleteLesseeEntry(e.id).then(() => load())} className="text-[11px] text-muted hover:text-red-700 underline shrink-0 mt-1">Remove</button>
+                      )}
+                    </div>
+                  ))}
+                  {/* current lessee: add to their own layer */}
+                  {detail.viewer_is_lessee && (
                     <div className="sm:col-span-2">
-                      <p className="text-[10px] uppercase tracking-wide text-muted mb-0.5">Injuries caused to humans</p>
-                      <ul className="flex flex-col gap-1">
-                        {r.injuries_to_humans.map((inj, i) => (
-                          <li key={i} className="text-sm text-green-900">
-                            {[inj.date, inj.person_type ? `(${inj.person_type})` : null, inj.description, inj.outcome ? `— ${inj.outcome}` : null].filter(Boolean).join(' ')}
-                          </li>
-                        ))}
-                      </ul>
+                      {addingLesseeEntry
+                        ? <LesseeEntryEditor horseId={horseId!} onAdded={() => void load()} onClose={() => setAddingLesseeEntry(false)} />
+                        : <button type="button" onClick={() => setAddingLesseeEntry(true)} className="text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add my own entry</button>}
+                    </div>
+                  )}
+                  {/* owner: hidden entries count + reveal / un-hide */}
+                  {!detail.viewer_is_lessee && detail.lessee_hidden_count > 0 && (
+                    <div className="sm:col-span-2">
+                      {hiddenLessee === null ? (
+                        <button type="button" onClick={() => void onRevealHidden()} className="text-xs text-gold-800 underline">
+                          Reveal {detail.lessee_hidden_count} hidden lessee {detail.lessee_hidden_count === 1 ? 'entry' : 'entries'}
+                        </button>
+                      ) : (
+                        <div className="mt-2 flex flex-col gap-1">
+                          <p className="text-[10px] uppercase tracking-wide text-muted">Hidden entries</p>
+                          {hiddenLessee.map((e) => (
+                            <div key={e.id} className="flex items-start justify-between gap-3 text-[13px] text-secondary">
+                              <span>{LESSEE_KIND_LABEL[e.kind]} · {lesseeEntryLine(e)} <span className="text-muted">— {e.author}</span></span>
+                              <button type="button" onClick={() => void onUnhideLesseeEntry(e.id)} className="text-[11px] text-gold-800 underline shrink-0">Un-hide</button>
+                            </div>
+                          ))}
+                          <button type="button" onClick={() => setHiddenLessee(null)} className="self-start text-[11px] text-muted underline">Collapse</button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </Card>

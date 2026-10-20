@@ -52,19 +52,24 @@ export function errorText(e: unknown, fallback: string): string {
 /** The standardized intake payload (matched pair to the record; every field maps
  *  to a column — supabase/horse_record/horse_intake_form.md). All optional except
  *  a name; blanks stay blank. */
-/** One entry in a narrative list (medical history, conditions, etc.). The text key
- *  varies by list (summary/concern/condition/entry); extra keys are allowed. */
-export type NarrativeEntry = Record<string, string>;
+/** Every disclosure section shares one base shape: `description` is the only field
+ *  that carries weight; all others are optional, because a disclosing party may know
+ *  of something without knowing its date or details. Extra keys per section are
+ *  allowed and typed in the section-specific aliases below. */
+export type NarrativeEntry = Record<string, string | boolean | undefined>;
 
-/** An injury the horse caused to a person — a disclosure with a change log. */
-export interface InjuryEntry {
-  date?: string;
-  person_type?: 'rider' | 'non-rider';
-  description?: string;
-  outcome?: string;
-  /** Append-only change log: who changed what, when. */
-  changes?: { at: string; by?: string; note?: string }[];
-}
+/** Each section-specific entry is a NarrativeEntry with known optional keys; the index
+ *  signature keeps them assignable to the generic list components. */
+/** Known conditions: ongoing or episodic health/soundness issues (not behavioral). */
+export interface ConditionEntry extends NarrativeEntry { description?: string; date_first_noticed?: string; status?: string; triggers?: string; accommodations?: string }
+/** Medical history: treatments, past and ongoing. */
+export interface MedicalEntry extends NarrativeEntry { description?: string; date?: string; type?: string; status?: string }
+/** Behavior: behavioral concerns. */
+export interface BehaviorEntry extends NarrativeEntry { description?: string; trigger?: string; date_since?: string }
+/** Injuries the horse caused to a person — serious, horse-at-fault only. */
+export interface InjuryEntry extends NarrativeEntry { description?: string; date?: string; was_riding?: boolean; outcome?: string }
+/** Injuries the horse experienced — dated events, separate from medical history. */
+export interface HorseInjuryEntry extends NarrativeEntry { description?: string; date?: string; rider_involved?: boolean; human_hurt?: boolean; human_was_riding?: boolean; outcome?: string; status?: string }
 
 export interface HorseIntakePayload {
   owner_name_text?: string;
@@ -94,12 +99,13 @@ export interface HorseIntakePayload {
   euthanasia_authorization?: 'A' | 'B';
   /** Field keys the owner marked "add later" — present but not yet supplied. */
   pending_fields?: string[];
-  medical_history_list?: NarrativeEntry[];
-  behavioral_history_list?: NarrativeEntry[];
-  known_conditions_list?: NarrativeEntry[];
+  medical_history_list?: MedicalEntry[];
+  behavioral_history_list?: BehaviorEntry[];
+  known_conditions_list?: ConditionEntry[];
   training_history_list?: NarrativeEntry[];
   competition_history_list?: NarrativeEntry[];
   injuries_to_humans?: InjuryEntry[];
+  injuries_to_horse?: HorseInjuryEntry[];
   claim_note?: string;
   /** Staff-only: assign the record to this client account. Honored by the backend
    *  only when the caller is staff; ignored (record binds to caller) otherwise. */
@@ -154,11 +160,14 @@ export interface HorseVaccination {
 export async function setHorseLocations(
   horseId: string, current: HorseLocationDetail,
   vaccinations?: HorseVaccination[],
+  /** also write the edited address back to the shared saved-location option. */
+  updateKnown = false,
 ): Promise<void> {
   const { error } = await supabase.rpc('set_horse_locations', {
     p_horse_id: horseId,
     p_payload: {
       current,
+      update_known: updateKnown,
       ...(vaccinations !== undefined ? { vaccinations } : {}),
     },
   });
@@ -260,6 +269,63 @@ export async function contactDesignations(contactId: string): Promise<Designatio
   if (error) throw new DbError(error, 'Loading designations');
   return (data ?? []) as Designation[];
 }
+
+/** A lessee-layer entry (the lessee's own, attributed, isolated from the owner's). */
+export interface LesseeEntry {
+  id: string;
+  kind: 'note' | 'provider' | 'medical_history' | 'behavioral' | 'known_condition' | 'injury' | 'training' | 'competition' | 'location_note';
+  data: Record<string, unknown>;
+  created_at: string;
+  hidden?: boolean;
+  author?: string;
+  author_contact_id?: string;
+}
+
+export async function addLesseeEntry(p: { horse_id: string; kind: LesseeEntry['kind']; data: Record<string, unknown> }): Promise<string> {
+  const { data, error } = await supabase.rpc('add_lessee_entry', { p });
+  if (error) throw new DbError(error, 'Adding your entry');
+  return data as string;
+}
+export async function updateLesseeEntry(id: string, data: Record<string, unknown>): Promise<void> {
+  const { error } = await supabase.rpc('update_lessee_entry', { p_id: id, p_data: data });
+  if (error) throw new DbError(error, 'Updating your entry');
+}
+export async function deleteLesseeEntry(id: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_lessee_entry', { p_id: id });
+  if (error) throw new DbError(error, 'Removing your entry');
+}
+export async function setLesseeEntryHidden(id: string, hidden: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_lessee_entry_hidden', { p_id: id, p_hidden: hidden });
+  if (error) throw new DbError(error, 'Updating visibility');
+}
+/** The hidden lessee entries, for the owner's reveal/un-hide action. */
+export async function horseHiddenLesseeEntries(horseId: string): Promise<LesseeEntry[]> {
+  const { data, error } = await supabase.rpc('horse_hidden_lessee_entries', { p_horse: horseId });
+  if (error) throw new DbError(error, 'Loading hidden entries');
+  return (data ?? []) as LesseeEntry[];
+}
+
+/** The caller's own lessee layer across every horse they have entries on — works
+ *  forever, independent of current lease read access. */
+export interface MyLeasedHorse {
+  horse_id: string;
+  name: string;
+  is_current_lessee: boolean;
+  entries: LesseeEntry[];
+}
+export async function myLeasedHorseEntries(): Promise<MyLeasedHorse[]> {
+  const { data, error } = await supabase.rpc('my_leased_horse_entries');
+  if (error) throw new DbError(error, 'Loading your leased-horse records');
+  return (data ?? []) as MyLeasedHorse[];
+}
+
+/** The injuries-to-humans change log (staff/record-keeping): who changed it, when. */
+export interface InjuriesChange { at: string; by: string; action: string; before: unknown; after: unknown }
+export async function horseInjuriesChangeLog(horseId: string): Promise<InjuriesChange[]> {
+  const { data, error } = await supabase.rpc('horse_injuries_change_log', { p_horse: horseId });
+  if (error) throw new DbError(error, 'Loading the change log');
+  return (data ?? []) as InjuriesChange[];
+}
 export const DESIGNATION_LABELS: Record<Designation, string> = {
   trainer: 'Trainer', groom: 'Groom', care_giver: 'Care giver',
   instructor: 'Instructor', support_staff: 'Support staff', outside_provider: 'Outside provider',
@@ -280,9 +346,10 @@ export interface HorsePageDetail {
     registration_number: string | null; registration_org: string | null; microchip_id: string | null;
     passport_number: string | null; passport_country: string | null; fair_market_value: number | null;
     current_location: { name?: string; address_line1?: string; city?: string; state?: string; postal?: string; keeping_spots?: KeepingSpot[]; notes?: string; start_on?: string } | null;
-    medical_history_list: NarrativeEntry[]; behavioral_history_list: NarrativeEntry[];
-    known_conditions_list: NarrativeEntry[]; training_history_list: NarrativeEntry[];
+    medical_history_list: MedicalEntry[]; behavioral_history_list: BehaviorEntry[];
+    known_conditions_list: ConditionEntry[]; training_history_list: NarrativeEntry[];
     competition_history_list: NarrativeEntry[]; injuries_to_humans: InjuryEntry[];
+    injuries_to_horse: HorseInjuryEntry[];
     pending_fields: string[]; euthanasia_authorization: string | null;
     owner_name: string | null; lessee_name: string | null; lease_start: string | null; lease_end: string | null;
   };
@@ -292,6 +359,11 @@ export interface HorsePageDetail {
   provider_history: HorseProvider[];
   /** Ended location rows, newest end first. */
   location_history: HorseLocationHistory[];
+  /** The lessee layer: non-hidden entries a (current or former) lessee created,
+   *  each marked with the author's name. Additive; the owner's lists are untouched. */
+  lessee_entries: LesseeEntry[];
+  /** How many lessee entries the owner has hidden (revealable, never deleted). */
+  lessee_hidden_count: number;
   /** A11: true only when the signed-in viewer IS the stamped lessee. */
   viewer_is_lessee: boolean;
   /** A12: schedule captured in the currently-active executed lease document, read through at display time. Null when no active lease. */
@@ -363,6 +435,8 @@ export interface HorseMedication {
   rx_info?: string;
   order_units?: string;
   days_supply?: string;
+  /** Conditions of use — why/when it's given (e.g. "for the kissing-spine condition"). */
+  conditions_of_use?: string;
 }
 /** Replace-all a horse's medications + supplements. */
 export async function setHorseMedications(horseId: string, items: HorseMedication[]): Promise<void> {

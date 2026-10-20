@@ -119,9 +119,9 @@ function CreateDealModal({ onClose, onCreated }: {
       // empty on arrival: the governing instrument, plus the agreement if chosen
       if (dealType === 'SALE') {
         await addDealDocument(deal.deal_id, 'HORSE_BILL_OF_SALE', withAgreement ? 'YES' : 'NO');
-        if (withAgreement) await addDealDocument(deal.deal_id, 'HORSE_SALE_V2');
+        if (withAgreement) await addDealDocument(deal.deal_id, 'HORSE_SALE_V3');
       } else {
-        await addDealDocument(deal.deal_id, 'HORSE_LEASE_V2');
+        await addDealDocument(deal.deal_id, 'HORSE_LEASE_V3');
       }
       draft.clear();
       onCreated(deal.deal_id);

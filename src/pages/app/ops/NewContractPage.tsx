@@ -83,7 +83,7 @@ export default function NewContractPage() {
   // the Standard as "Default" ("We dont label the default as that we call it
   // Standard"), so the picker now names it explicitly instead.
   const [leaseTemplates, setLeaseTemplates] = useState<ContractTemplate[]>([]);
-  const [leaseTemplateKey, setLeaseTemplateKey] = useState('HORSE_LEASE_V2');
+  const [leaseTemplateKey, setLeaseTemplateKey] = useState('HORSE_LEASE_V3');
 
   const [partyA, setPartyA] = useState('');   // lessee / buyer contact id
   const [partyB, setPartyB] = useState('');   // lessor / seller contact id
