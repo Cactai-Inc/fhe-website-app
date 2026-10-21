@@ -155,6 +155,11 @@ export interface FieldStructured {
   incidents?: { category?: string; start?: string; end?: string; endPresent?: boolean; detail?: string }[];
   // reveal_text (§11.6 tack yes/no → input)
   enabled?: boolean;
+  // disc_med (reciprocal disclosure: medications / supplements added on a contract).
+  // Field-for-field with horse_medications; each becomes a record row at execution.
+  discMeds?: {
+    name?: string; dosage?: string; instructions?: string; conditions_of_use?: string;
+  }[];
 }
 
 export interface ContractChangeRequest {

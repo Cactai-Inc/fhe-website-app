@@ -986,6 +986,95 @@ function MedicationBuilder({
   );
 }
 
+/** DISCLOSURE med/supplement builder. Structured { discMeds:[{name, dosage,
+ *  instructions, conditions_of_use}] } — the same fields the horse record holds on
+ *  horse_medications, so an entry added here moves to the record intact at execution.
+ *  A pick-on-file convenience seeds all four fields from an existing record entry;
+ *  every field stays editable, and new entries can be typed. The imported entries the
+ *  record already holds are shown read-only above this control (the DISCLOSED clause);
+ *  this control is only for ADDING. `kindLabel` is "medication" or "supplement",
+ *  derived from the field key, and filters the on-file picker to that kind. */
+function DiscMedBuilder({
+  f, onSaveStructured, disabled,
+}: { f: ContractField; onSaveStructured: SaveStructFn; disabled: boolean }) {
+  const { draft, setLocal, commit, beginEdit, flush } = useStructuredDraft(f, onSaveStructured);
+  const items = draft.discMeds ?? [];
+  const isSupp = /SUPPLEMENTS?$/i.test(f.field_key);
+  const kindLabel = isSupp ? 'supplement' : 'medication';
+  const add = () => commit({ ...draft, discMeds: [...items, { name: '', dosage: '', instructions: '', conditions_of_use: '' }] });
+  const horseId = useContext(ContractHorseContext);
+  const [onRecord, setOnRecord] = useState<HorseMedication[]>([]);
+  useEffect(() => {
+    if (!horseId) { setOnRecord([]); return; }
+    let active = true;
+    listHorseMedications(horseId)
+      .then((rows) => { if (active) setOnRecord(rows.filter((r) => (r.name ?? '').trim() && (r.kind === (isSupp ? 'SUPPLEMENT' : 'MEDICATION')))); })
+      .catch(() => { if (active) setOnRecord([]); });
+    return () => { active = false; };
+  }, [horseId, isSupp]);
+  const editLocal = (i: number, patch: Partial<NonNullable<FieldStructured['discMeds']>[number]>) =>
+    setLocal({ ...draft, discMeds: items.map((it, j) => (j === i ? { ...it, ...patch } : it)) });
+  const editNow = (i: number, patch: Partial<NonNullable<FieldStructured['discMeds']>[number]>) =>
+    commit({ ...draft, discMeds: items.map((it, j) => (j === i ? { ...it, ...patch } : it)) });
+  const remove = (i: number) => commit({ ...draft, discMeds: items.filter((_, j) => j !== i) });
+  const cell = 'w-full px-2 py-1 rounded border border-green-800/15 text-sm text-green-900 placeholder:text-muted focus-ring bg-white disabled:bg-cream-100';
+  return (
+    <div className="flex flex-col gap-3 w-full max-w-2xl">
+      {items.map((it, i) => (
+        <div key={i} className="rounded-lg border border-green-800/15 p-3">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <p className="text-[11px] uppercase tracking-wide text-muted">{kindLabel} {i + 1}</p>
+            {!disabled && (
+              <button type="button" className="text-muted hover:text-red-700 text-xs"
+                onClick={() => remove(i)} title="Remove">✕</button>
+            )}
+          </div>
+          {onRecord.length > 0 && !disabled && (
+            <label className="flex flex-col gap-0.5 text-[11px] text-muted mb-2">
+              From this horse’s record
+              <select className={cell}
+                value={onRecord.some((m) => m.name === it.name) ? (it.name ?? '') : ''}
+                onChange={(e) => {
+                  const picked = onRecord.find((m) => m.name === e.target.value);
+                  if (!picked) return;
+                  editNow(i, {
+                    name: picked.name ?? '',
+                    dosage: picked.dosage ?? '',
+                    instructions: picked.instructions ?? '',
+                    conditions_of_use: picked.conditions_of_use ?? '',
+                  });
+                }}>
+                <option value="">Choose one on file, or type it below…</option>
+                {onRecord.map((m, k) => (
+                  <option key={m.id ?? k} value={m.name ?? ''}>
+                    {m.name}{m.dosage ? ` — ${m.dosage}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <div className="grid sm:grid-cols-2 gap-2">
+            <label className="flex flex-col gap-0.5 text-[11px] text-muted">Name
+              <input className={cell} disabled={disabled} value={it.name ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { name: e.target.value })} /></label>
+            <label className="flex flex-col gap-0.5 text-[11px] text-muted">Dosage
+              <input className={cell} disabled={disabled} value={it.dosage ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { dosage: e.target.value })} /></label>
+            <label className="flex flex-col gap-0.5 text-[11px] text-muted">Instructions
+              <input className={cell} disabled={disabled} value={it.instructions ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { instructions: e.target.value })} /></label>
+            <label className="flex flex-col gap-0.5 text-[11px] text-muted">Conditions of use
+              <input className={cell} disabled={disabled} value={it.conditions_of_use ?? ''} onFocus={beginEdit} onBlur={flush} onChange={(e) => editLocal(i, { conditions_of_use: e.target.value })} /></label>
+          </div>
+        </div>
+      ))}
+      {!disabled && (
+        <button type="button" onClick={add}
+          className="self-start text-sm text-green-800 border border-dashed border-green-400 rounded-lg px-3 py-1.5 hover:bg-green-50 focus-ring">
+          ＋ Add a {kindLabel}
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** §3.1 LEASE-FEE builder. One structured value { initial_due, options:[{amount,
  *  notes}], selected }. An "Initial payment due" free-text, then a repeatable list
  *  of monthly fee options ("$<amount> due on the first day of each month. <notes>").
@@ -1275,6 +1364,9 @@ function FieldControl({
   }
   if (fmt === 'med_schedule') {
     return <MedicationBuilder f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
+  }
+  if (fmt === 'disc_med') {
+    return <DiscMedBuilder f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
   }
   if (fmt === 'installment_schedule') {
     return <InstallmentScheduleBuilder f={f} onSaveStructured={onSaveStructured} disabled={disabled} />;
@@ -1744,7 +1836,7 @@ export function InlineFieldControl({
 
   // Structured / multi-part formats can't collapse to a single inline token —
   // render the block control, but inline-block and compact so it stays in flow.
-  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'installment_schedule', 'incident_list', 'contacts_list', 'reveal_text', 'certify', 'add_text', 'share_amount', 'cost_split'].includes(fmt)
+  const isStructured = ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'disc_med', 'installment_schedule', 'incident_list', 'contacts_list', 'reveal_text', 'certify', 'add_text', 'share_amount', 'cost_split'].includes(fmt)
     || kind === 'responsibility' || kind === 'week_grid';
   if (isStructured) {
     // add_text renders as a FLEX row: collapsed it's the "+ Add …" button with
