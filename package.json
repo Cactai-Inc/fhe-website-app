@@ -9,7 +9,7 @@
     "build:client": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && npm run check:tokens && npm run check:disclosure-labels",
     "typecheck:api": "tsc --noEmit -p tsconfig.api.json",
     "check:tokens": "node scripts/check-token-registry.mjs",
     "check:disclosure-labels": "node scripts/check-disclosure-labels.mjs",

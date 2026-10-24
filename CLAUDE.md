@@ -783,6 +783,20 @@ reporting success.
   ever actually gets removed from the db and this is a good example of the reason why. the only
   time something is ever actually truly scrubbed is if its deemed sensitive information that
   shouldnt be in the database."*
+  ⚠️ **SCOPE CORRECTION (owner, 2026-10-24) — D32 IS ABOUT CLIENT RECORDS AND USER DATA, NOT
+  CODE OR SCHEMA ARTIFACTS.** D32 had been over-applied: cited to RETAIN replaced or unused
+  CODE and DB-DEFINITION artifacts — dead functions, superseded clauses/fields, orphan
+  registry rows (e.g. `template_tokens`), unused columns — behind "nothing is ever deleted."
+  That was never its intent. **D32 protects the records and files a person's history depends
+  on (accounts, documents, evaluations, uploads, signatures — D11/D15/D16/D27). It does NOT
+  protect machinery.** A code or schema/definition artifact that has been REPLACED or is
+  DETERMINED UNUSED is REMOVED — total deletion, no retire-behind-a-flag — consistent with the
+  clean-code rule (removal = total deletion; comments/definitions document current state, not
+  history). "Determined unused" means traced to zero consumers across templates, composers,
+  and code, not merely absent at a glance. **D16 is unchanged** — an executed-contract
+  *template* is the meaning of past signatures and stays; that is a record, not dead
+  machinery. When in doubt whether an artifact is a record (keep) or machinery (remove when
+  dead), it is the owner's call.
   **This is the single principle D11, D15, D16 and D27 were each independently instances of.**
   Cite D32 going forward; the other four remain as the worked examples.
   - **D11** — accounts are archived, never purged; a departing client's files stay because
