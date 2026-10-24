@@ -76,6 +76,7 @@ const FORMAT_PLACEHOLDER = {
   certify: '(checkbox; label is the certification statement)',
   yesno: '(Yes / No buttons)',
   add_text: '"+ Add …" → free text',
+  initials: 'Initials (typed; must match the signing party’s initials)',
 };
 
 /** control-type description from input_kind + format_type. */

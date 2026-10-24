@@ -83,24 +83,27 @@ function build(templateKey) {
   const parts = [];
   const sorted = [...sections].sort((a, b) => a.sort_order - b.sort_order);
   let n = 0;
+  let clauseCount = 0; // exactly one per clause, however it renders — must equal the manifest's clause count
   for (const s of sorted) {
     n += 1;
     parts.push(`<h2>${n}. ${esc(s.heading)}</h2>`);
     const secClauses = clauses.filter((c) => c.section_key === s.section_key).sort((a, b) => a.sort_order - b.sort_order);
     for (const c of secClauses) {
+      clauseCount += 1;
+      const dc = `data-clause="${esc(c.clause_key)}"`;
       const desc = describeCondition(c.conditional_on);
       if (desc) parts.push(`<p class="cond">▸ Shows when: ${esc(desc)}</p>`);
       // disclosure content token → the boxed sample
       const discMatch = (c.body || '').match(/\{\{HORSE\.([A-Z_]+)\}\}/);
       if (discMatch && DISCLOSURE_FIELDS[discMatch[1]]) {
         const lead = c.body.split('{{')[0];
-        parts.push(`<p>${renderBody(lead)}</p>`);
+        parts.push(`<p ${dc}>${renderBody(lead)}</p>`);
         parts.push(`<div class="entry"><div class="erow">${DISCLOSURE_FIELDS[discMatch[1]]
           .map((l) => `<div class="box"><div class="blabel">${esc(l)}</div><div class="bval"></div></div>`).join('')}</div></div>`);
       } else if ((c.body || '').trim() === '') {
-        parts.push(`<p class="carrier">[input carrier — holds a selector; no printed text]</p>`);
+        parts.push(`<p class="carrier" ${dc}>[input carrier — holds a selector; no printed text]</p>`);
       } else {
-        parts.push(`<p>${renderBody(c.body)}</p>`);
+        parts.push(`<p ${dc}>${renderBody(c.body)}</p>`);
       }
     }
   }
@@ -117,7 +120,7 @@ function build(templateKey) {
     .blabel{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:rgba(21,128,61,.7)}
     .bval{min-height:1.2em;border-bottom:1px dashed #ccc}
   </style><h1>SAMPLE — ${esc(tpl?.title || templateKey)}</h1>
-  <p style="font-size:11px;color:#888">Every clause and branch shown. Gray lines name the selection that produces each conditional clause. Input tokens print as labeled blanks; disclosure sections show one sample entry with field boxes. Not a real document.</p>
+  <p style="font-size:11px;color:#888">Every clause and branch shown (${clauseCount} clauses — matches the editor manifest). Gray lines name the selection that produces each conditional clause. Input tokens print as labeled blanks; disclosure sections show one sample entry with field boxes. Not a real document.</p>
   ${parts.join('\n')}`;
 }
 

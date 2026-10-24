@@ -1,7 +1,7 @@
 ══════════════════════════════════════════════════════════════════════════════
 EDITOR MANIFEST — HORSE_SALE_V3
 Title: Horse Sale Agreement   ·   version: 1   ·   active: true   ·   kind: HORSE_SALE
-Generated: 2026-10-23T03:47:21.290Z
+Generated: 2026-10-24T18:25:26.119Z
 Document order. Hidden branches included and marked. No truncation.
 ══════════════════════════════════════════════════════════════════════════════
 
@@ -34,6 +34,11 @@ SECTION 1 — [PARTIES]  Parties
           own condition (when this field itself is shown): (none)
           gates clauses: DEFINITIONS.BUYER_IND (sort 40), DEFINITIONS.BUYER_ENT (sort 50), DEFINITIONS.BUYER_PENDING (sort 60), REPS.BUYER_IND (sort 20), REPS.BUYER_ENT (sort 30), REPS.BUYER_PENDING (sort 40), SIGNATURES.BUYER_CAPACITY (sort 20)
 
+  CLAUSE [CO_BUYER_ENABLED_PENDING]  (sort 14, type input)
+    condition: {"equals":[""],"field_key":"TXN.CO_BUYER_ENABLED"}
+    body:
+      | [Pending — select whether there is a co-buyer. This placeholder is replaced by the applicable term and blocks signing.]
+
   CLAUSE [PARTIES.CO_BUYER_GATE]  (sort 15, type prose)
     condition: (none — always shown)
     body:
@@ -47,7 +52,7 @@ SECTION 1 — [PARTIES]  Parties
           helper (guidance): (none)
           tooltip: (none)
           own condition (when this field itself is shown): (none)
-          gates clauses: PARTIES.CO_BUYER (sort 20), SIGNATURES.COBUYER_BLOCK (sort 30), SIGNATURES.COBUYER_CAPACITY (sort 40)
+          gates clauses: HORSE.INJURIES_TO_HUMANS_DISCLOSED_ACK_CB (sort 125), HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ACK_CB (sort 134), HORSE.INJURIES_TO_HORSE_DISCLOSED_ACK_CB (sort 144), HORSE.KNOWN_CONDITIONS_DISCLOSED_ACK_CB (sort 154), HORSE.MEDICAL_HISTORY_DISCLOSED_ACK_CB (sort 164), HORSE.MEDICATIONS_DISCLOSED_ACK_CB (sort 174), HORSE.SUPPLEMENTS_DISCLOSED_ACK_CB (sort 184), CO_BUYER_ENABLED_PENDING (sort 14), PARTIES.CO_BUYER (sort 20), SIGNATURES.COBUYER_BLOCK (sort 30), SIGNATURES.COBUYER_CAPACITY (sort 40)
 
   CLAUSE [PARTIES.CO_BUYER]  (sort 20, type input)
     heading: Co-Buyer
@@ -286,7 +291,7 @@ SECTION 3 — [HORSE]  The Horse
           helper (guidance): (none)
           tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
           own condition (when this field itself is shown): (none)
-          gates clauses: HORSE.BREEDING (sort 90), HORSE.BREEDING_DECLINED (sort 100)
+          gates clauses: BREEDING_ELECTION_PENDING (sort 190), HORSE.BREEDING (sort 192), HORSE.BREEDING_DECLINED (sort 193)
       ● FIELD [HORSE.AGE_DOB]  "Foaling date"
           control: text   value_type: text
           required: false   optional: false   set-by (owner_role): SELLER
@@ -321,6 +326,11 @@ SECTION 3 — [HORSE]  The Horse
     body:
       | Seller warrants that Seller lawfully owns the Horse, holds good and marketable title to the Horse, free and clear of all liens, security interests, leases, breeding contracts, co-ownership interests, and encumbrances except as expressly disclosed in this Agreement, and has all requisite rights, authority, and (where there are co-owners) permission to enter into this Agreement and sell the Horse.
 
+  CLAUSE [HAS_ENCUMBRANCES_PENDING]  (sort 24, type input)
+    condition: {"equals":[""],"field_key":"TXN.HAS_ENCUMBRANCES"}
+    body:
+      | [Pending — select whether any encumbrances affect the Horse. This placeholder is replaced by the applicable term and blocks signing.]
+
   CLAUSE [HORSE.ENCUMBRANCES_GATE]  (sort 25, type prose)
     condition: (none — always shown)
     body:
@@ -334,7 +344,7 @@ SECTION 3 — [HORSE]  The Horse
           helper (guidance): (none)
           tooltip: (none)
           own condition (when this field itself is shown): (none)
-          gates clauses: HORSE.ENCUMBRANCES (sort 30)
+          gates clauses: HAS_ENCUMBRANCES_PENDING (sort 24), HORSE.ENCUMBRANCES (sort 30)
 
   CLAUSE [HORSE.ENCUMBRANCES]  (sort 30, type input)
     heading: Disclosed Encumbrances and Interests
@@ -352,163 +362,7 @@ SECTION 3 — [HORSE]  The Horse
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.HAS_ENCUMBRANCES"}
           gates clauses: (none)
 
-  CLAUSE [HORSE.BEHAVIOR]  (sort 40, type prose)
-    heading: Behavior
-    condition: (none — always shown)
-    body:
-      | Seller warrants that, to Seller's knowledge, the Horse has no history of dangerous or vicious behavior as of the Effective Date of this Agreement, except as disclosed in this Agreement.
-
-  CLAUSE [HORSE.KNOWN_CONDITIONS_GATE]  (sort 45, type input)
-    condition: (none — always shown)
-    body:
-      | 
-    fields on this clause:
-      ● FIELD [HORSE.KNOWN_CONDITIONS_GATE]  "Known conditions — anything to disclose?"
-          control: select   value_type: select
-          required: true   optional: false   set-by (owner_role): SELLER
-          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
-          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
-          own condition (when this field itself is shown): (none)
-          gates clauses: HORSE.KNOWN_CONDITIONS_NONE (sort 46), HORSE.KNOWN_CONDITIONS_DISCLOSED (sort 47), HORSE.KNOWN_CONDITIONS_DISCLOSED_ADD (sort 48)
-
-  CLAUSE [HORSE.KNOWN_CONDITIONS_NONE]  (sort 46, type input)
-    condition: {"equals":["NO"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
-    body:
-      | To Seller's knowledge, there is no material information regarding the Horse's medical conditions, lameness history, allergies, vices, or prior veterinary concerns to disclose as of the Effective Date. Seller shall promptly disclose any material change arising before Closing.
-
-  CLAUSE [HORSE.KNOWN_CONDITIONS_DISCLOSED]  (sort 47, type input, optional)
-    condition: {"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
-    body:
-      | Seller has disclosed to Buyer all known material information regarding the Horse's medical conditions (ongoing or episodic), lameness, allergies, vices, and prior veterinary concerns, as follows: {{HORSE.KNOWN_CONDITIONS}}. Seller warrants that these disclosures are true and complete to Seller's knowledge as of the Effective Date, and shall promptly disclose any material change arising before Closing.
-    fields on this clause:
-      ● FIELD [HORSE.KNOWN_CONDITIONS]  "Known conditions"
-          control: longtext   value_type: text
-          required: false   optional: true   set-by (owner_role): SELLER
-          options: (none)
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
-          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
-          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
-          gates clauses: (none)
-
-  CLAUSE [HORSE.KNOWN_CONDITIONS_DISCLOSED_ADD]  (sort 48, type input, optional)
-    condition: {"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
-    body:
-      | Additional disclosures provided by the Seller: {{ADD.KNOWN_CONDITIONS}}
-    fields on this clause:
-      ● FIELD [ADD.KNOWN_CONDITIONS]  "Add to this disclosure"
-          control: longtext   value_type: text
-          required: false   optional: true   set-by (owner_role): SELLER
-          options: (none)
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
-          tooltip: Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
-          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
-          gates clauses: (none)
-
-  CLAUSE [HORSE.MEDICAL_HISTORY_GATE]  (sort 50, type input)
-    condition: (none — always shown)
-    body:
-      | 
-    fields on this clause:
-      ● FIELD [HORSE.MEDICAL_HISTORY_GATE]  "Medical history — anything to disclose?"
-          control: select   value_type: select
-          required: true   optional: false   set-by (owner_role): SELLER
-          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
-          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
-          own condition (when this field itself is shown): (none)
-          gates clauses: HORSE.MEDICAL_HISTORY_NONE (sort 51), HORSE.MEDICAL_HISTORY_DISCLOSED (sort 52), HORSE.MEDICAL_HISTORY_DISCLOSED_ADD (sort 53)
-
-  CLAUSE [HORSE.MEDICAL_HISTORY_NONE]  (sort 51, type input)
-    condition: {"equals":["NO"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
-    body:
-      | To Seller's knowledge, the Horse has no medical history (treatments, surgeries, or ongoing monitoring) to disclose as of the Effective Date.
-
-  CLAUSE [HORSE.MEDICAL_HISTORY_DISCLOSED]  (sort 52, type input, optional)
-    condition: {"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
-    body:
-      | Seller discloses the Horse's medical history (treatments past and ongoing), with all known information relating to date, type, description, and status: {{HORSE.MEDICAL_HISTORY}}.
-    fields on this clause:
-      ● FIELD [HORSE.MEDICAL_HISTORY]  "Medical history"
-          control: longtext   value_type: text
-          required: false   optional: true   set-by (owner_role): SELLER
-          options: (none)
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
-          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
-          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
-          gates clauses: (none)
-
-  CLAUSE [HORSE.MEDICAL_HISTORY_DISCLOSED_ADD]  (sort 53, type input, optional)
-    condition: {"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
-    body:
-      | Additional disclosures provided by the Seller: {{ADD.MEDICAL_HISTORY}}
-    fields on this clause:
-      ● FIELD [ADD.MEDICAL_HISTORY]  "Add to this disclosure"
-          control: longtext   value_type: text
-          required: false   optional: true   set-by (owner_role): SELLER
-          options: (none)
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
-          tooltip: Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
-          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
-          gates clauses: (none)
-
-  CLAUSE [HORSE.BEHAVIORAL_HISTORY_GATE]  (sort 55, type input)
-    condition: (none — always shown)
-    body:
-      | 
-    fields on this clause:
-      ● FIELD [HORSE.BEHAVIORAL_HISTORY_GATE]  "Behavioral concerns — anything to disclose?"
-          control: select   value_type: select
-          required: true   optional: false   set-by (owner_role): SELLER
-          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
-          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
-          own condition (when this field itself is shown): (none)
-          gates clauses: HORSE.BEHAVIORAL_HISTORY_NONE (sort 56), HORSE.BEHAVIORAL_HISTORY_DISCLOSED (sort 57), HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ADD (sort 58)
-
-  CLAUSE [HORSE.BEHAVIORAL_HISTORY_NONE]  (sort 56, type input)
-    condition: {"equals":["NO"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
-    body:
-      | Seller represents that, to Seller's knowledge, the Horse has no behavioral concerns to disclose as of the Effective Date.
-
-  CLAUSE [HORSE.BEHAVIORAL_HISTORY_DISCLOSED]  (sort 57, type input, optional)
-    condition: {"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
-    body:
-      | Seller discloses the following behavioral concerns, with all known information relating to description, trigger, and how long observed: {{HORSE.BEHAVIORAL_HISTORY}}.
-    fields on this clause:
-      ● FIELD [HORSE.BEHAVIORAL_HISTORY]  "Behavioral concerns"
-          control: longtext   value_type: text
-          required: false   optional: true   set-by (owner_role): SELLER
-          options: (none)
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
-          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
-          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
-          gates clauses: (none)
-
-  CLAUSE [HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ADD]  (sort 58, type input, optional)
-    condition: {"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
-    body:
-      | Additional disclosures provided by the Seller: {{ADD.BEHAVIORAL_HISTORY}}
-    fields on this clause:
-      ● FIELD [ADD.BEHAVIORAL_HISTORY]  "Add to this disclosure"
-          control: longtext   value_type: text
-          required: false   optional: true   set-by (owner_role): SELLER
-          options: (none)
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
-          tooltip: Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
-          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
-          gates clauses: (none)
-
-  CLAUSE [HORSE.INJURIES_TO_HUMANS_GATE]  (sort 60, type input)
+  CLAUSE [HORSE.INJURIES_TO_HUMANS_GATE]  (sort 120, type input)
     condition: (none — always shown)
     body:
       | 
@@ -516,49 +370,125 @@ SECTION 3 — [HORSE]  The Horse
       ● FIELD [HORSE.INJURIES_TO_HUMANS_GATE]  "Injuries to humans — anything to disclose?"
           control: select   value_type: select
           required: true   optional: false   set-by (owner_role): SELLER
-          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
+          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"},{"label":"Unknown","value":"UNKNOWN"}]
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
-          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          helper (guidance): Imported from the horse record, where injuries to a person are recorded as a single Yes, No, or Unknown answer. Set it on the horse record; it is locked here.
+          tooltip: Imported from the horse record, where injuries to a person are recorded as a single Yes, No, or Unknown answer. Set it on the horse record; it is locked here. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
           own condition (when this field itself is shown): (none)
-          gates clauses: HORSE.INJURIES_TO_HUMANS_NONE (sort 61), HORSE.INJURIES_TO_HUMANS_DISCLOSED (sort 62), HORSE.INJURIES_TO_HUMANS_DISCLOSED_ADD (sort 63)
+          gates clauses: HORSE.INJURIES_TO_HUMANS_NONE (sort 121), HORSE.INJURIES_TO_HUMANS_DISCLOSED (sort 122), HORSE.INJURIES_TO_HUMANS_UNKNOWN (sort 123), HORSE.INJURIES_TO_HUMANS_DISCLOSED_ACK (sort 124), HORSE.INJURIES_TO_HUMANS_DISCLOSED_ACK_CB (sort 125)
 
-  CLAUSE [HORSE.INJURIES_TO_HUMANS_NONE]  (sort 61, type input)
+  CLAUSE [HORSE.INJURIES_TO_HUMANS_NONE]  (sort 121, type input)
     condition: {"equals":["NO"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"}
     body:
-      | Seller represents that, to Seller''s knowledge, no person has suffered serious injury proximately caused by the direct actions of the Horse, including biting, kicking, striking, bucking, rearing, bolting, crushing, or throwing a rider. This representation does not extend to any incident caused primarily by a third party or an external stimulus — such as another horse or rider being at fault, a loose dog, wildlife, a vehicle, or a similar external provocation — where the Horse''s reaction was within the range of normal equine behavior.
+      | Seller represents that, to Seller's knowledge, no person has been seriously injured by the direct actions of the Horse. This representation does not extend to any incident caused primarily by a third party or an external stimulus, such as another horse or rider being at fault, a loose dog, wildlife, or a vehicle, where the Horse's reaction was within the range of normal equine behavior.
 
-  CLAUSE [HORSE.INJURIES_TO_HUMANS_DISCLOSED]  (sort 62, type input, optional)
+  CLAUSE [HORSE.INJURIES_TO_HUMANS_DISCLOSED]  (sort 122, type input)
     condition: {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"}
     body:
-      | Seller discloses that one or more persons have suffered serious injury involving the direct actions of the Horse, with all known information relating to date, whether the person was riding, description, and outcome: {{HORSE.INJURIES_TO_HUMANS}}. Buyer acknowledges this disclosure and proceeds with knowledge of it.
+      | Seller discloses that one or more persons have been seriously injured by the direct actions of the Horse.
+
+  CLAUSE [HORSE.INJURIES_TO_HUMANS_UNKNOWN]  (sort 123, type input)
+    condition: {"equals":["UNKNOWN"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"}
+    body:
+      | Seller has no knowledge of whether any person has been seriously injured by the direct actions of the Horse.
+
+  CLAUSE [HORSE.INJURIES_TO_HUMANS_DISCLOSED_ACK]  (sort 124, type input)
+    condition: {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"}
+    body:
+      | Buyer acknowledges the injuries to a person disclosed above and proceeds with knowledge of it. Initialed: {{ACK.INJURIES_TO_HUMANS}}
     fields on this clause:
-      ● FIELD [HORSE.INJURIES_TO_HUMANS]  "Injuries to humans"
+      ● FIELD [ACK.INJURIES_TO_HUMANS]  "Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): BUYER
+          options: (none)
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.INJURIES_TO_HUMANS_DISCLOSED_ACK_CB]  (sort 125, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+    body:
+      | Co-Buyer acknowledges the injuries to a person disclosed above and proceeds with knowledge of it. Initialed: {{ACK.INJURIES_TO_HUMANS_COBUYER}}
+    fields on this clause:
+      ● FIELD [ACK.INJURIES_TO_HUMANS_COBUYER]  "Co-Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): COBUYER
+          options: (none)
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.BEHAVIORAL_HISTORY_GATE]  (sort 130, type input)
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [HORSE.BEHAVIORAL_HISTORY_GATE]  "Behavior disclosure — anything to disclose?"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): SELLER
+          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Imported from the horse record. This answer is set to Yes and locked when the record has entries in this section; you can answer it here only when the record has none. To add or change what is disclosed, edit the horse record — the contract updates from it.
+          tooltip: Imported from the horse record. This answer is set to Yes and locked when the record has entries in this section; you can answer it here only when the record has none. To add or change what is disclosed, edit the horse record — the contract updates from it. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: HORSE.BEHAVIORAL_HISTORY_NONE (sort 131), HORSE.BEHAVIORAL_HISTORY_DISCLOSED (sort 132), HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ACK (sort 133), HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ACK_CB (sort 134)
+
+  CLAUSE [HORSE.BEHAVIORAL_HISTORY_NONE]  (sort 131, type input)
+    condition: {"equals":["NO"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
+    body:
+      | Seller represents that, to Seller's knowledge, the Horse has no adverse behaviors to disclose as of the Effective Date.
+
+  CLAUSE [HORSE.BEHAVIORAL_HISTORY_DISCLOSED]  (sort 132, type input)
+    condition: {"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
+    body:
+      | Seller discloses the following adverse behaviors, with all known information relating to description, trigger, and current status or date of last occurrence, as follows:
+      | {{HORSE.BEHAVIORAL_HISTORY}}
+    fields on this clause:
+      ● FIELD [HORSE.BEHAVIORAL_HISTORY]  "Behavior disclosure"
           control: longtext   value_type: text
           required: false   optional: true   set-by (owner_role): SELLER
           options: (none)
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
-          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
-          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"}
+          helper (guidance): Imported from the horse record. Add or change entries on the record; the contract updates from it. These entries cannot be edited on the contract.
+          tooltip: Imported from the horse record. Add or change entries on the record; the contract updates from it. These entries cannot be edited on the contract. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
           gates clauses: (none)
 
-  CLAUSE [HORSE.INJURIES_TO_HUMANS_DISCLOSED_ADD]  (sort 63, type input, optional)
-    condition: {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"}
+  CLAUSE [HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ACK]  (sort 133, type input)
+    condition: {"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
     body:
-      | Additional disclosures provided by the Seller: {{ADD.INJURIES_TO_HUMANS}}
+      | Buyer acknowledges the behavior disclosed above and proceeds with knowledge of it. Initialed: {{ACK.BEHAVIORAL_HISTORY}}
     fields on this clause:
-      ● FIELD [ADD.INJURIES_TO_HUMANS]  "Add to this disclosure"
-          control: longtext   value_type: text
-          required: false   optional: true   set-by (owner_role): SELLER
+      ● FIELD [ACK.BEHAVIORAL_HISTORY]  "Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): BUYER
           options: (none)
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
-          tooltip: Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
-          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"}
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
           gates clauses: (none)
 
-  CLAUSE [HORSE.INJURIES_TO_HORSE_GATE]  (sort 65, type input)
+  CLAUSE [HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ACK_CB]  (sort 134, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+    body:
+      | Co-Buyer acknowledges the behavior disclosed above and proceeds with knowledge of it. Initialed: {{ACK.BEHAVIORAL_HISTORY_COBUYER}}
+    fields on this clause:
+      ● FIELD [ACK.BEHAVIORAL_HISTORY_COBUYER]  "Co-Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): COBUYER
+          options: (none)
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.INJURIES_TO_HORSE_GATE]  (sort 140, type input)
     condition: (none — always shown)
     body:
       | 
@@ -568,47 +498,195 @@ SECTION 3 — [HORSE]  The Horse
           required: true   optional: false   set-by (owner_role): SELLER
           options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
-          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          helper (guidance): Imported from the horse record. This answer is set to Yes and locked when the record has entries in this section; you can answer it here only when the record has none. To add or change what is disclosed, edit the horse record — the contract updates from it.
+          tooltip: Imported from the horse record. This answer is set to Yes and locked when the record has entries in this section; you can answer it here only when the record has none. To add or change what is disclosed, edit the horse record — the contract updates from it. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
           own condition (when this field itself is shown): (none)
-          gates clauses: HORSE.INJURIES_TO_HORSE_NONE (sort 66), HORSE.INJURIES_TO_HORSE_DISCLOSED (sort 67), HORSE.INJURIES_TO_HORSE_DISCLOSED_ADD (sort 68)
+          gates clauses: HORSE.INJURIES_TO_HORSE_NONE (sort 141), HORSE.INJURIES_TO_HORSE_DISCLOSED (sort 142), HORSE.INJURIES_TO_HORSE_DISCLOSED_ACK (sort 143), HORSE.INJURIES_TO_HORSE_DISCLOSED_ACK_CB (sort 144)
 
-  CLAUSE [HORSE.INJURIES_TO_HORSE_NONE]  (sort 66, type input)
+  CLAUSE [HORSE.INJURIES_TO_HORSE_NONE]  (sort 141, type input)
     condition: {"equals":["NO"],"field_key":"HORSE.INJURIES_TO_HORSE_GATE"}
     body:
-      | Seller represents that, to Seller''s knowledge, the Horse has not experienced any serious injury.
+      | Seller represents that, to Seller's knowledge, the Horse has no serious injury to disclose as of the Effective Date.
 
-  CLAUSE [HORSE.INJURIES_TO_HORSE_DISCLOSED]  (sort 67, type input, optional)
+  CLAUSE [HORSE.INJURIES_TO_HORSE_DISCLOSED]  (sort 142, type input)
     condition: {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HORSE_GATE"}
     body:
-      | Seller discloses the following injuries the Horse has experienced, with all known information relating to date of occurrence, description, outcome, and current status: {{HORSE.INJURIES_TO_HORSE}}.
+      | Seller discloses the following injuries the Horse has experienced, with all known information relating to description, date or date range, outcome, and status, as follows:
+      | {{HORSE.INJURIES_TO_HORSE}}
     fields on this clause:
       ● FIELD [HORSE.INJURIES_TO_HORSE]  "Injuries to the horse"
           control: longtext   value_type: text
           required: false   optional: true   set-by (owner_role): SELLER
           options: (none)
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
-          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          helper (guidance): Imported from the horse record. Add or change entries on the record; the contract updates from it. These entries cannot be edited on the contract.
+          tooltip: Imported from the horse record. Add or change entries on the record; the contract updates from it. These entries cannot be edited on the contract. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HORSE_GATE"}
           gates clauses: (none)
 
-  CLAUSE [HORSE.INJURIES_TO_HORSE_DISCLOSED_ADD]  (sort 68, type input, optional)
+  CLAUSE [HORSE.INJURIES_TO_HORSE_DISCLOSED_ACK]  (sort 143, type input)
     condition: {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HORSE_GATE"}
     body:
-      | Additional disclosures provided by the Seller: {{ADD.INJURIES_TO_HORSE}}
+      | Buyer acknowledges the injuries to the horse disclosed above and proceeds with knowledge of it. Initialed: {{ACK.INJURIES_TO_HORSE}}
     fields on this clause:
-      ● FIELD [ADD.INJURIES_TO_HORSE]  "Add to this disclosure"
+      ● FIELD [ACK.INJURIES_TO_HORSE]  "Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): BUYER
+          options: (none)
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HORSE_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.INJURIES_TO_HORSE_DISCLOSED_ACK_CB]  (sort 144, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HORSE_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+    body:
+      | Co-Buyer acknowledges the injuries to the horse disclosed above and proceeds with knowledge of it. Initialed: {{ACK.INJURIES_TO_HORSE_COBUYER}}
+    fields on this clause:
+      ● FIELD [ACK.INJURIES_TO_HORSE_COBUYER]  "Co-Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): COBUYER
+          options: (none)
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HORSE_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.KNOWN_CONDITIONS_GATE]  (sort 150, type input)
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [HORSE.KNOWN_CONDITIONS_GATE]  "Known conditions — anything to disclose?"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): SELLER
+          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Imported from the horse record. This answer is set to Yes and locked when the record has entries in this section; you can answer it here only when the record has none. To add or change what is disclosed, edit the horse record — the contract updates from it.
+          tooltip: Imported from the horse record. This answer is set to Yes and locked when the record has entries in this section; you can answer it here only when the record has none. To add or change what is disclosed, edit the horse record — the contract updates from it. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: HORSE.KNOWN_CONDITIONS_NONE (sort 151), HORSE.KNOWN_CONDITIONS_DISCLOSED (sort 152), HORSE.KNOWN_CONDITIONS_DISCLOSED_ACK (sort 153), HORSE.KNOWN_CONDITIONS_DISCLOSED_ACK_CB (sort 154)
+
+  CLAUSE [HORSE.KNOWN_CONDITIONS_NONE]  (sort 151, type input)
+    condition: {"equals":["NO"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
+    body:
+      | Seller represents that, to Seller's knowledge, the Horse has no known conditions, meaning medical conditions, lameness history, allergies, vices, or prior veterinary concerns, to disclose as of the Effective Date. Seller shall promptly disclose any material change arising before Closing.
+
+  CLAUSE [HORSE.KNOWN_CONDITIONS_DISCLOSED]  (sort 152, type input)
+    condition: {"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
+    body:
+      | Seller has disclosed to Buyer all known material information regarding the Horse's medical conditions (ongoing or episodic), lameness, allergies, vices, and prior veterinary concerns. Seller warrants that these disclosures are true and complete to Seller's knowledge as of the Effective Date, and shall promptly disclose any material change arising before Closing. The disclosed conditions are as follows:
+      | {{HORSE.KNOWN_CONDITIONS}}
+    fields on this clause:
+      ● FIELD [HORSE.KNOWN_CONDITIONS]  "Known conditions"
           control: longtext   value_type: text
           required: false   optional: true   set-by (owner_role): SELLER
           options: (none)
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
-          tooltip: Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
-          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HORSE_GATE"}
+          helper (guidance): Imported from the horse record. Add or change entries on the record; the contract updates from it. These entries cannot be edited on the contract.
+          tooltip: Imported from the horse record. Add or change entries on the record; the contract updates from it. These entries cannot be edited on the contract. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
           gates clauses: (none)
 
-  CLAUSE [HORSE.MEDICATIONS_GATE]  (sort 70, type input)
+  CLAUSE [HORSE.KNOWN_CONDITIONS_DISCLOSED_ACK]  (sort 153, type input)
+    condition: {"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
+    body:
+      | Buyer acknowledges the known conditions disclosed above and proceeds with knowledge of it. Initialed: {{ACK.KNOWN_CONDITIONS}}
+    fields on this clause:
+      ● FIELD [ACK.KNOWN_CONDITIONS]  "Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): BUYER
+          options: (none)
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.KNOWN_CONDITIONS_DISCLOSED_ACK_CB]  (sort 154, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+    body:
+      | Co-Buyer acknowledges the known conditions disclosed above and proceeds with knowledge of it. Initialed: {{ACK.KNOWN_CONDITIONS_COBUYER}}
+    fields on this clause:
+      ● FIELD [ACK.KNOWN_CONDITIONS_COBUYER]  "Co-Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): COBUYER
+          options: (none)
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.MEDICAL_HISTORY_GATE]  (sort 160, type input)
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [HORSE.MEDICAL_HISTORY_GATE]  "Medical history — anything to disclose?"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): SELLER
+          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Imported from the horse record. This answer is set to Yes and locked when the record has entries in this section; you can answer it here only when the record has none. To add or change what is disclosed, edit the horse record — the contract updates from it.
+          tooltip: Imported from the horse record. This answer is set to Yes and locked when the record has entries in this section; you can answer it here only when the record has none. To add or change what is disclosed, edit the horse record — the contract updates from it. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: HORSE.MEDICAL_HISTORY_NONE (sort 161), HORSE.MEDICAL_HISTORY_DISCLOSED (sort 162), HORSE.MEDICAL_HISTORY_DISCLOSED_ACK (sort 163), HORSE.MEDICAL_HISTORY_DISCLOSED_ACK_CB (sort 164)
+
+  CLAUSE [HORSE.MEDICAL_HISTORY_NONE]  (sort 161, type input)
+    condition: {"equals":["NO"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
+    body:
+      | Seller represents that, to Seller's knowledge, the Horse has no medical history (treatments, surgeries, or ongoing monitoring) to disclose as of the Effective Date.
+
+  CLAUSE [HORSE.MEDICAL_HISTORY_DISCLOSED]  (sort 162, type input)
+    condition: {"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
+    body:
+      | Seller discloses the Horse's medical history (treatments past and ongoing), with all known information relating to description, date, type, and status, as follows:
+      | {{HORSE.MEDICAL_HISTORY}}
+    fields on this clause:
+      ● FIELD [HORSE.MEDICAL_HISTORY]  "Medical history"
+          control: longtext   value_type: text
+          required: false   optional: true   set-by (owner_role): SELLER
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Imported from the horse record. Add or change entries on the record; the contract updates from it. These entries cannot be edited on the contract.
+          tooltip: Imported from the horse record. Add or change entries on the record; the contract updates from it. These entries cannot be edited on the contract. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.MEDICAL_HISTORY_DISCLOSED_ACK]  (sort 163, type input)
+    condition: {"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
+    body:
+      | Buyer acknowledges the medical history disclosed above and proceeds with knowledge of it. Initialed: {{ACK.MEDICAL_HISTORY}}
+    fields on this clause:
+      ● FIELD [ACK.MEDICAL_HISTORY]  "Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): BUYER
+          options: (none)
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.MEDICAL_HISTORY_DISCLOSED_ACK_CB]  (sort 164, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+    body:
+      | Co-Buyer acknowledges the medical history disclosed above and proceeds with knowledge of it. Initialed: {{ACK.MEDICAL_HISTORY_COBUYER}}
+    fields on this clause:
+      ● FIELD [ACK.MEDICAL_HISTORY_COBUYER]  "Co-Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): COBUYER
+          options: (none)
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.MEDICATIONS_GATE]  (sort 170, type input)
     condition: (none — always shown)
     body:
       | 
@@ -618,47 +696,63 @@ SECTION 3 — [HORSE]  The Horse
           required: true   optional: false   set-by (owner_role): SELLER
           options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
-          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          helper (guidance): Imported from the horse record. This answer is set to Yes and locked when the record has entries in this section; you can answer it here only when the record has none. To add or change what is disclosed, edit the horse record — the contract updates from it.
+          tooltip: Imported from the horse record. This answer is set to Yes and locked when the record has entries in this section; you can answer it here only when the record has none. To add or change what is disclosed, edit the horse record — the contract updates from it. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
           own condition (when this field itself is shown): (none)
-          gates clauses: HORSE.MEDICATIONS_NONE (sort 71), HORSE.MEDICATIONS_DISCLOSED (sort 72), HORSE.MEDICATIONS_DISCLOSED_ADD (sort 73)
+          gates clauses: HORSE.MEDICATIONS_NONE (sort 171), HORSE.MEDICATIONS_DISCLOSED (sort 172), HORSE.MEDICATIONS_DISCLOSED_ACK (sort 173), HORSE.MEDICATIONS_DISCLOSED_ACK_CB (sort 174)
 
-  CLAUSE [HORSE.MEDICATIONS_NONE]  (sort 71, type input)
+  CLAUSE [HORSE.MEDICATIONS_NONE]  (sort 171, type input)
     condition: {"equals":["NO"],"field_key":"HORSE.MEDICATIONS_GATE"}
     body:
-      | Seller represents that, to Seller's knowledge, the Horse is on no medications as of the Effective Date.
+      | Seller represents that, to Seller's knowledge, the Horse has no medications to disclose as of the Effective Date.
 
-  CLAUSE [HORSE.MEDICATIONS_DISCLOSED]  (sort 72, type input, optional)
+  CLAUSE [HORSE.MEDICATIONS_DISCLOSED]  (sort 172, type input)
     condition: {"equals":["YES"],"field_key":"HORSE.MEDICATIONS_GATE"}
     body:
-      | Seller discloses the following medications, with all known information relating to name, dosage, instructions, and conditions of use: {{HORSE.MEDICATIONS}}.
+      | Seller discloses the following medications, with all known information relating to name, purpose, dose, frequency, cost per dose, and whether a prescription is required, as follows:
+      | {{HORSE.MEDICATIONS}}
     fields on this clause:
       ● FIELD [HORSE.MEDICATIONS]  "Medications"
           control: longtext   value_type: text
           required: false   optional: true   set-by (owner_role): SELLER
           options: (none)
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
-          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          helper (guidance): Imported from the horse record. Add or change entries on the record; the contract updates from it. These entries cannot be edited on the contract.
+          tooltip: Imported from the horse record. Add or change entries on the record; the contract updates from it. These entries cannot be edited on the contract. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.MEDICATIONS_GATE"}
           gates clauses: (none)
 
-  CLAUSE [HORSE.MEDICATIONS_DISCLOSED_ADD]  (sort 73, type input, optional)
+  CLAUSE [HORSE.MEDICATIONS_DISCLOSED_ACK]  (sort 173, type input)
     condition: {"equals":["YES"],"field_key":"HORSE.MEDICATIONS_GATE"}
     body:
-      | Additional medications provided by the Seller: {{ADD.MEDICATIONS}}
+      | Buyer acknowledges the medications disclosed above and proceeds with knowledge of it. Initialed: {{ACK.MEDICATIONS}}
     fields on this clause:
-      ● FIELD [ADD.MEDICATIONS]  "Add medications"
-          control: structured / disc_med   value_type: text
-          required: false   optional: true   set-by (owner_role): SELLER
+      ● FIELD [ACK.MEDICATIONS]  "Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): BUYER
           options: (none)
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Optional. Add a medication with its name, dosage, instructions, and conditions of use — each is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
-          tooltip: Optional. Add a medication with its name, dosage, instructions, and conditions of use — each is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.MEDICATIONS_GATE"}
           gates clauses: (none)
 
-  CLAUSE [HORSE.SUPPLEMENTS_GATE]  (sort 75, type input)
+  CLAUSE [HORSE.MEDICATIONS_DISCLOSED_ACK_CB]  (sort 174, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"HORSE.MEDICATIONS_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+    body:
+      | Co-Buyer acknowledges the medications disclosed above and proceeds with knowledge of it. Initialed: {{ACK.MEDICATIONS_COBUYER}}
+    fields on this clause:
+      ● FIELD [ACK.MEDICATIONS_COBUYER]  "Co-Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): COBUYER
+          options: (none)
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"HORSE.MEDICATIONS_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.SUPPLEMENTS_GATE]  (sort 180, type input)
     condition: (none — always shown)
     body:
       | 
@@ -668,47 +762,68 @@ SECTION 3 — [HORSE]  The Horse
           required: true   optional: false   set-by (owner_role): SELLER
           options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
-          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          helper (guidance): Imported from the horse record. This answer is set to Yes and locked when the record has entries in this section; you can answer it here only when the record has none. To add or change what is disclosed, edit the horse record — the contract updates from it.
+          tooltip: Imported from the horse record. This answer is set to Yes and locked when the record has entries in this section; you can answer it here only when the record has none. To add or change what is disclosed, edit the horse record — the contract updates from it. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
           own condition (when this field itself is shown): (none)
-          gates clauses: HORSE.SUPPLEMENTS_NONE (sort 76), HORSE.SUPPLEMENTS_DISCLOSED (sort 77), HORSE.SUPPLEMENTS_DISCLOSED_ADD (sort 78)
+          gates clauses: HORSE.SUPPLEMENTS_NONE (sort 181), HORSE.SUPPLEMENTS_DISCLOSED (sort 182), HORSE.SUPPLEMENTS_DISCLOSED_ACK (sort 183), HORSE.SUPPLEMENTS_DISCLOSED_ACK_CB (sort 184)
 
-  CLAUSE [HORSE.SUPPLEMENTS_NONE]  (sort 76, type input)
+  CLAUSE [HORSE.SUPPLEMENTS_NONE]  (sort 181, type input)
     condition: {"equals":["NO"],"field_key":"HORSE.SUPPLEMENTS_GATE"}
     body:
-      | Seller represents that, to Seller's knowledge, the Horse is on no supplements as of the Effective Date.
+      | Seller represents that, to Seller's knowledge, the Horse has no supplements to disclose as of the Effective Date.
 
-  CLAUSE [HORSE.SUPPLEMENTS_DISCLOSED]  (sort 77, type input, optional)
+  CLAUSE [HORSE.SUPPLEMENTS_DISCLOSED]  (sort 182, type input)
     condition: {"equals":["YES"],"field_key":"HORSE.SUPPLEMENTS_GATE"}
     body:
-      | Seller discloses the following supplements, with all known information relating to name, dosage, instructions, and conditions of use: {{HORSE.SUPPLEMENTS}}.
+      | Seller discloses the following supplements, with all known information relating to name, purpose, dose, frequency, cost per dose, and whether a prescription is required, as follows:
+      | {{HORSE.SUPPLEMENTS}}
     fields on this clause:
       ● FIELD [HORSE.SUPPLEMENTS]  "Supplements"
           control: longtext   value_type: text
           required: false   optional: true   set-by (owner_role): SELLER
           options: (none)
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
-          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          helper (guidance): Imported from the horse record. Add or change entries on the record; the contract updates from it. These entries cannot be edited on the contract.
+          tooltip: Imported from the horse record. Add or change entries on the record; the contract updates from it. These entries cannot be edited on the contract. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.SUPPLEMENTS_GATE"}
           gates clauses: (none)
 
-  CLAUSE [HORSE.SUPPLEMENTS_DISCLOSED_ADD]  (sort 78, type input, optional)
+  CLAUSE [HORSE.SUPPLEMENTS_DISCLOSED_ACK]  (sort 183, type input)
     condition: {"equals":["YES"],"field_key":"HORSE.SUPPLEMENTS_GATE"}
     body:
-      | Additional supplements provided by the Seller: {{ADD.SUPPLEMENTS}}
+      | Buyer acknowledges the supplements disclosed above and proceeds with knowledge of it. Initialed: {{ACK.SUPPLEMENTS}}
     fields on this clause:
-      ● FIELD [ADD.SUPPLEMENTS]  "Add supplements"
-          control: structured / disc_med   value_type: text
-          required: false   optional: true   set-by (owner_role): SELLER
+      ● FIELD [ACK.SUPPLEMENTS]  "Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): BUYER
           options: (none)
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): Optional. Add a supplement with its name, dosage, instructions, and conditions of use — each is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
-          tooltip: Optional. Add a supplement with its name, dosage, instructions, and conditions of use — each is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.SUPPLEMENTS_GATE"}
           gates clauses: (none)
 
-  CLAUSE [HORSE.BREEDING_GATE]  (sort 85, type prose)
+  CLAUSE [HORSE.SUPPLEMENTS_DISCLOSED_ACK_CB]  (sort 184, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"HORSE.SUPPLEMENTS_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+    body:
+      | Co-Buyer acknowledges the supplements disclosed above and proceeds with knowledge of it. Initialed: {{ACK.SUPPLEMENTS_COBUYER}}
+    fields on this clause:
+      ● FIELD [ACK.SUPPLEMENTS_COBUYER]  "Co-Buyer initials"
+          control: text / initials   value_type: text
+          required: true   optional: false   set-by (owner_role): COBUYER
+          options: (none)
+          placeholder: Initials (typed; must match the signing party’s initials)
+          helper (guidance): Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          tooltip: Type your initials to acknowledge this disclosure. Your initials must match your name on this document.
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"HORSE.SUPPLEMENTS_GATE"},{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}]}
+          gates clauses: (none)
+
+  CLAUSE [BREEDING_ELECTION_PENDING]  (sort 190, type input)
+    condition: {"all":[{"any":[{"equals":["Mare"],"field_key":"HORSE.SEX"},{"equals":["Stallion"],"field_key":"HORSE.SEX"},{"equals":["Colt"],"field_key":"HORSE.SEX"},{"equals":["Filly"],"field_key":"HORSE.SEX"}]},{"equals":[""],"field_key":"TXN.BREEDING_ELECTION"}]}
+    body:
+      | [Pending — select whether a breeding warranty applies. This placeholder is replaced by the applicable term and blocks signing.]
+
+  CLAUSE [HORSE.BREEDING_GATE]  (sort 191, type prose)
     condition: (none — always shown)
     body:
       | 
@@ -721,9 +836,9 @@ SECTION 3 — [HORSE]  The Horse
           helper (guidance): (none)
           tooltip: (none)
           own condition (when this field itself is shown): {"any":[{"equals":["Mare"],"field_key":"HORSE.SEX"},{"equals":["Stallion"],"field_key":"HORSE.SEX"},{"equals":["Colt"],"field_key":"HORSE.SEX"},{"equals":["Filly"],"field_key":"HORSE.SEX"}]}
-          gates clauses: HORSE.BREEDING (sort 90), HORSE.BREEDING_DECLINED (sort 100)
+          gates clauses: BREEDING_ELECTION_PENDING (sort 190), HORSE.BREEDING (sort 192), HORSE.BREEDING_DECLINED (sort 193)
 
-  CLAUSE [HORSE.BREEDING]  (sort 90, type input)
+  CLAUSE [HORSE.BREEDING]  (sort 192, type input)
     heading: Breeding Warranty
     condition: {"all":[{"any":[{"equals":["Mare"],"field_key":"HORSE.SEX"},{"equals":["Stallion"],"field_key":"HORSE.SEX"},{"equals":["Colt"],"field_key":"HORSE.SEX"},{"equals":["Filly"],"field_key":"HORSE.SEX"}]},{"equals":["INCLUDED"],"field_key":"TXN.BREEDING_ELECTION"}]}
     body:
@@ -748,40 +863,20 @@ SECTION 3 — [HORSE]  The Horse
           own condition (when this field itself is shown): {"equals":["INCLUDED"],"field_key":"TXN.BREEDING_ELECTION"}
           gates clauses: (none)
 
-  CLAUSE [HORSE.BREEDING_DECLINED]  (sort 100, type prose)
+  CLAUSE [HORSE.BREEDING_DECLINED]  (sort 193, type prose)
     heading: Breeding Warranty Not Elected
     condition: {"all":[{"any":[{"equals":["Mare"],"field_key":"HORSE.SEX"},{"equals":["Stallion"],"field_key":"HORSE.SEX"},{"equals":["Colt"],"field_key":"HORSE.SEX"},{"equals":["Filly"],"field_key":"HORSE.SEX"}]},{"equals":["NOT_INCLUDED"],"field_key":"TXN.BREEDING_ELECTION"}]}
     body:
       | No warranty of breeding soundness, fertility, or reproductive capacity is given or implied. The parties considered including a breeding warranty and both elected not to include one.
 
-  CLAUSE [HORSE.WARRANTY]  (sort 110, type prose)
+  CLAUSE [HORSE.WARRANTY]  (sort 200, type prose)
     heading: Disclaimer of Warranties
     condition: (none — always shown)
     body:
       | Except for the representations and warranties expressly stated in this Agreement, the Horse is sold AS IS, and SELLER MAKES NO WARRANTIES, EXPRESS OR IMPLIED, REGARDING THE HORSE, INCLUDING THE WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, and no warranty is made regarding the Horse's future soundness, health, temperament, performance, suitability for any discipline or rider, or value. This disclaimer does not limit Buyer's rights arising from the express representations in this Agreement or from fraud.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 4 — [BUYER_ACCEPTANCE]  Buyer Acceptance and Acknowledgement of Disclosures
-  sort: 35   optional-section: false
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  CLAUSE [ACCEPT.DISCLOSURES]  (sort 10, type input)
-    condition: {"any":[{"equals":["YES"],"field_key":"TXN.HAS_DISCLOSURES"},{"equals":["YES"],"field_key":"TXN.INJURY_HISTORY"}]}
-    body:
-      | {{TXN.BUYER_ACCEPTS_DISCLOSURES}}
-    fields on this clause:
-      ● FIELD [TXN.BUYER_ACCEPTS_DISCLOSURES]  "Buyer acknowledges the health, condition, and injury disclosures made above and proceeds with the purchase with knowledge of them."
-          control: certify   value_type: text
-          required: true   optional: false   set-by (owner_role): BUYER
-          options: (none)
-          placeholder: (checkbox; label is the certification statement)
-          helper (guidance): (none)
-          tooltip: (none)
-          own condition (when this field itself is shown): {"any":[{"equals":["YES"],"field_key":"TXN.HAS_DISCLOSURES"},{"equals":["YES"],"field_key":"TXN.INJURY_HISTORY"}]}
-          gates clauses: (none)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 5 — [PURPOSE_SALE]  Purpose and Sale
+SECTION 4 — [PURPOSE_SALE]  Purpose and Sale
   sort: 40   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -798,7 +893,7 @@ SECTION 5 — [PURPOSE_SALE]  Purpose and Sale
       | Subject to the terms and conditions of this Agreement, Seller agrees to sell, transfer, and convey the Horse to Buyer, and Buyer agrees to purchase the Horse from Seller, for the Purchase Price and on the terms stated in this Agreement.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 6 — [PRICE]  Purchase Price and Payment
+SECTION 5 — [PRICE]  Purchase Price and Payment
   sort: 50   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -818,6 +913,11 @@ SECTION 6 — [PRICE]  Purchase Price and Payment
           own condition (when this field itself is shown): (none)
           gates clauses: (none)
 
+  CLAUSE [DEPOSIT_ENABLED_PENDING]  (sort 14, type input)
+    condition: {"equals":[""],"field_key":"TXN.DEPOSIT_ENABLED"}
+    body:
+      | [Pending — select whether a deposit applies. This placeholder is replaced by the applicable term and blocks signing.]
+
   CLAUSE [PRICE.DEPOSIT_GATE]  (sort 15, type prose)
     condition: (none — always shown)
     body:
@@ -831,7 +931,7 @@ SECTION 6 — [PRICE]  Purchase Price and Payment
           helper (guidance): (none)
           tooltip: (none)
           own condition (when this field itself is shown): (none)
-          gates clauses: PPE.CONTINGENCY (sort 20), PPE.CONTINGENCY_NODEP (sort 20), PRICE.DEPOSIT (sort 20), TRIAL.RETURN_PARTIAL (sort 12), TRIAL.RETURN_NONE (sort 12), TRIAL.RETURN_NODEP (sort 12), TRIAL.RETURN_FULL (sort 12)
+          gates clauses: PPE.CONTINGENCY (sort 20), PPE.CONTINGENCY_NODEP (sort 20), DEPOSIT_ENABLED_PENDING (sort 14), PRICE.DEPOSIT (sort 20), TRIAL_DEPOSIT_DISPOSITION_PENDING (sort 4), TRIAL.RETURN_FULL (sort 12), TRIAL.RETURN_NODEP (sort 12), TRIAL.RETURN_NONE (sort 12), TRIAL.RETURN_PARTIAL (sort 12)
 
   CLAUSE [PRICE.DEPOSIT]  (sort 20, type input)
     heading: Deposit
@@ -865,6 +965,11 @@ SECTION 6 — [PRICE]  Purchase Price and Payment
           own condition (when this field itself is shown): (none)
           gates clauses: (none)
 
+  CLAUSE [INSTALLMENTS_ENABLED_PENDING]  (sort 34, type input)
+    condition: {"equals":[""],"field_key":"TXN.INSTALLMENTS_ENABLED"}
+    body:
+      | [Pending — select whether the price is paid in installments. This placeholder is replaced by the applicable term and blocks signing.]
+
   CLAUSE [PRICE.INSTALLMENTS_GATE]  (sort 35, type prose)
     condition: (none — always shown)
     body:
@@ -878,7 +983,7 @@ SECTION 6 — [PRICE]  Purchase Price and Payment
           helper (guidance): (none)
           tooltip: (none)
           own condition (when this field itself is shown): (none)
-          gates clauses: DEFAULT.INSTALLMENTS (sort 30), PRICE.FULL_PAYMENT (sort 40), PRICE.INSTALLMENTS (sort 50)
+          gates clauses: DEFAULT.INSTALLMENTS (sort 30), INSTALLMENTS_ENABLED_PENDING (sort 34), PRICE.FULL_PAYMENT (sort 40), PRICE.INSTALLMENTS (sort 50)
 
   CLAUSE [PRICE.FULL_PAYMENT]  (sort 40, type prose)
     heading: Payment in Full at Transfer
@@ -911,6 +1016,11 @@ SECTION 6 — [PRICE]  Purchase Price and Payment
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.INSTALLMENTS_ENABLED"}
           gates clauses: (none)
 
+  CLAUSE [PRICE.FINANCING_PENDING]  (sort 69, type input)
+    condition: {"equals":[""],"field_key":"TXN.FINANCING_ELECTION"}
+    body:
+      | [Pending — select the financing arrangement. This placeholder is replaced by the applicable term and blocks signing.]
+
   CLAUSE [PRICE.FINANCING]  (sort 70, type input)
     heading: Financing Contingency
     condition: {"equals":["INCLUDED"],"field_key":"TXN.FINANCING_ELECTION"}
@@ -920,12 +1030,12 @@ SECTION 6 — [PRICE]  Purchase Price and Payment
       ● FIELD [TXN.FINANCING_ELECTION]  "Financing contingency"
           control: select   value_type: select
           required: true   optional: false   set-by (owner_role): DEAL
-          options: [{"label":"Included","value":"INCLUDED"},{"label":"Not Applicable","value":"NA"}]
+          options: [{"label":"Included","value":"INCLUDED"},{"label":"Not conditional on financing","value":"NOT_CONDITIONAL"},{"label":"Not applicable","value":"NA"}]
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
           helper (guidance): (none)
           tooltip: (none)
           own condition (when this field itself is shown): (none)
-          gates clauses: PRICE.FINANCING (sort 70), PRICE.FINANCING_DECLINED (sort 80)
+          gates clauses: PRICE.FINANCING_PENDING (sort 69), PRICE.FINANCING (sort 70), PRICE.FINANCING_DECLINED (sort 80)
       ● FIELD [TXN.FINANCING_AMOUNT]  "Financing amount"
           control: currency   value_type: currency
           required: true   optional: false   set-by (owner_role): DEAL
@@ -947,7 +1057,7 @@ SECTION 6 — [PRICE]  Purchase Price and Payment
 
   CLAUSE [PRICE.FINANCING_DECLINED]  (sort 80, type prose)
     heading: Financing Contingency Not Elected
-    condition: {"equals":["__RETIRED__"],"field_key":"TXN.FINANCING_ELECTION"}
+    condition: {"equals":["NOT_CONDITIONAL"],"field_key":"TXN.FINANCING_ELECTION"}
     body:
       | This sale is not contingent on Buyer obtaining financing. The parties considered including a financing contingency and both elected not to include one.
 
@@ -968,9 +1078,19 @@ SECTION 6 — [PRICE]  Purchase Price and Payment
           gates clauses: (none)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 7 — [TRIAL]  Trial Period
+SECTION 6 — [TRIAL]  Trial Period
   sort: 55   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [TRIAL_ENABLED_PENDING]  (sort 3, type input)
+    condition: {"equals":[""],"field_key":"TXN.TRIAL_ENABLED"}
+    body:
+      | [Pending — select whether a trial period applies. This placeholder is replaced by the applicable term and blocks signing.]
+
+  CLAUSE [TRIAL_DEPOSIT_DISPOSITION_PENDING]  (sort 4, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["YES"],"field_key":"TXN.DEPOSIT_ENABLED"},{"equals":[""],"field_key":"TXN.TRIAL_DEPOSIT_DISPOSITION"}]}
+    body:
+      | [Pending — select how the deposit is handled on a trial return. This placeholder is replaced by the applicable term and blocks signing.]
 
   CLAUSE [TRIAL.GATE]  (sort 5, type prose)
     condition: (none — always shown)
@@ -985,7 +1105,7 @@ SECTION 7 — [TRIAL]  Trial Period
           helper (guidance): (none)
           tooltip: (none)
           own condition (when this field itself is shown): (none)
-          gates clauses: TRIAL.TERMS (sort 10), TRIAL.TERMS_CURRENT (sort 10), TRIAL.DEPOSIT_CHOICE (sort 11), TRIAL.RETURN_PARTIAL (sort 12), TRIAL.RETURN_NONE (sort 12), TRIAL.RETURN_NODEP (sort 12), TRIAL.RETURN_FULL (sort 12), TRIAL.NOT_RETURNED (sort 13), TRIAL.NONE (sort 20)
+          gates clauses: TRIAL_ENABLED_PENDING (sort 3), TRIAL_DEPOSIT_DISPOSITION_PENDING (sort 4), TRIAL.TERMS (sort 10), TRIAL.TERMS_CURRENT (sort 10), TRIAL.RETURN_FULL (sort 12), TRIAL.RETURN_NODEP (sort 12), TRIAL.RETURN_NONE (sort 12), TRIAL.RETURN_PARTIAL (sort 12), TRIAL.NOT_RETURNED (sort 13), TRIAL.TRANSPORT_GATE (sort 14), TRIAL.TRANSPORT_PENDING (sort 15), TRIAL.TRANSPORT_BUYER (sort 16), TRIAL.TRANSPORT_ARRANGED (sort 17), TRIAL.INSURANCE (sort 18), TRIAL.NONE (sort 20)
       ● FIELD [TXN.TRIAL_DEPOSIT_DISPOSITION]  "On approved return, the Deposit is"
           control: select   value_type: select
           required: true   optional: false   set-by (owner_role): DEAL
@@ -994,7 +1114,7 @@ SECTION 7 — [TRIAL]  Trial Period
           helper (guidance): (none)
           tooltip: (none)
           own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["YES"],"field_key":"TXN.DEPOSIT_ENABLED"}]}
-          gates clauses: TRIAL.RETURN_PARTIAL (sort 12), TRIAL.RETURN_NONE (sort 12), TRIAL.RETURN_FULL (sort 12)
+          gates clauses: TRIAL_DEPOSIT_DISPOSITION_PENDING (sort 4), TRIAL.RETURN_FULL (sort 12), TRIAL.RETURN_NONE (sort 12), TRIAL.RETURN_PARTIAL (sort 12)
       ● FIELD [TXN.TRIAL_DEPOSIT_REFUND_PCT]  "Percentage refunded"
           control: number / percent   value_type: number
           required: true   optional: false   set-by (owner_role): DEAL
@@ -1011,9 +1131,17 @@ SECTION 7 — [TRIAL]  Trial Period
     body:
       | Buyer may keep and ride the Horse on trial from {{TXN.TRIAL_START}} to {{TXN.TRIAL_END}} at {{TXN.TRIAL_LOCATION}}.
       | Board and care costs borne by: {{TXN.TRIAL_BOARD_COST}}
-      | The Horse shall be transported to the trial location from the Horse's current location. Transport is arranged by {{TXN.TRIAL_TRANSPORT_RESPONSIBLE}} and paid for by {{TXN.TRIAL_TRANSPORT_COST_RESPONSIBLE}}.
       | Buyer shall use the Horse only for ordinary riding and evaluation consistent with the Horse's training and shall not compete, breed, transport offsite (other than for veterinary care, which is always permitted), or permit third parties to ride the Horse without Seller's written consent, and Buyer assumes all risk of injury to persons arising from the Horse during the trial period as provided in the Risk, Release, and Indemnification section of this Agreement. Seller bears the risk of loss of the Horse while Seller holds title. If the Horse dies or is injured before Closing, Buyer is entitled to the return of all amounts paid to Seller and may decline to complete the purchase by not executing the Bill of Sale, in which case Seller returns to Buyer all amounts paid and Buyer returns possession of the Horse to Seller. Nothing in this section limits Seller's remedies for damage to the Horse caused by Buyer's gross negligence, reckless conduct, or intentional misconduct. Unless written notice is given and approved by Seller, Buyer must return the Horse in substantially the condition received on or before {{TXN.TRIAL_END}} or execute this Agreement.
     fields on this clause:
+      ● FIELD [TXN.TRIAL_BOARD_COST]  "Trial board & care costs borne by"
+          control: cost_split   value_type: text
+          required: true   optional: false   set-by (owner_role): DEAL
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"}
+          gates clauses: (none)
       ● FIELD [TXN.TRIAL_START]  "Trial start"
           control: date   value_type: date
           required: true   optional: false   set-by (owner_role): DEAL
@@ -1041,24 +1169,6 @@ SECTION 7 — [TRIAL]  Trial Period
           tooltip: (none)
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"}
           gates clauses: (none)
-      ● FIELD [TXN.TRIAL_TRANSPORT_RESPONSIBLE]  "Trial transport arranged by"
-          control: select   value_type: select
-          required: true   optional: false   set-by (owner_role): DEAL
-          options: [{"label":"Buyer","value":"BUYER"},{"label":"Seller","value":"SELLER"}]
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): (none)
-          tooltip: (none)
-          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["NO"],"field_key":"TXN.TRIAL_AT_CURRENT"}]}
-          gates clauses: (none)
-      ● FIELD [TXN.TRIAL_TRANSPORT_COST_RESPONSIBLE]  "Trial transport paid for by"
-          control: select   value_type: select
-          required: true   optional: false   set-by (owner_role): DEAL
-          options: [{"label":"Buyer","value":"BUYER"},{"label":"Seller","value":"SELLER"}]
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): (none)
-          tooltip: (none)
-          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["NO"],"field_key":"TXN.TRIAL_AT_CURRENT"}]}
-          gates clauses: (none)
 
   CLAUSE [TRIAL.TERMS_CURRENT]  (sort 10, type input)
     heading: Trial Period
@@ -1069,38 +1179,82 @@ SECTION 7 — [TRIAL]  Trial Period
       | Board and care costs borne by: {{TXN.TRIAL_BOARD_COST}}
       | Buyer shall use the Horse only for ordinary riding and evaluation consistent with the Horse's training and shall not compete, breed, transport offsite (other than for veterinary care, which is always permitted), or permit third parties to ride the Horse without Seller's written consent, and Buyer assumes all risk of injury to persons arising from the Horse during the trial period as provided in the Risk, Release, and Indemnification section of this Agreement. Seller bears the risk of loss of the Horse while Seller holds title. If the Horse dies or is injured before Closing, Buyer is entitled to the return of all amounts paid to Seller and may decline to complete the purchase by not executing the Bill of Sale, in which case Seller returns to Buyer all amounts paid and Buyer returns possession of the Horse to Seller. Nothing in this section limits Seller's remedies for damage to the Horse caused by Buyer's gross negligence, reckless conduct, or intentional misconduct. Unless written notice is given and approved by Seller, Buyer must return the Horse in substantially the condition received on or before {{TXN.TRIAL_END}} or execute this Agreement.
 
-  CLAUSE [TRIAL.DEPOSIT_CHOICE]  (sort 11, type prose)
-    condition: {"equals":["__RETIRED__"],"field_key":"TXN.TRIAL_ENABLED"}
+  CLAUSE [TRIAL.RETURN_FULL]  (sort 12, type prose, subitem)
+    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["YES"],"field_key":"TXN.DEPOSIT_ENABLED"},{"equals":["FULL"],"field_key":"TXN.TRIAL_DEPOSIT_DISPOSITION"}]}
     body:
-      | 
-
-  CLAUSE [TRIAL.RETURN_PARTIAL]  (sort 12, type prose, subitem)
-    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["YES"],"field_key":"TXN.DEPOSIT_ENABLED"},{"equals":["PARTIAL"],"field_key":"TXN.TRIAL_DEPOSIT_DISPOSITION"}]}
-    body:
-      | If Buyer returns the Horse with approved notice on or before that date, this Agreement terminates and the Deposit of {{TXN.DEPOSIT_AMOUNT}} is refunded {{TXN.TRIAL_DEPOSIT_REFUND_PCT}}.
-
-  CLAUSE [TRIAL.RETURN_NONE]  (sort 12, type prose, subitem)
-    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["YES"],"field_key":"TXN.DEPOSIT_ENABLED"},{"equals":["NONE"],"field_key":"TXN.TRIAL_DEPOSIT_DISPOSITION"}]}
-    body:
-      | If Buyer returns the Horse with approved notice on or before that date, this Agreement terminates and the Deposit of {{TXN.DEPOSIT_AMOUNT}} is not refunded.
+      | If Buyer returns the Horse with approved notice on or before that date, this Agreement terminates and the Deposit of {{TXN.DEPOSIT_AMOUNT}} is refunded in full.
 
   CLAUSE [TRIAL.RETURN_NODEP]  (sort 12, type prose, subitem)
     condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["NO"],"field_key":"TXN.DEPOSIT_ENABLED"}]}
     body:
       | If Buyer returns the Horse with approved notice on or before that date, this Agreement terminates.
 
-  CLAUSE [TRIAL.RETURN_FULL]  (sort 12, type prose, subitem)
-    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["YES"],"field_key":"TXN.DEPOSIT_ENABLED"},{"equals":["FULL"],"field_key":"TXN.TRIAL_DEPOSIT_DISPOSITION"}]}
+  CLAUSE [TRIAL.RETURN_NONE]  (sort 12, type prose, subitem)
+    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["YES"],"field_key":"TXN.DEPOSIT_ENABLED"},{"equals":["NONE"],"field_key":"TXN.TRIAL_DEPOSIT_DISPOSITION"}]}
     body:
-      | If Buyer returns the Horse with approved notice on or before that date, this Agreement terminates and the Deposit of {{TXN.DEPOSIT_AMOUNT}} is refunded in full.
+      | If Buyer returns the Horse with approved notice on or before that date, this Agreement terminates and the Deposit of {{TXN.DEPOSIT_AMOUNT}} is not refunded.
+
+  CLAUSE [TRIAL.RETURN_PARTIAL]  (sort 12, type prose, subitem)
+    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["YES"],"field_key":"TXN.DEPOSIT_ENABLED"},{"equals":["PARTIAL"],"field_key":"TXN.TRIAL_DEPOSIT_DISPOSITION"}]}
+    body:
+      | If Buyer returns the Horse with approved notice on or before that date, this Agreement terminates and the Deposit of {{TXN.DEPOSIT_AMOUNT}} is refunded {{TXN.TRIAL_DEPOSIT_REFUND_PCT}}.
 
   CLAUSE [TRIAL.NOT_RETURNED]  (sort 13, type prose, subitem)
     condition: {"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"}
     body:
       | If the Horse is not returned and no such notice is given by that date, Buyer is deemed to have accepted the Horse and Closing proceeds under this Agreement.
 
-  CLAUSE [TRIAL.INSURANCE]  (sort 15, type input, subitem)
-    condition: (none — always shown)
+  CLAUSE [TRIAL.TRANSPORT_GATE]  (sort 14, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["NO"],"field_key":"TXN.TRIAL_AT_CURRENT"}]}
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [TXN.TRIAL_TRANSPORT_NEEDED]  "Transport to the trial location arranged by a party?"
+          control: select   value_type: text
+          required: true   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): When the trial is held somewhere other than the Horse's current location, state whether a party arranges transport there.
+          tooltip: When the trial is held somewhere other than the Horse's current location, state whether a party arranges transport there.
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["NO"],"field_key":"TXN.TRIAL_AT_CURRENT"}]}
+          gates clauses: TRIAL.TRANSPORT_PENDING (sort 15), TRIAL.TRANSPORT_BUYER (sort 16), TRIAL.TRANSPORT_ARRANGED (sort 17)
+
+  CLAUSE [TRIAL.TRANSPORT_PENDING]  (sort 15, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["NO"],"field_key":"TXN.TRIAL_AT_CURRENT"},{"equals":[""],"field_key":"TXN.TRIAL_TRANSPORT_NEEDED"}]}
+    body:
+      | [Pending — state whether a party arranges transport of the Horse to the trial location. This placeholder is replaced by the applicable term and blocks signing.]
+
+  CLAUSE [TRIAL.TRANSPORT_BUYER]  (sort 16, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["NO"],"field_key":"TXN.TRIAL_AT_CURRENT"},{"equals":["NO"],"field_key":"TXN.TRIAL_TRANSPORT_NEEDED"}]}
+    body:
+      | Transport of the Horse to the trial location is the Buyer's responsibility.
+
+  CLAUSE [TRIAL.TRANSPORT_ARRANGED]  (sort 17, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["NO"],"field_key":"TXN.TRIAL_AT_CURRENT"},{"equals":["YES"],"field_key":"TXN.TRIAL_TRANSPORT_NEEDED"}]}
+    body:
+      | The Horse shall be transported to the trial location from the Horse's current location. Transport is arranged by {{TXN.TRIAL_TRANSPORT_RESPONSIBLE}} and paid for by {{TXN.TRIAL_TRANSPORT_COST_RESPONSIBLE}}.
+    fields on this clause:
+      ● FIELD [TXN.TRIAL_TRANSPORT_RESPONSIBLE]  "Trial transport arranged by"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"Buyer","value":"BUYER"},{"label":"Seller","value":"SELLER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["NO"],"field_key":"TXN.TRIAL_AT_CURRENT"},{"equals":["YES"],"field_key":"TXN.TRIAL_TRANSPORT_NEEDED"}]}
+          gates clauses: (none)
+      ● FIELD [TXN.TRIAL_TRANSPORT_COST_RESPONSIBLE]  "Trial transport paid for by"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"Buyer","value":"BUYER"},{"label":"Seller","value":"SELLER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"},{"equals":["NO"],"field_key":"TXN.TRIAL_AT_CURRENT"},{"equals":["YES"],"field_key":"TXN.TRIAL_TRANSPORT_NEEDED"}]}
+          gates clauses: (none)
+
+  CLAUSE [TRIAL.INSURANCE]  (sort 18, type input, subitem)
+    condition: {"equals":["YES"],"field_key":"TXN.TRIAL_ENABLED"}
     body:
       | Title to the Horse remains with Seller during the trial period, and Seller bears the risk of loss of the Horse's value. Seller may, in Seller's sole discretion, maintain a mortality or other insurance policy on the Horse in an amount not less than the Purchase Price. Neither party is obligated under this Agreement to obtain or maintain such insurance. Any obligation of Seller to insure the Horse must be set out in a separate written agreement between the parties, and this Agreement does not create one.
 
@@ -1110,9 +1264,24 @@ SECTION 7 — [TRIAL]  Trial Period
       | No trial period applies to this sale.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 8 — [PPE]  Pre-Purchase Examination
+SECTION 7 — [PPE]  Pre-Purchase Examination
   sort: 60   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [PPE_CHOICE_PENDING]  (sort 2, type input)
+    condition: {"equals":[""],"field_key":"TXN.PPE_CHOICE"}
+    body:
+      | [Pending — select the pre-purchase examination arrangement. This placeholder is replaced by the applicable term and blocks signing.]
+
+  CLAUSE [PPE_TIMING_PENDING]  (sort 3, type input)
+    condition: {"all":[{"equals":["BUYER_REQUESTED"],"field_key":"TXN.PPE_CHOICE"},{"equals":[""],"field_key":"TXN.PPE_TIMING"}]}
+    body:
+      | [Pending — select when the pre-purchase examination takes place. This placeholder is replaced by the applicable term and blocks signing.]
+
+  CLAUSE [PPE_CONTINGENT_PENDING]  (sort 4, type input)
+    condition: {"all":[{"equals":["BUYER_REQUESTED"],"field_key":"TXN.PPE_CHOICE"},{"equals":[""],"field_key":"TXN.PPE_CONTINGENT"}]}
+    body:
+      | [Pending — select whether the sale is contingent on the examination. This placeholder is replaced by the applicable term and blocks signing.]
 
   CLAUSE [PPE.CHOICE_GATE]  (sort 5, type prose)
     condition: (none — always shown)
@@ -1127,7 +1296,7 @@ SECTION 8 — [PPE]  Pre-Purchase Examination
           helper (guidance): (none)
           tooltip: (none)
           own condition (when this field itself is shown): (none)
-          gates clauses: PPE.CONDUCTED_PRIOR (sort 10), PPE.CONDUCTED (sort 10), PPE.CONDUCTED_EVAL (sort 10), PPE.CONDUCTED_NONE (sort 10), PPE.CONTINGENCY (sort 20), PPE.CONTINGENCY_NODEP (sort 20), PPE.NA (sort 25), PPE.WAIVED (sort 30)
+          gates clauses: PPE_CHOICE_PENDING (sort 2), PPE_TIMING_PENDING (sort 3), PPE_CONTINGENT_PENDING (sort 4), PPE.CONDUCTED_PRIOR (sort 10), PPE.CONDUCTED_EVAL (sort 10), PPE.CONDUCTED (sort 10), PPE.CONTINGENCY (sort 20), PPE.CONTINGENCY_NODEP (sort 20), PPE.NA (sort 25), PPE.WAIVED (sort 30)
       ● FIELD [TXN.PPE_CONTINGENT]  "Sale contingent on exam results"
           control: select   value_type: select
           required: true   optional: false   set-by (owner_role): BUYER
@@ -1136,22 +1305,28 @@ SECTION 8 — [PPE]  Pre-Purchase Examination
           helper (guidance): (none)
           tooltip: (none)
           own condition (when this field itself is shown): {"equals":["BUYER_REQUESTED"],"field_key":"TXN.PPE_CHOICE"}
-          gates clauses: PPE.CONTINGENCY (sort 20), PPE.CONTINGENCY_NODEP (sort 20)
+          gates clauses: PPE_CONTINGENT_PENDING (sort 4), PPE.CONTINGENCY (sort 20), PPE.CONTINGENCY_NODEP (sort 20)
       ● FIELD [TXN.PPE_TIMING]  "Examination timing"
           control: select   value_type: select
           required: true   optional: false   set-by (owner_role): BUYER
-          options: [{"label":" on or before","value":"DATE"},{"label":" prior to delivery","value":"PRIOR_DELIVERY"},{"label":" during the evaluation period specified in this agreement","value":"EVAL_PERIOD"},{"label":"","value":"NONE"}]
+          options: [{"label":" on or before","value":"DATE"},{"label":" prior to delivery","value":"PRIOR_DELIVERY"},{"label":" during the evaluation period specified in this agreement","value":"EVAL_PERIOD"}]
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
           helper (guidance): When must the examination happen? "Date" adds "on or before {date}"; the other options add a fixed phrase or nothing.
           tooltip: When must the examination happen? "Date" adds "on or before {date}"; the other options add a fixed phrase or nothing.
           own condition (when this field itself is shown): {"equals":["BUYER_REQUESTED"],"field_key":"TXN.PPE_CHOICE"}
-          gates clauses: PPE.CONDUCTED_PRIOR (sort 10), PPE.CONDUCTED (sort 10), PPE.CONDUCTED_EVAL (sort 10), PPE.CONDUCTED_NONE (sort 10)
+          gates clauses: PPE_TIMING_PENDING (sort 3), PPE.CONDUCTED_PRIOR (sort 10), PPE.CONDUCTED_EVAL (sort 10), PPE.CONDUCTED (sort 10)
 
   CLAUSE [PPE.CONDUCTED_PRIOR]  (sort 10, type input)
     heading: Pre-Purchase Examination
     condition: {"all":[{"equals":["BUYER_REQUESTED"],"field_key":"TXN.PPE_CHOICE"},{"equals":["PRIOR_DELIVERY"],"field_key":"TXN.PPE_TIMING"}]}
     body:
       | Buyer may, at Buyer's sole cost, have the Horse examined by a licensed veterinarian of Buyer's choosing{{TXN.PPE_TIMING}}. Seller shall make the Horse reasonably available for the examination and shall disclose the Horse's known medical history to the examining veterinarian on request.
+
+  CLAUSE [PPE.CONDUCTED_EVAL]  (sort 10, type input)
+    heading: Pre-Purchase Examination
+    condition: {"all":[{"equals":["BUYER_REQUESTED"],"field_key":"TXN.PPE_CHOICE"},{"equals":["EVAL_PERIOD"],"field_key":"TXN.PPE_TIMING"}]}
+    body:
+      | Buyer may, at Buyer's sole cost, have the Horse examined by a licensed veterinarian of Buyer's choosing{{TXN.PPE_TIMING}}. Seller shall disclose the Horse's known medical history to the examining veterinarian on request.
 
   CLAUSE [PPE.CONDUCTED]  (sort 10, type input)
     heading: Pre-Purchase Examination
@@ -1169,33 +1344,11 @@ SECTION 8 — [PPE]  Pre-Purchase Examination
           own condition (when this field itself is shown): {"all":[{"equals":["BUYER_REQUESTED"],"field_key":"TXN.PPE_CHOICE"},{"equals":["DATE"],"field_key":"TXN.PPE_TIMING"}]}
           gates clauses: (none)
 
-  CLAUSE [PPE.CONDUCTED_EVAL]  (sort 10, type input)
-    heading: Pre-Purchase Examination
-    condition: {"all":[{"equals":["BUYER_REQUESTED"],"field_key":"TXN.PPE_CHOICE"},{"equals":["EVAL_PERIOD"],"field_key":"TXN.PPE_TIMING"}]}
-    body:
-      | Buyer may, at Buyer's sole cost, have the Horse examined by a licensed veterinarian of Buyer's choosing{{TXN.PPE_TIMING}}. Seller shall disclose the Horse's known medical history to the examining veterinarian on request.
-
-  CLAUSE [PPE.CONDUCTED_NONE]  (sort 10, type input)
-    heading: Pre-Purchase Examination
-    condition: {"all":[{"equals":["BUYER_REQUESTED"],"field_key":"TXN.PPE_CHOICE"},{"equals":["NONE"],"field_key":"TXN.PPE_TIMING"}]}
-    body:
-      | Buyer may, at Buyer's sole cost, have the Horse examined by a licensed veterinarian of Buyer's choosing{{TXN.PPE_TIMING}}. Seller shall make the Horse reasonably available for the examination and shall disclose the Horse's known medical history to the examining veterinarian on request.
-
   CLAUSE [PPE.CONTINGENCY]  (sort 20, type input)
     heading: Sale Contingent on Examination
     condition: {"all":[{"equals":["BUYER_REQUESTED"],"field_key":"TXN.PPE_CHOICE"},{"equals":["YES"],"field_key":"TXN.PPE_CONTINGENT"},{"equals":["YES"],"field_key":"TXN.DEPOSIT_ENABLED"}]}
     body:
       | This sale is contingent on a pre-purchase examination whose results are satisfactory to Buyer in Buyer's reasonable discretion. If the Buyer gives Seller written notice that the examination results are not satisfactory, this Agreement terminates, the Deposit is refunded in full, and neither party has further obligation to the other except obligations that expressly survive.
-    fields on this clause:
-      ● FIELD [TXN.PPE_NOTICE_DEADLINE]  "Written-notice deadline"
-          control: date   value_type: date
-          required: false   optional: false   set-by (owner_role): DEAL
-          options: (none)
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): (none)
-          tooltip: (none)
-          own condition (when this field itself is shown): {"equals":["__RETIRED__"],"field_key":"TXN.PPE_CHOICE"}
-          gates clauses: (none)
 
   CLAUSE [PPE.CONTINGENCY_NODEP]  (sort 20, type input)
     heading: Sale Contingent on Examination
@@ -1214,39 +1367,8 @@ SECTION 8 — [PPE]  Pre-Purchase Examination
     body:
       | Buyer has been advised to obtain an independent pre-purchase veterinary examination of the Horse and knowingly and voluntarily waives it. Buyer accepts the Horse without such examination and assumes all risk associated with conditions an examination might have revealed. This waiver does not limit Buyer's rights arising from the express representations in this Agreement or from fraud.
 
-  CLAUSE [PPE.DRUG_TESTING]  (sort 50, type input)
-    heading: Drug and Substance Testing
-    condition: {"equals":["__RETIRED__"],"field_key":"TXN.DRUG_TEST_ELECTION"}
-    body:
-      | At the pre-purchase examination or at delivery, whichever Buyer elects, Buyer may, at Buyer's cost, have a licensed veterinarian draw blood or other samples from the Horse. Samples shall be split, sealed, and identified in the presence of both parties or their representatives, with one set retained by the veterinarian or a certified testing laboratory. If a certified laboratory confirms the presence of a prohibited, masking, or performance- or behavior-altering substance not disclosed in this Agreement and not administered under a disclosed current veterinary prescription, Buyer may rescind this Agreement by written notice within 5 business days of receiving the confirmed result, return the Horse in substantially the condition delivered, and receive a refund of all amounts paid including the Deposit, and Seller shall reimburse Buyer's reasonable testing and return transport costs.
-    fields on this clause:
-      ● FIELD [TXN.DRUG_TEST_ELECTION]  "Drug and substance testing"
-          control: select   value_type: select
-          required: false   optional: false   set-by (owner_role): BUYER
-          options: [{"label":"Included","value":"INCLUDED"},{"label":"Not included","value":"NOT_INCLUDED"}]
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): (none)
-          tooltip: (none)
-          own condition (when this field itself is shown): {"equals":["__RETIRED__"],"field_key":"TXN.PPE_CHOICE"}
-          gates clauses: PPE.DRUG_TESTING (sort 50), PPE.DRUG_TESTING_DECLINED (sort 60)
-      ● FIELD [TXN.DRUG_TEST_WINDOW]  "Testing window (days)"
-          control: number   value_type: number
-          required: false   optional: false   set-by (owner_role): DEAL
-          options: (none)
-          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
-          helper (guidance): (none)
-          tooltip: (none)
-          own condition (when this field itself is shown): {"equals":["__RETIRED__"],"field_key":"TXN.PPE_CHOICE"}
-          gates clauses: (none)
-
-  CLAUSE [PPE.DRUG_TESTING_DECLINED]  (sort 60, type prose)
-    heading: Drug and Substance Testing Not Elected
-    condition: {"equals":["__RETIRED__"],"field_key":"TXN.DRUG_TEST_ELECTION"}
-    body:
-      | Buyer was offered the opportunity to have samples drawn from the Horse and tested for prohibited, masking, or performance- or behavior-altering substances, and the parties elected not to include drug testing. Buyer assumes the risk that the Horse's condition or behavior at examination, trial, or delivery may have been affected by a substance present at that time.
-
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 9 — [DELIVERY]  Title, Delivery, and Risk of Loss
+SECTION 8 — [DELIVERY]  Title, Delivery, and Risk of Loss
   sort: 80   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1275,11 +1397,69 @@ SECTION 9 — [DELIVERY]  Title, Delivery, and Risk of Loss
           own condition (when this field itself is shown): (none)
           gates clauses: (none)
 
-  CLAUSE [DELIVERY.TRANSPORT]  (sort 11, type prose, subitem)
+  CLAUSE [DELIVERY.DELAYS]  (sort 12, type prose, subitem)
+    condition: (none — always shown)
+    body:
+      | If Buyer fails to take delivery within 7 days of the agreed date other than due to Seller's delay, Buyer shall pay board and care for the Horse at {{TXN.BOARD_RATE_AFTER}} per day until delivery occurs. If Seller delays delivery by more than 7 days, Seller shall pay {{TXN.SELLER_DELAY_PENALTY}} penalty to Buyer per day until delivery occurs.
+    fields on this clause:
+      ● FIELD [TXN.BOARD_RATE_AFTER]  "Board rate after missed delivery (per day)"
+          control: currency   value_type: currency
+          required: true   optional: false   set-by (owner_role): SELLER
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [TXN.SELLER_DELAY_PENALTY]  "Seller-delay penalty (per day)"
+          control: currency   value_type: currency
+          required: true   optional: false   set-by (owner_role): BUYER
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [DELIVERY.TRANSPORT_GATE]  (sort 13, type input)
     condition: {"equals":["YES"],"field_key":"TXN.TRANSPORT_APPLIES"}
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [TXN.TRANSPORT_NEEDED]  "Transport to the delivery location arranged by a party?"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Yes when the delivery location differs from the trial location (or the horse's current location if there is no trial); No when they are the same — the transport terms are then omitted.
+          tooltip: Yes when the delivery location differs from the trial location (or the horse's current location if there is no trial); No when they are the same — the transport terms are then omitted.
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.TRANSPORT_APPLIES"}
+          gates clauses: DELIVERY.TRANSPORT_PENDING (sort 14), DELIVERY.TRANSPORT_BUYER (sort 15), DELIVERY.TRANSPORT (sort 16)
+
+  CLAUSE [DELIVERY.TRANSPORT_PENDING]  (sort 14, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRANSPORT_APPLIES"},{"equals":[""],"field_key":"TXN.TRANSPORT_NEEDED"}]}
+    body:
+      | [Pending — state whether a party arranges transport of the Horse to the delivery location. This placeholder is replaced by the applicable term and blocks signing.]
+
+  CLAUSE [DELIVERY.TRANSPORT_BUYER]  (sort 15, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRANSPORT_APPLIES"},{"equals":["NO"],"field_key":"TXN.TRANSPORT_NEEDED"}]}
+    body:
+      | Transport of the Horse to the delivery location is the Buyer's responsibility.
+
+  CLAUSE [DELIVERY.TRANSPORT]  (sort 16, type prose, subitem)
+    condition: {"all":[{"equals":["YES"],"field_key":"TXN.TRANSPORT_APPLIES"},{"equals":["YES"],"field_key":"TXN.TRANSPORT_NEEDED"}]}
     body:
       | Transport is arranged by {{TXN.TRANSPORT_RESPONSIBLE}} and paid for by {{TXN.TRANSPORT_COST_RESPONSIBLE}}.
     fields on this clause:
+      ● FIELD [TXN.TRANSPORT_APPLIES]  "Transport applies"
+          control: text   value_type: text
+          required: false   optional: true   set-by (owner_role): SYSTEM
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: DELIVERY.TRANSPORT_GATE (sort 13), DELIVERY.TRANSPORT_PENDING (sort 14), DELIVERY.TRANSPORT_BUYER (sort 15), DELIVERY.TRANSPORT (sort 16)
       ● FIELD [TXN.TRANSPORT_RESPONSIBLE]  "Transport arranged by"
           control: select   value_type: select
           required: true   optional: false   set-by (owner_role): DEAL
@@ -1287,7 +1467,7 @@ SECTION 9 — [DELIVERY]  Title, Delivery, and Risk of Loss
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
           helper (guidance): (none)
           tooltip: (none)
-          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.TRANSPORT_APPLIES"}
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"TXN.TRANSPORT_APPLIES"},{"equals":["YES"],"field_key":"TXN.TRANSPORT_NEEDED"}]}
           gates clauses: (none)
       ● FIELD [TXN.TRANSPORT_COST_RESPONSIBLE]  "Transport paid by"
           control: select   value_type: select
@@ -1296,13 +1476,8 @@ SECTION 9 — [DELIVERY]  Title, Delivery, and Risk of Loss
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
           helper (guidance): (none)
           tooltip: (none)
-          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.TRANSPORT_APPLIES"}
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"TXN.TRANSPORT_APPLIES"},{"equals":["YES"],"field_key":"TXN.TRANSPORT_NEEDED"}]}
           gates clauses: (none)
-
-  CLAUSE [DELIVERY.DELAYS]  (sort 12, type prose, subitem)
-    condition: (none — always shown)
-    body:
-      | If Buyer fails to take delivery within 7 days of the agreed date other than due to Seller's delay, Buyer shall pay board and care for the Horse at {{TXN.BOARD_RATE_AFTER}} per day until delivery occurs. If Seller delays delivery by more than 7 days, Seller shall pay {{TXN.SELLER_DELAY_PENALTY}} penalty to Buyer per day until delivery occurs.
 
   CLAUSE [DELIVERY.TITLE_RISK]  (sort 20, type prose)
     heading: Transfer of Title and Risk
@@ -1348,7 +1523,7 @@ SECTION 9 — [DELIVERY]  Title, Delivery, and Risk of Loss
           gates clauses: (none)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 10 — [RISK]  Risk, Release, and Indemnification
+SECTION 9 — [RISK]  Risk, Release, and Indemnification
   sort: 90   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1389,7 +1564,7 @@ SECTION 10 — [RISK]  Risk, Release, and Indemnification
       | Before Closing, and except as allocated to Buyer during any trial period, Seller shall indemnify, defend, and hold harmless the Buyer Parties from and against any third-party claim arising out of the Horse's ownership, care, or condition, except to the extent caused by the gross negligence, reckless conduct, or intentional misconduct of a Buyer Party.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 11 — [DEFAULT]  Default and Remedies
+SECTION 10 — [DEFAULT]  Default and Remedies
   sort: 100   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1412,7 +1587,7 @@ SECTION 11 — [DEFAULT]  Default and Remedies
       | If Seller retakes possession of the Horse following Buyer's uncured installment default, Seller shall, within 60 days, elect either to retain the Horse and refund amounts paid in excess of the greater of the Deposit and 20 percent of the Purchase Price, or to resell the Horse in a commercially reasonable manner and account to Buyer for any amount received in excess of the unpaid balance plus Seller's reasonable costs of retaking, keeping, and reselling the Horse.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 12 — [NOTICE]  Notice and Contact Information
+SECTION 11 — [NOTICE]  Notice and Contact Information
   sort: 110   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1447,7 +1622,7 @@ SECTION 12 — [NOTICE]  Notice and Contact Information
       | Each party shall promptly notify the other party in writing of any change in the party's address or contact information.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 13 — [ASSIGNMENT]  Assignment
+SECTION 12 — [ASSIGNMENT]  Assignment
   sort: 120   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1458,7 +1633,7 @@ SECTION 13 — [ASSIGNMENT]  Assignment
       | Neither party shall assign this Agreement or any of its rights or obligations under it without the other party's prior written consent.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 14 — [ENTIRE_AGREEMENT]  Entire Agreement
+SECTION 13 — [ENTIRE_AGREEMENT]  Entire Agreement
   sort: 130   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1469,7 +1644,7 @@ SECTION 14 — [ENTIRE_AGREEMENT]  Entire Agreement
       | This Agreement contains the entire agreement between the parties with respect to its subject matter and supersedes all prior discussions, advertisements, and understandings, and Buyer acknowledges that Buyer is not relying on any statement or representation regarding the Horse that is not stated in this Agreement. Any modification of this Agreement must be in writing and signed by all parties.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 15 — [GOVERNING_LAW]  Governing Law and Dispute Resolution
+SECTION 14 — [GOVERNING_LAW]  Governing Law and Dispute Resolution
   sort: 140   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1480,7 +1655,7 @@ SECTION 15 — [GOVERNING_LAW]  Governing Law and Dispute Resolution
       | This Agreement is governed by the laws of the State of California, without regard to conflict-of-laws principles. Any dispute arising out of or relating to this Agreement or the Horse shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief, including recovery of possession of the Horse, in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 16 — [ATTORNEYS_FEES]  Attorneys' Fees
+SECTION 15 — [ATTORNEYS_FEES]  Attorneys' Fees
   sort: 150   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1491,7 +1666,7 @@ SECTION 16 — [ATTORNEYS_FEES]  Attorneys' Fees
       | Each party shall cover their own attorney's fees and costs.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 17 — [SEVERABILITY]  Severability
+SECTION 16 — [SEVERABILITY]  Severability
   sort: 160   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1502,7 +1677,7 @@ SECTION 17 — [SEVERABILITY]  Severability
       | If any provision of this Agreement is held to be invalid or unenforceable, the remaining provisions shall continue in full force and effect, and the invalid or unenforceable provision shall be deemed modified to the minimum extent necessary to make it valid and enforceable.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 18 — [REPS]  Representations
+SECTION 17 — [REPS]  Representations
   sort: 170   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1531,7 +1706,7 @@ SECTION 18 — [REPS]  Representations
       | [Pending — select whether Buyer is an individual or an entity. This placeholder is replaced by the applicable representations and blocks signing.]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 19 — [SIGNATURES]  Signatures
+SECTION 18 — [SIGNATURES]  Signatures
   sort: 180   optional-section: false
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1647,32 +1822,7 @@ FIELDS NOT ATTACHED TO A LISTED CLAUSE (shown so nothing is hidden):
       control: text   required: false   set-by: SYSTEM
       options: (none)
       helper: (none)
-      gates clauses: TRIAL.TERMS (sort 10), TRIAL.TERMS_CURRENT (sort 10)
-  ● FIELD [TXN.TRIAL_BOARD_COST]  "Trial board & care costs borne by"  (clause_key: (null))
-      control: cost_split   required: true   set-by: DEAL
-      options: (none)
-      helper: (none)
-      gates clauses: (none)
-  ● FIELD [TXN.TRANSPORT_APPLIES]  "Transport applies"  (clause_key: (null))
-      control: text   required: false   set-by: SYSTEM
-      options: (none)
-      helper: (none)
-      gates clauses: DELIVERY.TRANSPORT (sort 11)
-  ● FIELD [TXN.TRANSPORT_NEEDED]  "Transport to a different location required"  (clause_key: (null))
-      control: select   required: false   set-by: DEAL
-      options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
-      helper: Yes when the delivery location differs from the trial location (or the horse's current location if there is no trial); No when they are the same — the transport terms are then omitted.
-      gates clauses: (none)
-  ● FIELD [TXN.BOARD_RATE_AFTER]  "Board rate after missed delivery (per day)"  (clause_key: (null))
-      control: currency   required: true   set-by: SELLER
-      options: (none)
-      helper: (none)
-      gates clauses: (none)
-  ● FIELD [TXN.SELLER_DELAY_PENALTY]  "Seller-delay penalty (per day)"  (clause_key: (null))
-      control: currency   required: true   set-by: BUYER
-      options: (none)
-      helper: (none)
-      gates clauses: (none)
+      gates clauses: TRIAL.TERMS (sort 10), TRIAL.TERMS_CURRENT (sort 10), TRIAL.TRANSPORT_GATE (sort 14), TRIAL.TRANSPORT_PENDING (sort 15), TRIAL.TRANSPORT_BUYER (sort 16), TRIAL.TRANSPORT_ARRANGED (sort 17)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SELECTOR INDEX — every field that gates one or more clauses
@@ -1682,57 +1832,55 @@ SELECTOR INDEX — every field that gates one or more clauses
   [COBUYER.PARTY_TYPE]  required: true
       gates: SIGNATURES.COBUYER_CAPACITY (sort 40)
   [HORSE.BEHAVIORAL_HISTORY_GATE]  required: true
-      gates: HORSE.BEHAVIORAL_HISTORY_NONE (sort 56), HORSE.BEHAVIORAL_HISTORY_DISCLOSED (sort 57), HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ADD (sort 58)
+      gates: HORSE.BEHAVIORAL_HISTORY_NONE (sort 131), HORSE.BEHAVIORAL_HISTORY_DISCLOSED (sort 132), HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ACK (sort 133), HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ACK_CB (sort 134)
   [HORSE.INJURIES_TO_HORSE_GATE]  required: true
-      gates: HORSE.INJURIES_TO_HORSE_NONE (sort 66), HORSE.INJURIES_TO_HORSE_DISCLOSED (sort 67), HORSE.INJURIES_TO_HORSE_DISCLOSED_ADD (sort 68)
+      gates: HORSE.INJURIES_TO_HORSE_NONE (sort 141), HORSE.INJURIES_TO_HORSE_DISCLOSED (sort 142), HORSE.INJURIES_TO_HORSE_DISCLOSED_ACK (sort 143), HORSE.INJURIES_TO_HORSE_DISCLOSED_ACK_CB (sort 144)
   [HORSE.INJURIES_TO_HUMANS_GATE]  required: true
-      gates: HORSE.INJURIES_TO_HUMANS_NONE (sort 61), HORSE.INJURIES_TO_HUMANS_DISCLOSED (sort 62), HORSE.INJURIES_TO_HUMANS_DISCLOSED_ADD (sort 63)
+      gates: HORSE.INJURIES_TO_HUMANS_NONE (sort 121), HORSE.INJURIES_TO_HUMANS_DISCLOSED (sort 122), HORSE.INJURIES_TO_HUMANS_UNKNOWN (sort 123), HORSE.INJURIES_TO_HUMANS_DISCLOSED_ACK (sort 124), HORSE.INJURIES_TO_HUMANS_DISCLOSED_ACK_CB (sort 125)
   [HORSE.KNOWN_CONDITIONS_GATE]  required: true
-      gates: HORSE.KNOWN_CONDITIONS_NONE (sort 46), HORSE.KNOWN_CONDITIONS_DISCLOSED (sort 47), HORSE.KNOWN_CONDITIONS_DISCLOSED_ADD (sort 48)
+      gates: HORSE.KNOWN_CONDITIONS_NONE (sort 151), HORSE.KNOWN_CONDITIONS_DISCLOSED (sort 152), HORSE.KNOWN_CONDITIONS_DISCLOSED_ACK (sort 153), HORSE.KNOWN_CONDITIONS_DISCLOSED_ACK_CB (sort 154)
   [HORSE.MEDICAL_HISTORY_GATE]  required: true
-      gates: HORSE.MEDICAL_HISTORY_NONE (sort 51), HORSE.MEDICAL_HISTORY_DISCLOSED (sort 52), HORSE.MEDICAL_HISTORY_DISCLOSED_ADD (sort 53)
+      gates: HORSE.MEDICAL_HISTORY_NONE (sort 161), HORSE.MEDICAL_HISTORY_DISCLOSED (sort 162), HORSE.MEDICAL_HISTORY_DISCLOSED_ACK (sort 163), HORSE.MEDICAL_HISTORY_DISCLOSED_ACK_CB (sort 164)
   [HORSE.MEDICATIONS_GATE]  required: true
-      gates: HORSE.MEDICATIONS_NONE (sort 71), HORSE.MEDICATIONS_DISCLOSED (sort 72), HORSE.MEDICATIONS_DISCLOSED_ADD (sort 73)
+      gates: HORSE.MEDICATIONS_NONE (sort 171), HORSE.MEDICATIONS_DISCLOSED (sort 172), HORSE.MEDICATIONS_DISCLOSED_ACK (sort 173), HORSE.MEDICATIONS_DISCLOSED_ACK_CB (sort 174)
   [HORSE.SEX]  required: false
-      gates: HORSE.BREEDING (sort 90), HORSE.BREEDING_DECLINED (sort 100)
+      gates: BREEDING_ELECTION_PENDING (sort 190), HORSE.BREEDING (sort 192), HORSE.BREEDING_DECLINED (sort 193)
   [HORSE.SUPPLEMENTS_GATE]  required: true
-      gates: HORSE.SUPPLEMENTS_NONE (sort 76), HORSE.SUPPLEMENTS_DISCLOSED (sort 77), HORSE.SUPPLEMENTS_DISCLOSED_ADD (sort 78)
+      gates: HORSE.SUPPLEMENTS_NONE (sort 181), HORSE.SUPPLEMENTS_DISCLOSED (sort 182), HORSE.SUPPLEMENTS_DISCLOSED_ACK (sort 183), HORSE.SUPPLEMENTS_DISCLOSED_ACK_CB (sort 184)
   [SELLER.PARTY_TYPE]  required: true
       gates: DEFINITIONS.SELLER_IND (sort 10), DEFINITIONS.SELLER_ENT (sort 20), DEFINITIONS.SELLER_PENDING (sort 30), SIGNATURES.SELLER_CAPACITY (sort 60)
   [TXN.BREEDING_ELECTION]  required: true
-      gates: HORSE.BREEDING (sort 90), HORSE.BREEDING_DECLINED (sort 100)
+      gates: BREEDING_ELECTION_PENDING (sort 190), HORSE.BREEDING (sort 192), HORSE.BREEDING_DECLINED (sort 193)
   [TXN.CO_BUYER_ENABLED]  required: true
-      gates: PARTIES.CO_BUYER (sort 20), SIGNATURES.COBUYER_BLOCK (sort 30), SIGNATURES.COBUYER_CAPACITY (sort 40)
+      gates: HORSE.INJURIES_TO_HUMANS_DISCLOSED_ACK_CB (sort 125), HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ACK_CB (sort 134), HORSE.INJURIES_TO_HORSE_DISCLOSED_ACK_CB (sort 144), HORSE.KNOWN_CONDITIONS_DISCLOSED_ACK_CB (sort 154), HORSE.MEDICAL_HISTORY_DISCLOSED_ACK_CB (sort 164), HORSE.MEDICATIONS_DISCLOSED_ACK_CB (sort 174), HORSE.SUPPLEMENTS_DISCLOSED_ACK_CB (sort 184), CO_BUYER_ENABLED_PENDING (sort 14), PARTIES.CO_BUYER (sort 20), SIGNATURES.COBUYER_BLOCK (sort 30), SIGNATURES.COBUYER_CAPACITY (sort 40)
   [TXN.CO_BUYER_TITLE_FORM]  required: true
       gates: PARTIES.CO_BUYER_TITLE_DETAIL (sort 40)
   [TXN.DEPOSIT_ENABLED]  required: true
-      gates: PPE.CONTINGENCY (sort 20), PPE.CONTINGENCY_NODEP (sort 20), PRICE.DEPOSIT (sort 20), TRIAL.RETURN_PARTIAL (sort 12), TRIAL.RETURN_NONE (sort 12), TRIAL.RETURN_NODEP (sort 12), TRIAL.RETURN_FULL (sort 12)
-  [TXN.DRUG_TEST_ELECTION]  required: false
-      gates: PPE.DRUG_TESTING (sort 50), PPE.DRUG_TESTING_DECLINED (sort 60)
+      gates: PPE.CONTINGENCY (sort 20), PPE.CONTINGENCY_NODEP (sort 20), DEPOSIT_ENABLED_PENDING (sort 14), PRICE.DEPOSIT (sort 20), TRIAL_DEPOSIT_DISPOSITION_PENDING (sort 4), TRIAL.RETURN_FULL (sort 12), TRIAL.RETURN_NODEP (sort 12), TRIAL.RETURN_NONE (sort 12), TRIAL.RETURN_PARTIAL (sort 12)
   [TXN.FINANCING_ELECTION]  required: true
-      gates: PRICE.FINANCING (sort 70), PRICE.FINANCING_DECLINED (sort 80)
-  [TXN.HAS_DISCLOSURES]  required: (no field def — e.g. a SYSTEM-derived or party token)
-      gates: ACCEPT.DISCLOSURES (sort 10)
+      gates: PRICE.FINANCING_PENDING (sort 69), PRICE.FINANCING (sort 70), PRICE.FINANCING_DECLINED (sort 80)
   [TXN.HAS_ENCUMBRANCES]  required: true
-      gates: HORSE.ENCUMBRANCES (sort 30)
-  [TXN.INJURY_HISTORY]  required: (no field def — e.g. a SYSTEM-derived or party token)
-      gates: ACCEPT.DISCLOSURES (sort 10)
+      gates: HAS_ENCUMBRANCES_PENDING (sort 24), HORSE.ENCUMBRANCES (sort 30)
   [TXN.INSTALLMENTS_ENABLED]  required: true
-      gates: DEFAULT.INSTALLMENTS (sort 30), PRICE.FULL_PAYMENT (sort 40), PRICE.INSTALLMENTS (sort 50)
+      gates: DEFAULT.INSTALLMENTS (sort 30), INSTALLMENTS_ENABLED_PENDING (sort 34), PRICE.FULL_PAYMENT (sort 40), PRICE.INSTALLMENTS (sort 50)
   [TXN.PPE_CHOICE]  required: true
-      gates: PPE.CONDUCTED_PRIOR (sort 10), PPE.CONDUCTED (sort 10), PPE.CONDUCTED_EVAL (sort 10), PPE.CONDUCTED_NONE (sort 10), PPE.CONTINGENCY (sort 20), PPE.CONTINGENCY_NODEP (sort 20), PPE.NA (sort 25), PPE.WAIVED (sort 30)
+      gates: PPE_CHOICE_PENDING (sort 2), PPE_TIMING_PENDING (sort 3), PPE_CONTINGENT_PENDING (sort 4), PPE.CONDUCTED_PRIOR (sort 10), PPE.CONDUCTED_EVAL (sort 10), PPE.CONDUCTED (sort 10), PPE.CONTINGENCY (sort 20), PPE.CONTINGENCY_NODEP (sort 20), PPE.NA (sort 25), PPE.WAIVED (sort 30)
   [TXN.PPE_CONTINGENT]  required: true
-      gates: PPE.CONTINGENCY (sort 20), PPE.CONTINGENCY_NODEP (sort 20)
+      gates: PPE_CONTINGENT_PENDING (sort 4), PPE.CONTINGENCY (sort 20), PPE.CONTINGENCY_NODEP (sort 20)
   [TXN.PPE_TIMING]  required: true
-      gates: PPE.CONDUCTED_PRIOR (sort 10), PPE.CONDUCTED (sort 10), PPE.CONDUCTED_EVAL (sort 10), PPE.CONDUCTED_NONE (sort 10)
+      gates: PPE_TIMING_PENDING (sort 3), PPE.CONDUCTED_PRIOR (sort 10), PPE.CONDUCTED_EVAL (sort 10), PPE.CONDUCTED (sort 10)
   [TXN.TRANSPORT_APPLIES]  required: false
-      gates: DELIVERY.TRANSPORT (sort 11)
+      gates: DELIVERY.TRANSPORT_GATE (sort 13), DELIVERY.TRANSPORT_PENDING (sort 14), DELIVERY.TRANSPORT_BUYER (sort 15), DELIVERY.TRANSPORT (sort 16)
+  [TXN.TRANSPORT_NEEDED]  required: true
+      gates: DELIVERY.TRANSPORT_PENDING (sort 14), DELIVERY.TRANSPORT_BUYER (sort 15), DELIVERY.TRANSPORT (sort 16)
   [TXN.TRIAL_AT_CURRENT]  required: false
-      gates: TRIAL.TERMS (sort 10), TRIAL.TERMS_CURRENT (sort 10)
+      gates: TRIAL.TERMS (sort 10), TRIAL.TERMS_CURRENT (sort 10), TRIAL.TRANSPORT_GATE (sort 14), TRIAL.TRANSPORT_PENDING (sort 15), TRIAL.TRANSPORT_BUYER (sort 16), TRIAL.TRANSPORT_ARRANGED (sort 17)
   [TXN.TRIAL_DEPOSIT_DISPOSITION]  required: true
-      gates: TRIAL.RETURN_PARTIAL (sort 12), TRIAL.RETURN_NONE (sort 12), TRIAL.RETURN_FULL (sort 12)
+      gates: TRIAL_DEPOSIT_DISPOSITION_PENDING (sort 4), TRIAL.RETURN_FULL (sort 12), TRIAL.RETURN_NONE (sort 12), TRIAL.RETURN_PARTIAL (sort 12)
   [TXN.TRIAL_ENABLED]  required: true
-      gates: TRIAL.TERMS (sort 10), TRIAL.TERMS_CURRENT (sort 10), TRIAL.DEPOSIT_CHOICE (sort 11), TRIAL.RETURN_PARTIAL (sort 12), TRIAL.RETURN_NONE (sort 12), TRIAL.RETURN_NODEP (sort 12), TRIAL.RETURN_FULL (sort 12), TRIAL.NOT_RETURNED (sort 13), TRIAL.NONE (sort 20)
+      gates: TRIAL_ENABLED_PENDING (sort 3), TRIAL_DEPOSIT_DISPOSITION_PENDING (sort 4), TRIAL.TERMS (sort 10), TRIAL.TERMS_CURRENT (sort 10), TRIAL.RETURN_FULL (sort 12), TRIAL.RETURN_NODEP (sort 12), TRIAL.RETURN_NONE (sort 12), TRIAL.RETURN_PARTIAL (sort 12), TRIAL.NOT_RETURNED (sort 13), TRIAL.TRANSPORT_GATE (sort 14), TRIAL.TRANSPORT_PENDING (sort 15), TRIAL.TRANSPORT_BUYER (sort 16), TRIAL.TRANSPORT_ARRANGED (sort 17), TRIAL.INSURANCE (sort 18), TRIAL.NONE (sort 20)
+  [TXN.TRIAL_TRANSPORT_NEEDED]  required: true
+      gates: TRIAL.TRANSPORT_PENDING (sort 15), TRIAL.TRANSPORT_BUYER (sort 16), TRIAL.TRANSPORT_ARRANGED (sort 17)
 
 ══════════════════════════════════════════════════════════════════════════════
 END OF MANIFEST
