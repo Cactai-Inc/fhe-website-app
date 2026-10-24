@@ -3,7 +3,6 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execFileSync, execSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DISCLOSURE_FIELD_LABELS } from '../shared/disclosureFieldLabels.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 function connectionString() {
@@ -19,9 +18,17 @@ function queryJson(sql) {
 const lit = (s) => `'${String(s).replace(/'/g, "''")}'`;
 const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
-// Box labels per disclosure section, from the one shared source so the sample cannot
-// drift from the record (INJURIES_TO_HUMANS is a scalar, so it is not in the list).
-const DISCLOSURE_FIELDS = DISCLOSURE_FIELD_LABELS;
+// Box labels per disclosure section, read straight from the DB (disclosure_section_spec,
+// the single source) the same way clauses are, so the sample cannot drift from the record.
+// INJURIES_TO_HUMANS is a scalar, so it has no spec rows and no boxes.
+const DISCLOSURE_FIELDS = (() => {
+  const rows = queryJson(`SELECT coalesce(jsonb_agg(jsonb_build_object('section',sec,'label',s.label,'ord',s.ord) ORDER BY sec, s.ord),'[]'::jsonb)
+    FROM unnest(ARRAY['KNOWN_CONDITIONS','MEDICAL_HISTORY','BEHAVIORAL_HISTORY','INJURIES_TO_HORSE','MEDICATIONS','SUPPLEMENTS']) sec,
+         LATERAL disclosure_section_spec(sec) WITH ORDINALITY AS s(k,label,kind,ord);`) || [];
+  const out = {};
+  for (const r of rows) (out[r.section] ||= []).push(r.label);
+  return out;
+})();
 
 /** Plain-language description of a clause condition (what selection shows it). */
 function describeCondition(cond) {
