@@ -274,9 +274,30 @@ function MedicationBlock({ v, kind, onChange, onRemove }: { v: HorseMedication; 
         <p className="text-[11px] tracking-wide uppercase text-gold-800 font-semibold">{noun}</p>
         <button type="button" onClick={onRemove} className="text-[11px] text-muted hover:text-red-700 underline">Remove</button>
       </div>
+      {/* Imported to the contract: Name, Purpose, Dose, Frequency, Cost per dose,
+          Rx required. These are what print on a lease or sale. */}
       <div className="grid sm:grid-cols-2 gap-2">
         <div><L>Name</L><input className={input} value={v.name ?? ''} placeholder={`${noun} name`} onChange={(e) => set({ name: e.target.value })} /></div>
-        <div><L>Dosage</L><input className={input} value={v.dosage ?? ''} placeholder="e.g. 10 mg" onChange={(e) => set({ dosage: e.target.value })} /></div>
+        <div><L>Purpose</L><input className={input} value={v.purpose ?? ''} placeholder="why it's given" onChange={(e) => set({ purpose: e.target.value })} /></div>
+        <div><L>Dose</L><input className={input} value={v.dosage ?? ''} placeholder="e.g. 10 mg" onChange={(e) => set({ dosage: e.target.value })} /></div>
+        <div><L>Frequency</L><input className={input} value={v.frequency ?? ''} placeholder="e.g. twice daily" onChange={(e) => set({ frequency: e.target.value })} /></div>
+        <div><L>Cost per dose</L>
+          <input className={input} inputMode="numeric" value={v.cost_per_dose ?? ''} placeholder="$0.00" onChange={(e) => set({ cost_per_dose: e.target.value })}
+            onBlur={(e) => { const n = Number(e.target.value.replace(/[$,\s]/g, '')); if (Number.isFinite(n) && e.target.value.trim()) set({ cost_per_dose: n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) }); }} /></div>
+        <div><L>Rx required</L>
+          <div className="flex gap-1.5 mt-1">
+            {([['true', 'Yes'], ['false', 'No']] as const).map(([rv, rl]) => (
+              <button key={rv} type="button" onClick={() => set({ rx_required: rv === 'true' })}
+                className={`text-sm rounded-lg px-4 py-1 border focus-ring ${
+                  (v.rx_required === (rv === 'true')) ? 'bg-green-800 text-white border-green-800' : 'border-green-800/15 text-secondary hover:bg-green-50'}`}>
+                {rl}
+              </button>
+            ))}
+          </div></div>
+      </div>
+      {/* Record-only — care and purchasing detail, not printed on a contract. */}
+      <p className="text-[10px] uppercase tracking-wide text-muted mt-3 mb-1">Care &amp; purchasing (record only)</p>
+      <div className="grid sm:grid-cols-2 gap-2">
         <div className="sm:col-span-2"><L>Instructions</L><input className={input} value={v.instructions ?? ''} placeholder="e.g. one scoop AM/PM with feed" onChange={(e) => set({ instructions: e.target.value })} /></div>
         <div><L>Order quantity (units)</L><input className={input} value={v.order_units ?? ''} placeholder="e.g. 30 tablets" onChange={(e) => set({ order_units: e.target.value })} /></div>
         <div><L>Days supply</L><input className={input} inputMode="numeric" value={v.days_supply ?? ''} placeholder="e.g. 30" onChange={(e) => set({ days_supply: e.target.value })} /></div>
@@ -286,7 +307,6 @@ function MedicationBlock({ v, kind, onChange, onRemove }: { v: HorseMedication; 
         <div><L>Supplier website</L><input type="url" className={input} value={v.supplier_website ?? ''} placeholder="https://…" onChange={(e) => set({ supplier_website: e.target.value })} /></div>
         <div><L>Supplier phone</L><input type="tel" className={input} value={v.supplier_phone ?? ''} placeholder="(555) 555-5555" onChange={(e) => set({ supplier_phone: e.target.value })} /></div>
         {kind === 'MEDICATION' && (<div><L>Rx info</L><input className={input} value={v.rx_info ?? ''} placeholder="Rx #, prescriber" onChange={(e) => set({ rx_info: e.target.value })} /></div>)}
-        <div className="sm:col-span-2"><L>Conditions of use</L><input className={input} value={v.conditions_of_use ?? ''} placeholder="why / when it's given (e.g. for the kissing-spine condition)" onChange={(e) => set({ conditions_of_use: e.target.value })} /></div>
       </div>
     </div>
   );
@@ -356,7 +376,7 @@ function RepeatableVaccinations({ items, onChange }: { items: HorseVaccination[]
 
 /** A field spec for StructuredList. `description` is always first and required-in-
  *  spirit (the entry's spine); every other field is optional. */
-type SLField = { k: string; label: string; kind: 'text' | 'date' | 'textarea' | 'select' | 'bool'; options?: { value: string; label: string }[]; placeholder?: string };
+type SLField = { k: string; label: string; kind: 'text' | 'date' | 'textarea' | 'select' | 'bool' | 'occurrence'; options?: { value: string; label: string }[]; placeholder?: string };
 
 const SECTION_NAMES = ['Known conditions', 'Medical history', 'Behavior', 'Medications', 'Supplements', 'Injuries to the horse', 'Injuries to humans'];
 const crossRefHelp = (self: string) =>
@@ -369,6 +389,7 @@ function StructuredList({ noun, selfSection, fields, items, onChange }: {
   items: NarrativeEntry[]; onChange: (i: NarrativeEntry[]) => void;
 }) {
   const set = (i: number, k: string, v: string | boolean) => onChange(items.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
+  const setMany = (i: number, patch: NarrativeEntry) => onChange(items.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const val = (it: NarrativeEntry, k: string) => (it[k] == null ? '' : String(it[k]));
   return (
     <div className="sm:col-span-2 flex flex-col gap-2">
@@ -392,6 +413,18 @@ function StructuredList({ noun, selfSection, fields, items, onChange }: {
                   </select>
                 ) : fd.kind === 'bool' ? (
                   <label className="flex items-center gap-2 text-[13px] text-green-900 mt-1"><input type="checkbox" checked={it[fd.k] === true} onChange={(e) => set(i, fd.k, e.target.checked)} /> Yes</label>
+                ) : fd.kind === 'occurrence' ? (
+                  /* A "Current" checkbox that, when checked, hides the date. Stores
+                     current=true (date cleared) or a `${fd.k}` date. */
+                  <div className="mt-1 flex items-center gap-3">
+                    <label className="flex items-center gap-2 text-[13px] text-green-900">
+                      <input type="checkbox" checked={it.current === true}
+                        onChange={(e) => setMany(i, e.target.checked ? { current: true, [fd.k]: '' } : { current: false })} /> Current
+                    </label>
+                    {it.current !== true && (
+                      <input type="date" className={input} value={val(it, fd.k)} onChange={(e) => set(i, fd.k, e.target.value)} />
+                    )}
+                  </div>
                 ) : fd.kind === 'textarea' ? (
                   <textarea rows={2} className={`${input} resize-y`} value={val(it, fd.k)} placeholder={fd.placeholder} onChange={(e) => set(i, fd.k, e.target.value)} />
                 ) : (
@@ -407,9 +440,9 @@ function StructuredList({ noun, selfSection, fields, items, onChange }: {
   );
 }
 
-const STATUS_COND = [{ value: 'ongoing', label: 'Ongoing' }, { value: 'episodic', label: 'Episodic' }, { value: 'resolved', label: 'Resolved' }];
 const STATUS_MED = [{ value: 'completed', label: 'Completed' }, { value: 'ongoing', label: 'Ongoing' }];
 const STATUS_INJH = [{ value: 'ongoing', label: 'Ongoing' }, { value: 'resolved', label: 'Resolved' }];
+const MEDICAL_TYPE = [{ value: 'surgery', label: 'Surgery' }, { value: 'treatment', label: 'Treatment' }, { value: 'monitoring', label: 'Monitoring' }];
 
 /** An initial care provider captured on the intake form, persisted after the horse
  *  is created. For an emergency contact, `emailMatched` records that the typed email
@@ -552,7 +585,7 @@ const PATCHABLE_KEYS: (keyof HorseIntakePayload)[] = [
 ];
 const LIST_KEYS: (keyof HorseIntakePayload)[] = [
   'pending_fields', 'medical_history_list', 'behavioral_history_list', 'known_conditions_list',
-  'training_history_list', 'competition_history_list', 'injuries_to_humans', 'injuries_to_horse',
+  'training_history_list', 'competition_history_list', 'injuries_to_horse',
 ];
 // Columns that cannot hold the 'N/A' sentinel.
 const TYPED_KEYS = new Set<keyof HorseIntakePayload>(['date_of_birth', 'fair_market_value', 'sex', 'euthanasia_authorization', 'breed', 'color']);
@@ -654,7 +687,7 @@ export function HorseIntakeForm({
           known_conditions_list: arr<NarrativeEntry>(raw.known_conditions_list),
           training_history_list: arr<NarrativeEntry>(raw.training_history_list),
           competition_history_list: arr<NarrativeEntry>(raw.competition_history_list),
-          injuries_to_humans: arr<NarrativeEntry>(raw.injuries_to_humans),
+          injuries_to_humans: s(raw.injuries_to_humans),
           injuries_to_horse: arr<NarrativeEntry>(raw.injuries_to_horse),
           lessee_name_text: s(raw.lessee_name_text),
           lease_start: s(raw.lease_start).slice(0, 10), lease_end: s(raw.lease_end).slice(0, 10),
@@ -903,40 +936,45 @@ export function HorseIntakeForm({
 
       <Section title="Health &amp; disclosures"><div className="sm:col-span-2 grid gap-4">
         <div><L>Known conditions (ongoing or episodic health/soundness, not behavioral)</L>
+          <p className="text-[10px] text-muted mb-1">e.g. allergies, certain feed not tolerated, prone to colic from temperature changes.</p>
           <StructuredList noun="condition" selfSection="Known conditions" items={f.known_conditions_list ?? []} onChange={setList('known_conditions_list')} fields={[
-            { k: 'date_first_noticed', label: 'Date first noticed', kind: 'date' },
-            { k: 'status', label: 'Status', kind: 'select', options: STATUS_COND },
-            { k: 'triggers', label: 'Triggers', kind: 'text', placeholder: 'e.g. cold, hard ground' },
-            { k: 'accommodations', label: 'Accommodations (management notes)', kind: 'textarea', placeholder: 'e.g. special feed blend; turnout routine' },
+            { k: 'trigger', label: 'Trigger', kind: 'text', placeholder: 'e.g. cold, hard ground' },
+            { k: 'last_occurrence', label: 'Current or Date of last occurrence', kind: 'occurrence' },
+            { k: 'accommodations', label: 'Accommodations', kind: 'textarea', placeholder: 'e.g. special feed blend; turnout routine' },
           ]} /></div>
         <div><L>Medical history (treatments, past and ongoing)</L>
+          <p className="text-[10px] text-muted mb-1">e.g. colic surgery, vision impairment, monitoring for tendon damage.</p>
           <StructuredList noun="entry" selfSection="Medical history" items={f.medical_history_list ?? []} onChange={setList('medical_history_list')} fields={[
             { k: 'date', label: 'Date', kind: 'date' },
-            { k: 'type', label: 'Type (surgery / treatment / monitoring)', kind: 'text', placeholder: 'e.g. colic surgery' },
+            { k: 'type', label: 'Type', kind: 'select', options: MEDICAL_TYPE },
             { k: 'status', label: 'Status', kind: 'select', options: STATUS_MED },
           ]} /></div>
-        <div><L>Behavioral concerns</L>
-          <StructuredList noun="concern" selfSection="Behavior" items={f.behavioral_history_list ?? []} onChange={setList('behavioral_history_list')} fields={[
+        <div><L>Known behaviors</L>
+          <p className="text-[10px] text-muted mb-1">e.g. afraid of dogs, randomly bucks or tries to throw riders.</p>
+          <StructuredList noun="behavior" selfSection="Behavior" items={f.behavioral_history_list ?? []} onChange={setList('behavioral_history_list')} fields={[
             { k: 'trigger', label: 'Trigger', kind: 'text', placeholder: 'e.g. wind, clippers' },
-            { k: 'date_since', label: 'Since', kind: 'date' },
+            { k: 'last_occurrence', label: 'Current or Date of last occurrence', kind: 'occurrence' },
           ]} /></div>
         <div><L>Injuries to the horse (dated events)</L>
+          <p className="text-[10px] text-muted mb-1">e.g. ruptured tendon.</p>
           <StructuredList noun="injury to the horse" selfSection="Injuries to the horse" items={f.injuries_to_horse ?? []} onChange={setList('injuries_to_horse')} fields={[
             { k: 'date', label: 'Date or date range', kind: 'text', placeholder: 'e.g. May 2024' },
-            { k: 'rider_involved', label: 'A rider was involved', kind: 'bool' },
-            { k: 'human_hurt', label: 'A human was hurt', kind: 'bool' },
-            { k: 'human_was_riding', label: '…and they were riding', kind: 'bool' },
             { k: 'outcome', label: 'Outcome', kind: 'text' },
             { k: 'status', label: 'Status', kind: 'select', options: STATUS_INJH },
           ]} />
           <p className="text-[10px] text-muted mt-1">An injury with lasting effects should also get a Known conditions entry.</p></div>
-        <div><L>Injuries to humans (serious, where the horse could be at fault)</L>
-          <p className="text-[10px] text-muted mb-1">Serious injuries only — an ordinary fall is not recorded. The entry's existence is the disclosure. Prints on sale and lease contracts.</p>
-          <StructuredList noun="injury to a human" selfSection="Injuries to humans" items={f.injuries_to_humans ?? []} onChange={setList('injuries_to_humans')} fields={[
-            { k: 'date', label: 'Date', kind: 'date' },
-            { k: 'was_riding', label: 'The person was riding', kind: 'bool' },
-            { k: 'outcome', label: 'Outcome', kind: 'text' },
-          ]} /></div>
+        <div><L>Injuries caused to humans</L>
+          <p className="text-[10px] text-muted mb-1">Has this horse ever caused a serious injury to a person? Broken bone is serious; a light bruise is insignificant. Prints on sale and lease contracts.</p>
+          <div className="flex gap-1.5">
+            {([['YES', 'Yes'], ['NO', 'No'], ['UNKNOWN', 'Unknown']] as const).map(([v, lbl]) => (
+              <button key={v} type="button"
+                onClick={() => setF((p) => ({ ...p, injuries_to_humans: v }))}
+                className={`text-sm rounded-lg px-4 py-1.5 border focus-ring ${
+                  f.injuries_to_humans === v ? 'bg-green-800 text-white border-green-800' : 'border-green-800/15 text-secondary hover:bg-green-50'}`}>
+                {lbl}
+              </button>
+            ))}
+          </div></div>
       </div></Section>
 
       <Section title="Care providers">

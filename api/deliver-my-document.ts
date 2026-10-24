@@ -37,6 +37,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
 import { buildPartyCopyEmail, renderPartyCopyPdfBytes } from './_lib/delivery.js';
+import { fetchDocumentDisclosureEntries } from './_lib/documentPdf.js';
 
 const CHANNEL = 'EMAIL';
 
@@ -115,7 +116,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Same email shape as the all-parties sender (subject with the real
     // document title, greeting/body/signature, PDF attachment) — one source,
     // api/_lib/delivery.ts, not a second hand-built template.
-    const pdfBytes = await renderPartyCopyPdfBytes(doc);
+    const disclosureEntries = await fetchDocumentDisclosureEntries(db, doc.id);
+    const pdfBytes = await renderPartyCopyPdfBytes(doc, disclosureEntries);
     const partyEmail = await buildPartyCopyEmail(
       db, doc, executedAt, contact?.first_name, contact?.last_name, identity, pdfBytes,
     );

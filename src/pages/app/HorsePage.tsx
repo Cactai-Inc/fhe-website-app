@@ -12,6 +12,8 @@ import { listHorseBreeds, listHorseColors } from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { ProviderEditor } from '../../components/app/ProviderEditor';
 import { LesseeEntryEditor } from '../../components/app/LesseeEntryEditor';
+import { DisclosureEntryBoxes } from '../../components/app/DisclosureEntryBoxes';
+import { buildRecordEntries } from '../../lib/disclosureMarker';
 import { horseDeals, DEAL_TYPE_LABEL, type DealRow } from '../../lib/deals';
 import { usePropertyTerm } from '../../contexts/BrandProvider';
 import { withArticle } from '../../lib/propertyTerm';
@@ -70,6 +72,19 @@ function ListDetail({ label, items, field }: { label: string; items: Record<stri
     <div className="sm:col-span-2">
       <p className="text-[10px] uppercase tracking-wide text-muted mb-0.5">{label}</p>
       <ul className="flex flex-col gap-1">{vals.map((v, i) => <li key={i} className="text-sm text-green-900">{v}</li>)}</ul>
+    </div>
+  );
+}
+
+/** A record disclosure section rendered with the SAME boxed component the contract
+ *  and PDF use, built from the raw record list via the shared field-order spec. */
+function RecordDisclosure({ label, section, items }: { label: string; section: string; items: Record<string, unknown>[] }) {
+  const entries = buildRecordEntries(section, items);
+  if (entries.length === 0) return null;
+  return (
+    <div className="sm:col-span-2">
+      <p className="text-[11px] uppercase tracking-wide text-gold-800 font-semibold mb-1">{label}</p>
+      <DisclosureEntryBoxes entries={entries} />
     </div>
   );
 }
@@ -351,13 +366,18 @@ export default function HorsePage() {
                 </Card>
               )}
 
-              {(r.known_conditions_list.length > 0 || r.medical_history_list.length > 0 || r.behavioral_history_list.length > 0 || r.injuries_to_horse.length > 0 || r.injuries_to_humans.length > 0 || r.training_history_list.length > 0 || r.competition_history_list.length > 0) && (
+              {(r.known_conditions_list.length > 0 || r.medical_history_list.length > 0 || r.behavioral_history_list.length > 0 || r.injuries_to_horse.length > 0 || !!r.injuries_to_humans || r.training_history_list.length > 0 || r.competition_history_list.length > 0) && (
                 <Card title="Health & disclosures" full>
-                  <ListDetail label="Known conditions" items={r.known_conditions_list} field="description" />
-                  <ListDetail label="Medical history" items={r.medical_history_list} field="description" />
-                  <ListDetail label="Behavioral concerns" items={r.behavioral_history_list} field="description" />
-                  <ListDetail label="Injuries to the horse" items={r.injuries_to_horse} field="description" />
-                  <ListDetail label="Injuries to humans" items={r.injuries_to_humans} field="description" />
+                  <RecordDisclosure label="Known conditions" section="KNOWN_CONDITIONS" items={r.known_conditions_list} />
+                  <RecordDisclosure label="Medical history" section="MEDICAL_HISTORY" items={r.medical_history_list} />
+                  <RecordDisclosure label="Known behaviors" section="BEHAVIORAL_HISTORY" items={r.behavioral_history_list} />
+                  <RecordDisclosure label="Injuries to the horse" section="INJURIES_TO_HORSE" items={r.injuries_to_horse} />
+                  {!!r.injuries_to_humans && (
+                    <div className="sm:col-span-2">
+                      <p className="text-[11px] uppercase tracking-wide text-gold-800 font-semibold mb-1">Injuries caused to humans</p>
+                      <p className="text-[13px] text-green-950">{r.injuries_to_humans === 'YES' ? 'Yes' : r.injuries_to_humans === 'NO' ? 'No' : 'Unknown'}</p>
+                    </div>
+                  )}
                   <ListDetail label="Training history" items={r.training_history_list} field="entry" />
                   <ListDetail label="Competition history" items={r.competition_history_list} field="entry" />
                 </Card>

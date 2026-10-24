@@ -9,10 +9,11 @@
  * ⚠️ NOTHING HERE IS EVER STORED. The stored `documents.merged_body` keeps its
  * literal tokens; this only changes what a person is shown.
  *
- * ⚠️ api/_lib/documentPdf.ts KEEPS ITS OWN COPY ON PURPOSE. The `api` and `src`
- * tsconfig projects share no module — see the note at the top of
- * lib/documentPdf.ts — so the server twin cannot import this file. A change to
- * the behaviour below MUST be made there too.
+ * `resolveUnsignedSignatureTokens` is NOT defined here anymore — it is the one
+ * copy in shared/documentPdf.ts, imported by the client PDF writer, the server
+ * PDF writer, and (re-exported below) the three on-screen body renderers. The
+ * `shared/` folder is on both tsconfig projects' include, so there is a single
+ * implementation for the whole app.
  */
 
 /* ⚠️ AN UNSIGNED DOCUMENT MUST NOT SHOW ITS SIGNATURE TOKENS.
@@ -35,10 +36,4 @@
 
    Only ever touches tokens that are still literal. Once signed, the body holds
    the real name and date and there is nothing here left to match. */
-const UNSIGNED_SIG_DATE = /\{\{SIG\.[A-Z_]+\.DATE\}\}/g;
-const UNSIGNED_SIG_NAME = /\{\{SIG\.[A-Z_]+\.(?!DATE)[A-Z_]+\}\}/g;
-
-export function resolveUnsignedSignatureTokens(body: string, today = new Date()): string {
-  const stamp = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  return body.replace(UNSIGNED_SIG_DATE, stamp).replace(UNSIGNED_SIG_NAME, '');
-}
+export { resolveUnsignedSignatureTokens } from '../../shared/documentPdf';

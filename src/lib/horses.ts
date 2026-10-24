@@ -61,15 +61,18 @@ export type NarrativeEntry = Record<string, string | boolean | undefined>;
 /** Each section-specific entry is a NarrativeEntry with known optional keys; the index
  *  signature keeps them assignable to the generic list components. */
 /** Known conditions: ongoing or episodic health/soundness issues (not behavioral). */
-export interface ConditionEntry extends NarrativeEntry { description?: string; date_first_noticed?: string; status?: string; triggers?: string; accommodations?: string }
+export interface ConditionEntry extends NarrativeEntry { description?: string; trigger?: string; current?: boolean; last_occurrence?: string; accommodations?: string }
 /** Medical history: treatments, past and ongoing. */
 export interface MedicalEntry extends NarrativeEntry { description?: string; date?: string; type?: string; status?: string }
 /** Behavior: behavioral concerns. */
-export interface BehaviorEntry extends NarrativeEntry { description?: string; trigger?: string; date_since?: string }
+export interface BehaviorEntry extends NarrativeEntry { description?: string; trigger?: string; current?: boolean; last_occurrence?: string }
 /** Injuries the horse caused to a person — serious, horse-at-fault only. */
 export interface InjuryEntry extends NarrativeEntry { description?: string; date?: string; was_riding?: boolean; outcome?: string }
+/* injuries_to_humans is no longer a list — it is a single Yes/No/Unknown answer on
+   the record (string), with no entries. InjuryEntry is retained only for any
+   historical reader; the live field is a scalar. */
 /** Injuries the horse experienced — dated events, separate from medical history. */
-export interface HorseInjuryEntry extends NarrativeEntry { description?: string; date?: string; rider_involved?: boolean; human_hurt?: boolean; human_was_riding?: boolean; outcome?: string; status?: string }
+export interface HorseInjuryEntry extends NarrativeEntry { description?: string; date?: string; outcome?: string; status?: string }
 
 export interface HorseIntakePayload {
   owner_name_text?: string;
@@ -104,7 +107,8 @@ export interface HorseIntakePayload {
   known_conditions_list?: ConditionEntry[];
   training_history_list?: NarrativeEntry[];
   competition_history_list?: NarrativeEntry[];
-  injuries_to_humans?: InjuryEntry[];
+  /** Injuries caused to humans: a single answer — '' | 'YES' | 'NO' | 'UNKNOWN'. */
+  injuries_to_humans?: string;
   injuries_to_horse?: HorseInjuryEntry[];
   claim_note?: string;
   /** Staff-only: assign the record to this client account. Honored by the backend
@@ -348,7 +352,7 @@ export interface HorsePageDetail {
     current_location: { name?: string; address_line1?: string; city?: string; state?: string; postal?: string; keeping_spots?: KeepingSpot[]; notes?: string; start_on?: string } | null;
     medical_history_list: MedicalEntry[]; behavioral_history_list: BehaviorEntry[];
     known_conditions_list: ConditionEntry[]; training_history_list: NarrativeEntry[];
-    competition_history_list: NarrativeEntry[]; injuries_to_humans: InjuryEntry[];
+    competition_history_list: NarrativeEntry[]; injuries_to_humans: string | null;
     injuries_to_horse: HorseInjuryEntry[];
     pending_fields: string[]; euthanasia_authorization: string | null;
     owner_name: string | null; lessee_name: string | null; lease_start: string | null; lease_end: string | null;
@@ -421,13 +425,24 @@ export async function updateHorseRecord(horseId: string, patch: Record<string, u
   if (error) throw new DbError(error, 'Saving the horse record');
 }
 
-/** A repeatable medication or supplement entry with cost, supplier, and order qty.
- *  rx_info applies to medications only. */
+/** A repeatable medication or supplement entry. The IMPORTED set (printed on a
+ *  contract) is name, purpose, dosage, frequency, cost_per_dose, rx_required. The
+ *  remaining care/purchasing fields (instructions, cost, order_units, days_supply,
+ *  supplier_*, rx_info) stay on the record and are not imported. rx_info applies to
+ *  medications only. */
 export interface HorseMedication {
   id?: string;
   kind: 'MEDICATION' | 'SUPPLEMENT';
   name?: string;
+  /** Why it is given — imported to the contract. */
+  purpose?: string;
   dosage?: string;
+  /** How often — imported to the contract. */
+  frequency?: string;
+  /** Cost per dose — imported to the contract (distinct from cost-per-order). */
+  cost_per_dose?: string;
+  /** Prescription required — imported to the contract as Yes/No. */
+  rx_required?: boolean;
   instructions?: string;
   cost?: string;
   supplier_website?: string;
@@ -435,8 +450,6 @@ export interface HorseMedication {
   rx_info?: string;
   order_units?: string;
   days_supply?: string;
-  /** Conditions of use — why/when it's given (e.g. "for the kissing-spine condition"). */
-  conditions_of_use?: string;
 }
 /** Replace-all a horse's medications + supplements. */
 export async function setHorseMedications(horseId: string, items: HorseMedication[]): Promise<void> {

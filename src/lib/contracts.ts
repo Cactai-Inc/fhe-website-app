@@ -2,6 +2,7 @@
  * workflow engine RPCs — the engine (RLS + ownership matrix + state machine) is
  * the authority; these shape the calls for /app/contracts/:id. */
 import { supabase } from './supabase';
+import type { DisclosureEntries, DisclosureEntry } from './disclosureMarker';
 
 export type FieldInputKind =
   | 'text' | 'longtext' | 'select' | 'buttons' | 'responsibility'
@@ -92,6 +93,55 @@ export interface ContractField {
   added_by_me?: boolean;
 }
 
+/** The seven record-fed disclosure sections, keyed by the part after HORSE. that
+ *  their content field uses. INJURIES_TO_HUMANS is a scalar (no entries) and is
+ *  deliberately absent — it renders through its own No/Yes/Unknown clauses. */
+const DISCLOSURE_SECTIONS = [
+  'KNOWN_CONDITIONS', 'MEDICAL_HISTORY', 'BEHAVIORAL_HISTORY',
+  'INJURIES_TO_HORSE', 'MEDICATIONS', 'SUPPLEMENTS',
+] as const;
+
+/** Build the section → entries map the body renderers and the PDF caller need,
+ *  from the document's OWN stored field values (contract_fields.structured for
+ *  HORSE.<SECTION>). These freeze at execution, so a signed document renders what
+ *  was signed — never re-read from the horse. Each entry is an ordered
+ *  { label, value }[]; a malformed/absent value yields no entries for that section. */
+export function buildDisclosureEntries(fields: ContractField[] | undefined): DisclosureEntries {
+  const out: DisclosureEntries = {};
+  for (const section of DISCLOSURE_SECTIONS) {
+    const f = fields?.find((x) => x.field_key === `HORSE.${section}`);
+    const raw = f?.structured as unknown;
+    if (!Array.isArray(raw)) continue;
+    const entries: DisclosureEntry[] = [];
+    for (const entry of raw) {
+      if (!Array.isArray(entry)) continue;
+      const fieldsOut = entry
+        .filter((p): p is { label?: unknown; value?: unknown } => !!p && typeof p === 'object')
+        .map((p) => ({ label: String(p.label ?? ''), value: String(p.value ?? '') }));
+      entries.push(fieldsOut);
+    }
+    if (entries.length) out[section] = entries;
+  }
+  return out;
+}
+
+/** Fetch a document's frozen disclosure entries directly from its stored
+ *  contract_fields (the HORSE.<SECTION> structured values), for surfaces that
+ *  render a body without already holding the field set — the paper reader and the
+ *  signed-PDF download on /app/documents. Returns {} when the document carries no
+ *  disclosure fields (releases, policies) or the caller cannot read them. */
+export async function fetchDisclosureEntries(documentId: string): Promise<DisclosureEntries> {
+  const { data, error } = await supabase
+    .from('contract_fields')
+    .select('field_key, structured')
+    .eq('document_id', documentId)
+    .in('field_key', DISCLOSURE_SECTIONS.map((s) => `HORSE.${s}`));
+  if (error || !data) return {};
+  return buildDisclosureEntries(
+    data.map((r) => ({ field_key: r.field_key, structured: r.structured } as ContractField)),
+  );
+}
+
 /** A party choice, with the sub-inputs revealed by CARE_PROVIDER / SHARED. */
 export interface PartyChoice {
   party?: string;   // OWNER | LESSOR | LESSEE | BUYER | SELLER | CARE_PROVIDER | SHARED
@@ -155,11 +205,6 @@ export interface FieldStructured {
   incidents?: { category?: string; start?: string; end?: string; endPresent?: boolean; detail?: string }[];
   // reveal_text (§11.6 tack yes/no → input)
   enabled?: boolean;
-  // disc_med (reciprocal disclosure: medications / supplements added on a contract).
-  // Field-for-field with horse_medications; each becomes a record row at execution.
-  discMeds?: {
-    name?: string; dosage?: string; instructions?: string; conditions_of_use?: string;
-  }[];
 }
 
 export interface ContractChangeRequest {

@@ -1,0 +1,2524 @@
+══════════════════════════════════════════════════════════════════════════════
+EDITOR MANIFEST — HORSE_LEASE_V3
+Title: Horse Lease Agreement   ·   version: 1   ·   active: true   ·   kind: HORSE_LEASE
+Generated: 2026-10-23T03:47:19.458Z
+Document order. Hidden branches included and marked. No truncation.
+══════════════════════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — [PARTIES]  Parties
+  sort: 10   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [PARTIES.INTRO]  (sort 10, type input)
+    condition: (none — always shown)
+    body:
+      | This Horse Lease Agreement (the "Agreement") is made effective as of {{DOC.EFFECTIVE_DATE}} by and between {{LESSOR.FULL_NAME}} of {{LESSOR.ADDRESS}} ("Lessor") and {{LESSEE.FULL_NAME}} of {{LESSEE.ADDRESS}} ("Lessee").
+    fields on this clause:
+      ● FIELD [LESSOR.PARTY_TYPE]  "Lessor is an"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Individual","value":"INDIVIDUAL"},{"label":"Entity / organization","value":"ENTITY"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: DEFINITIONS.LESSOR_PENDING (sort 10), DEFINITIONS.LESSOR_IND (sort 20), DEFINITIONS.LESSOR_ENT (sort 30), SIGNATURES.LESSOR_CAPACITY (sort 12)
+      ● FIELD [LESSEE.PARTY_TYPE]  "Lessee is an"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSEE
+          options: [{"label":"Individual","value":"INDIVIDUAL"},{"label":"Entity / organization","value":"ENTITY"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: DEFINITIONS.LESSEE_PENDING (sort 40), DEFINITIONS.LESSEE_IND (sort 50), DEFINITIONS.LESSEE_ENT (sort 60), INSURANCE_RISK.CCC_PICK (sort 170), INSURANCE_RISK.CCC_NA (sort 171), INSURANCE_RISK.CCC_NOT_REQUIRED (sort 172), INSURANCE_RISK.CCC_REQ (sort 173), INSURANCE_RISK.CCC_STATUS (sort 174), LESSEE_REPS.PENDING (sort 5), LESSEE_REPS.MAIN_INDIVIDUAL (sort 10), LESSEE_REPS.MAIN_ENTITY (sort 20), TRAINING_LESSONS.PENDING (sort 245), TRAINING_LESSONS.LESSONS (sort 250), TRAINING_LESSONS.LESSONS_ENTITY (sort 255), SIGNATURES.LESSEE_CAPACITY (sort 11)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — [DEFINITIONS]  Definitions; Binding Effect; Third-Party Beneficiaries
+  sort: 12   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [DEFINITIONS.LESSOR_PENDING]  (sort 10, type input)
+    condition: {"equals":[""],"field_key":"LESSOR.PARTY_TYPE"}
+    body:
+      | [Pending — select whether Lessor is an individual or an entity. This placeholder is replaced by the applicable definition and blocks signing.]
+
+  CLAUSE [DEFINITIONS.LESSOR_IND]  (sort 20, type input)
+    condition: {"any":[{"equals":["INDIVIDUAL"],"field_key":"LESSOR.PARTY_TYPE"}]}
+    body:
+      | "Lessor Parties" means Lessor; Lessor's spouse and family and household members, in each case when handling, caring for, transporting, or otherwise involved with the Horse or the activities contemplated by this Agreement; and Lessor's estate, executors, administrators, legal representatives, successors, and assigns.
+
+  CLAUSE [DEFINITIONS.LESSOR_ENT]  (sort 30, type input)
+    condition: {"any":[{"equals":["ENTITY"],"field_key":"LESSOR.PARTY_TYPE"}]}
+    body:
+      | "Lessor Parties" means Lessor; Lessor's parent, subsidiary, and affiliated entities; the owners, principals, proprietors, partners, members, managers, officers, directors, employees, trainers, instructors, agents, contractors, and volunteers of Lessor and of each such entity, together with the family members of any such natural person when handling, caring for, transporting, or otherwise involved with the Horse or the activities contemplated by this Agreement; and the successors and assigns of each of the foregoing.
+
+  CLAUSE [DEFINITIONS.LESSEE_PENDING]  (sort 40, type input)
+    condition: {"equals":[""],"field_key":"LESSEE.PARTY_TYPE"}
+    body:
+      | [Pending — select whether Lessee is an individual or an entity. This placeholder is replaced by the applicable definition and blocks signing.]
+
+  CLAUSE [DEFINITIONS.LESSEE_IND]  (sort 50, type input)
+    condition: {"any":[{"equals":["INDIVIDUAL"],"field_key":"LESSEE.PARTY_TYPE"}]}
+    body:
+      | "Lessee Parties" means Lessee; Lessee's spouse and family and household members, in each case when handling, caring for, transporting, riding, or otherwise involved with the Horse or the activities contemplated by this Agreement; and Lessee's estate, executors, administrators, legal representatives, successors, and assigns.
+
+  CLAUSE [DEFINITIONS.LESSEE_ENT]  (sort 60, type input)
+    condition: {"any":[{"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"}]}
+    body:
+      | "Lessee Parties" means Lessee; Lessee's parent, subsidiary, and affiliated entities; the owners, principals, proprietors, partners, members, managers, officers, directors, employees, trainers, instructors, agents, contractors, and volunteers of Lessee and of each such entity, together with the family members of any such natural person when handling, caring for, transporting, riding, or otherwise involved with the Horse or the activities contemplated by this Agreement; and the successors and assigns of each of the foregoing.
+
+  CLAUSE [DEFINITIONS.BINDING]  (sort 70, type input)
+    condition: (none — always shown)
+    body:
+      | Each release, waiver, assumption of risk, and covenant made by a party under this Agreement is made by that party on its own behalf and, to the fullest extent permitted by law, binds anyone claiming by, through, or under that party, including that party's estate, executors, administrators, heirs, legal representatives, successors, assigns, insurers, and subrogees. Each party covenants that it will not permit any person who has not executed this Agreement or a release satisfying the Releases Required for Authorized Riders provision of this Agreement to ride, handle, or care for the Horse, and each party shall indemnify, defend, and hold harmless the other party's Lessor Parties or Lessee Parties, as applicable, from and against any claim brought by that party's family members, invitees, or authorized riders arising out of the Horse or the activities contemplated by this Agreement, except to the extent caused by the gross negligence, reckless conduct, or intentional misconduct of an indemnified party.
+
+  CLAUSE [DEFINITIONS.BENEFICIARIES]  (sort 80, type input)
+    condition: (none — always shown)
+    body:
+      | Each Lessor Party and each Lessee Party who is not a signatory to this Agreement is an intended third-party beneficiary of the releases, waivers, assumptions of risk, indemnities, and limitations of liability in this Agreement and may enforce them directly.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — [HORSE]  The Horse
+  sort: 15   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [HORSE.IDENTITY]  (sort 10, type input)
+    heading: Horse Details
+    condition: (none — always shown)
+    body:
+      | This Agreement applies to the following horse (the "Horse"): {{HORSE.REGISTERED_NAME}}
+      | Color: {{HORSE.COLOR}}
+      | Markings: {{HORSE.MARKINGS}}
+      | Breed: {{HORSE.BREED}}
+      | Registration Number: {{HORSE.REGISTRATION_NUMBER}}
+      | Sex: {{HORSE.SEX}}
+      | Foaling date: {{HORSE.AGE_DOB}}
+      | Current fair market value: {{HORSE.FAIR_MARKET_VALUE}}
+      | Microchip: {{HORSE.MICROCHIP}}
+      | Passport: {{HORSE.PASSPORT_NUMBER}}
+    fields on this clause:
+      ● FIELD [HORSE.REGISTERED_NAME]  "Registered name"
+          control: text   value_type: text
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [HORSE.COLOR]  "Color"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Bay","value":"BAY"},{"label":"Chestnut","value":"CHESTNUT"},{"label":"Gray","value":"GRAY"},{"label":"Black","value":"BLACK"},{"label":"Brown","value":"BROWN"},{"label":"Roan","value":"ROAN"},{"label":"Palomino","value":"PALOMINO"},{"label":"Pinto / Paint","value":"PINTO"},{"label":"Buckskin","value":"BUCKSKIN"},{"label":"Dun","value":"DUN"},{"label":"White / Cremello","value":"WHITE"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [HORSE.MARKINGS]  "Markings"
+          control: text   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [HORSE.BREED]  "Breed"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Warmblood","value":"WARMBLOOD"},{"label":"Thoroughbred","value":"THOROUGHBRED"},{"label":"Quarter Horse","value":"QUARTER_HORSE"},{"label":"Arabian","value":"ARABIAN"},{"label":"Pony","value":"PONY"},{"label":"Draft","value":"DRAFT"},{"label":"Appaloosa","value":"APPALOOSA"},{"label":"Morgan","value":"MORGAN"},{"label":"Friesian","value":"FRIESIAN"},{"label":"Andalusian","value":"ANDALUSIAN"},{"label":"Mustang","value":"MUSTANG"},{"label":"Crossbred / Grade","value":"CROSSBRED"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [HORSE.REGISTRATION_NUMBER]  "Registration number"
+          control: text   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [HORSE.SEX]  "Sex"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Mare","value":"MARE"},{"label":"Gelding","value":"GELDING"},{"label":"Stallion","value":"STALLION"},{"label":"Colt","value":"COLT"},{"label":"Filly","value":"FILLY"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [HORSE.AGE_DOB]  "Foaling date"
+          control: text   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [HORSE.FAIR_MARKET_VALUE]  "Fair market value"
+          control: currency   value_type: currency
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [HORSE.MICROCHIP]  "Microchip #"
+          control: text   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [HORSE.PASSPORT_NUMBER]  "Passport #"
+          control: text   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [HORSE.OWNERSHIP]  (sort 20, type input)
+    heading: Ownership of the Horse
+    condition: (none — always shown)
+    body:
+      | Lessor warrants that Lessor lawfully owns the Horse — whether owned outright, financed without any restriction that prohibits or limits leasing the Horse, or owned jointly with one or more other owners — and that Lessor has all requisite rights, authority, and (where there are co-owners) permission to enter into this Agreement and lease the Horse.
+
+  CLAUSE [HORSE.COOWNERS]  (sort 22, type input)
+    condition: (none — always shown)
+    body:
+      | Co-owners: {{TXN.CO_OWNERS}}
+    fields on this clause:
+      ● FIELD [TXN.CO_OWNERS]  "Co-owner(s)"
+          control: contacts_list   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: First / Last / Phone / Email (per row)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [HORSE.OWNERSHIP_LIMITS_Q]  (sort 25, type input)
+    condition: (none — always shown)
+    body:
+      | Are there any ownership related leasing restrictions? {{TXN.HAS_OWNERSHIP_LIMITS}}
+    fields on this clause:
+      ● FIELD [TXN.HAS_OWNERSHIP_LIMITS]  "Any limitations on ownership?"
+          control: yesno   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (Yes / No buttons)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: HORSE.OWNERSHIP_LIMITS (sort 26)
+
+  CLAUSE [HORSE.OWNERSHIP_LIMITS]  (sort 26, type input, optional)
+    condition: {"equals":["YES"],"field_key":"TXN.HAS_OWNERSHIP_LIMITS"}
+    body:
+      | Ownership related leasing restrictions: {{TXN.OWNERSHIP_LIMITATIONS}}
+    fields on this clause:
+      ● FIELD [TXN.OWNERSHIP_LIMITATIONS]  "Ownership limitations"
+          control: longtext   value_type: longtext
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [HORSE.BEHAVIOR]  (sort 30, type input)
+    heading: Behavior
+    condition: (none — always shown)
+    body:
+      | The Lessor warrants that the Horse has no history of dangerous or vicious behavior as of the Effective Date of this Agreement.
+
+  CLAUSE [HORSE.CONDITION]  (sort 40, type input)
+    heading: Physical Condition
+    condition: (none — always shown)
+    body:
+      | The Lessor warrants that the Horse is sound and in good physical condition as of the Effective Date of this Agreement.
+
+  CLAUSE [HORSE.VET_CHECK]  (sort 50, type input)
+    heading: Pre-Lease Veterinary Examination
+    condition: (none — always shown)
+    body:
+      | Pre-lease veterinary examination of the Horse: {{TXN.VET_CHECK_CHOICE}}
+    fields on this clause:
+      ● FIELD [TXN.VET_CHECK_CHOICE]  "Pre-lease veterinary examination"
+          control: buttons   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Lessee requested at their own expense","value":"LESSEE_OWN"},{"label":"Lessee requested at Lessor's expense","value":"LESSEE_AT_LESSOR"},{"label":"Lessor provided at no cost","value":"LESSOR_FREE"},{"label":"Lessee waives the option","value":"WAIVED"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [HORSE.KNOWN_CONDITIONS_GATE]  (sort 50, type input)
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [HORSE.KNOWN_CONDITIONS_GATE]  "Known conditions — anything to disclose?"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
+          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: HORSE.KNOWN_CONDITIONS_NONE (sort 51), HORSE.KNOWN_CONDITIONS_DISCLOSED (sort 52), HORSE.KNOWN_CONDITIONS_DISCLOSED_ADD (sort 53)
+
+  CLAUSE [HORSE.KNOWN_CONDITIONS_NONE]  (sort 51, type input)
+    condition: {"equals":["NO"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
+    body:
+      | To Lessor's knowledge, there is no material information regarding the Horse's medical conditions, lameness history, allergies, vices, or prior veterinary concerns to disclose as of the Effective Date.
+
+  CLAUSE [HORSE.KNOWN_CONDITIONS_DISCLOSED]  (sort 52, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
+    body:
+      | Lessor has disclosed to Lessee all known material information regarding the Horse's medical conditions (ongoing or episodic), lameness, allergies, vices, and prior veterinary concerns, as follows: {{HORSE.KNOWN_CONDITIONS}}. Lessor represents that these disclosures are true and complete to Lessor's knowledge as of the Effective Date.
+    fields on this clause:
+      ● FIELD [HORSE.KNOWN_CONDITIONS]  "Known conditions"
+          control: longtext   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
+          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.KNOWN_CONDITIONS_DISCLOSED_ADD]  (sort 53, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
+    body:
+      | Additional disclosures provided by the Lessor: {{ADD.KNOWN_CONDITIONS}}
+    fields on this clause:
+      ● FIELD [ADD.KNOWN_CONDITIONS]  "Add to this disclosure"
+          control: longtext   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          tooltip: Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.KNOWN_CONDITIONS_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.TRAINER_EVAL]  (sort 55, type input)
+    heading: Pre-Lease Trainer Evaluation
+    condition: (none — always shown)
+    body:
+      | Pre-lease trainer evaluation of the Horse: {{TXN.TRAINER_EVAL_CHOICE}}
+    fields on this clause:
+      ● FIELD [TXN.TRAINER_EVAL_CHOICE]  "Professional suitability evaluation"
+          control: buttons   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Lessee requested at their own expense","value":"LESSEE_OWN"},{"label":"Lessee requested at Lessor's expense","value":"LESSEE_AT_LESSOR"},{"label":"Lessor provided at no cost","value":"LESSOR_FREE"},{"label":"Lessee waives the option","value":"WAIVED"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [HORSE.MEDICAL_HISTORY_GATE]  (sort 55, type input)
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [HORSE.MEDICAL_HISTORY_GATE]  "Medical history — anything to disclose?"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
+          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: HORSE.MEDICAL_HISTORY_NONE (sort 56), HORSE.MEDICAL_HISTORY_DISCLOSED (sort 57), HORSE.MEDICAL_HISTORY_DISCLOSED_ADD (sort 58)
+
+  CLAUSE [HORSE.MEDICAL_HISTORY_NONE]  (sort 56, type input)
+    condition: {"equals":["NO"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
+    body:
+      | To Lessor's knowledge, the Horse has no medical history (treatments, surgeries, or ongoing monitoring) to disclose as of the Effective Date.
+
+  CLAUSE [LOCATION.MAIN]  (sort 56, type input)
+    heading: Location
+    condition: (none — always shown)
+    body:
+      | Location of the Horse:
+      | {{HORSE.CURRENT_LOCATION}}
+    fields on this clause:
+      ● FIELD [HORSE.CURRENT_LOCATION]  "Facility"
+          control: location   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: Location name + address
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [LOCATION.MOVE_CHOICE]  (sort 57, type input)
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [TXN.HORSE_MOVES]  "Horse will move to a new location for the Lessee"
+          control: yesno   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (Yes / No buttons)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: LOCATION.NEW (sort 58)
+
+  CLAUSE [HORSE.MEDICAL_HISTORY_DISCLOSED]  (sort 57, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
+    body:
+      | Lessor discloses the Horse's medical history (treatments past and ongoing), with all known information relating to date, type, description, and status: {{HORSE.MEDICAL_HISTORY}}.
+    fields on this clause:
+      ● FIELD [HORSE.MEDICAL_HISTORY]  "Medical history"
+          control: longtext   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
+          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [LOCATION.NEW]  (sort 58, type input, optional)
+    condition: {"equals":["YES"],"field_key":"TXN.HORSE_MOVES"}
+    body:
+      | Location during lease term: {{TXN.NEW_LOCATION}}
+    fields on this clause:
+      ● FIELD [TXN.NEW_LOCATION]  "Location during lease term"
+          control: location   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: Location name + address
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [HORSE.MEDICAL_HISTORY_DISCLOSED_ADD]  (sort 58, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
+    body:
+      | Additional disclosures provided by the Lessor: {{ADD.MEDICAL_HISTORY}}
+    fields on this clause:
+      ● FIELD [ADD.MEDICAL_HISTORY]  "Add to this disclosure"
+          control: longtext   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          tooltip: Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.MEDICAL_HISTORY_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [LOCATION.INSPECTION]  (sort 59, type prose)
+    condition: (none — always shown)
+    body:
+      | Lessor may inspect the Horse at any time, subject to the reasonable access rules of the facility where the Horse is kept. If Lessor reasonably determines that the Horse is not being properly cared for, Lessor may take possession of the Horse upon written notice to Lessee.
+
+  CLAUSE [HORSE.BEHAVIORAL_HISTORY_GATE]  (sort 60, type input)
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [HORSE.BEHAVIORAL_HISTORY_GATE]  "Behavioral concerns — anything to disclose?"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
+          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: HORSE.BEHAVIORAL_HISTORY_NONE (sort 61), HORSE.BEHAVIORAL_HISTORY_DISCLOSED (sort 62), HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ADD (sort 63)
+
+  CLAUSE [HORSE.WARRANTY]  (sort 60, type prose)
+    heading: Disclaimer of Warranties
+    condition: (none — always shown)
+    body:
+      | Except for the representations expressly stated in this Agreement, LESSOR MAKES NO WARRANTIES, EXPRESS OR IMPLIED, REGARDING THE HORSE, INCLUDING THE WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+  CLAUSE [HORSE.BEHAVIORAL_HISTORY_NONE]  (sort 61, type input)
+    condition: {"equals":["NO"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
+    body:
+      | Lessor represents that, to Lessor's knowledge, the Horse has no behavioral concerns to disclose as of the Effective Date.
+
+  CLAUSE [HORSE.BEHAVIORAL_HISTORY_DISCLOSED]  (sort 62, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
+    body:
+      | Lessor discloses the following behavioral concerns, with all known information relating to description, trigger, and how long observed: {{HORSE.BEHAVIORAL_HISTORY}}.
+    fields on this clause:
+      ● FIELD [HORSE.BEHAVIORAL_HISTORY]  "Behavioral concerns"
+          control: longtext   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
+          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ADD]  (sort 63, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
+    body:
+      | Additional disclosures provided by the Lessor: {{ADD.BEHAVIORAL_HISTORY}}
+    fields on this clause:
+      ● FIELD [ADD.BEHAVIORAL_HISTORY]  "Add to this disclosure"
+          control: longtext   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          tooltip: Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.BEHAVIORAL_HISTORY_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.INJURIES_TO_HUMANS_GATE]  (sort 65, type input)
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [HORSE.INJURIES_TO_HUMANS_GATE]  "Injuries to humans — anything to disclose?"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
+          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: HORSE.INJURIES_TO_HUMANS_NONE (sort 66), HORSE.INJURIES_TO_HUMANS_DISCLOSED (sort 67), HORSE.INJURIES_TO_HUMANS_DISCLOSED_ADD (sort 68)
+
+  CLAUSE [HORSE.INJURIES_TO_HUMANS_NONE]  (sort 66, type input)
+    condition: {"equals":["NO"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"}
+    body:
+      | Lessor represents that, to Lessor''s knowledge, no person has suffered serious injury proximately caused by the direct actions of the Horse, including biting, kicking, striking, bucking, rearing, bolting, crushing, or throwing a rider. This representation does not extend to any incident caused primarily by a third party or an external stimulus — such as another horse or rider being at fault, a loose dog, wildlife, a vehicle, or a similar external provocation — where the Horse''s reaction was within the range of normal equine behavior.
+
+  CLAUSE [HORSE.INJURIES_TO_HUMANS_DISCLOSED]  (sort 67, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"}
+    body:
+      | Lessor discloses that one or more persons have suffered serious injury involving the direct actions of the Horse, with all known information relating to date, whether the person was riding, description, and outcome: {{HORSE.INJURIES_TO_HUMANS}}. Lessee acknowledges this disclosure and proceeds with knowledge of it.
+    fields on this clause:
+      ● FIELD [HORSE.INJURIES_TO_HUMANS]  "Injuries to humans"
+          control: longtext   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
+          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.INJURIES_TO_HUMANS_DISCLOSED_ADD]  (sort 68, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"}
+    body:
+      | Additional disclosures provided by the Lessor: {{ADD.INJURIES_TO_HUMANS}}
+    fields on this clause:
+      ● FIELD [ADD.INJURIES_TO_HUMANS]  "Add to this disclosure"
+          control: longtext   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          tooltip: Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HUMANS_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.INJURIES_TO_HORSE_GATE]  (sort 70, type input)
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [HORSE.INJURIES_TO_HORSE_GATE]  "Injuries to the horse — anything to disclose?"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
+          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: HORSE.INJURIES_TO_HORSE_NONE (sort 71), HORSE.INJURIES_TO_HORSE_DISCLOSED (sort 72), HORSE.INJURIES_TO_HORSE_DISCLOSED_ADD (sort 73)
+
+  CLAUSE [HORSE.INJURIES_TO_HORSE_NONE]  (sort 71, type input)
+    condition: {"equals":["NO"],"field_key":"HORSE.INJURIES_TO_HORSE_GATE"}
+    body:
+      | Lessor represents that, to Lessor''s knowledge, the Horse has not experienced any serious injury.
+
+  CLAUSE [HORSE.INJURIES_TO_HORSE_DISCLOSED]  (sort 72, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HORSE_GATE"}
+    body:
+      | Lessor discloses the following injuries the Horse has experienced, with all known information relating to date of occurrence, description, outcome, and current status: {{HORSE.INJURIES_TO_HORSE}}.
+    fields on this clause:
+      ● FIELD [HORSE.INJURIES_TO_HORSE]  "Injuries to the horse"
+          control: longtext   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
+          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HORSE_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.INJURIES_TO_HORSE_DISCLOSED_ADD]  (sort 73, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HORSE_GATE"}
+    body:
+      | Additional disclosures provided by the Lessor: {{ADD.INJURIES_TO_HORSE}}
+    fields on this clause:
+      ● FIELD [ADD.INJURIES_TO_HORSE]  "Add to this disclosure"
+          control: longtext   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          tooltip: Optional. Add a new item or more detail here — it is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.INJURIES_TO_HORSE_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.MEDICATIONS_GATE]  (sort 75, type input)
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [HORSE.MEDICATIONS_GATE]  "Medications — anything to disclose?"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
+          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: HORSE.MEDICATIONS_NONE (sort 76), HORSE.MEDICATIONS_DISCLOSED (sort 77), HORSE.MEDICATIONS_DISCLOSED_ADD (sort 78)
+
+  CLAUSE [HORSE.MEDICATIONS_NONE]  (sort 76, type input)
+    condition: {"equals":["NO"],"field_key":"HORSE.MEDICATIONS_GATE"}
+    body:
+      | Lessor represents that, to Lessor's knowledge, the Horse is on no medications as of the Effective Date.
+
+  CLAUSE [HORSE.MEDICATIONS_DISCLOSED]  (sort 77, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.MEDICATIONS_GATE"}
+    body:
+      | Lessor discloses the following medications, with all known information relating to name, dosage, instructions, and conditions of use: {{HORSE.MEDICATIONS}}.
+    fields on this clause:
+      ● FIELD [HORSE.MEDICATIONS]  "Medications"
+          control: longtext   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
+          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.MEDICATIONS_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.MEDICATIONS_DISCLOSED_ADD]  (sort 78, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.MEDICATIONS_GATE"}
+    body:
+      | Additional medications provided by the Lessor: {{ADD.MEDICATIONS}}
+    fields on this clause:
+      ● FIELD [ADD.MEDICATIONS]  "Add medications"
+          control: structured / disc_med   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Optional. Add a medication with its name, dosage, instructions, and conditions of use — each is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          tooltip: Optional. Add a medication with its name, dosage, instructions, and conditions of use — each is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.MEDICATIONS_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.SUPPLEMENTS_GATE]  (sort 80, type input)
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [HORSE.SUPPLEMENTS_GATE]  "Supplements — anything to disclose?"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Yes","value":"YES"},{"label":"No","value":"NO"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none.
+          tooltip: Set automatically from the horse record: Yes and locked when the record has entries in this section; answerable here only when the record has none. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): (none)
+          gates clauses: HORSE.SUPPLEMENTS_NONE (sort 81), HORSE.SUPPLEMENTS_DISCLOSED (sort 82), HORSE.SUPPLEMENTS_DISCLOSED_ADD (sort 83)
+
+  CLAUSE [HORSE.SUPPLEMENTS_NONE]  (sort 81, type input)
+    condition: {"equals":["NO"],"field_key":"HORSE.SUPPLEMENTS_GATE"}
+    body:
+      | Lessor represents that, to Lessor's knowledge, the Horse is on no supplements as of the Effective Date.
+
+  CLAUSE [HORSE.SUPPLEMENTS_DISCLOSED]  (sort 82, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.SUPPLEMENTS_GATE"}
+    body:
+      | Lessor discloses the following supplements, with all known information relating to name, dosage, instructions, and conditions of use: {{HORSE.SUPPLEMENTS}}.
+    fields on this clause:
+      ● FIELD [HORSE.SUPPLEMENTS]  "Supplements"
+          control: longtext   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury.
+          tooltip: Imported from the horse record. If this relates to anything in the other disclosure sections (Known conditions, Medical history, Behavior, Medications, Supplements, Injuries to the horse, Injuries to humans), mention it in the description — for example a medication the horse takes because of an injury. [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.SUPPLEMENTS_GATE"}
+          gates clauses: (none)
+
+  CLAUSE [HORSE.SUPPLEMENTS_DISCLOSED_ADD]  (sort 83, type input, optional)
+    condition: {"equals":["YES"],"field_key":"HORSE.SUPPLEMENTS_GATE"}
+    body:
+      | Additional supplements provided by the Lessor: {{ADD.SUPPLEMENTS}}
+    fields on this clause:
+      ● FIELD [ADD.SUPPLEMENTS]  "Add supplements"
+          control: structured / disc_med   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): Optional. Add a supplement with its name, dosage, instructions, and conditions of use — each is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          tooltip: Optional. Add a supplement with its name, dosage, instructions, and conditions of use — each is saved to the horse's record when the agreement is executed. The imported entries above cannot be edited here; change those on the record.
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"HORSE.SUPPLEMENTS_GATE"}
+          gates clauses: (none)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — [PURPOSE]  Purpose and Lease Grant
+  sort: 20   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [PURPOSE.RECREATION_DEFAULT]  (sort 5, type input)
+    heading: Purpose of Agreement
+    condition: {"equals":[""],"field_key":"TXN.LEASE_PURPOSE"}
+    body:
+      | [Pending — select the purpose of this lease. This placeholder is replaced by the applicable purpose language and blocks signing.]
+
+  CLAUSE [PURPOSE.RECREATION]  (sort 10, type prose)
+    heading: Purpose of Agreement
+    condition: {"equals":["RECREATIONAL","INSTRUCTIONAL","COMPETITION","COMMERCIAL"],"field_key":"TXN.LEASE_PURPOSE"}
+    body:
+      | For {{TXN.LEASE_PURPOSE}} purposes, Lessee wishes to ride and/or handle Lessor's horse, and Lessor agrees to allow Lessee to ride and/or handle Lessor's horse in exchange for the consideration described herein.
+    fields on this clause:
+      ● FIELD [TXN.LEASE_PURPOSE]  "Purpose of the lease"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"recreational","value":"RECREATIONAL"},{"label":"instructional","value":"INSTRUCTIONAL"},{"label":"competition","value":"COMPETITION"},{"label":"commercial program","value":"COMMERCIAL"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: PURPOSE.RECREATION_DEFAULT (sort 5), PURPOSE.RECREATION (sort 10)
+
+  CLAUSE [PURPOSE.GRANT]  (sort 15, type prose)
+    heading: Lease Grant
+    condition: (none — always shown)
+    body:
+      | Subject to the terms and conditions of this Agreement, Lessor agrees to lease to Lessee and Lessee agrees to lease from Lessor the horse described below.
+
+  CLAUSE [PURPOSE.LEASE_TYPE]  (sort 20, type input)
+    heading: Lease Type
+    condition: (none — always shown)
+    body:
+      | Lease type: {{TXN.LEASE_TYPE}}
+    fields on this clause:
+      ● FIELD [TXN.LEASE_TYPE]  "Lease type"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Partial lease (shared or limited access)","value":"PARTIAL"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: SCHEDULE.MAIN (sort 10), SCHEDULE.OTHER (sort 12), SCHEDULE.CHANGES (sort 15)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — [SCHEDULE]  Schedule for Lessee's Usage
+  sort: 25   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [SCHEDULE.MAIN]  (sort 10, type input)
+    heading: Schedule for Lessee's Usage
+    condition: {"equals":["PARTIAL"],"field_key":"TXN.LEASE_TYPE"}
+    body:
+      | Reserved days of use: {{TXN.DAYS_USED}}
+    fields on this clause:
+      ● FIELD [TXN.DAYS_USED]  "Reserved days of use"
+          control: week_grid   value_type: text
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [SCHEDULE.OTHER]  (sort 12, type input, optional)
+    condition: {"equals":["PARTIAL"],"field_key":"TXN.LEASE_TYPE"}
+    body:
+      | Additional or custom schedule terms: {{TXN.SCHEDULE_TERMS}}
+    fields on this clause:
+      ● FIELD [TXN.SCHEDULE_TERMS]  "Additional schedule terms"
+          control: longtext   value_type: longtext
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [SCHEDULE.CHANGES]  (sort 15, type prose)
+    heading: Schedule Changes
+    condition: {"equals":["PARTIAL"],"field_key":"TXN.LEASE_TYPE"}
+    body:
+      | Any changes to the agreed upon schedule must be made and accepted in writing.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — [LEASE_FEE]  Lease Fee
+  sort: 30   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [LEASE_FEE.CHOICE]  (sort 5, type input)
+    condition: (none — always shown)
+    body:
+      | {{TXN.LEASE_FEE}}
+      | 
+    fields on this clause:
+      ● FIELD [TXN.LEASE_FEE]  "Lease fee"
+          control: fee_schedule   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [LEASE_FEE.NO_FEE_CONSIDERATION]  (sort 6, type input, optional)
+    condition: {"equals":["NO"],"field_key":"TXN.LEASE_FEE_PAYABLE"}
+    body:
+      | If no monetary lease fee is payable under this Agreement, the parties agree that Lessee's undertakings of care, exercise, and use of the Horse and Lessee's other obligations under this Agreement constitute good and adequate consideration for this Agreement.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7 — [PAYMENT_TERMS]  Payment Terms
+  sort: 35   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [PAYMENT_TERMS.OFFSET]  (sort 20, type prose)
+    heading: Right of Offset
+    condition: (none — always shown)
+    body:
+      | A party to whom money is owed under this Agreement may offset the amount owed against any amount that party owes to the other party.
+
+  CLAUSE [PAYMENT_TERMS.RECEIPTS]  (sort 30, type prose)
+    heading: Receipts
+    condition: (none — always shown)
+    body:
+      | A party seeking reimbursement for an expense paid on behalf of the other party shall provide a receipt or other reasonable documentation of the expense as a condition of reimbursement.
+
+  CLAUSE [PAYMENT_TERMS.LATE]  (sort 40, type input)
+    heading: Late Payments
+    condition: (none — always shown)
+    body:
+      | All payments are due on their due date or within 5 business days of notification of the amount owed. Payments will be deemed late if they remain unpaid on the 6th business day. Late payments are considered a breach of the contract terms and may be grounds for termination of the Agreement unless the party from whom the payment is owed has communicated in writing the date by which payment will be made. Payments exceeding 1 calendar month in past-due status constitute grounds for termination for cause under the Termination for Cause provisions of this Agreement unless prior written acceptance of the delay is provided by the party to whom the payment is owed.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8 — [PAYMENT_METHOD]  Payment Method
+  sort: 38   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [PAYMENT_METHOD.MAIN]  (sort 10, type input)
+    heading: Payments by the Lessee
+    condition: (none — always shown)
+    body:
+      | The Lessee may pay amounts owed under this Agreement by the following method(s): {{TXN.PAYMENT_METHODS}}
+    fields on this clause:
+      ● FIELD [TXN.PAYMENT_METHODS]  "Accepted payment methods"
+          control: buttons   value_type: checkbox
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Cash","value":"CASH"},{"label":"Zelle","value":"ZELLE"},{"label":"Credit Card","value":"CREDIT_CARD"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: PAYMENT_METHOD.CARD (sort 20)
+
+  CLAUSE [PAYMENT_METHOD.CARD]  (sort 20, type input, optional)
+    condition: {"contains":["CREDIT_CARD"],"field_key":"TXN.PAYMENT_METHODS"}
+    body:
+      | Credit card payments are processed as follows: {{TXN.CARD_PROCESSOR}}
+    fields on this clause:
+      ● FIELD [TXN.CARD_PROCESSOR]  "Card processor & instructions"
+          control: longtext   value_type: longtext
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [PAYMENT_METHOD.MAIN_LESSOR]  (sort 30, type input)
+    heading: Payments by the Lessor
+    condition: (none — always shown)
+    body:
+      | The Lessor may pay amounts owed under this Agreement by the following method(s): {{TXN.LESSOR_PAYMENT_METHODS}}
+    fields on this clause:
+      ● FIELD [TXN.LESSOR_PAYMENT_METHODS]  "Accepted payment methods"
+          control: buttons   value_type: checkbox
+          required: false   optional: false   set-by (owner_role): LESSEE
+          options: [{"label":"Cash","value":"CASH"},{"label":"Zelle","value":"ZELLE"},{"label":"Credit Card","value":"CREDIT_CARD"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: PAYMENT_METHOD.CARD_LESSOR (sort 40)
+
+  CLAUSE [PAYMENT_METHOD.CARD_LESSOR]  (sort 40, type input)
+    condition: {"contains":["CREDIT_CARD"],"field_key":"TXN.LESSOR_PAYMENT_METHODS"}
+    body:
+      | Credit card payments are processed as follows: {{TXN.LESSOR_CARD_PROCESSOR}}
+    fields on this clause:
+      ● FIELD [TXN.LESSOR_CARD_PROCESSOR]  "Card processor & instructions"
+          control: longtext   value_type: longtext
+          required: false   optional: false   set-by (owner_role): LESSEE
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9 — [EVALUATION]  Evaluation Period
+  sort: 60   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [EVALUATION.CHOICE]  (sort 10, type choice)
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [TXN.EVALUATION_ENABLED]  "Evaluation period"
+          control: buttons   value_type: select
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"Requested by Lessee","value":"REQUESTED"},{"label":"Required by Lessor","value":"REQUIRED"},{"label":"Refused by Lessor","value":"REFUSED"},{"label":"Waived by Lessee","value":"WAIVED"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: EVALUATION.DATES_INCLUDED (sort 20), EVALUATION.DATES_FIXED (sort 21), EVALUATION.REFUSED (sort 40), EVALUATION.WAIVED (sort 41)
+      ● FIELD [TXN.EVAL_PERIOD_TYPE]  "Evaluation period"
+          control: select   value_type: text
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"Included within the lease term","value":"INCLUDED"},{"label":"Fixed evaluation period before the term","value":"FIXED"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"equals":["REQUESTED","REQUIRED"],"field_key":"TXN.EVALUATION_ENABLED"}
+          gates clauses: EVALUATION.DATES_INCLUDED (sort 20), EVALUATION.DATES_FIXED (sort 21)
+
+  CLAUSE [EVALUATION.DATES_INCLUDED]  (sort 20, type input, optional)
+    heading: Evaluation Period Details
+    condition: {"all":[{"equals":["REQUESTED","REQUIRED"],"field_key":"TXN.EVALUATION_ENABLED"},{"equals":["INCLUDED"],"field_key":"TXN.EVAL_PERIOD_TYPE"},{"gte":1,"field_key":"TXN.EVAL_INCLUDED_LENGTH"}]}
+    body:
+      | Lessee shall have an evaluation period of {{TXN.EVAL_INCLUDED_LENGTH}} {{TXN.EVAL_INCLUDED_UNIT}} beginning on the date this Agreement is fully signed by both parties. The evaluation period fee is included at no separate charge, is earned upon commencement of the evaluation period, and is nonrefundable. Either party may terminate this Agreement during the evaluation period by written notice to the other party. Upon such termination, any per-use or lease fees for usage that occurred remain due, and neither party owes the other any further amount under this Agreement except amounts already accrued.
+    fields on this clause:
+      ● FIELD [TXN.EVAL_INCLUDED_LENGTH]  "Length"
+          control: number   value_type: number
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"equals":["INCLUDED"],"field_key":"TXN.EVAL_PERIOD_TYPE"}
+          gates clauses: EVALUATION.DATES_INCLUDED (sort 20)
+      ● FIELD [TXN.EVAL_INCLUDED_UNIT]  "Unit"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"day","value":"DAY"},{"label":"week","value":"WEEK"},{"label":"month","value":"MONTH"},{"label":"days","value":"DAYS"},{"label":"weeks","value":"WEEKS"},{"label":"months","value":"MONTHS"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"gte":1,"field_key":"TXN.EVAL_INCLUDED_LENGTH"}
+          gates clauses: (none)
+
+  CLAUSE [EVALUATION.DATES_FIXED]  (sort 21, type input, optional)
+    heading: Evaluation Period Details
+    condition: {"all":[{"equals":["REQUESTED","REQUIRED"],"field_key":"TXN.EVALUATION_ENABLED"},{"equals":["FIXED"],"field_key":"TXN.EVAL_PERIOD_TYPE"},{"gte":1,"field_key":"TXN.EVAL_FIXED_LENGTH"}]}
+    body:
+      | Lessee shall have an evaluation period of {{TXN.EVAL_FIXED_LENGTH}} {{TXN.EVAL_FIXED_UNIT}} beginning on the date this Agreement is fully signed by both parties. The evaluation period fee is {{TXN.EVAL_FIXED_FEE}}, is earned upon commencement of the evaluation period, and is nonrefundable. Either party may terminate this Agreement during the evaluation period by written notice to the other party. Upon such termination, any per-use or lease fees for usage that occurred remain due, and neither party owes the other any further amount under this Agreement except amounts already accrued.
+    fields on this clause:
+      ● FIELD [TXN.EVAL_FIXED_LENGTH]  "Length"
+          control: number   value_type: number
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"equals":["FIXED"],"field_key":"TXN.EVAL_PERIOD_TYPE"}
+          gates clauses: EVALUATION.DATES_FIXED (sort 21)
+      ● FIELD [TXN.EVAL_FIXED_UNIT]  "Unit"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"day","value":"DAY"},{"label":"week","value":"WEEK"},{"label":"month","value":"MONTH"},{"label":"days","value":"DAYS"},{"label":"weeks","value":"WEEKS"},{"label":"months","value":"MONTHS"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"gte":1,"field_key":"TXN.EVAL_FIXED_LENGTH"}
+          gates clauses: (none)
+      ● FIELD [TXN.EVAL_FIXED_FEE]  "Evaluation period fee amount"
+          control: currency   value_type: currency
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [EVALUATION.REFUSED]  (sort 40, type input)
+    condition: {"any":[{"equals":["REFUSED"],"field_key":"TXN.EVALUATION_ENABLED"}]}
+    body:
+      | No evaluation period applies to this Agreement. The Lessor has declined to provide an evaluation period, and the Lease begins on the Effective Date without one.
+
+  CLAUSE [EVALUATION.WAIVED]  (sort 41, type input)
+    condition: {"any":[{"equals":["WAIVED"],"field_key":"TXN.EVALUATION_ENABLED"}]}
+    body:
+      | No evaluation period applies to this Agreement. The Lessee has waived any evaluation period, and the Lease begins on the Effective Date without one.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10 — [TERM]  Agreement Term
+  sort: 70   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [TERM.MAIN]  (sort 10, type input)
+    heading: Agreement Term
+    condition: (none — always shown)
+    body:
+      | Term of this Agreement: {{TXN.LEASE_TERM_TYPE}}. This Agreement begins on {{TXN.LEASE_START}}
+    fields on this clause:
+      ● FIELD [TXN.LEASE_TERM_TYPE]  "Term type"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"Fixed period","value":"FIXED"},{"label":"Open-ended","value":"OPEN_ENDED"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: TERM.FIXED_END (sort 12)
+      ● FIELD [TXN.LEASE_START]  "Lease start date"
+          control: date   value_type: date
+          required: true   optional: false   set-by (owner_role): DEAL
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [TERM.FIXED_END]  (sort 12, type input)
+    condition: {"equals":["FIXED"],"field_key":"TXN.LEASE_TERM_TYPE"}
+    body:
+      | This Agreement continues until {{TXN.LEASE_END}}
+    fields on this clause:
+      ● FIELD [TXN.LEASE_END]  "Lease end date"
+          control: date   value_type: date
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [TERM.RENEWAL]  (sort 19, type input)
+    heading: Renewal Terms
+    condition: {"equals":["YES"],"field_key":"TXN.RENEWAL_INCLUDE"}
+    body:
+      | Renewal terms: {{TXN.RENEWAL_TERMS}}
+    fields on this clause:
+      ● FIELD [TXN.RENEWAL_INCLUDE]  "Include renewal terms"
+          control: certify   value_type: checkbox
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (checkbox; label is the certification statement)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: TERM.RENEWAL (sort 19)
+      ● FIELD [TXN.RENEWAL_TERMS]  "Renewal terms"
+          control: longtext   value_type: longtext
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [TERM.ADDITIONAL]  (sort 22, type input)
+    condition: (none — always shown)
+    body:
+      | Additional terms: {{TXN.ADDITIONAL_TERMS}}
+    fields on this clause:
+      ● FIELD [TXN.ADDITIONAL_TERMS]  "Add additional terms"
+          control: add_text   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: "+ Add …" → free text
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [TERM.TERMINATION_XREF]  (sort 30, type prose)
+    condition: (none — always shown)
+    body:
+      | Notwithstanding the term stated above, this Agreement may be terminated earlier as provided in the Termination section of this Agreement.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 11 — [PERMITTED_USE]  Permitted Use(s) & Restrictions
+  sort: 90   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [PERMITTED_USE.MAIN]  (sort 100, type input)
+    heading: Permitted Use(s)
+    condition: (none — always shown)
+    body:
+      | Lessor grants Lessee the right to use the Horse for the following purpose(s): {{TXN.PERMITTED_ACTIVITIES}}
+      | Lessee shall not use the Horse for any other purpose without Lessor's prior written consent.
+    fields on this clause:
+      ● FIELD [TXN.PERMITTED_ACTIVITIES]  "Permitted activities"
+          control: buttons   value_type: checkbox
+          required: true   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"Riding Lessons","value":"LESSONS"},{"label":"Solo Arena Riding","value":"ARENA_SOLO"},{"label":"Group Arena Riding","value":"ARENA_GROUP"},{"label":"Training","value":"TRAINING"},{"label":"Competitions","value":"COMPETITIONS"},{"label":"Jumping","value":"JUMPING"},{"label":"Trail Riding","value":"TRAIL"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: INSURANCE_RISK.TRAIL_RIDING (sort 1200), INSURANCE_RISK.JUMPING_RISKS (sort 1210), INSURANCE_RISK.COMPETITION_RISKS (sort 1220), INSURANCE_RISK.SHARED_ARENA_RISKS (sort 1230), PERMITTED_USE.TRAINER (sort 200), TRAINING_LESSONS.PENDING (sort 245), TRAINING_LESSONS.LESSONS (sort 250), TRAINING_LESSONS.LESSONS_ENTITY (sort 255), TRAINING_LESSONS.TRAINING (sort 270), COMPETITIONS.INTRO (sort 310), RESTRICT.COMP_TITLE (sort 312), RESTRICT.COMP_ON (sort 313), RESTRICT.COMP_OFF (sort 314), RESTRICT.JUMP_TITLE (sort 320), RESTRICT.JUMP_ON (sort 321), RESTRICT.JUMP_OFF (sort 322), RESTRICT.TRAIL_TITLE (sort 330), RESTRICT.TRAIL_ON (sort 331), RESTRICT.TRAIL_OFF (sort 332)
+
+  CLAUSE [PERMITTED_USE.TRAINER]  (sort 200, type input)
+    condition: {"contains":["LESSONS","JUMPING","COMPETITIONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"}
+    body:
+      | Riding Lessons, Jumping, and Competitions may take place only while a French Heritage Equestrian Approved Trainer or Instructor is present.
+
+  CLAUSE [TRAINING_LESSONS.PENDING]  (sort 245, type input)
+    heading: Lessons
+    condition: {"all":[{"equals":[""],"field_key":"LESSEE.PARTY_TYPE"},{"contains":["LESSONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"}]}
+    body:
+      | [Pending — select whether Lessee is an individual or an entity. This placeholder is replaced by the applicable lessons terms and blocks signing.]
+
+  CLAUSE [TRAINING_LESSONS.LESSONS]  (sort 250, type input)
+    heading: Lessons — Continuous Enrollment
+    condition: {"all":[{"equals":["INDIVIDUAL"],"field_key":"LESSEE.PARTY_TYPE"},{"contains":["LESSONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"}]}
+    body:
+      | Lessee is required to maintain continuous enrollment in weekly riding lessons: {{TXN.LESSONS_REQUIRED}}.
+      | Lessons shall be conducted only by a French Heritage Equestrian Approved Instructor.
+    fields on this clause:
+      ● FIELD [TXN.LESSONS_REQUIRED]  "Lessee required to take lessons?"
+          control: yesno   value_type: select
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: (none)
+          placeholder: (Yes / No buttons)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [TRAINING_LESSONS.LESSONS_ENTITY]  (sort 255, type input)
+    heading: Lessons — Lessee's Instruction Program
+    condition: {"all":[{"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"},{"contains":["LESSONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"}]}
+    body:
+      | Lessee is permitted by Lessor to provide riding lessons with the Horse: {{TXN.LESSONS_ENTITY_PERMITTED}}
+    fields on this clause:
+      ● FIELD [TXN.LESSONS_ENTITY_PERMITTED]  "Lessee permitted to provide riding lessons?"
+          control: yesno   value_type: select
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: (none)
+          placeholder: (Yes / No buttons)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [TRAINING_LESSONS.TRAINING]  (sort 270, type input)
+    heading: Training
+    condition: {"contains":["TRAINING"],"field_key":"TXN.PERMITTED_ACTIVITIES"}
+    body:
+      | Any professional training of the Horse under this Agreement, including groundwork, schooling, and under-saddle training, shall be conducted only by a French Heritage Equestrian Approved Trainer.
+
+  CLAUSE [COMPETITIONS.INTRO]  (sort 310, type prose)
+    heading: Competition Costs and Winnings
+    condition: {"contains":["COMPETITIONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"}
+    body:
+      | Expenses of competition (entry fees, transportation, and the like) are: {{TXN.COMPETITION_EXPENSES}}.
+      | Any prize money or winnings earned in competition shall belong to: {{TXN.COMPETITION_WINNINGS}}
+    fields on this clause:
+      ● FIELD [TXN.COMPETITION_EXPENSES]  "Competition expenses"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"Paid by Lessee","value":"LESSEE"},{"label":"Paid by Lessor","value":"OWNER"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [TXN.COMPETITION_WINNINGS]  "Competition winnings"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"OWNER"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [RESTRICT.COMP_TITLE]  (sort 312, type input)
+    heading: Competition Restrictions
+    condition: {"contains":["COMPETITIONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"}
+    body:
+      | {{TXN.COMP_OMIT}}
+    fields on this clause:
+      ● FIELD [TXN.COMP_OMIT]  "Check this box to include restrictions for competitions"
+          control: certify   value_type: checkbox
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (checkbox; label is the certification statement)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: RESTRICT.COMP_ON (sort 313), RESTRICT.COMP_OFF (sort 314)
+
+  CLAUSE [RESTRICT.COMP_ON]  (sort 313, type input, optional)
+    condition: {"all":[{"contains":["COMPETITIONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"},{"equals":["YES"],"field_key":"TXN.COMP_OMIT"}]}
+    body:
+      | Competitions are restricted as follows: {{TXN.COMP_RESTRICTION}}
+    fields on this clause:
+      ● FIELD [TXN.COMP_RESTRICTION]  "Competition restriction"
+          control: text   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [RESTRICT.COMP_OFF]  (sort 314, type input)
+    condition: {"all":[{"contains":["COMPETITIONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"},{"equals":["NO",""],"field_key":"TXN.COMP_OMIT"}]}
+    body:
+      | Lessor does not restrict competition activity in any way.
+
+  CLAUSE [RESTRICT.JUMP_TITLE]  (sort 320, type input)
+    heading: Jumping Restrictions
+    condition: {"contains":["JUMPING"],"field_key":"TXN.PERMITTED_ACTIVITIES"}
+    body:
+      | {{TXN.JUMP_OMIT}}
+    fields on this clause:
+      ● FIELD [TXN.JUMP_OMIT]  "Check this box to include restrictions for jumping"
+          control: certify   value_type: checkbox
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (checkbox; label is the certification statement)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: RESTRICT.JUMP_ON (sort 321), RESTRICT.JUMP_OFF (sort 322)
+
+  CLAUSE [RESTRICT.JUMP_ON]  (sort 321, type input, optional)
+    condition: {"all":[{"contains":["JUMPING"],"field_key":"TXN.PERMITTED_ACTIVITIES"},{"equals":["YES"],"field_key":"TXN.JUMP_OMIT"}]}
+    body:
+      | Jumping is restricted as follows: maximum height {{TXN.JUMP_MAX_HEIGHT}}; no more than {{TXN.JUMP_DAYS_PER_WEEK}} days per week; under trainer supervision only: {{TXN.JUMP_SUPERVISION}}
+    fields on this clause:
+      ● FIELD [TXN.JUMP_MAX_HEIGHT]  "Maximum height"
+          control: text   value_type: text
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [TXN.JUMP_DAYS_PER_WEEK]  "Days per week"
+          control: number   value_type: number
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [TXN.JUMP_SUPERVISION]  "Only under trainer supervision?"
+          control: yesno   value_type: select
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: (none)
+          placeholder: (Yes / No buttons)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [RESTRICT.JUMP_OFF]  (sort 322, type input)
+    condition: {"all":[{"contains":["JUMPING"],"field_key":"TXN.PERMITTED_ACTIVITIES"},{"equals":["NO",""],"field_key":"TXN.JUMP_OMIT"}]}
+    body:
+      | Lessor does not restrict jumping activity in any way.
+
+  CLAUSE [RESTRICT.TRAIL_TITLE]  (sort 330, type input)
+    heading: Trail-Riding Restrictions
+    condition: {"contains":["TRAIL"],"field_key":"TXN.PERMITTED_ACTIVITIES"}
+    body:
+      | {{TXN.TRAIL_OMIT}}
+    fields on this clause:
+      ● FIELD [TXN.TRAIL_OMIT]  "Check this box to include restrictions for trail riding"
+          control: certify   value_type: checkbox
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (checkbox; label is the certification statement)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: RESTRICT.TRAIL_ON (sort 331), RESTRICT.TRAIL_OFF (sort 332)
+
+  CLAUSE [RESTRICT.TRAIL_ON]  (sort 331, type input, optional)
+    condition: {"all":[{"contains":["TRAIL"],"field_key":"TXN.PERMITTED_ACTIVITIES"},{"equals":["YES"],"field_key":"TXN.TRAIL_OMIT"}]}
+    body:
+      | Trail riding is restricted as follows: {{TXN.TRAIL_RESTRICTION}}
+    fields on this clause:
+      ● FIELD [TXN.TRAIL_RESTRICTION]  "Trail-riding restriction"
+          control: text   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [RESTRICT.TRAIL_OFF]  (sort 332, type input)
+    condition: {"all":[{"contains":["TRAIL"],"field_key":"TXN.PERMITTED_ACTIVITIES"},{"equals":["NO",""],"field_key":"TXN.TRAIL_OMIT"}]}
+    body:
+      | Lessor does not restrict trail-riding activity in any way.
+
+  CLAUSE [PERMITTED_USE.RESTRICTIONS]  (sort 410, type input)
+    heading: Additional Restrictions
+    condition: (none — always shown)
+    body:
+      | Additional restrictions: {{TXN.PERMITTED_RESTRICTIONS}}
+    fields on this clause:
+      ● FIELD [TXN.PERMITTED_RESTRICTIONS]  "Add Restrictions"
+          control: add_text   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: "+ Add …" → free text
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [PROHIBITED.OTHER]  (sort 450, type input, optional)
+    heading: Other Allowed Activities
+    condition: {"contains":["BREEDING","EMOTIONAL_SUPPORT","FILM_TV_AD","OTHER"],"field_key":"TXN.ADDITIONAL_ACTIVITIES"}
+    body:
+      | Lessee is permitted to engage in the following additional activities with the Horse: {{TXN.ADDITIONAL_ACTIVITIES}}
+    fields on this clause:
+      ● FIELD [TXN.ADDITIONAL_ACTIVITIES]  "Additional permitted activities"
+          control: buttons   value_type: checkbox
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"None — no additional activities","value":"NONE"},{"label":"Breeding","value":"BREEDING"},{"label":"Emotional Support Services","value":"EMOTIONAL_SUPPORT"},{"label":"Film / Television / Advertising","value":"FILM_TV_AD"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: PROHIBITED.OTHER (sort 450), PROHIBITED.OTHER_NONE (sort 455), PROHIBITED.OTHER_NOTE (sort 460)
+
+  CLAUSE [PROHIBITED.OTHER_NONE]  (sort 455, type input)
+    heading: Other Allowed Activities
+    condition: {"equals":["","NONE"],"field_key":"TXN.ADDITIONAL_ACTIVITIES"}
+    body:
+      | Lessee is not permitted to engage in any activities with the Horse beyond the permitted uses stated above.
+
+  CLAUSE [PROHIBITED.OTHER_NOTE]  (sort 460, type input, optional)
+    condition: {"contains":["OTHER"],"field_key":"TXN.ADDITIONAL_ACTIVITIES"}
+    body:
+      | Other additional permitted activity: {{TXN.ADDITIONAL_ACTIVITIES_OTHER}}
+    fields on this clause:
+      ● FIELD [TXN.ADDITIONAL_ACTIVITIES_OTHER]  "Other additional permitted activity"
+          control: text   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"contains":["OTHER"],"field_key":"TXN.ADDITIONAL_ACTIVITIES"}
+          gates clauses: (none)
+
+  CLAUSE [PROHIBITED.OTHERS]  (sort 480, type input, optional)
+    heading: Allowing Others to Ride
+    condition: (none — always shown)
+    body:
+      | The following additional persons may ride or handle the Horse without Lessor's prior permission: {{TXN.OTHERS_ALLOWED}}.
+      | Only the persons identified above shall be permitted to ride or handle the Horse without Lessor's written permission.
+    fields on this clause:
+      ● FIELD [TXN.OTHERS_ALLOWED]  "Others allowed to ride"
+          control: buttons   value_type: checkbox
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"None","value":"NONE"},{"label":"Lessee's family members","value":"FAMILY"},{"when":{"any":[{"contains":["LESSONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"},{"equals":["YES"],"field_key":"TXN.LESSONS_ENTITY_PERMITTED"}]},"label":"Riding Lesson Participants","value":"LESSON_PARTICIPANTS"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: PROHIBITED.OTHERS_OTHER (sort 490)
+
+  CLAUSE [PROHIBITED.OTHERS_OTHER]  (sort 490, type input)
+    condition: {"contains":["OTHER"],"field_key":"TXN.OTHERS_ALLOWED"}
+    body:
+      | Other persons allowed to ride or handle the Horse:
+      | {{TXN.OTHERS_ALLOWED_OTHER}}
+    fields on this clause:
+      ● FIELD [TXN.OTHERS_ALLOWED_OTHER]  "Other persons allowed"
+          control: longtext   value_type: text
+          required: true   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"contains":["OTHER"],"field_key":"TXN.OTHERS_ALLOWED"}
+          gates clauses: (none)
+
+  CLAUSE [PERMITTED_USE.RELEASES_REQUIRED]  (sort 495, type prose)
+    heading: Releases Required for Authorized Riders
+    condition: (none — always shown)
+    body:
+      | All persons other than Lessee must, prior to handling or riding the Horse, have executed a liability release that names the Lessor Parties and the Lessee Parties as released parties, contains an express assumption of the inherent risks of equine activities, has been reviewed and approved by Lessor, and, for any rider under 18 years of age, is signed by the rider's parent or legal guardian. Lessee is responsible for ensuring this requirement is satisfied before permitting any authorized person to ride or handle the Horse.
+
+  CLAUSE [PERMITTED_USE.TRANSPORT]  (sort 500, type input, optional)
+    heading: Transport of the Horse
+    condition: (none — always shown)
+    body:
+      | Transport of the Horse to offsite locations (other than for medical care, which is always permitted): {{TXN.OFFSITE_TRANSPORT}}
+      | For clarity, riding trails attached to the location at which the Horse is kept under this Agreement are not offsite locations. Where Competitions are a permitted activity under this Agreement, transport of the Horse to and from the competition venue for that competition is deemed consented, subject to any competition restrictions stated in this Agreement.
+    fields on this clause:
+      ● FIELD [TXN.OFFSITE_TRANSPORT]  "Offsite transport"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Lessor grants permission to transport offsite","value":"GRANTED"},{"label":"Lessor requires Lessee to notify Lessor in writing of any need to transport the Horse offsite prior to offsite transport","value":"NOTIFY_IN_WRITING"},{"label":"Lessor prohibits offsite transport without written consent","value":"PROHIBITED"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 12 — [CARE]  Horse Care and Expenses
+  sort: 110   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [SCHEDULE.CARE_DUTY]  (sort 1, type prose)
+    heading: Lessee's Responsibility for Care and Exercise
+    condition: {"equals":["YES"],"field_key":"TXN.EXERCISE_INCLUDE"}
+    body:
+      | Lessee's use of the Horse is a responsibility as well as a right: regular, consistent exercise and attention are important to the Horse's health and wellbeing. Lessee is required to maintain regular use and exercise for the Horse on their allowed days, unless Lessee has discussed with and received mutual agreement from the Lessor in writing that one of those days will be used as a rest day for the Horse. If Lessee regularly fails to use and care for the Horse, Lessor may terminate this Agreement.
+    fields on this clause:
+      ● FIELD [TXN.EXERCISE_INCLUDE]  "Include Lessee care & exercise responsibility"
+          control: certify   value_type: checkbox
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (checkbox; label is the certification statement)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: SCHEDULE.CARE_DUTY (sort 1)
+
+  CLAUSE [SCHEDULE.TRAINER_CARE]  (sort 2, type input)
+    heading: 3rd Party Exercise
+    condition: {"equals":["YES"],"field_key":"TXN.TRAINER_CARE_INCLUDE"}
+    body:
+      | Lessee is permitted to engage an approved 3rd party to exercise the Horse. All 3rd party exercise shall be conducted only by a French Heritage Equestrian Approved Trainer. Other 3rd parties must be approved in writing by the Lessor.
+      | Party responsible for arranging: {{TXN.TRAINER_EXERCISE_ARRANGE}}
+      | Party responsible for costs: {{TXN.TRAINER_EXERCISE_COST}}
+      | Lessee's share of the cost: {{TXN.TRAINER_EXERCISE_SPLIT_PCT}}
+    fields on this clause:
+      ● FIELD [TXN.TRAINER_CARE_INCLUDE]  "Include 3rd party exercise"
+          control: certify   value_type: checkbox
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (checkbox; label is the certification statement)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: SCHEDULE.TRAINER_CARE (sort 2)
+      ● FIELD [TXN.TRAINER_EXERCISE_ARRANGE]  "Party responsible for arranging"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Shared","value":"SHARED"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.TRAINER_CARE_INCLUDE"}
+          gates clauses: (none)
+      ● FIELD [TXN.TRAINER_EXERCISE_COST]  "Party responsible for costs"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Lessee","value":"LESSEE"},{"label":"Lessor","value":"LESSOR"},{"label":"Shared","value":"SHARED"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.TRAINER_CARE_INCLUDE"}
+          gates clauses: (none)
+      ● FIELD [TXN.TRAINER_EXERCISE_SPLIT_PCT]  "Lessee's share of the cost"
+          control: percent   value_type: number
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"TXN.TRAINER_CARE_INCLUDE"},{"equals":["SHARED"],"field_key":"TXN.TRAINER_EXERCISE_COST"}]}
+          gates clauses: (none)
+
+  CLAUSE [CARE.INTRO]  (sort 5, type prose)
+    condition: (none — always shown)
+    body:
+      | Horse care and expenses shall be managed and paid for by the responsible party as listed below.
+
+  CLAUSE [CARE.FARRIER]  (sort 20, type input, optional)
+    heading: Farrier Care
+    condition: (none — always shown)
+    body:
+      | Party responsible for arranging: {{TXN.FARRIER_ARRANGE}}
+      | Party responsible for costs: {{TXN.FARRIER_COST_PARTY}}
+      | Farrier: {{HORSE.FARRIER_NAME}}
+      | Farrier phone: {{HORSE.FARRIER_PHONE}}
+    fields on this clause:
+      ● FIELD [TXN.FARRIER_ARRANGE]  "Party responsible for arranging"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Trainer/Instructor","value":"TRAINER"},{"label":"Boarding Staff","value":"BOARDING"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [TXN.FARRIER_COST_PARTY]  "Party responsible for costs"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Trainer/Instructor","value":"TRAINER"},{"label":"Boarding Staff","value":"BOARDING"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [HORSE.FARRIER_NAME]  "Farrier"
+          control: text   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["LESSEE"],"field_key":"TXN.FARRIER_ARRANGE"}
+          gates clauses: (none)
+      ● FIELD [HORSE.FARRIER_PHONE]  "Farrier phone"
+          control: text   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["LESSEE"],"field_key":"TXN.FARRIER_ARRANGE"}
+          gates clauses: (none)
+
+  CLAUSE [CARE.ROUTINE_VET]  (sort 30, type input, optional)
+    heading: Veterinary Care
+    condition: (none — always shown)
+    body:
+      | Party responsible for arranging: {{TXN.VET_ARRANGE}}
+      | Party responsible for costs: {{TXN.VET_COST_PARTY}}
+      | Veterinarian: {{HORSE.VET_NAME}}
+      | Practice: {{HORSE.VET_BUSINESS}}
+      | Address: {{HORSE.VET_ADDRESS}}
+      | Veterinarian phone: {{HORSE.VET_PHONE}}
+    fields on this clause:
+      ● FIELD [TXN.VET_ARRANGE]  "Party responsible for arranging"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Trainer/Instructor","value":"TRAINER"},{"label":"Boarding Staff","value":"BOARDING"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [HORSE.VET_NAME]  "Veterinarian"
+          control: text   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["LESSEE"],"field_key":"TXN.VET_ARRANGE"}
+          gates clauses: (none)
+      ● FIELD [TXN.VET_COST_PARTY]  "Party responsible for costs"
+          control: select   value_type: select
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Trainer/Instructor","value":"TRAINER"},{"label":"Boarding Staff","value":"BOARDING"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+      ● FIELD [HORSE.VET_BUSINESS]  "Practice"
+          control: text   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["LESSEE"],"field_key":"TXN.VET_ARRANGE"}
+          gates clauses: (none)
+      ● FIELD [HORSE.VET_ADDRESS]  "Address"
+          control: text   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["LESSEE"],"field_key":"TXN.VET_ARRANGE"}
+          gates clauses: (none)
+      ● FIELD [HORSE.VET_PHONE]  "Veterinarian phone"
+          control: text   value_type: text
+          required: false   optional: true   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on the horse's record on the Horses page."]
+          own condition (when this field itself is shown): {"equals":["LESSEE"],"field_key":"TXN.VET_ARRANGE"}
+          gates clauses: (none)
+
+  CLAUSE [CARE.PROTECTIVE]  (sort 60, type input)
+    heading: Protective Equipment
+    condition: (none — always shown)
+    body:
+      | Horse must wear protective equipment: {{TXN.PROTECTIVE_REQUIRED}}
+    fields on this clause:
+      ● FIELD [TXN.PROTECTIVE_REQUIRED]  "Horse must wear protective equipment"
+          control: yesno   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (Yes / No buttons)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: CARE.PROTECTIVE_EQUIP (sort 62), CARE.PROTECTIVE_EQUIP_OTHER (sort 63)
+
+  CLAUSE [CARE.PROTECTIVE_EQUIP]  (sort 62, type input, optional)
+    condition: {"equals":["YES"],"field_key":"TXN.PROTECTIVE_REQUIRED"}
+    body:
+      | Lessor will provide the following equipment for the Horse: {{TXN.PROTECTIVE_EQUIPMENT}}
+      | Lessee must ensure equipment is used and properly secured to the Horse prior to all activities.
+    fields on this clause:
+      ● FIELD [TXN.PROTECTIVE_EQUIPMENT]  "Protective equipment"
+          control: buttons   value_type: checkbox
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"Front boots / wraps","value":"FRONT_BOOTS"},{"label":"Bell boots","value":"BELL_BOOTS"},{"label":"Hind boots / wraps","value":"HIND_BOOTS"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: CARE.PROTECTIVE_EQUIP_OTHER (sort 63)
+
+  CLAUSE [CARE.PROTECTIVE_EQUIP_OTHER]  (sort 63, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"TXN.PROTECTIVE_REQUIRED"},{"contains":["OTHER"],"field_key":"TXN.PROTECTIVE_EQUIPMENT"}]}
+    body:
+      | Other protective equipment provided:
+      | {{TXN.PROTECTIVE_EQUIPMENT_OTHER}}
+    fields on this clause:
+      ● FIELD [TXN.PROTECTIVE_EQUIPMENT_OTHER]  "Other protective equipment"
+          control: longtext   value_type: text
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"TXN.PROTECTIVE_REQUIRED"},{"contains":["OTHER"],"field_key":"TXN.PROTECTIVE_EQUIPMENT"}]}
+          gates clauses: (none)
+
+  CLAUSE [CARE.TACK]  (sort 70, type input)
+    heading: Tack
+    condition: (none — always shown)
+    body:
+      | When riding and handling the Horse, Lessee shall use only tack in good condition that is properly fitted to the Horse.
+      | {{TXN.TACK_PROHIBITED}}
+    fields on this clause:
+      ● FIELD [TXN.TACK_PROHIBITED]  "Is Lessee prohibited from using certain tack or equipment?"
+          control: reveal_text   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: Yes/No → free text
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [CARE.RIDER_AIDS]  (sort 90, type input)
+    heading: Rider Aids
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [TXN.RIDER_AIDS_PROHIBITED]  "Lessor prohibits the use of rider aids"
+          control: yesno   value_type: text
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (Yes / No buttons)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: CARE.RIDER_AIDS_NONE (sort 91), CARE.RIDER_AIDS_LIST (sort 92), CARE.RIDER_AIDS_OTHER (sort 93)
+
+  CLAUSE [CARE.RIDER_AIDS_NONE]  (sort 91, type prose)
+    condition: {"equals":["NO"],"field_key":"TXN.RIDER_AIDS_PROHIBITED"}
+    body:
+      | Lessor does not prohibit the use of rider aids.
+
+  CLAUSE [CARE.RIDER_AIDS_LIST]  (sort 92, type input)
+    condition: {"equals":["YES"],"field_key":"TXN.RIDER_AIDS_PROHIBITED"}
+    body:
+      | Lessor prohibits the use of the following rider aids: {{TXN.RIDER_AIDS}}
+    fields on this clause:
+      ● FIELD [TXN.RIDER_AIDS]  "Prohibited rider aids"
+          control: buttons   value_type: checkbox
+          required: true   optional: false   set-by (owner_role): DEAL
+          options: [{"label":"Crop or bat","value":"CROP"},{"label":"Longe whip","value":"LONGE_WHIP"},{"label":"Dressage whip","value":"DRESSAGE_WHIP"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.RIDER_AIDS_PROHIBITED"}
+          gates clauses: CARE.RIDER_AIDS_OTHER (sort 93)
+
+  CLAUSE [CARE.RIDER_AIDS_OTHER]  (sort 93, type input)
+    condition: {"all":[{"equals":["YES"],"field_key":"TXN.RIDER_AIDS_PROHIBITED"},{"contains":["OTHER"],"field_key":"TXN.RIDER_AIDS"}]}
+    body:
+      | Other prohibited rider aid:
+      | {{TXN.RIDER_AIDS_OTHER}}
+    fields on this clause:
+      ● FIELD [TXN.RIDER_AIDS_OTHER]  "Other prohibited rider aid"
+          control: longtext   value_type: text
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"TXN.RIDER_AIDS_PROHIBITED"},{"contains":["OTHER"],"field_key":"TXN.RIDER_AIDS"}]}
+          gates clauses: (none)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 13 — [INSURANCE_RISK]  Insurance, Risk of Loss, and Indemnification
+  sort: 140   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [INSURANCE_RISK.INSURANCE]  (sort 100, type prose)
+    heading: Insurance Requirements
+    condition: (none — always shown)
+    body:
+      | The parties agree to the insurance elections set forth below. Each policy elected or required below shall be maintained in effect for the duration of this Agreement.
+
+  CLAUSE [INSURANCE_RISK.GENERAL_LIABILITY]  (sort 150, type input)
+    heading: General Liability Insurance
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [TXN.GL_LESSOR_COVERAGE]  "Lessor"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Has and will maintain general liability insurance","value":"HAS"},{"label":"Will obtain and will maintain general liability insurance","value":"WILL_OBTAIN"},{"label":"Does not carry general liability insurance","value":"NONE"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: INSURANCE_RISK.GL_LESSOR_COVERAGE_HAS (sort 151), INSURANCE_RISK.GL_LESSOR_COVERAGE_WILL (sort 152), INSURANCE_RISK.GL_LESSOR_COVERAGE_NONE (sort 153)
+      ● FIELD [TXN.GL_LESSOR_REQUIRES]  "Lessor requires of Lessee"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Requires Lessee to maintain general liability insurance","value":"GL_ONLY"},{"label":"Does not require general liability insurance of Lessee","value":"NEITHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: INSURANCE_RISK.GL_REQUIRED (sort 154), INSURANCE_RISK.GL_NOT_REQUIRED (sort 155), INSURANCE_RISK.GL_ALLOC_PICK (sort 156), INSURANCE_RISK.GL_ALLOC_LESSOR (sort 157), INSURANCE_RISK.GL_ALLOC_FAULT (sort 158), INSURANCE_RISK.GL_DED_SIMPLE (sort 164)
+
+  CLAUSE [INSURANCE_RISK.GL_LESSOR_COVERAGE_HAS]  (sort 151, type prose)
+    condition: {"equals":["HAS"],"field_key":"TXN.GL_LESSOR_COVERAGE"}
+    body:
+      | Lessor has and will maintain general liability insurance covering the Horse and the activities contemplated by this Agreement for the duration of this Agreement, and shall provide proof of coverage to Lessee upon request.
+
+  CLAUSE [INSURANCE_RISK.GL_LESSOR_COVERAGE_WILL]  (sort 152, type prose)
+    condition: {"equals":["WILL_OBTAIN"],"field_key":"TXN.GL_LESSOR_COVERAGE"}
+    body:
+      | Lessor will obtain and will maintain general liability insurance covering the Horse and the activities contemplated by this Agreement, effective no later than the commencement of this Agreement and for its duration, and shall provide proof of coverage to Lessee upon request.
+
+  CLAUSE [INSURANCE_RISK.GL_LESSOR_COVERAGE_NONE]  (sort 153, type prose)
+    condition: {"equals":["NONE"],"field_key":"TXN.GL_LESSOR_COVERAGE"}
+    body:
+      | Lessor does not have general liability insurance for the Horse or the activities contemplated by this Agreement.
+
+  CLAUSE [INSURANCE_RISK.GL_REQUIRED]  (sort 154, type prose)
+    condition: {"equals":["GL_ONLY"],"field_key":"TXN.GL_LESSOR_REQUIRES"}
+    body:
+      | Lessor requires Lessee to maintain, at Lessee's sole cost, general liability insurance covering the Horse and the activities contemplated by this Agreement for the duration of this Agreement, and to provide proof of coverage to Lessor upon request. Failure to maintain coverage constitutes a material breach subject to the Termination for Cause provisions of this Agreement.
+
+  CLAUSE [INSURANCE_RISK.GL_NOT_REQUIRED]  (sort 155, type prose)
+    condition: {"equals":["NEITHER"],"field_key":"TXN.GL_LESSOR_REQUIRES"}
+    body:
+      | Lessor does not require Lessee to carry general liability insurance under this Agreement.
+
+  CLAUSE [INSURANCE_RISK.GL_ALLOC_PICK]  (sort 156, type input)
+    condition: {"equals":["NEITHER"],"field_key":"TXN.GL_LESSOR_REQUIRES"}
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [TXN.GL_NO_REQ_ALLOCATION]  "Third-party liability costs"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Lessor assumes all risk and cost","value":"LESSOR_ALL"},{"label":"Each party bears its own at-fault costs","value":"LESSEE_AT_FAULT"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"equals":["NEITHER"],"field_key":"TXN.GL_LESSOR_REQUIRES"}
+          gates clauses: INSURANCE_RISK.GL_ALLOC_LESSOR (sort 157), INSURANCE_RISK.GL_ALLOC_FAULT (sort 158)
+
+  CLAUSE [INSURANCE_RISK.GL_ALLOC_LESSOR]  (sort 157, type prose)
+    condition: {"all":[{"equals":["NEITHER"],"field_key":"TXN.GL_LESSOR_REQUIRES"},{"equals":["LESSOR_ALL"],"field_key":"TXN.GL_NO_REQ_ALLOCATION"}]}
+    body:
+      | Lessor accepts full risk and responsibility for liability claims for bodily injury or property damage to third parties arising from the Horse or the activities contemplated by this Agreement, except as otherwise expressly allocated in this Agreement.
+
+  CLAUSE [INSURANCE_RISK.GL_ALLOC_FAULT]  (sort 158, type prose)
+    condition: {"all":[{"equals":["NEITHER"],"field_key":"TXN.GL_LESSOR_REQUIRES"},{"equals":["LESSEE_AT_FAULT"],"field_key":"TXN.GL_NO_REQ_ALLOCATION"}]}
+    body:
+      | Lessor accepts risk and responsibility for liability claims for bodily injury or property damage to third parties arising from the Horse or the activities contemplated by this Agreement, except for any such claim arising from an event for which Lessee is at fault, and except as otherwise expressly allocated in this Agreement. Each party is responsible for the costs of any claim arising from an event for which that party is at fault.
+
+  CLAUSE [INSURANCE_RISK.GL_LESSEE_PICK]  (sort 159, type input)
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [TXN.GL_LESSEE_STATUS]  "Lessee"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Agrees","value":"AGREES"},{"when":{"equals":["NEITHER"],"field_key":"TXN.GL_LESSOR_REQUIRES"},"label":"Does not carry general liability insurance","value":"ACCEPTS_PERSONALLY"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: INSURANCE_RISK.GL_LESSEE_AGREES (sort 160), INSURANCE_RISK.GL_LESSEE_PERSONAL (sort 162), INSURANCE_RISK.CCC_NA (sort 171), INSURANCE_RISK.CCC_NOT_REQUIRED (sort 172), INSURANCE_RISK.CCC_REQ (sort 173), INSURANCE_RISK.CCC_STATUS (sort 174)
+
+  CLAUSE [INSURANCE_RISK.GL_LESSEE_AGREES]  (sort 160, type prose)
+    condition: {"equals":["AGREES"],"field_key":"TXN.GL_LESSEE_STATUS"}
+    body:
+      | Lessee agrees to maintain general liability insurance covering the Horse and the activities contemplated by this Agreement for the duration of this Agreement, and shall provide to Lessor proof of coverage upon request. As between the parties, and except as otherwise expressly allocated in this Agreement, Lessee bears responsibility for liability claims for bodily injury or property damage to third parties arising from the Horse or the activities contemplated by this Agreement to the extent not covered by an in-force policy.
+
+  CLAUSE [INSURANCE_RISK.GL_LESSEE_PERSONAL]  (sort 162, type prose)
+    condition: {"equals":["ACCEPTS_PERSONALLY"],"field_key":"TXN.GL_LESSEE_STATUS"}
+    body:
+      | Lessee does not carry general liability insurance under this Agreement. Lessee accepts personal financial responsibility for the costs of any liability claim for bodily injury or property damage to third parties arising from an event for which Lessee is at fault, and acknowledges that no policy stands behind that responsibility.
+
+  CLAUSE [INSURANCE_RISK.GL_DED_SIMPLE]  (sort 164, type input)
+    condition: {"equals":["GL_ONLY"],"field_key":"TXN.GL_LESSOR_REQUIRES"}
+    body:
+      | For any and all such claims made against any such insurance policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by Lessee
+
+  CLAUSE [INSURANCE_RISK.CCC_PICK]  (sort 170, type input)
+    heading: Care, Custody and Control Insurance
+    condition: {"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"}
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [TXN.CCC_REQUIRED]  "Lessor requires of Lessee"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Requires Lessee to maintain care, custody and control coverage","value":"YES"},{"label":"Does not require care, custody and control coverage of Lessee","value":"NO"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"},{"equals":["AGREES","OTHER"],"field_key":"TXN.GL_LESSEE_STATUS"}]}
+          gates clauses: INSURANCE_RISK.CCC_NOT_REQUIRED (sort 172), INSURANCE_RISK.CCC_REQ (sort 173)
+
+  CLAUSE [INSURANCE_RISK.CCC_NA]  (sort 171, type prose)
+    condition: {"all":[{"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"},{"equals":["","ACCEPTS_PERSONALLY"],"field_key":"TXN.GL_LESSEE_STATUS"}]}
+    body:
+      | Not applicable. Care, custody and control coverage is available only as a component of a general liability policy carried by Lessee. Lessee carries no general liability insurance under this Agreement, so no care, custody and control coverage is available.
+
+  CLAUSE [INSURANCE_RISK.CCC_NOT_REQUIRED]  (sort 172, type prose)
+    condition: {"all":[{"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"},{"equals":["AGREES","OTHER"],"field_key":"TXN.GL_LESSEE_STATUS"},{"equals":["NO"],"field_key":"TXN.CCC_REQUIRED"}]}
+    body:
+      | Lessor does not require Lessee to maintain care, custody and control coverage under this Agreement.
+
+  CLAUSE [INSURANCE_RISK.CCC_REQ]  (sort 173, type input)
+    condition: {"all":[{"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"},{"equals":["AGREES","OTHER"],"field_key":"TXN.GL_LESSEE_STATUS"},{"equals":["YES"],"field_key":"TXN.CCC_REQUIRED"}]}
+    body:
+      | Lessor requires Lessee to maintain care, custody and control insurance for the duration of this Agreement. Care, custody and control insurance applies only where injury to, or death of the Horse is caused by Lessee's negligence. It shall not be claimed against merely because other coverage is unavailable, is not in force, or has denied a claim. Where a loss is caused by Lessee's negligence, care, custody and control insurance is the policy to be claimed against for that loss.
+
+  CLAUSE [INSURANCE_RISK.CCC_STATUS]  (sort 174, type input)
+    condition: {"all":[{"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"},{"equals":["AGREES","OTHER"],"field_key":"TXN.GL_LESSEE_STATUS"}]}
+    body:
+      | Lessee {{TXN.CCC_LESSEE_STATUS}} care, custody and control insurance covering the Horse while in Lessee's care, custody, or control.
+    fields on this clause:
+      ● FIELD [TXN.CCC_LESSEE_STATUS]  "Lessee"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"agrees to maintain","value":"AGREES"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"},{"equals":["AGREES","OTHER"],"field_key":"TXN.GL_LESSEE_STATUS"}]}
+          gates clauses: (none)
+
+  CLAUSE [INSURANCE_RISK.MORTALITY]  (sort 200, type input)
+    heading: Mortality Insurance
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [TXN.MORT_ELECTION]  "Mortality insurance"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Lessor does not carry a mortality insurance policy for the Horse","value":"NOT_CARRIED"},{"label":"Lessor carries a mortality insurance policy for the Horse","value":"CARRIES"},{"label":"Lessor will obtain a mortality insurance policy for the Horse for the duration of this Agreement","value":"WILL_OBTAIN"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: INSURANCE_RISK.MORT_NOT_REQ (sort 201), INSURANCE_RISK.MORT_CARRIES (sort 202), INSURANCE_RISK.MORT_WILL_OBTAIN (sort 203), INSURANCE_RISK.MORT_COST (sort 206), INSURANCE_RISK.MORT_SHARE (sort 207), INSURANCE_RISK.MORT_DISCLAIMER (sort 210), INSURANCE_RISK.MORT_DEDR_SIMPLE (sort 214), INSURANCE_RISK.MORT_DEDR_SPLITC (sort 215), INSURANCE_RISK.MED_NA (sort 301), INSURANCE_RISK.MED_NOT_INCLUDED (sort 302), INSURANCE_RISK.MED_INC (sort 303), INSURANCE_RISK.MED_COST (sort 306), INSURANCE_RISK.MED_SHARE (sort 307), INSURANCE_RISK.MED_DISCLAIMER (sort 310), INSURANCE_RISK.MED_DEDR_SIMPLE (sort 314), INSURANCE_RISK.MED_DEDR_SPLITC (sort 315), INSURANCE_RISK.MED_TAIL (sort 320)
+
+  CLAUSE [INSURANCE_RISK.MORT_NOT_REQ]  (sort 201, type input)
+    condition: {"equals":["NOT_CARRIED"],"field_key":"TXN.MORT_ELECTION"}
+    body:
+      | Lessor does not carry mortality insurance on the Horse under this Agreement. Lessor accepts full risk and responsibility for the loss of the Horse's value in the event of the Horse's death, theft, or humane destruction, except as otherwise expressly allocated in this Agreement.
+
+  CLAUSE [INSURANCE_RISK.MORT_CARRIES]  (sort 202, type prose)
+    condition: {"equals":["CARRIES"],"field_key":"TXN.MORT_ELECTION"}
+    body:
+      | Lessor carries a mortality insurance policy for the Horse. Lessor bears responsibility for loss of, injury to, or death of the Horse, and Lessor's mortality policy shall be the first policy noticed and claimed against for any such covered event.
+
+  CLAUSE [INSURANCE_RISK.MORT_WILL_OBTAIN]  (sort 203, type prose)
+    condition: {"equals":["WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"}
+    body:
+      | Lessor will obtain a mortality insurance policy for the Horse. Lessor bears responsibility for loss of, injury to, or death of the Horse, and Lessor's mortality policy shall be the first policy noticed and claimed against for any such covered event.
+
+  CLAUSE [INSURANCE_RISK.MORT_COST]  (sort 206, type input)
+    condition: {"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"}
+    body:
+      | The cost of the policy is {{TXN.MORT_COST_RESP}}.
+    fields on this clause:
+      ● FIELD [TXN.MORT_COST_RESP]  "Cost of the policy"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"paid by Lessor","value":"LESSOR"},{"label":"split between Lessor and Lessee","value":"SPLIT"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"}
+          gates clauses: INSURANCE_RISK.MORT_SHARE (sort 207), INSURANCE_RISK.MORT_DISCLAIMER (sort 210), INSURANCE_RISK.MORT_DEDR_SIMPLE (sort 214), INSURANCE_RISK.MORT_DEDR_SPLITC (sort 215)
+
+  CLAUSE [INSURANCE_RISK.MORT_SHARE]  (sort 207, type input)
+    condition: {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.MORT_COST_RESP"}]}
+    body:
+      | Lessee's share of the cost: {{TXN.MORT_COST_LESSEE_SHARE}}
+    fields on this clause:
+      ● FIELD [TXN.MORT_COST_LESSEE_SHARE]  "Lessee's share of the cost"
+          control: share_amount   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: $ amount or %
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["SPLIT"],"field_key":"TXN.MORT_COST_RESP"}]}
+          gates clauses: (none)
+
+  CLAUSE [INSURANCE_RISK.MORT_DISCLAIMER]  (sort 210, type input)
+    condition: {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["LESSEE","SPLIT"],"field_key":"TXN.MORT_COST_RESP"}]}
+    body:
+      | Lessee's obligation to contribute to the cost of this policy exists only while this Agreement is in effect and ends upon the termination or expiration of this Agreement, however arising. The cost of the policy is subject to change. Where the parties' shares are stated as percentages, those percentages shall govern the allocation of any change in the cost of the policy.
+
+  CLAUSE [INSURANCE_RISK.MORT_DEDR_SIMPLE]  (sort 214, type input)
+    condition: {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["SPLIT","OTHER"],"field_key":"TXN.MORT_COST_RESP"}]}
+    body:
+      | If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.MORT_DED_RESP}}
+    fields on this clause:
+      ● FIELD [TXN.MORT_DED_RESP]  "Mortality deductible responsibility"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Split","value":"SPLIT"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["SPLIT","OTHER"],"field_key":"TXN.MORT_COST_RESP"}]}
+          gates clauses: INSURANCE_RISK.MORT_DEDR_SPLITC (sort 215)
+
+  CLAUSE [INSURANCE_RISK.MORT_DEDR_SPLITC]  (sort 215, type input, subitem)
+    condition: {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["SPLIT","OTHER"],"field_key":"TXN.MORT_COST_RESP"},{"equals":["SPLIT"],"field_key":"TXN.MORT_DED_RESP"}]}
+    body:
+      | Lessee's share of the deductible: {{TXN.MORT_DED_LESSEE_SHARE}}
+    fields on this clause:
+      ● FIELD [TXN.MORT_DED_LESSEE_SHARE]  "Lessee's share of the deductible"
+          control: share_amount   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: $ amount or %
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["SPLIT","OTHER"],"field_key":"TXN.MORT_COST_RESP"},{"equals":["SPLIT"],"field_key":"TXN.MORT_DED_RESP"}]}
+          gates clauses: (none)
+
+  CLAUSE [INSURANCE_RISK.MEDICAL]  (sort 300, type input)
+    heading: Medical Insurance
+    condition: (none — always shown)
+    body:
+      | 
+    fields on this clause:
+      ● FIELD [TXN.MED_INCLUDED]  "Medical coverage is included on the mortality policy"
+          control: yesno   value_type: text
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (Yes / No buttons)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"}
+          gates clauses: INSURANCE_RISK.MED_NOT_INCLUDED (sort 302), INSURANCE_RISK.MED_INC (sort 303), INSURANCE_RISK.MED_COST (sort 306), INSURANCE_RISK.MED_SHARE (sort 307), INSURANCE_RISK.MED_DISCLAIMER (sort 310), INSURANCE_RISK.MED_DEDR_SIMPLE (sort 314), INSURANCE_RISK.MED_DEDR_SPLITC (sort 315), INSURANCE_RISK.MED_TAIL (sort 320)
+
+  CLAUSE [INSURANCE_RISK.MED_NA]  (sort 301, type input)
+    condition: {"equals":["NOT_CARRIED"],"field_key":"TXN.MORT_ELECTION"}
+    body:
+      | Not applicable. Medical coverage is available only as a component of a mortality policy on the Horse. No mortality insurance is required or in force under this Agreement, so no medical coverage is available.
+
+  CLAUSE [INSURANCE_RISK.MED_NOT_INCLUDED]  (sort 302, type input)
+    condition: {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["NO"],"field_key":"TXN.MED_INCLUDED"}]}
+    body:
+      | Medical coverage is not included on the mortality policy for the Horse under this Agreement.
+
+  CLAUSE [INSURANCE_RISK.MED_INC]  (sort 303, type input)
+    condition: {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["YES"],"field_key":"TXN.MED_INCLUDED"}]}
+    body:
+      | Medical coverage is included as a component of the mortality policy on the Horse for the duration of this Agreement.
+
+  CLAUSE [INSURANCE_RISK.MED_COST]  (sort 306, type input)
+    condition: {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["YES"],"field_key":"TXN.MED_INCLUDED"}]}
+    body:
+      | The cost of the medical component is {{TXN.MED_COST_RESP}}.
+    fields on this clause:
+      ● FIELD [TXN.MED_COST_RESP]  "Cost of the medical component"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"paid by Lessor","value":"LESSOR"},{"label":"split between Lessor and Lessee","value":"SPLIT"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["YES"],"field_key":"TXN.MED_INCLUDED"}]}
+          gates clauses: INSURANCE_RISK.MED_SHARE (sort 307), INSURANCE_RISK.MED_DISCLAIMER (sort 310), INSURANCE_RISK.MED_DEDR_SIMPLE (sort 314), INSURANCE_RISK.MED_DEDR_SPLITC (sort 315)
+
+  CLAUSE [INSURANCE_RISK.MED_SHARE]  (sort 307, type input)
+    condition: {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["YES"],"field_key":"TXN.MED_INCLUDED"},{"equals":["SPLIT"],"field_key":"TXN.MED_COST_RESP"}]}
+    body:
+      | Lessee's share of the cost: {{TXN.MED_COST_LESSEE_SHARE}}
+    fields on this clause:
+      ● FIELD [TXN.MED_COST_LESSEE_SHARE]  "Lessee's share of the cost"
+          control: share_amount   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: $ amount or %
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["YES"],"field_key":"TXN.MED_INCLUDED"},{"equals":["SPLIT"],"field_key":"TXN.MED_COST_RESP"}]}
+          gates clauses: (none)
+
+  CLAUSE [INSURANCE_RISK.MED_DISCLAIMER]  (sort 310, type input)
+    condition: {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["YES"],"field_key":"TXN.MED_INCLUDED"},{"equals":["LESSEE","SPLIT"],"field_key":"TXN.MED_COST_RESP"}]}
+    body:
+      | Lessee's obligation to contribute to the cost of the medical component exists only while this Agreement is in effect and ends upon the termination or expiration of this Agreement, however arising. The cost of the policy is subject to change. Where the parties' shares are stated as percentages, those percentages shall govern the allocation of any change in the cost of the policy.
+
+  CLAUSE [INSURANCE_RISK.MED_DEDR_SIMPLE]  (sort 314, type input)
+    condition: {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["YES"],"field_key":"TXN.MED_INCLUDED"},{"equals":["SPLIT","OTHER"],"field_key":"TXN.MED_COST_RESP"}]}
+    body:
+      | If a claim is made under any such policy arising from events for which Lessee bears responsibility, whether directly or indirectly, responsibility for any deductible shall be borne by: {{TXN.MED_DED_RESP}}
+    fields on this clause:
+      ● FIELD [TXN.MED_DED_RESP]  "Medical deductible responsibility"
+          control: select   value_type: select
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: [{"label":"Lessor","value":"LESSOR"},{"label":"Lessee","value":"LESSEE"},{"label":"Split","value":"SPLIT"},{"label":"Other","value":"OTHER"}]
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["YES"],"field_key":"TXN.MED_INCLUDED"},{"equals":["SPLIT","OTHER"],"field_key":"TXN.MED_COST_RESP"}]}
+          gates clauses: INSURANCE_RISK.MED_DEDR_SPLITC (sort 315)
+
+  CLAUSE [INSURANCE_RISK.MED_DEDR_SPLITC]  (sort 315, type input, subitem)
+    condition: {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["YES"],"field_key":"TXN.MED_INCLUDED"},{"equals":["SPLIT","OTHER"],"field_key":"TXN.MED_COST_RESP"},{"equals":["SPLIT"],"field_key":"TXN.MED_DED_RESP"}]}
+    body:
+      | Lessee's share of the deductible: {{TXN.MED_DED_LESSEE_SHARE}}
+    fields on this clause:
+      ● FIELD [TXN.MED_DED_LESSEE_SHARE]  "Lessee's share of the deductible"
+          control: share_amount   value_type: text
+          required: false   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: $ amount or %
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["YES"],"field_key":"TXN.MED_INCLUDED"},{"equals":["SPLIT","OTHER"],"field_key":"TXN.MED_COST_RESP"},{"equals":["SPLIT"],"field_key":"TXN.MED_DED_RESP"}]}
+          gates clauses: (none)
+
+  CLAUSE [INSURANCE_RISK.MED_TAIL]  (sort 320, type input, subitem)
+    condition: {"all":[{"equals":["CARRIES","WILL_OBTAIN"],"field_key":"TXN.MORT_ELECTION"},{"equals":["YES"],"field_key":"TXN.MED_INCLUDED"}]}
+    body:
+      | Any out-of-pocket costs for deductibles or other expenses related to the needs of the Horse are to be paid by Lessor, and where Lessee is deemed to be responsible for part or all of a cost paid by Lessor, Lessee shall reimburse Lessor in accordance with the acceptable payment methods stated in this Agreement, or, if Lessee so requests prior to payment by Lessor, Lessee may make such request to pay the billing party directly using a method allowed by that party. Lessee may, with Lessor's written permission, pay for any or all of Lessor's portion when paying the billing party directly, and Lessor may reimburse Lessee in accordance with the terms of this Agreement. Lessor assumes and is responsible for all risks and costs not paid or covered by any policy held by either party, including in the event a policy is not in effect at the time of the incident, an incident for which a claim is made is deemed not to be covered by a policy, a payment for a claim made for an incident that is covered by a policy is less than the actual cost incurred, or a claim made to a policy is denied for any reason, except as otherwise expressly allocated in this section or elsewhere in this Agreement.
+
+  CLAUSE [INSURANCE_RISK.RISK_OF_LOSS]  (sort 500, type input)
+    heading: Risk of Loss of or Injury to the Horse
+    condition: (none — always shown)
+    body:
+      | Lessor assumes all risk of loss of or injury to the Horse during the term of this Agreement, except to the extent caused by Lessee's gross negligence, reckless conduct, or intentional misconduct.
+
+  CLAUSE [INSURANCE_RISK.LOSS_OF_USE_ACK]  (sort 550, type prose)
+    heading: Loss of Use
+    condition: (none — always shown)
+    body:
+      | Lessor acknowledges and accepts that loss of use of the Horse may result from injury to, illness of, or the death of the Horse. No loss-of-use insurance is required or provided under this Agreement.
+
+  CLAUSE [INSURANCE_RISK.ASSUMPTION_INHERENT]  (sort 950, type prose)
+    heading: Assumption of Inherent Risks
+    condition: (none — always shown)
+    body:
+      | Lessee understands that horseback riding and handling horses are inherently dangerous activities. Lessee acknowledges that horses are unpredictable by nature and may buck, rear, bite, kick, spook, stumble, or otherwise react unpredictably to their environment, which can result in severe injury, paralysis, or death. Lessee acknowledges the California common law doctrine of "Primary Assumption of Risk," as established by the California Supreme Court in Knight v. Jewett (1992) 3 Cal.4th 296 and subsequent equine-specific case law (e.g., Levinson v. Owens (2009) 176 Cal.App.4th 1534). Consistent with this precedent, Lessee, on behalf of Lessee and anyone claiming by, through, or under Lessee, expressly and voluntarily assumes all inherent risks associated with riding or handling the Horse, and acknowledges that no Lessor Party owes a duty to protect Lessee from these inherent risks.
+
+  CLAUSE [INSURANCE_RISK.RELEASE]  (sort 960, type prose)
+    heading: Release of Liability
+    condition: (none — always shown)
+    body:
+      | In consideration for being permitted to handle or ride the Horse, Lessee, on behalf of Lessee and anyone claiming by, through, or under Lessee, completely releases, forever discharges, and agrees to hold harmless the Lessor Parties, to the fullest extent permitted by law, from any and all claims, demands, causes of action, liabilities, or damages for personal injury, property damage, or wrongful death arising out of Lessee's use, handling, or riding of the Horse, whether caused by the ordinary negligence of any Lessor Party or otherwise. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+
+  CLAUSE [INSURANCE_RISK.RELEASE_LESSOR]  (sort 961, type prose)
+    heading: Release of Liability by Lessor
+    condition: (none — always shown)
+    body:
+      | In consideration of the mutual promises in this Agreement, Lessor, on behalf of Lessor and anyone claiming by, through, or under Lessor, completely releases, forever discharges, and agrees to hold harmless the Lessee Parties, to the fullest extent permitted by law, from any and all claims, demands, causes of action, liabilities, or damages for personal injury, property damage, or wrongful death arising out of Lessor's riding or handling of the Horse or Lessor's presence at any facility where the Horse is kept during the term of this Agreement, whether caused by the ordinary negligence of any Lessee Party or otherwise. Lessor expressly and voluntarily assumes all inherent risks of equine activities in connection with such riding, handling, or presence. This release does not apply to gross negligence, reckless conduct, or intentional misconduct.
+
+  CLAUSE [INSURANCE_RISK.SAFETY_ATTIRE]  (sort 1100, type prose)
+    heading: Required Protective Attire
+    condition: (none — always shown)
+    body:
+      | Lessee shall wear, and shall ensure that any other person riding the Horse under Lessee's authorization wears, an appropriately fitted and securely fastened ASTM/SEI-certified equestrian helmet at all times while mounted on the Horse, together with heeled boots and long pants; gloves and long sleeves are highly recommended. Riders shall provide their own helmet, boots, and pants meeting these requirements unless otherwise agreed in writing. Lessee, on behalf of Lessee and anyone claiming by, through, or under Lessee, assumes all increased risk of injury or death resulting from any failure to wear the required attire. Any refusal or failure to wear an approved helmet or the other required attire immediately revokes permission to ride or handle the Horse and constitutes a material breach of this Agreement.
+
+  CLAUSE [INSURANCE_RISK.TRAIL_RIDING]  (sort 1200, type prose)
+    heading: Trail Riding Risks
+    condition: {"contains":["TRAIL"],"field_key":"TXN.PERMITTED_ACTIVITIES"}
+    body:
+      | Lessee acknowledges that riding outside an enclosed arena, including trail riding, exposes Lessee and the Horse to additional risks, including uneven terrain, traffic, wildlife, water crossings, and other conditions that may cause the Horse to spook or behave unpredictably. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
+
+  CLAUSE [INSURANCE_RISK.JUMPING_RISKS]  (sort 1210, type input)
+    heading: Jumping Risks
+    condition: {"contains":["JUMPING"],"field_key":"TXN.PERMITTED_ACTIVITIES"}
+    body:
+      | Lessee acknowledges that jumping the Horse exposes Lessee and the Horse to additional risks beyond flat riding, including refusals, run-outs, awkward or missed distances, falls, unseating, and the Horse landing, stopping, or twisting unpredictably. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
+
+  CLAUSE [INSURANCE_RISK.COMPETITION_RISKS]  (sort 1220, type input)
+    heading: Competition Risks
+    condition: {"contains":["COMPETITIONS"],"field_key":"TXN.PERMITTED_ACTIVITIES"}
+    body:
+      | Lessee acknowledges that competing with the Horse exposes Lessee and the Horse to additional risks, including unfamiliar and crowded show grounds, proximity to other horses and riders, loudspeakers, banners, and other stimuli that may cause the Horse to spook or behave unpredictably, as well as the physical demands and pressures of competition. Lessee voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
+
+  CLAUSE [INSURANCE_RISK.SHARED_ARENA_RISKS]  (sort 1230, type input)
+    heading: Shared Arena Riding Risks
+    condition: {"contains":["ARENA_GROUP"],"field_key":"TXN.PERMITTED_ACTIVITIES"}
+    body:
+      | Lessee acknowledges that riding in an arena at the same time as other riders exposes Lessee and the Horse to additional risks, including collisions, crowding, sudden movements or loss of control by other horses or riders, and the Horse reacting to other horses. Lessee agrees to ride with awareness of others, to follow standard arena etiquette and right-of-way rules and any directions of Lessor or an instructor, and voluntarily assumes these and any other unforeseen or unspecified additional risks related to this activity.
+
+  CLAUSE [INSURANCE_RISK.WAIVER_UNKNOWN]  (sort 1300, type prose)
+    heading: Waiver of Unknown Claims
+    condition: (none — always shown)
+    body:
+      | Each party, on behalf of itself and anyone claiming by, through, or under it, expressly waives any and all claims released under this Agreement that the waiving party does not know or suspect to exist in its favor at the time of this Agreement. Each party acknowledges that it is familiar with, and expressly waives the protections of, California Civil Code Section 1542, which provides: "A general release does not extend to claims that the creditor or releasing party does not know or suspect to exist in his or her favor at the time of executing the release and that, if known by him or her, would have materially affected his or her settlement with the debtor or released party." Each party assumes the risk that claims presently unknown to it may later be discovered, and acknowledges that this waiver is a material term of this Agreement.
+
+  CLAUSE [INSURANCE_RISK.INDEMNIFICATION]  (sort 1400, type input)
+    heading: Mutual Indemnification
+    condition: (none — always shown)
+    body:
+      | Each party shall indemnify, defend, and hold harmless the other party and, respectively, the Lessor Parties or the Lessee Parties, from and against any and all claims, damages, losses, liabilities, costs, and expenses arising out of the indemnifying party's use, handling, care, or possession of the Horse, except to the extent caused by the gross negligence, reckless conduct, or intentional misconduct of an indemnified party.
+
+  CLAUSE [INSURANCE_RISK.LIMITATION]  (sort 1520, type prose)
+    heading: Limitation of Liability
+    condition: (none — always shown)
+    body:
+      | Under no circumstances shall either party be liable to the other for any special, consequential, incidental, or punitive damages arising out of or relating to this Agreement. The total aggregate liability of either party (including, respectively, the Lessor Parties and the Lessee Parties) to the other under this Agreement shall not exceed the Horse's current fair market value of {{HORSE.FAIR_MARKET_VALUE}}. Any amount owed by one party to the other under this Agreement shall be reduced by the amount of any insurance proceeds actually received by the party owed with respect to the same loss. This limitation does not apply to gross negligence, reckless conduct, or intentional misconduct, to either party's indemnification obligations for third-party claims for bodily injury or death, or to amounts actually covered by insurance available for the loss.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 14 — [TERMINATION]  Termination
+  sort: 160   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [TERMINATION.LESSEE]  (sort 10, type input)
+    heading: Lessee's Right to Terminate
+    condition: (none — always shown)
+    body:
+      | Lessee may terminate this Agreement by giving Lessor at least {{TXN.LESSEE_TERM_NOTICE_DAYS}} days' prior written notice.
+    fields on this clause:
+      ● FIELD [TXN.LESSEE_TERM_NOTICE_DAYS]  "Days notice"
+          control: number   value_type: number
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [TERMINATION.OWNER]  (sort 20, type input)
+    heading: Owner's Right to Terminate
+    condition: (none — always shown)
+    body:
+      | Lessor may terminate this Agreement by giving Lessee at least {{TXN.OWNER_TERM_NOTICE_DAYS}} days' prior written notice.
+    fields on this clause:
+      ● FIELD [TXN.OWNER_TERM_NOTICE_DAYS]  "Days notice"
+          control: number   value_type: number
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [TERMINATION.CAUSE]  (sort 30, type input)
+    heading: Termination for Cause
+    condition: (none — always shown)
+    body:
+      | Either party may terminate this Agreement for cause (including a material breach that remains uncured) by giving the other party at least {{TXN.CAUSE_TERM_NOTICE_DAYS}} days' prior written notice.
+    fields on this clause:
+      ● FIELD [TXN.CAUSE_TERM_NOTICE_DAYS]  "Days notice"
+          control: number   value_type: number
+          required: false   optional: false   set-by (owner_role): DEAL
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: (none)
+          own condition (when this field itself is shown): (none)
+          gates clauses: (none)
+
+  CLAUSE [TERMINATION.LOSS]  (sort 40, type prose)
+    heading: Self-Termination upon Loss or Injury
+    condition: (none — always shown)
+    body:
+      | This Agreement shall self-terminate if the Horse is significantly injured or seriously ill as determined by a licensed veterinarian, or dies. Lessee is entitled to a prorated refund of Lease Fee paid for the remaining time unused at the time of self-termination. In the event Lessee is found to have caused, through gross negligence, reckless conduct, or intentional misconduct, the injury, illness, or death, Lessor may retain the unused portion of the paid Lease Fee.
+
+  CLAUSE [TERMINATION.LOSS_OF_USE]  (sort 45, type prose)
+    heading: Termination upon Loss of Use
+    condition: (none — always shown)
+    body:
+      | If the Horse becomes unusable for the purposes of this Agreement for any reason, Lessee may terminate this Agreement immediately upon written notice to Lessor. Upon such termination, Lessee is entitled to a prorated refund of any Lease Fee paid for the remaining unused time as of the date of termination.
+
+  CLAUSE [TERMINATION.SURVIVAL]  (sort 50, type prose)
+    heading: Survival
+    condition: (none — always shown)
+    body:
+      | The releases, waivers, assumptions of risk, indemnities, and limitations of liability in this Agreement, and any payment obligations accrued before termination, survive the expiration or termination of this Agreement for any reason.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 15 — [NOTICE]  Notice and Contact Information
+  sort: 170   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [NOTICE.FORM]  (sort 10, type prose)
+    heading: Form of Notice
+    condition: (none — always shown)
+    body:
+      | Any notice required or permitted under this Agreement shall be in writing and delivered by a method that provides evidence of receipt to the party at the contact information below. Notice by email is not effective unless the receiving party acknowledges receipt.
+
+  CLAUSE [NOTICE.LESSEE_ADDRESS]  (sort 20, type prose)
+    heading: Lessee
+    condition: (none — always shown)
+    body:
+      | Name: {{LESSEE.FULL_NAME}}
+      | Address: {{LESSEE.ADDRESS}}
+      | Phone: {{LESSEE.PHONE}}
+      | Email: {{LESSEE.EMAIL}}
+
+  CLAUSE [NOTICE.LESSOR_ADDRESS]  (sort 30, type prose)
+    heading: Lessor
+    condition: (none — always shown)
+    body:
+      | Name: {{LESSOR.FULL_NAME}}
+      | Address: {{LESSOR.ADDRESS}}
+      | Phone: {{LESSOR.PHONE}}
+      | Email: {{LESSOR.EMAIL}}
+
+  CLAUSE [NOTICE.CHANGES]  (sort 40, type prose)
+    heading: Changes in Contact Information
+    condition: (none — always shown)
+    body:
+      | Each party shall promptly notify the other party in writing of any change in the party's address or contact information.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 16 — [ASSIGNMENT]  Assignment or Transfer
+  sort: 180   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [ASSIGNMENT.NO_ASSIGN]  (sort 10, type prose)
+    heading: Assignment or Transfer
+    condition: (none — always shown)
+    body:
+      | Lessee shall not assign, sublease, or otherwise transfer this Agreement or any of Lessee's rights or obligations under it without Lessor's prior written consent, unless permitted in the sections above.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 17 — [ENTIRE_AGREEMENT]  Entire Agreement
+  sort: 190   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [ENTIRE_AGREEMENT.INTEGRATION]  (sort 10, type prose)
+    heading: Entire Agreement
+    condition: (none — always shown)
+    body:
+      | This Agreement contains the entire agreement between the parties with respect to its subject matter and supersedes all prior discussions and understandings. Any modification of this Agreement must be in writing and signed by all parties.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 18 — [GOVERNING_LAW]  Governing Law and Venue
+  sort: 200   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [GOVERNING_LAW.CHOICE]  (sort 10, type input)
+    heading: Governing Law and Venue
+    condition: (none — always shown)
+    body:
+      | This Agreement is governed by the laws of the State of California, without regard to conflict-of-laws principles. Any dispute arising out of or relating to this Agreement or the Horse shall be resolved by final and binding arbitration in San Diego County, California, before a single arbitrator administered by JAMS under its applicable rules, or another administrator the parties agree to in writing, with arbitrator fees and administrative costs allocated as those rules provide. Either party may bring a qualifying claim in small claims court, and either party may seek provisional or injunctive relief, including recovery of possession of the Horse, in a court of competent jurisdiction without waiving arbitration. Judgment on the award may be entered in any court having jurisdiction.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 19 — [ATTORNEYS_FEES]  Attorneys' Fees
+  sort: 210   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [ATTORNEYS_FEES.PREVAILING]  (sort 10, type prose)
+    heading: Attorneys' Fees
+    condition: (none — always shown)
+    body:
+      | Each party shall cover their own attorney's fees and costs.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 20 — [SEVERABILITY]  Severability
+  sort: 220   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [SEVERABILITY.SAVING]  (sort 10, type prose)
+    heading: Severability
+    condition: (none — always shown)
+    body:
+      | If any provision of this Agreement is held to be invalid or unenforceable, the remaining provisions shall continue in full force and effect, and the invalid or unenforceable provision shall be deemed modified to the minimum extent necessary to make it valid and enforceable.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 21 — [LESSEE_REPS]  Lessee's Representations
+  sort: 230   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [LESSEE_REPS.PENDING]  (sort 5, type prose)
+    heading: Lessee's Representations
+    condition: {"equals":[""],"field_key":"LESSEE.PARTY_TYPE"}
+    body:
+      | [Pending — select whether Lessee is an individual or an entity. This placeholder is replaced by the applicable representations and blocks signing.]
+
+  CLAUSE [LESSEE_REPS.MAIN_INDIVIDUAL]  (sort 10, type prose)
+    heading: Lessee's Representations
+    condition: {"equals":["INDIVIDUAL"],"field_key":"LESSEE.PARTY_TYPE"}
+    body:
+      | Lessee represents and warrants that Lessee is at least 18 years of age and has full authority to enter into this Agreement; that Lessee has no physical or mental condition that would prevent Lessee from safely participating in the activities contemplated by this Agreement; and that Lessee has the requisite knowledge and experience to handle and ride the Horse, and will use reasonable care in doing so and follow Lessor's instructions. By signing this Agreement, Lessee acknowledges that Lessee has read this Agreement, fully understands its terms, and understands that Lessee is giving up substantial legal rights on behalf of Lessee and anyone claiming by, through, or under Lessee, including the right to sue the Lessor Parties.
+
+  CLAUSE [LESSEE_REPS.MAIN_ENTITY]  (sort 20, type prose)
+    heading: Lessee's Representations
+    condition: {"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"}
+    body:
+      | Lessee represents and warrants that Lessee is duly organized and in good standing, and has full authority to enter into this Agreement, and that the individual signing this Agreement does so as Lessee's authorized representative; that each person who rides or handles the Horse under Lessee's authorization will, before doing so, have executed the releases required under this Agreement and possess the knowledge and experience to handle and ride the Horse safely; and that Lessee will use reasonable care and follow Lessor's instructions in all handling of the Horse. By signing this Agreement, Lessee acknowledges that Lessee has read this Agreement, fully understands its terms, and understands that Lessee is giving up substantial legal rights on behalf of Lessee and anyone claiming by, through, or under Lessee, including the right to sue the Lessor Parties.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 22 — [SIGNATURES]  Signatures
+  sort: 240   optional-section: false
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CLAUSE [SIGNATURES.BLOCK]  (sort 10, type prose)
+    heading: Signatures
+    condition: (none — always shown)
+    body:
+      | IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first written above.
+      | 
+      | LESSEE
+      | Signature: {{SIG.LESSEE.NAME}}
+      | Printed Name: {{LESSEE.PRINTED_NAME}}
+      | Date: {{SIG.LESSEE.DATE}}
+      | 
+      | LESSOR (OWNER)
+      | Signature: {{SIG.LESSOR.NAME}}
+      | Printed Name: {{LESSOR.PRINTED_NAME}}
+      | Date: {{SIG.LESSOR.DATE}}
+
+  CLAUSE [SIGNATURES.LESSEE_CAPACITY]  (sort 11, type input)
+    condition: {"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"}
+    body:
+      | By: {{LESSEE.ENTITY_SIGNER_NAME}}
+      | Title: {{LESSEE.ENTITY_SIGNER_TITLE}}
+      | Signing on behalf of {{LESSEE.FULL_NAME}}
+    fields on this clause:
+      ● FIELD [LESSEE.ENTITY_SIGNER_NAME]  "Signing individual — name"
+          control: text   value_type: text
+          required: true   optional: false   set-by (owner_role): LESSEE
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
+          own condition (when this field itself is shown): {"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"}
+          gates clauses: (none)
+      ● FIELD [LESSEE.ENTITY_SIGNER_TITLE]  "Signing individual — title"
+          control: text   value_type: text
+          required: true   optional: false   set-by (owner_role): LESSEE
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
+          own condition (when this field itself is shown): {"equals":["ENTITY"],"field_key":"LESSEE.PARTY_TYPE"}
+          gates clauses: (none)
+
+  CLAUSE [SIGNATURES.LESSOR_CAPACITY]  (sort 12, type input)
+    condition: {"equals":["ENTITY"],"field_key":"LESSOR.PARTY_TYPE"}
+    body:
+      | By: {{LESSOR.ENTITY_SIGNER_NAME}}
+      | Title: {{LESSOR.ENTITY_SIGNER_TITLE}}
+      | Signing on behalf of {{LESSOR.FULL_NAME}}
+    fields on this clause:
+      ● FIELD [LESSOR.ENTITY_SIGNER_NAME]  "Signing individual — name"
+          control: text   value_type: text
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
+          own condition (when this field itself is shown): {"equals":["ENTITY"],"field_key":"LESSOR.PARTY_TYPE"}
+          gates clauses: (none)
+      ● FIELD [LESSOR.ENTITY_SIGNER_TITLE]  "Signing individual — title"
+          control: text   value_type: text
+          required: true   optional: false   set-by (owner_role): LESSOR
+          options: (none)
+          placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
+          helper (guidance): (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
+          own condition (when this field itself is shown): {"equals":["ENTITY"],"field_key":"LESSOR.PARTY_TYPE"}
+          gates clauses: (none)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIELDS NOT ATTACHED TO A LISTED CLAUSE (shown so nothing is hidden):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ● FIELD [TXN.MONTHLY_START]  "First monthly payment date"  (clause_key: LEASE_FEE.PAYMENTS)
+      control: date   required: false   set-by: DEAL
+      options: (none)
+      helper: (none)
+      gates clauses: (none)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SELECTOR INDEX — every field that gates one or more clauses
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  [HORSE.BEHAVIORAL_HISTORY_GATE]  required: true
+      gates: HORSE.BEHAVIORAL_HISTORY_NONE (sort 61), HORSE.BEHAVIORAL_HISTORY_DISCLOSED (sort 62), HORSE.BEHAVIORAL_HISTORY_DISCLOSED_ADD (sort 63)
+  [HORSE.INJURIES_TO_HORSE_GATE]  required: true
+      gates: HORSE.INJURIES_TO_HORSE_NONE (sort 71), HORSE.INJURIES_TO_HORSE_DISCLOSED (sort 72), HORSE.INJURIES_TO_HORSE_DISCLOSED_ADD (sort 73)
+  [HORSE.INJURIES_TO_HUMANS_GATE]  required: true
+      gates: HORSE.INJURIES_TO_HUMANS_NONE (sort 66), HORSE.INJURIES_TO_HUMANS_DISCLOSED (sort 67), HORSE.INJURIES_TO_HUMANS_DISCLOSED_ADD (sort 68)
+  [HORSE.KNOWN_CONDITIONS_GATE]  required: true
+      gates: HORSE.KNOWN_CONDITIONS_NONE (sort 51), HORSE.KNOWN_CONDITIONS_DISCLOSED (sort 52), HORSE.KNOWN_CONDITIONS_DISCLOSED_ADD (sort 53)
+  [HORSE.MEDICAL_HISTORY_GATE]  required: true
+      gates: HORSE.MEDICAL_HISTORY_NONE (sort 56), HORSE.MEDICAL_HISTORY_DISCLOSED (sort 57), HORSE.MEDICAL_HISTORY_DISCLOSED_ADD (sort 58)
+  [HORSE.MEDICATIONS_GATE]  required: true
+      gates: HORSE.MEDICATIONS_NONE (sort 76), HORSE.MEDICATIONS_DISCLOSED (sort 77), HORSE.MEDICATIONS_DISCLOSED_ADD (sort 78)
+  [HORSE.SUPPLEMENTS_GATE]  required: true
+      gates: HORSE.SUPPLEMENTS_NONE (sort 81), HORSE.SUPPLEMENTS_DISCLOSED (sort 82), HORSE.SUPPLEMENTS_DISCLOSED_ADD (sort 83)
+  [LESSEE.PARTY_TYPE]  required: true
+      gates: DEFINITIONS.LESSEE_PENDING (sort 40), DEFINITIONS.LESSEE_IND (sort 50), DEFINITIONS.LESSEE_ENT (sort 60), INSURANCE_RISK.CCC_PICK (sort 170), INSURANCE_RISK.CCC_NA (sort 171), INSURANCE_RISK.CCC_NOT_REQUIRED (sort 172), INSURANCE_RISK.CCC_REQ (sort 173), INSURANCE_RISK.CCC_STATUS (sort 174), LESSEE_REPS.PENDING (sort 5), LESSEE_REPS.MAIN_INDIVIDUAL (sort 10), LESSEE_REPS.MAIN_ENTITY (sort 20), TRAINING_LESSONS.PENDING (sort 245), TRAINING_LESSONS.LESSONS (sort 250), TRAINING_LESSONS.LESSONS_ENTITY (sort 255), SIGNATURES.LESSEE_CAPACITY (sort 11)
+  [LESSOR.PARTY_TYPE]  required: true
+      gates: DEFINITIONS.LESSOR_PENDING (sort 10), DEFINITIONS.LESSOR_IND (sort 20), DEFINITIONS.LESSOR_ENT (sort 30), SIGNATURES.LESSOR_CAPACITY (sort 12)
+  [TXN.ADDITIONAL_ACTIVITIES]  required: false
+      gates: PROHIBITED.OTHER (sort 450), PROHIBITED.OTHER_NONE (sort 455), PROHIBITED.OTHER_NOTE (sort 460)
+  [TXN.CCC_REQUIRED]  required: true
+      gates: INSURANCE_RISK.CCC_NOT_REQUIRED (sort 172), INSURANCE_RISK.CCC_REQ (sort 173)
+  [TXN.COMP_OMIT]  required: false
+      gates: RESTRICT.COMP_ON (sort 313), RESTRICT.COMP_OFF (sort 314)
+  [TXN.EVALUATION_ENABLED]  required: false
+      gates: EVALUATION.DATES_INCLUDED (sort 20), EVALUATION.DATES_FIXED (sort 21), EVALUATION.REFUSED (sort 40), EVALUATION.WAIVED (sort 41)
+  [TXN.EVAL_FIXED_LENGTH]  required: false
+      gates: EVALUATION.DATES_FIXED (sort 21)
+  [TXN.EVAL_INCLUDED_LENGTH]  required: false
+      gates: EVALUATION.DATES_INCLUDED (sort 20)
+  [TXN.EVAL_PERIOD_TYPE]  required: false
+      gates: EVALUATION.DATES_INCLUDED (sort 20), EVALUATION.DATES_FIXED (sort 21)
+  [TXN.EXERCISE_INCLUDE]  required: false
+      gates: SCHEDULE.CARE_DUTY (sort 1)
+  [TXN.GL_LESSEE_STATUS]  required: true
+      gates: INSURANCE_RISK.GL_LESSEE_AGREES (sort 160), INSURANCE_RISK.GL_LESSEE_PERSONAL (sort 162), INSURANCE_RISK.CCC_NA (sort 171), INSURANCE_RISK.CCC_NOT_REQUIRED (sort 172), INSURANCE_RISK.CCC_REQ (sort 173), INSURANCE_RISK.CCC_STATUS (sort 174)
+  [TXN.GL_LESSOR_COVERAGE]  required: true
+      gates: INSURANCE_RISK.GL_LESSOR_COVERAGE_HAS (sort 151), INSURANCE_RISK.GL_LESSOR_COVERAGE_WILL (sort 152), INSURANCE_RISK.GL_LESSOR_COVERAGE_NONE (sort 153)
+  [TXN.GL_LESSOR_REQUIRES]  required: true
+      gates: INSURANCE_RISK.GL_REQUIRED (sort 154), INSURANCE_RISK.GL_NOT_REQUIRED (sort 155), INSURANCE_RISK.GL_ALLOC_PICK (sort 156), INSURANCE_RISK.GL_ALLOC_LESSOR (sort 157), INSURANCE_RISK.GL_ALLOC_FAULT (sort 158), INSURANCE_RISK.GL_DED_SIMPLE (sort 164)
+  [TXN.GL_NO_REQ_ALLOCATION]  required: true
+      gates: INSURANCE_RISK.GL_ALLOC_LESSOR (sort 157), INSURANCE_RISK.GL_ALLOC_FAULT (sort 158)
+  [TXN.HAS_OWNERSHIP_LIMITS]  required: false
+      gates: HORSE.OWNERSHIP_LIMITS (sort 26)
+  [TXN.HORSE_MOVES]  required: false
+      gates: LOCATION.NEW (sort 58)
+  [TXN.JUMP_OMIT]  required: false
+      gates: RESTRICT.JUMP_ON (sort 321), RESTRICT.JUMP_OFF (sort 322)
+  [TXN.LEASE_FEE_PAYABLE]  required: (no field def — e.g. a SYSTEM-derived or party token)
+      gates: LEASE_FEE.NO_FEE_CONSIDERATION (sort 6)
+  [TXN.LEASE_PURPOSE]  required: true
+      gates: PURPOSE.RECREATION_DEFAULT (sort 5), PURPOSE.RECREATION (sort 10)
+  [TXN.LEASE_TERM_TYPE]  required: true
+      gates: TERM.FIXED_END (sort 12)
+  [TXN.LEASE_TYPE]  required: true
+      gates: SCHEDULE.MAIN (sort 10), SCHEDULE.OTHER (sort 12), SCHEDULE.CHANGES (sort 15)
+  [TXN.LESSOR_PAYMENT_METHODS]  required: false
+      gates: PAYMENT_METHOD.CARD_LESSOR (sort 40)
+  [TXN.MED_COST_RESP]  required: true
+      gates: INSURANCE_RISK.MED_SHARE (sort 307), INSURANCE_RISK.MED_DISCLAIMER (sort 310), INSURANCE_RISK.MED_DEDR_SIMPLE (sort 314), INSURANCE_RISK.MED_DEDR_SPLITC (sort 315)
+  [TXN.MED_DED_RESP]  required: true
+      gates: INSURANCE_RISK.MED_DEDR_SPLITC (sort 315)
+  [TXN.MED_INCLUDED]  required: true
+      gates: INSURANCE_RISK.MED_NOT_INCLUDED (sort 302), INSURANCE_RISK.MED_INC (sort 303), INSURANCE_RISK.MED_COST (sort 306), INSURANCE_RISK.MED_SHARE (sort 307), INSURANCE_RISK.MED_DISCLAIMER (sort 310), INSURANCE_RISK.MED_DEDR_SIMPLE (sort 314), INSURANCE_RISK.MED_DEDR_SPLITC (sort 315), INSURANCE_RISK.MED_TAIL (sort 320)
+  [TXN.MORT_COST_RESP]  required: true
+      gates: INSURANCE_RISK.MORT_SHARE (sort 207), INSURANCE_RISK.MORT_DISCLAIMER (sort 210), INSURANCE_RISK.MORT_DEDR_SIMPLE (sort 214), INSURANCE_RISK.MORT_DEDR_SPLITC (sort 215)
+  [TXN.MORT_DED_RESP]  required: true
+      gates: INSURANCE_RISK.MORT_DEDR_SPLITC (sort 215)
+  [TXN.MORT_ELECTION]  required: true
+      gates: INSURANCE_RISK.MORT_NOT_REQ (sort 201), INSURANCE_RISK.MORT_CARRIES (sort 202), INSURANCE_RISK.MORT_WILL_OBTAIN (sort 203), INSURANCE_RISK.MORT_COST (sort 206), INSURANCE_RISK.MORT_SHARE (sort 207), INSURANCE_RISK.MORT_DISCLAIMER (sort 210), INSURANCE_RISK.MORT_DEDR_SIMPLE (sort 214), INSURANCE_RISK.MORT_DEDR_SPLITC (sort 215), INSURANCE_RISK.MED_NA (sort 301), INSURANCE_RISK.MED_NOT_INCLUDED (sort 302), INSURANCE_RISK.MED_INC (sort 303), INSURANCE_RISK.MED_COST (sort 306), INSURANCE_RISK.MED_SHARE (sort 307), INSURANCE_RISK.MED_DISCLAIMER (sort 310), INSURANCE_RISK.MED_DEDR_SIMPLE (sort 314), INSURANCE_RISK.MED_DEDR_SPLITC (sort 315), INSURANCE_RISK.MED_TAIL (sort 320)
+  [TXN.OTHERS_ALLOWED]  required: false
+      gates: PROHIBITED.OTHERS_OTHER (sort 490)
+  [TXN.PAYMENT_METHODS]  required: false
+      gates: PAYMENT_METHOD.CARD (sort 20)
+  [TXN.PERMITTED_ACTIVITIES]  required: true
+      gates: INSURANCE_RISK.TRAIL_RIDING (sort 1200), INSURANCE_RISK.JUMPING_RISKS (sort 1210), INSURANCE_RISK.COMPETITION_RISKS (sort 1220), INSURANCE_RISK.SHARED_ARENA_RISKS (sort 1230), PERMITTED_USE.TRAINER (sort 200), TRAINING_LESSONS.PENDING (sort 245), TRAINING_LESSONS.LESSONS (sort 250), TRAINING_LESSONS.LESSONS_ENTITY (sort 255), TRAINING_LESSONS.TRAINING (sort 270), COMPETITIONS.INTRO (sort 310), RESTRICT.COMP_TITLE (sort 312), RESTRICT.COMP_ON (sort 313), RESTRICT.COMP_OFF (sort 314), RESTRICT.JUMP_TITLE (sort 320), RESTRICT.JUMP_ON (sort 321), RESTRICT.JUMP_OFF (sort 322), RESTRICT.TRAIL_TITLE (sort 330), RESTRICT.TRAIL_ON (sort 331), RESTRICT.TRAIL_OFF (sort 332)
+  [TXN.PROTECTIVE_EQUIPMENT]  required: false
+      gates: CARE.PROTECTIVE_EQUIP_OTHER (sort 63)
+  [TXN.PROTECTIVE_REQUIRED]  required: false
+      gates: CARE.PROTECTIVE_EQUIP (sort 62), CARE.PROTECTIVE_EQUIP_OTHER (sort 63)
+  [TXN.RENEWAL_INCLUDE]  required: false
+      gates: TERM.RENEWAL (sort 19)
+  [TXN.RIDER_AIDS]  required: true
+      gates: CARE.RIDER_AIDS_OTHER (sort 93)
+  [TXN.RIDER_AIDS_PROHIBITED]  required: true
+      gates: CARE.RIDER_AIDS_NONE (sort 91), CARE.RIDER_AIDS_LIST (sort 92), CARE.RIDER_AIDS_OTHER (sort 93)
+  [TXN.TRAIL_OMIT]  required: false
+      gates: RESTRICT.TRAIL_ON (sort 331), RESTRICT.TRAIL_OFF (sort 332)
+  [TXN.TRAINER_CARE_INCLUDE]  required: false
+      gates: SCHEDULE.TRAINER_CARE (sort 2)
+
+══════════════════════════════════════════════════════════════════════════════
+END OF MANIFEST
+══════════════════════════════════════════════════════════════════════════════

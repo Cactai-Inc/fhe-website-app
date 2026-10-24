@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ContractBody } from './ContractCascade';
+import type { DisclosureEntries } from '../../lib/disclosureMarker';
 
 /**
  * FLAT DOCUMENT — the body renderer for a document with no clause structure.
@@ -32,13 +33,14 @@ import { ContractBody } from './ContractCascade';
  * opens showing the document, because you sign what you see.
  */
 export function FlatDocument({
-  body, title, defaultOpen = true,
+  body, title, defaultOpen = true, disclosureEntries,
 }: {
   body: string | null;
   /** The document's own name, so the disclosure reads as the document rather
    *  than as a generic "Review the document text" control. */
   title?: string | null;
   defaultOpen?: boolean;
+  disclosureEntries?: DisclosureEntries;
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -63,7 +65,7 @@ export function FlatDocument({
       </button>
       {open && (
         <div className="document-paper mt-3 whitespace-pre-line text-[13.5px] leading-relaxed text-green-950">
-          <ContractBody body={body} />
+          <ContractBody body={body} disclosureEntries={disclosureEntries} />
         </div>
       )}
     </section>

@@ -52,7 +52,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
 import type { EmailAttachment } from './_lib/email.js';
-import { renderDocumentPdf, partyPdfFileName } from './_lib/documentPdf.js';
+import { renderDocumentPdf, partyPdfFileName, fetchDocumentDisclosureEntries } from './_lib/documentPdf.js';
 import { resolveMinorRecipient, notifyMinorRecipientsSkipped } from './_lib/delivery.js';
 import type { GuardianRecipient } from './_lib/delivery.js';
 import { renderEmailTemplate, escapeHtml } from './_lib/emailTemplates.js';
@@ -259,7 +259,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const pdfs: Array<{ docId: string; title: string; bytes: Uint8Array }> = [];
     for (const d of docs) {
       const text = stripFacilityRulesTail(d.merged_body ?? '');
-      const bytes = await renderDocumentPdf(d.title, text);
+      const entries = await fetchDocumentDisclosureEntries(db, d.id);
+      const bytes = await renderDocumentPdf(d.title, text, entries);
       pdfs.push({ docId: d.id, title: d.title, bytes });
     }
     const sentAt = new Date();

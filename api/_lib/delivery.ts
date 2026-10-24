@@ -28,7 +28,7 @@ import { resolveTenantEmailIdentity, sendViaProvider } from './email.js';
 import type { EmailAttachment } from './email.js';
 import { renderEmailTemplate } from './emailTemplates.js';
 import type { TokenMap } from './emailTemplates.js';
-import { renderDocumentPdf, pdfFileName, partyPdfFileName } from './documentPdf.js';
+import { renderDocumentPdf, pdfFileName, partyPdfFileName, fetchDocumentDisclosureEntries, type DisclosureEntries } from './documentPdf.js';
 
 const CHANNEL = 'EMAIL';
 
@@ -53,10 +53,13 @@ export interface PartyCopyEmail {
  *  content a single time rather than once per party. The filename is signer-
  *  attributed (owner spec) and built separately per recipient by
  *  buildPartyCopyEmail, since it embeds that recipient's initials. */
-export async function renderPartyCopyPdfBytes(doc: { title: string; merged_body: string | null }): Promise<Uint8Array | null> {
+export async function renderPartyCopyPdfBytes(
+  doc: { title: string; merged_body: string | null },
+  entries?: DisclosureEntries,
+): Promise<Uint8Array | null> {
   const text = doc.merged_body ? stripFacilityRulesTail(doc.merged_body) : '';
   if (!text) return null;
-  return renderDocumentPdf(doc.title, text);
+  return renderDocumentPdf(doc.title, text, entries);
 }
 
 /** The token values a party's "signed and executed" email merges. Split out from
@@ -265,7 +268,10 @@ export async function deliverExecutedDocument(
 
   // The PDF content is identical for every recipient — render the bytes once;
   // the filename (signer-attributed) is still built per party below.
-  const partyPdfBytes = await renderPartyCopyPdfBytes(doc);
+  // Part 6: the executed PDF attachment carries the boxed disclosure entries,
+  // read from the document's own frozen field values (same source as the download).
+  const disclosureEntries = await fetchDocumentDisclosureEntries(db, documentId);
+  const partyPdfBytes = await renderPartyCopyPdfBytes(doc, disclosureEntries);
 
   // C10: minors recipients skipped for lack of a guardian email, collected so
   // ONE staff alert fires per invocation instead of one per skipped party.
@@ -333,7 +339,7 @@ export async function deliverExecutedDocument(
       .join(', ');
     let companyAttachment: EmailAttachment | null = null;
     if (doc.merged_body) {
-      const bytes = await renderDocumentPdf(doc.title, doc.merged_body);
+      const bytes = await renderDocumentPdf(doc.title, doc.merged_body, disclosureEntries);
       companyAttachment = { filename: pdfFileName(doc.title), content: bytes, contentType: 'application/pdf' };
     }
     const companyEmail = await renderEmailTemplate(db, 'DOCUMENT_COMPANY_COPY', {

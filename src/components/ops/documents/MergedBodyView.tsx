@@ -9,11 +9,17 @@
  * viewer's perspective (edits happen upstream via template/merge, not here).
  */
 import { resolveUnsignedSignatureTokens } from '../../../lib/documentBody';
+import { splitDisclosureSegments, type DisclosureEntries } from '../../../lib/disclosureMarker';
+import { DisclosureEntryBoxes } from '../../app/DisclosureEntryBoxes';
 
 export interface MergedBodyViewProps {
   /** The already-merged contract body. Null/empty when nothing was generated. */
   body: string | null;
   className?: string;
+  /** The document's own stored disclosure entries. When present, each
+   *  [[DISCLOSURE:X]] region renders the boxed component here too — this is a
+   *  surface a signer/staff reads the contract in, so it is NOT text-only. */
+  disclosureEntries?: DisclosureEntries;
 }
 
 /**
@@ -46,7 +52,8 @@ const SIGNATURE_LINE = /^(Signature|By \(signature\)):\s*(.+)$/;
  * through as plain text with no script face. THAT IS CORRECT: there is no name
  * to set in a signature hand yet. Do not "fix" it.
  */
-export function BodyWithSignatures({ text }: { text: string }) {
+/** Render just the signature-styled text lines of one text segment. */
+function TextLines({ text }: { text: string }) {
   const lines = resolveUnsignedSignatureTokens(text).split('\n');
   return (
     <>
@@ -70,7 +77,43 @@ export function BodyWithSignatures({ text }: { text: string }) {
   );
 }
 
-export function MergedBodyView({ body, className }: MergedBodyViewProps) {
+/**
+ * Render a merged body with signature styling AND boxed disclosure entries. A
+ * disclosure region ([[DISCLOSURE:X]]…[[/DISCLOSURE]]) renders the boxed component
+ * from `disclosureEntries` (markers hidden); if no entries are supplied for a
+ * section (the text-only fallback case — executed snapshot, email), the readable
+ * block between the markers is shown instead. Text segments keep the `<pre>`
+ * whitespace/script styling; boxes render outside the `<pre>` flow.
+ */
+export function BodyWithSignatures({
+  text, disclosureEntries,
+}: { text: string; disclosureEntries?: DisclosureEntries }) {
+  const segments = splitDisclosureSegments(text);
+  return (
+    <>
+      {segments.map((seg, si) => {
+        if (seg.kind === 'disclosure') {
+          const entries = disclosureEntries?.[seg.section];
+          if (entries && entries.length) {
+            return <DisclosureEntryBoxes key={`d${si}`} entries={entries} />;
+          }
+          return (
+            <pre key={`f${si}`} className="whitespace-pre-wrap break-words font-serif text-sm leading-relaxed text-green-900 m-0">
+              <TextLines text={seg.fallback} />
+            </pre>
+          );
+        }
+        return (
+          <pre key={`t${si}`} className="whitespace-pre-wrap break-words font-serif text-sm leading-relaxed text-green-900 m-0">
+            <TextLines text={seg.text} />
+          </pre>
+        );
+      })}
+    </>
+  );
+}
+
+export function MergedBodyView({ body, className, disclosureEntries }: MergedBodyViewProps) {
   const text = (body ?? '').trim();
 
   if (!text) {
@@ -86,15 +129,13 @@ export function MergedBodyView({ body, className }: MergedBodyViewProps) {
 
   return (
     <article
-      className={`rounded-lg border border-green-800/15 bg-white/60 p-6 ${className ?? ''}`}
+      className={`rounded-lg border border-green-800/15 bg-white/60 p-6 flex flex-col gap-1 ${className ?? ''}`}
       aria-label="Merged contract body"
       data-testid="merged-body"
     >
-      {/* Read-only: whitespace-preserved plain text, no inputs, no editing.
-          Signature values are styled (display-only) in a script face. */}
-      <pre className="whitespace-pre-wrap break-words font-serif text-sm leading-relaxed text-green-900">
-        <BodyWithSignatures text={text} />
-      </pre>
+      {/* Read-only: text in whitespace-preserved script-styled blocks; disclosure
+          sections as the shared boxed component. No inputs, no editing. */}
+      <BodyWithSignatures text={text} disclosureEntries={disclosureEntries} />
     </article>
   );
 }

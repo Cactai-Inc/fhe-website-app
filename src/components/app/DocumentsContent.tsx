@@ -13,6 +13,8 @@ import { toErrorMessage } from '../../lib/ops/errors';
 import type { SeedDocument } from '../../lib/seed';
 import { resolveUnsignedSignatureTokens } from '../../lib/documentBody';
 import { BodyWithSignatures } from '../ops/documents/MergedBodyView';
+import { fetchDisclosureEntries } from '../../lib/contracts';
+import { hasDisclosureMarkers, type DisclosureEntries } from '../../lib/disclosureMarker';
 
 /**
  * MY DOCUMENTS — the shared subject content (TASK-ACCOUNTSURFACE §3), rendered
@@ -146,7 +148,20 @@ function EmailMeACopyButton({ documentId, sentAt }: { documentId: string; sentAt
  *  unchanged from the old DocumentsPanel/AccountPanels.tsx. */
 function PaperViewer({ doc, onClose }: { doc: SeedDocument; onClose: () => void }) {
   const [page, setPage] = useState(0);
-  const total = doc.pages.length;
+  // The document's frozen disclosure entries, fetched on open so the reader renders
+  // the boxed component (Correction 3: every surface a signer/staff reads the
+  // contract in shows boxes, not the text fallback). A document with disclosure
+  // markers is shown UNPAGINATED through BodyWithSignatures so a boxed region is
+  // never split across a page boundary; others keep the paper pagination.
+  const [entries, setEntries] = useState<DisclosureEntries>({});
+  useEffect(() => {
+    let active = true;
+    fetchDisclosureEntries(doc.id).then((e) => { if (active) setEntries(e); }).catch(() => {});
+    return () => { active = false; };
+  }, [doc.id]);
+  const fullBody = doc.body ?? doc.pages.join('\n\n');
+  const boxed = hasDisclosureMarkers(fullBody);
+  const total = boxed ? 1 : doc.pages.length;
   return (
     /* ⚠️ TASK-FIX4 §3 — converged. A reader, holding no field.
        ⚠️ TASK-MODAL2 D1: click-out no longer closes it either. The X does. */
@@ -156,9 +171,8 @@ function PaperViewer({ doc, onClose }: { doc: SeedDocument; onClose: () => void 
         <button
           type="button"
           onClick={async () => {
-            const text = doc.body ?? doc.pages.join('\n\n');
             const { downloadDocumentPdf } = await import('../../lib/documentPdf');
-            await downloadDocumentPdf(doc.title, text);
+            await downloadDocumentPdf(doc.title, fullBody, entries);
           }}
           className="inline-flex items-center gap-1.5 text-[12px] text-green-800 hover:text-green-700 px-2.5 py-1.5 rounded-lg border border-green-800/15 hover:border-green-800/30 focus-ring"
         >
@@ -170,18 +184,11 @@ function PaperViewer({ doc, onClose }: { doc: SeedDocument; onClose: () => void 
           {/* the sheet */}
           <div className="bg-white shadow-2xl shadow-green-950/30 rounded-[3px] mx-auto"
             style={{ width: 'min(100%, 600px)' }}>
-            <div className="px-8 sm:px-12 py-10 sm:py-14">
-              {/* ⚠️ WAS BARE TEXT. This reader is the one body surface that never
-                  had the script face the other renderers give a signature line,
-                  and never resolved a signature token either. `BodyWithSignatures`
-                  gives it both, and is the same component the onboarding step and
-                  the ops viewer use — one renderer, not a fourth copy (D18).
-                  The page text is ALREADY resolved (see paginateBody); the second
-                  pass inside this component finds nothing to match, which is
-                  harmless and is why the ordering above is the one that counts. */}
-              <p className="whitespace-pre-line font-serif text-[14.5px] leading-[1.85] text-green-950">
-                <BodyWithSignatures text={doc.pages[page]} />
-              </p>
+            <div className="px-8 sm:px-12 py-10 sm:py-14 font-serif text-[14.5px] leading-[1.85] text-green-950">
+              {/* One renderer across onboarding, the ops viewer, and here (D18).
+                  BodyWithSignatures resolves signature tokens, styles the signed
+                  name, and renders disclosure regions as the boxed component. */}
+              <BodyWithSignatures text={boxed ? fullBody : doc.pages[page]} disclosureEntries={entries} />
             </div>
             {/* page-edge foot */}
             <div className="border-t border-dashed border-green-800/15 px-8 sm:px-12 py-3 flex items-center justify-between">
@@ -315,8 +322,11 @@ function SelfSignRow({
                 <button type="button"
                   className="inline-flex items-center gap-1.5 text-xs text-green-800 hover:text-green-700 px-2.5 py-1 rounded-lg border border-green-800/15 hover:border-green-800/30 focus-ring"
                   onClick={async () => {
-                    const { downloadDocumentPdf } = await import('../../lib/documentPdf');
-                    await downloadDocumentPdf(doc.title ?? 'Document', doc.merged_body ?? '');
+                    const [{ downloadDocumentPdf }, entries] = await Promise.all([
+                      import('../../lib/documentPdf'),
+                      fetchDisclosureEntries(doc.id),
+                    ]);
+                    await downloadDocumentPdf(doc.title ?? 'Document', doc.merged_body ?? '', entries);
                   }}>
                   <Download size={13} aria-hidden="true" /> Download signed PDF
                 </button>

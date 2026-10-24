@@ -27,7 +27,7 @@ import {
   requestContractTermination, approveContractTermination, declineContractTermination,
   setDocumentPartyArchived, deleteContractWithCopy, clauseConditionMet,
   documentSignatureState, removeMySignature, requestPermissionToEdit, notifyReviewChanges,
-  notifyReviewChangesEmail,
+  notifyReviewChangesEmail, buildDisclosureEntries,
   type ContractDetail, type ContractField, type PartyControls,
   type SigningSetDoc, type RedlineState, type PartiesHorseSummary, type PartySummary,
   type DocumentSignatureState, type LockBlocker,
@@ -945,6 +945,12 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      someone writing the heading rather than the key. */
   const horseFields = useMemo(
     () => (detail?.fields ?? []).filter((f) => isHorseSection(f.section)),
+    [detail?.fields],
+  );
+  // The document's OWN stored disclosure entries (frozen at execution) → boxed
+  // rendering inside merged_body wherever a [[DISCLOSURE:X]] region appears.
+  const disclosureEntries = useMemo(
+    () => buildDisclosureEntries(detail?.fields),
     [detail?.fields],
   );
   const horseIsMine = horseFields.some((f) => f.can_edit) || isOwnerSide;
@@ -1970,7 +1976,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           <SignedVersionNote signedVersion={doc.signed_template_version}
             templateVersionNow={doc.template_version_now} />
           <div className="document-paper prose-sm whitespace-pre-line text-[13px] leading-relaxed text-green-950">
-            <ContractBody body={doc.merged_body} />
+            <ContractBody body={doc.merged_body} disclosureEntries={disclosureEntries} />
           </div>
         </div>
       )}
@@ -2192,6 +2198,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           sections={structure.sections}
           fields={detail.fields}
           documentId={id!}
+          horseId={doc?.horse_id ?? null}
           isOwnerSide={isOwnerSide}
           hasPartyRole={myRoles.length > 0}
           pendingCompositions={redline?.pending_compositions ?? []}
@@ -2290,7 +2297,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           showing the same text. This REPLACES the old collapsible "Review the
           document text" block that used to sit further down the page. */}
       {state !== 'executed' && !showHorseGate && !readOnlyDoc && !structure && (
-        <FlatDocument body={doc.merged_body} title={doc.title} />
+        <FlatDocument body={doc.merged_body} title={doc.title} disclosureEntries={disclosureEntries} />
       )}
 
       {/* ═══ P1 ITEM 3 — THE PARTY'S VIEW OF THE SAME ONE BODY SLOT ═══════════
@@ -2363,7 +2370,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
                   : 'Review the full document below. It will be locked for signing once both sides are ready. To request a change, use “Suggest a change” on the item or message the other party.'}
           </p>
           <div className="document-paper whitespace-pre-line text-[13.5px] leading-relaxed text-green-950">
-            <ContractBody body={doc.merged_body} />
+            <ContractBody body={doc.merged_body} disclosureEntries={disclosureEntries} />
           </div>
         </section>
       )}
@@ -2383,7 +2390,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           </button>
           {showBody && (
             <div className="document-paper mt-3 whitespace-pre-line text-[13px] leading-relaxed text-green-950">
-              <ContractBody body={doc.merged_body} />
+              <ContractBody body={doc.merged_body} disclosureEntries={disclosureEntries} />
             </div>
           )}
         </section>

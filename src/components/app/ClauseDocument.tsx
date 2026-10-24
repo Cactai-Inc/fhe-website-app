@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
-import { Pencil, Trash2, Info } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Pencil, Trash2, Info, ExternalLink } from 'lucide-react';
 import { toErrorMessage } from '../../lib/ops/errors';
 import {
   clauseConditionMet, removeContractComposition, resolvePendingComposition,
@@ -153,6 +154,20 @@ const ROLE_NAME: Record<string, string> = {
   LESSOR: 'the Lessor', LESSEE: 'the Lessee', SELLER: 'the Seller',
   BUYER: 'the Buyer', COBUYER: 'the Co-Buyer',
 };
+
+/** The initials a party is expected to type to acknowledge a disclosure: the
+ *  first letter of each word of their signing name. The name is the entity
+ *  signer's name when the party is an entity, otherwise the party's full name —
+ *  the same rule the server's initials-match check uses. Returns '' when no name
+ *  is on the document yet (the control then shows no helper text). */
+function initialsFor(ownerRole: string, valueByKey: Record<string, string>): string {
+  const isEntity = (valueByKey[`${ownerRole}.PARTY_TYPE`] ?? '').trim().toUpperCase() === 'ENTITY';
+  const name = (isEntity
+    ? valueByKey[`${ownerRole}.ENTITY_SIGNER_NAME`]
+    : valueByKey[`${ownerRole}.FULL_NAME`]) ?? '';
+  return name.trim().split(/\s+/).filter(Boolean)
+    .map((w) => w[0]).join('').replace(/[^A-Za-z]/g, '').toUpperCase();
+}
 
 /** Role words as the INSTRUMENT says them — never a person or company name:
  *  the contract's own text says "Lessor"/"Lessee", the UI should speak the
@@ -656,13 +671,19 @@ function renderToken(
     // value is the composed "<name>, <address>…"; LocationField matches on the name.
     const curLoc = field.format_type === 'location'
       ? (valueByKey['HORSE.CURRENT_LOCATION'] ?? '') : undefined;
+    // For an initials acknowledgment field, the expected initials come from the
+    // owning party's name on the document — the entity signer's name when that
+    // party is an entity, otherwise the party's full name. Shown as gray helper
+    // text in the control so the signer knows what to type; the server verifies it.
+    const expectedInitials = field.format_type === 'initials'
+      ? initialsFor(field.owner_role ?? '', valueByKey) : undefined;
     return (
       <OwnedField key={key} f={field} cb={cb} active={selfGateMet}>
         <InlineFieldControl f={fieldWithAvailableOptions(field, valueByKey)}
           editable={cb.editable && selfGateMet && mine}
           onSave={cb.onSave} onSaveStructured={cb.onSaveStructured as never}
           onSaveResponsibility={cb.onSaveResponsibility as never}
-          currentLocationName={curLoc} />
+          currentLocationName={curLoc} expectedInitials={expectedInitials} />
       </OwnedField>
     );
   }
@@ -720,7 +741,7 @@ export function ClauseProse({
     // was pushed into a narrow indented column with the pills wrapping raggedly.
     // A control this size needs the full width of the clause.
     return kind === 'select' || kind === 'buttons' || kind === 'responsibility' || kind === 'week_grid'
-      || ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'disc_med', 'installment_schedule', 'incident_list', 'reveal_text', 'week_grid', 'share_amount', 'cost_split'].includes(fmt);
+      || ['party', 'contact', 'person', 'address', 'location', 'pair', 'fee_schedule', 'med_schedule', 'installment_schedule', 'incident_list', 'reveal_text', 'week_grid', 'share_amount', 'cost_split'].includes(fmt);
   };
 
   const flushMatrix = () => {
@@ -1004,13 +1025,15 @@ function AuthorItemControls({
 }
 
 export function ClauseDocument({
-  sections, fields, cb: cbIn, documentId, isOwnerSide = false, hasPartyRole = false,
+  sections, fields, cb: cbIn, documentId, horseId, isOwnerSide = false, hasPartyRole = false,
   pendingCompositions = [], onChanged, onRevise,
 }: {
   sections: SectionDef[];
   fields: ContractField[];
   cb: FieldCallbacks;
   documentId: string;
+  /** The attached horse, for the "Edit on horse record" link on importing sections. */
+  horseId?: string | null;
   /** Staff/company authoring. */
   isOwnerSide?: boolean;
   /** The viewer is one of the document's own parties (not staff, not a
@@ -1357,6 +1380,19 @@ export function ClauseDocument({
                 </span>
               )}
             </h2>
+            {/* Part 1.6: a section that IMPORTS from the horse record carries one
+                static edit-mode line saying changes/additions are made on the record,
+                with a link that opens it. Shown only while editing, only when a horse
+                is attached, and only on sections that actually pull HORSE.* content. */}
+            {cb.editable && horseId && clausesToShow.some((c) => /\{\{HORSE\./.test(c.body ?? '')) && (
+              <p className="-mt-1 mb-3 text-[12px] text-secondary flex items-center gap-1.5">
+                Changes and additions are made on the horse record.
+                <Link to={`/app/horses/${horseId}`} target="_blank" rel="noopener"
+                  className="inline-flex items-center gap-1 text-green-800 underline underline-offset-2 hover:text-green-700 focus-ring">
+                  Edit on horse record <ExternalLink size={12} aria-hidden="true" />
+                </Link>
+              </p>
+            )}
             <div className="flex flex-col gap-4">
               {clausesToShow.map((clause) => {
                 // A suggest-tier proposal renders as its own review box — it
