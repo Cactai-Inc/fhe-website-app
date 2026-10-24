@@ -65,38 +65,39 @@ export function hasDisclosureMarkers(body: string): boolean {
 }
 
 /* ── Record-side entry building ───────────────────────────────────────────────
- * The field order + labels per section, mirroring disclosure_section_spec in
+ * The field order per section, mirroring disclosure_section_spec in
  * supabase/migrations/…disc_20… so the record view, the contract, and the PDF all
- * show the same fields in the same order. The record view builds entries from the
- * raw record lists with buildRecordEntries; the contract/PDF read the entries the
- * DB already stored on the document. Keep these two specs in step. */
+ * show the same fields in the same order. The box LABELS come from the one shared
+ * list (shared/disclosureFieldLabels.js) so the record view and the sample generator
+ * cannot drift; the `k`/`kind` below map each record key to its position in that list. */
+import { DISCLOSURE_FIELD_LABELS } from '../../shared/disclosureFieldLabels.js';
 type OccurrenceKind = 'text' | 'occurrence' | 'bool';
 type FieldSpec = { k: string; label: string; kind: OccurrenceKind };
-const SECTION_FIELD_SPEC: Record<string, FieldSpec[]> = {
+/** keys + occurrence kinds per list section, in the label order of the shared list. */
+const SECTION_FIELD_KEYS: Record<string, { k: string; kind: OccurrenceKind }[]> = {
   KNOWN_CONDITIONS: [
-    { k: 'description', label: 'Description', kind: 'text' },
-    { k: 'trigger', label: 'Trigger', kind: 'text' },
-    { k: 'last_occurrence', label: 'Current or Date of last occurrence', kind: 'occurrence' },
-    { k: 'accommodations', label: 'Accommodations', kind: 'text' },
+    { k: 'description', kind: 'text' }, { k: 'trigger', kind: 'text' },
+    { k: 'last_occurrence', kind: 'occurrence' }, { k: 'accommodations', kind: 'text' },
   ],
   MEDICAL_HISTORY: [
-    { k: 'description', label: 'Description', kind: 'text' },
-    { k: 'date', label: 'Date', kind: 'text' },
-    { k: 'type', label: 'Type', kind: 'text' },
-    { k: 'status', label: 'Status', kind: 'text' },
+    { k: 'description', kind: 'text' }, { k: 'date', kind: 'text' },
+    { k: 'type', kind: 'text' }, { k: 'status', kind: 'text' },
   ],
   BEHAVIORAL_HISTORY: [
-    { k: 'description', label: 'Description', kind: 'text' },
-    { k: 'trigger', label: 'Trigger', kind: 'text' },
-    { k: 'last_occurrence', label: 'Current or Date of last occurrence', kind: 'occurrence' },
+    { k: 'description', kind: 'text' }, { k: 'trigger', kind: 'text' },
+    { k: 'last_occurrence', kind: 'occurrence' },
   ],
   INJURIES_TO_HORSE: [
-    { k: 'description', label: 'Description', kind: 'text' },
-    { k: 'date', label: 'Date or date range', kind: 'text' },
-    { k: 'outcome', label: 'Outcome', kind: 'text' },
-    { k: 'status', label: 'Status', kind: 'text' },
+    { k: 'description', kind: 'text' }, { k: 'date', kind: 'text' },
+    { k: 'outcome', kind: 'text' }, { k: 'status', kind: 'text' },
   ],
 };
+const SECTION_FIELD_SPEC: Record<string, FieldSpec[]> = Object.fromEntries(
+  Object.entries(SECTION_FIELD_KEYS).map(([section, keys]) => {
+    const labels: string[] = DISCLOSURE_FIELD_LABELS[section] ?? [];
+    return [section, keys.map((fd, i) => ({ k: fd.k, kind: fd.kind, label: labels[i] ?? fd.k }))];
+  }),
+);
 
 /** Build the boxed entries for a record list section, from the raw record entries. */
 export function buildRecordEntries(

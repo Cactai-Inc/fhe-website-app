@@ -1,30 +1,9 @@
-/**
- * generate-sample-document.mjs — a SAMPLE of a contract template showing every
- * branch, for review. Kept beside export-template-manifest.mjs.
- *
- * Unlike a real composed document (one selection per gate), the sample prints
- * EVERY clause regardless of condition, so every wording a selection could produce
- * is visible on one page:
- *   - each conditional clause is preceded by one gray line naming the selection
- *     that produces it (its condition, in plain terms);
- *   - every {{input token}} prints as its field label followed by a blank underline,
- *     like a paper form (read-only sample — nothing is filled);
- *   - every disclosure section prints its none clause AND its yes clause, the yes
- *     clause followed by one sample entry whose boxes show the field labels with
- *     blank spaces;
- *   - every pending placeholder prints.
- *
- * Output: an HTML view and a PDF, written next to each other. READ-ONLY (reads the
- * def tables only). Connection: DATABASE_URL, else the first line of .env.db.
- *
- * Usage:
- *   node scripts/generate-sample-document.mjs HORSE_SALE_V3 out/sample_sale
- *   (writes out/sample_sale.html and out/sample_sale.pdf)
- */
+// generate-sample-document.mjs — read-only SAMPLE of a contract template showing every clause and branch. Usage: node scripts/generate-sample-document.mjs HORSE_SALE_V3 out/sample_sale  (writes .html + .pdf)
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execFileSync, execSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DISCLOSURE_FIELD_LABELS } from '../shared/disclosureFieldLabels.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 function connectionString() {
@@ -40,16 +19,9 @@ function queryJson(sql) {
 const lit = (s) => `'${String(s).replace(/'/g, "''")}'`;
 const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
-// The seven disclosure sections and their sample field labels (mirrors the record
-// field-order spec; INJURIES_TO_HUMANS is a scalar, no boxes).
-const DISCLOSURE_FIELDS = {
-  KNOWN_CONDITIONS: ['Description', 'Trigger', 'Current or Date of last occurrence', 'Accommodations'],
-  MEDICAL_HISTORY: ['Description', 'Date', 'Type', 'Status'],
-  BEHAVIORAL_HISTORY: ['Description', 'Trigger', 'Current or Date of last occurrence'],
-  INJURIES_TO_HORSE: ['Description', 'Date or date range', 'Outcome', 'Status'],
-  MEDICATIONS: ['Name', 'Purpose', 'Dose', 'Frequency', 'Cost per dose', 'Rx required'],
-  SUPPLEMENTS: ['Name', 'Purpose', 'Dose', 'Frequency', 'Cost per dose', 'Rx required'],
-};
+// Box labels per disclosure section, from the one shared source so the sample cannot
+// drift from the record (INJURIES_TO_HUMANS is a scalar, so it is not in the list).
+const DISCLOSURE_FIELDS = DISCLOSURE_FIELD_LABELS;
 
 /** Plain-language description of a clause condition (what selection shows it). */
 function describeCondition(cond) {
@@ -69,7 +41,7 @@ function describeCondition(cond) {
 function build(templateKey) {
   const tpl = queryJson(`SELECT coalesce(row_to_json(t),'null'::json) FROM (SELECT title FROM contract_templates WHERE template_key=${lit(templateKey)}) t;`);
   const sections = queryJson(`SELECT coalesce(jsonb_agg(to_jsonb(s) ORDER BY s.sort_order),'[]'::jsonb) FROM (SELECT section_key, heading, sort_order FROM contract_section_defs WHERE template_key=${lit(templateKey)}) s;`) || [];
-  const clauses = queryJson(`SELECT coalesce(jsonb_agg(to_jsonb(c) ORDER BY c.section_key, c.sort_order),'[]'::jsonb) FROM (SELECT section_key, clause_key, body, conditional_on, sort_order FROM contract_clause_defs WHERE template_key=${lit(templateKey)}) c;`) || [];
+  const clauses = queryJson(`SELECT coalesce(jsonb_agg(to_jsonb(c) ORDER BY c.section_key, c.sort_order),'[]'::jsonb) FROM (SELECT section_key, clause_key, heading, body, conditional_on, sort_order FROM contract_clause_defs WHERE template_key=${lit(templateKey)}) c;`) || [];
   const fields = queryJson(`SELECT coalesce(jsonb_agg(to_jsonb(f)),'[]'::jsonb) FROM (SELECT field_key, label FROM contract_field_defs WHERE template_key=${lit(templateKey)}) f;`) || [];
   const labelOf = new Map(fields.map((f) => [f.field_key, f.label]));
 
@@ -93,6 +65,8 @@ function build(templateKey) {
       const dc = `data-clause="${esc(c.clause_key)}"`;
       const desc = describeCondition(c.conditional_on);
       if (desc) parts.push(`<p class="cond">▸ Shows when: ${esc(desc)}</p>`);
+      // the clause heading the real document numbers by, printed above the clause
+      if (c.heading && String(c.heading).trim()) parts.push(`<p class="chead">${esc(c.heading)}</p>`);
       // disclosure content token → the boxed sample
       const discMatch = (c.body || '').match(/\{\{HORSE\.([A-Z_]+)\}\}/);
       if (discMatch && DISCLOSURE_FIELDS[discMatch[1]]) {
@@ -111,6 +85,7 @@ function build(templateKey) {
     body{font-family:Georgia,serif;max-width:760px;margin:24px auto;color:#1b2a22;font-size:13.5px;line-height:1.7;padding:0 20px}
     h1{font-size:22px} h2{font-size:16px;border-bottom:2px solid #1f5c3a;padding-bottom:4px;margin-top:22px}
     .cond{font-size:11px;color:#8a7a3a;background:#faf6e8;border-left:3px solid #c9b45a;padding:2px 8px;margin:8px 0 2px;font-family:system-ui}
+    .chead{font-weight:700;color:#1f5c3a;margin:10px 0 1px;font-size:13.5px}
     .carrier{font-size:11px;color:#999;font-style:italic}
     .field{white-space:nowrap} .flabel{font-size:11px;color:#1f5c3a;text-transform:uppercase;letter-spacing:.03em}
     .blank{display:inline-block;min-width:140px;border-bottom:1px solid #999;height:1em;vertical-align:baseline}

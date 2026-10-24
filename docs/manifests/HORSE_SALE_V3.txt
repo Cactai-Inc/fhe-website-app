@@ -1,7 +1,7 @@
 ══════════════════════════════════════════════════════════════════════════════
 EDITOR MANIFEST — HORSE_SALE_V3
 Title: Horse Sale Agreement   ·   version: 1   ·   active: true   ·   kind: HORSE_SALE
-Generated: 2026-10-24T18:25:26.119Z
+Generated: 2026-10-24T19:19:54.054Z
 Document order. Hidden branches included and marked. No truncation.
 ══════════════════════════════════════════════════════════════════════════════
 
@@ -66,7 +66,7 @@ SECTION 1 — [PARTIES]  Parties
           options: (none)
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
           helper (guidance): (none)
-          tooltip: (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}
           gates clauses: (none)
       ● FIELD [COBUYER.ADDRESS]  "Co-Buyer address"
@@ -75,7 +75,7 @@ SECTION 1 — [PARTIES]  Parties
           options: (none)
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
           helper (guidance): (none)
-          tooltip: (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}
           gates clauses: (none)
       ● FIELD [COBUYER.PHONE]  "Co-Buyer phone"
@@ -84,7 +84,7 @@ SECTION 1 — [PARTIES]  Parties
           options: (none)
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
           helper (guidance): (none)
-          tooltip: (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}
           gates clauses: (none)
       ● FIELD [COBUYER.EMAIL]  "Co-Buyer email"
@@ -93,7 +93,7 @@ SECTION 1 — [PARTIES]  Parties
           options: (none)
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
           helper (guidance): (none)
-          tooltip: (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}
           gates clauses: (none)
       ● FIELD [COBUYER.PRINTED_NAME]  "Co-Buyer printed name"
@@ -102,7 +102,7 @@ SECTION 1 — [PARTIES]  Parties
           options: (none)
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
           helper (guidance): (none)
-          tooltip: (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}
           gates clauses: (none)
       ● FIELD [COBUYER.PARTY_TYPE]  "Co-Buyer is an"
@@ -111,7 +111,7 @@ SECTION 1 — [PARTIES]  Parties
           options: [{"label":"Individual","value":"INDIVIDUAL"},{"label":"Entity / organization","value":"ENTITY"}]
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
           helper (guidance): (none)
-          tooltip: (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
           own condition (when this field itself is shown): {"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"}
           gates clauses: SIGNATURES.COBUYER_CAPACITY (sort 40)
       ● FIELD [TXN.CO_BUYER_TITLE_FORM]  "How will title be held?"
@@ -1768,7 +1768,7 @@ SECTION 18 — [SIGNATURES]  Signatures
           options: (none)
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
           helper (guidance): (none)
-          tooltip: (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
           own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"},{"equals":["ENTITY"],"field_key":"COBUYER.PARTY_TYPE"}]}
           gates clauses: (none)
       ● FIELD [COBUYER.ENTITY_SIGNER_TITLE]  "Signing individual — title"
@@ -1777,7 +1777,7 @@ SECTION 18 — [SIGNATURES]  Signatures
           options: (none)
           placeholder: (UI-derived at render time; see components/app/ContractCascade.tsx)
           helper (guidance): (none)
-          tooltip: (none)
+          tooltip: [imported — tooltip also says: "Changes to this information must be made on that party's account on the Contacts page."]
           own condition (when this field itself is shown): {"all":[{"equals":["YES"],"field_key":"TXN.CO_BUYER_ENABLED"},{"equals":["ENTITY"],"field_key":"COBUYER.PARTY_TYPE"}]}
           gates clauses: (none)
 

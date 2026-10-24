@@ -1,36 +1,4 @@
-/**
- * export-template-manifest.mjs — editor manifest for a contract template.
- *
- * Writes a plain-text manifest of a clause-composed template in DOCUMENT ORDER:
- *   - every section: number, key, heading, sort, optional flag, guidance;
- *   - every clause under it: key, sort, condition (verbatim JSON), clause type,
- *     optional/subitem flags, and the FULL body verbatim;
- *   - every field attached to a clause: key, label, control type (input_kind +
- *     format_type), options, placeholder, helper/guidance, tooltip, required,
- *     which party may set it (owner_role), and which clauses it GATES.
- *
- * Hidden branches are included — every conditional clause and every field is
- * listed regardless of any selection, each marked with its gating condition, so
- * every selection's output is visible. No truncation, no ellipses.
- *
- * This reads the live def tables (contract_section_defs / _clause_defs /
- * _field_defs); it is READ-ONLY. Connection: DATABASE_URL, else the first line of
- * .env.db — the same convention as scripts/gen-db-schema.mjs.
- *
- * Usage:
- *   node scripts/export-template-manifest.mjs <TEMPLATE_KEY> [outfile]
- *   node scripts/export-template-manifest.mjs HORSE_SALE_V3 docs/manifests/sale.txt
- * With no outfile the manifest is written to stdout.
- *
- * NOTE ON PLACEHOLDERS: input placeholders are not stored in the field def — they
- * are constants in the React controls (components/app/ContractCascade.tsx), keyed
- * by format_type. This script prints the placeholder the UI uses for a field's
- * format where that placeholder is a fixed constant, and prints
- * "(UI-derived; see ContractCascade.tsx)" where it varies at render time. The
- * tooltip/helper is the field's `guidance`; for imported HORSE.* and party tokens
- * the tooltip is additionally the import-source line ("Changes to this information
- * must be made on … record"), noted inline.
- */
+// export-template-manifest.mjs — read-only editor manifest (sections, clauses with full bodies and conditions, and every field's control/options/placeholder/tooltip/owner/gates), in document order with hidden branches marked. Usage: node scripts/export-template-manifest.mjs <TEMPLATE_KEY> [outfile]
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
@@ -102,7 +70,7 @@ function tooltipFor(f) {
   if (f.guidance) parts.push(f.guidance);
   if (/^HORSE\./.test(f.field_key)) {
     parts.push('[imported — tooltip also says: "Changes to this information must be made on the horse\'s record on the Horses page."]');
-  } else if (/^(LESSOR|LESSEE|BUYER|SELLER|PARTY)\./.test(f.field_key)) {
+  } else if (/^(LESSOR|LESSEE|BUYER|COBUYER|SELLER|PARTY)\./.test(f.field_key)) {
     parts.push('[imported — tooltip also says: "Changes to this information must be made on that party\'s account on the Contacts page."]');
   }
   return parts.length ? parts.join(' ') : '(none)';

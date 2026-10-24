@@ -1,7 +1,7 @@
 ══════════════════════════════════════════════════════════════════════════════
 EDITOR MANIFEST — HORSE_LEASE_V3
 Title: Horse Lease Agreement   ·   version: 1   ·   active: true   ·   kind: HORSE_LEASE
-Generated: 2026-10-24T18:25:23.924Z
+Generated: 2026-10-24T19:19:52.187Z
 Document order. Hidden branches included and marked. No truncation.
 ══════════════════════════════════════════════════════════════════════════════
 
