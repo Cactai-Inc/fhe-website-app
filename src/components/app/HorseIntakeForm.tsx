@@ -679,6 +679,7 @@ export function HorseIntakeForm({
           passport_country: s(raw.passport_country), breed: s(raw.breed), color: s(raw.color),
           markings: s(raw.markings), sex: s(raw.sex),
           date_of_birth: s(raw.date_of_birth).slice(0, 10), height: s(raw.height),
+          sire: s(raw.sire), dam: s(raw.dam),
           fair_market_value: raw.fair_market_value == null ? '' : Number(raw.fair_market_value).toLocaleString('en-US', { style: 'currency', currency: 'USD' }),
           euthanasia_authorization: (raw.euthanasia_authorization === 'A' || raw.euthanasia_authorization === 'B') ? raw.euthanasia_authorization : undefined,
           pending_fields: arr<string>(raw.pending_fields),
@@ -798,7 +799,7 @@ export function HorseIntakeForm({
   async function submit() {
     setErr(null);
     if (isStaff && !assignTo) { reject('Choose the account this horse belongs to.'); return; }
-    if (!hasRealName) { reject('Give the horse a nickname.'); return; }
+    if (!hasRealName) { reject('Give the horse a name.'); return; }
     if (breedOpts.length && !isKnownCode(f.breed, breedOpts)) { reject('Breed has to be chosen from the list — pick the closest match or "Other".'); return; }
     if (colorOpts.length && !isKnownCode(f.color, colorOpts)) { reject('Color has to be chosen from the list — pick the closest match or "Other".'); return; }
     setBusy(true);
@@ -867,17 +868,12 @@ export function HorseIntakeForm({
       )}
 
       <p className="text-xs text-muted mb-1">
-        Only a <strong>nickname</strong> is required. Everything else is optional — you can fill it in now or later.
+        Only a <strong>name</strong> is required. Everything else is optional — you can fill it in now or later.
         A field you leave empty, or mark <strong>Add later</strong>, prints “To be provided” on a contract that needs it.
       </p>
 
       <Section title="Horse identity">
-        <Field label="Name on Registration Certificate" value={f.registered_name} onChange={set('registered_name')}
-          addLater pending={pendingSet.has('registered_name')} onPending={(on) => setPendingField('registered_name', on)} />
-        <Field label="Nickname" value={f.nickname} onChange={set('nickname')} placeholder="Everyday name (e.g. Beau)" />
-        <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" onOptionAdded={(o) => setRegOrgOpts((prev) => addOpt(prev, o))} placeholder="Registry name" />
-        <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')}
-          addLater pending={pendingSet.has('registration_number')} onPending={(on) => setPendingField('registration_number', on)} />
+        <Field label="Name" value={f.nickname} onChange={set('nickname')} placeholder="The horse's name (e.g. Beau)" />
         <Field label="Microchip number" value={f.microchip_id} onChange={set('microchip_id')} placeholder="e.g. 985 112233445566" na
           addLater pending={pendingSet.has('microchip_id')} onPending={(on) => setPendingField('microchip_id', on)} />
         <Field label="Fair market value" type="text" inputMode="numeric" value={f.fair_market_value} onChange={set('fair_market_value')} placeholder="$0.00"
@@ -896,6 +892,17 @@ export function HorseIntakeForm({
         )}
       </Section>
 
+      <Section title="Registration">
+        <p className="text-[11px] text-muted sm:col-span-2 -mb-1">Only for a registered horse. Leave blank if the horse is not registered.</p>
+        <Field label="Registered name" value={f.registered_name} onChange={set('registered_name')} placeholder="As written on the registration certificate" />
+        <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" onOptionAdded={(o) => setRegOrgOpts((prev) => addOpt(prev, o))} placeholder="Registry name" />
+        <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')}
+          addLater pending={pendingSet.has('registration_number')} onPending={(on) => setPendingField('registration_number', on)} />
+        <Field label="Date of birth" type="date" value={f.date_of_birth} onChange={set('date_of_birth')} addLater pending={pendingSet.has('date_of_birth')} onPending={(on) => setPendingField('date_of_birth', on)} />
+        <Field label="Sire" value={f.sire} onChange={set('sire')} placeholder="Sire's name" />
+        <Field label="Dam" value={f.dam} onChange={set('dam')} placeholder="Dam's name" />
+      </Section>
+
       <Section title="Description">
         <SelectOrOther label="Breed" value={f.breed} onChange={set('breed')} invalid={showError && !isKnownCode(f.breed, breedOpts)} options={breedOpts} lookupKey="horse_breeds" onOptionAdded={(o) => setBreeds((prev) => addOpt(prev, o))} placeholder="Breed name" hint="Not listed? Choose “Other (enter manually)” and type it — it joins the list." />
         <SelectOrOther label="Color" value={f.color} onChange={set('color')} invalid={showError && !isKnownCode(f.color, colorOpts)} options={colorOpts} lookupKey="horse_colors" onOptionAdded={(o) => setColors((prev) => addOpt(prev, o))} placeholder="Color" hint="Not listed? Choose “Other (enter manually)” and type it — it joins the list." />
@@ -904,7 +911,6 @@ export function HorseIntakeForm({
         <Field label="Sex" value={f.sex} onChange={set('sex')} options={[
           { value: 'MARE', label: 'Mare' }, { value: 'GELDING', label: 'Gelding' }, { value: 'STALLION', label: 'Stallion' }, { value: 'FILLY', label: 'Filly' }, { value: 'COLT', label: 'Colt' },
         ]} />
-        <Field label="Date of birth" type="date" value={f.date_of_birth} onChange={set('date_of_birth')} addLater pending={pendingSet.has('date_of_birth')} onPending={(on) => setPendingField('date_of_birth', on)} />
         <SelectOrOther label="Height" value={f.height} onChange={set('height')} options={HEIGHT_OPTIONS} placeholder="e.g. 16.2 hh" hint="Hands and inches — pick from the list, or enter it your own way." />
       </Section>
 

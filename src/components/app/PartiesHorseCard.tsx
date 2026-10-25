@@ -39,10 +39,9 @@ function horseLabel(h: { nickname: string | null; registered_name: string | null
     const t = (v ?? '').trim();
     return t && t.toUpperCase() !== 'N/A' ? t : '';
   };
-  const barn = real(h.nickname);
-  const reg = real(h.registered_name);
-  if (barn && reg && barn !== reg) return `${barn} · ${reg}`;
-  return barn || reg || 'Horse';
+  // The name is the only name shown on a card (fix round item 1); the registered
+  // name appears only on the full horse record.
+  return real(h.nickname) || real(h.registered_name) || 'Horse';
 }
 
 export function PartiesHorseCard({

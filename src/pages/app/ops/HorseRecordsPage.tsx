@@ -151,12 +151,10 @@ function EditableRecord({
   return (
     <div className="border-t border-green-800/10 pt-4 mt-3">
       <div className="grid sm:grid-cols-3 gap-3 mb-3">
+        {/* Name is the primary name (fix round item 1); registered name is the
+           registration-block field, blank unless the horse is registered. */}
+        {field('nickname', 'Name')}
         {field('registered_name', 'Registered name')}
-        {/* ORCH4: the label is Nickname, not "Barn name" — the owner has ruled twice
-           that barn name is the wrong word for this column, and HorseIntakeForm
-           (the incumbent) already labels it Nickname. horses.home_barn /
-           current_barn are the actual barn columns and are a different thing. */}
-        {field('nickname', 'Nickname')}
         {field('breed', 'Breed', lookupName(breeds, r.breed),
           breeds.filter((b) => b.active || b.code === r.breed).map((b) => ({ value: b.code, label: b.display_name })))}
         {field('color', 'Color', lookupName(colors, r.color),
@@ -374,9 +372,6 @@ export default function HorseRecordsPage({
                 <div className="min-w-0">
                   <p className="font-serif text-green-800 text-lg font-semibold leading-tight truncate">
                     {r.nickname || r.registered_name || 'Horse'}
-                    {r.nickname && r.registered_name && (
-                      <span className="text-muted font-sans text-sm font-normal"> · {r.registered_name}</span>
-                    )}
                   </p>
                   <p className="text-[11.5px] text-muted">
                     {[lookupName(breeds, r.breed), r.sex, r.height, lookupName(colors, r.color)]

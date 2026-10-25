@@ -209,7 +209,7 @@ export default function HorsePage() {
       <div className="flex items-start justify-between gap-3 mb-1">
         <div>
           <h1 className="font-serif text-2xl text-green-900">{name}</h1>
-          {r.registered_name && r.registered_name !== name && <p className="text-sm text-muted">{r.registered_name}</p>}
+          {r.registered_name && r.registered_name !== name && <p className="text-sm text-muted">Registered name: {r.registered_name}</p>}
         </div>
         {!editing && (
           <div className="flex items-center gap-2">
@@ -257,8 +257,8 @@ export default function HorsePage() {
               )}
 
               <Card title="Identity">
-                <DetailP label="Nickname" value={r.nickname} />
-                <DetailP label="Name on Registration Certificate" value={r.registered_name} pending={r.pending_fields?.includes('registered_name')} />
+                <DetailP label="Name" value={r.nickname} />
+                <DetailP label="Registered name" value={r.registered_name} pending={r.pending_fields?.includes('registered_name')} />
                 <DetailP label="Breed" value={r.breed} />
                 <DetailP label="Color" value={r.color} />
                 <DetailP label="Markings" value={r.markings} pending={r.pending_fields?.includes('markings')} />

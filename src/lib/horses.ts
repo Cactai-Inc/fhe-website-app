@@ -96,6 +96,8 @@ export interface HorseIntakePayload {
   sex?: string;
   date_of_birth?: string;
   height?: string;
+  sire?: string;
+  dam?: string;
   fair_market_value?: string;
   current_location?: string;
   /** Owner's emergency-euthanasia authorization: 'A' authorize | 'B' do not. */
@@ -618,7 +620,8 @@ export const HORSE_DOC_REQUIRED_KEYS: (keyof HorseIntakePayload)[] = [];
 
 /** Human labels for field keys, used by pending-field and warning surfaces. */
 export const HORSE_FIELD_LABELS: Record<string, string> = {
-  registered_name: 'Name on Registration Certificate', nickname: 'Nickname',
+  registered_name: 'Registered name', nickname: 'Name',
+  sire: 'Sire', dam: 'Dam',
   registration_org: 'Registration organization', registration_number: 'Registration number',
   microchip_id: 'Microchip', fair_market_value: 'Fair market value',
   passport_number: 'Passport number', passport_country: 'Passport country',
@@ -645,7 +648,7 @@ export function horseRecordCompleteness(rec: Record<string, unknown>): HorseReco
 export const HORSE_INTAKE_COLUMNS =
   'id, nickname, registered_name, registration_number, registration_org, microchip_id, '
   + 'passport_number, passport_country, breed, color, markings, sex, date_of_birth, height, '
-  + 'fair_market_value, current_location, euthanasia_authorization, vaccinations, '
+  + 'sire, dam, fair_market_value, current_location, euthanasia_authorization, vaccinations, '
   + 'medical_history_list, behavioral_history_list, known_conditions_list, '
   + 'training_history_list, competition_history_list, injuries_to_horse, injuries_to_humans, '
   + 'pending_fields, lessee_name_text, lease_start, lease_end, current_owner_contact_id';
