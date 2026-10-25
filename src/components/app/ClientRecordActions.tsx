@@ -1,14 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import {
-  categoryDocumentDefaults, setContactRequiredDocuments,
   requestDocumentsFromContact, DISPOSITION_LABEL, type DocumentDisposition,
-  getContactRequiredDocumentsState, skipRequiredDocument, unskipRequiredDocument,
-  onboardingTemplateOptions,
   adminAttachOfferings, staffAssignableTemplates, staffAssignDocuments,
-  type CategoryDocDefault, type AssignableTemplate, type AssignDocumentsResult,
-  type RequiredDocumentState,
+  type AssignableTemplate, type AssignDocumentsResult,
 } from '../../lib/admin';
 import {
   contactHorseRecords, horseRecordCompleteness, requestHorseRecordCompletion,
@@ -69,6 +65,15 @@ export function AssignDocumentsModal({
   // states exactly what happened (incl. which signed docs were superseded for
   // re-signature) — no more silent close-and-nothing-changed.
   const [result, setResult] = useState<AssignDocumentsResult | null>(null);
+  /* ⚠️ FIX ROUND 2c — ASK THEM TO SIGN, FOLDED IN HERE. The First-login paperwork
+     section was the only home of this dispatch (choose a due disposition, then
+     email + dashboard-notify the person). That section is gone; assigning and
+     asking now happen in one place, so a staff member is not left to discover a
+     separate screen to actually send the request. Same single RPC
+     (`requestDocumentsFromContact`) the removed section called. */
+  const [disposition, setDisposition] = useState<DocumentDisposition>('WHEN_READY');
+  const [asking, setAsking] = useState(false);
+  const [askNote, setAskNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (fixedContactId) return;
@@ -96,6 +101,28 @@ export function AssignDocumentsModal({
     } finally { setBusy(false); }
   }
 
+  /* D19: the request states when the paperwork is due and provably reaches the
+     person. It reports which of "asked" and "emailed" actually happened, because
+     the requirement and the notification commit before the mailer runs. */
+  async function askThem() {
+    if (!result) return;
+    setAsking(true); setErr(null); setAskNote(null);
+    try {
+      const r = await requestDocumentsFromContact(contactId, result.assigned, disposition);
+      const n = `${r.count} document${r.count === 1 ? '' : 's'}`;
+      setAskNote(
+        !r.has_account
+          ? `Set on their record. They have no login yet, so nothing was sent — `
+            + `${r.count === 1 ? 'it' : 'they'} will be waiting when they activate.`
+          : r.emailed
+            ? `Asked for ${n}. Email sent to ${r.email}, and it's on their dashboard.`
+            : `Asked for ${n} — it's on their dashboard, but the email did NOT send`
+              + `${r.emailError ? `: ${r.emailError}` : '.'}`);
+    } catch (e) {
+      setErr(toErrorMessage(e, 'Could not ask them to sign.'));
+    } finally { setAsking(false); }
+  }
+
   // No contact in context (opened from the documents picker rather than a
   // dossier): ask who it's for before anything else can load.
   if (!contactId) {
@@ -120,12 +147,11 @@ export function AssignDocumentsModal({
   if (result) {
     const titleFor = (k: string) => templates.find((t) => t.template_key === k)?.title ?? k;
     return (
-      <Modal open onClose={onAssigned} size="md" title="Documents assigned"
+      <Modal open onClose={onAssigned} size="md" title="Documents assigned" error={err}
         footer={<button type="button" className="btn-primary" onClick={onAssigned}>Done</button>}>
           <p className="text-sm text-green-900 mb-3">
             {result.assigned.length} document{result.assigned.length === 1 ? '' : 's'} now
-            awaiting their signature — they'll be walled to sign at their next sign-in,
-            and the list below shows as “Awaiting signature” on this page.
+            on their record. Below the list you can ask them to sign — and say when it's due.
           </p>
           <ul className="text-sm text-green-900 mb-3 flex flex-col gap-1">
             {result.assigned.map((k) => (
@@ -138,11 +164,39 @@ export function AssignDocumentsModal({
             ))}
           </ul>
           {result.resign.length > 0 && (
-            <p className="text-xs text-muted">
+            <p className="text-xs text-muted mb-3">
               Their previously signed {result.resign.length === 1 ? 'copy is' : 'copies are'} kept
               on file as superseded evidence.
             </p>
           )}
+          {/* ⚠️ FIX ROUND 2c — the ask-them-to-sign dispatch, moved from the removed
+              First-login paperwork section. Choosing a disposition and asking are the
+              act that actually reaches the person; assigning alone only records the
+              requirement. */}
+          <div className="rounded-lg border border-gold-600/40 bg-gold-50/50 p-3">
+            <p className="text-[13px] text-green-900 mb-2">When do they need to sign?</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <select className="form-input w-auto text-sm" value={disposition}
+                aria-label="When this paperwork is due"
+                onChange={(e) => setDisposition(e.target.value as DocumentDisposition)}>
+                {(['WHEN_READY', 'AT_LOGIN', 'WITH_CONTRACT'] as DocumentDisposition[]).map((dsp) => (
+                  <option key={dsp} value={dsp}>{DISPOSITION_LABEL[dsp]}</option>
+                ))}
+              </select>
+              <button type="button" className="btn-primary text-xs py-1.5 px-3"
+                disabled={asking} onClick={() => void askThem()}>
+                {asking ? 'Asking…' : 'Ask them to sign'}
+              </button>
+            </div>
+            <p className="text-[11.5px] text-muted mt-1.5">
+              {disposition === 'AT_LOGIN'
+                ? 'They can’t use the app until these are signed.'
+                : disposition === 'WITH_CONTRACT'
+                  ? 'Held back until their contract executes, then signed with it.'
+                  : 'Shown at every sign-in until signed — they can leave it for later.'}
+            </p>
+            {askNote && <p role="status" className="text-[12.5px] text-green-800 mt-2">{askNote}</p>}
+          </div>
       </Modal>
     );
   }
@@ -207,20 +261,20 @@ export function ClientHorseRecordsCard({ contactId }: { contactId: string }) {
   /** STABILIZE ITEM 3 — adding a horse FOR a client, from the client's own record. */
   const [adding, setAdding] = useState(false);
 
+  /* ⚠️ FIX ROUND 2f — ONE READ PATH. This card had the same
+     `contactHorseRecords(contactId)` fetch written twice: a `load` callback for
+     the refresh buttons and a separate mount effect. Now there is one reader, and
+     mount calls it; a `mounted` ref drops a late resolve so an unmounted card
+     never sets state. */
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const load = useCallback(() => {
     setLoadError(null);
-    contactHorseRecords(contactId).then(setHorses)
-      .catch((e) => setLoadError(e instanceof Error ? e.message : 'Could not load the horse records.'));
-  }, [contactId]);
-
-  useEffect(() => {
-    let active = true;
-    setLoadError(null);
     contactHorseRecords(contactId)
-      .then((h) => active && setHorses(h))
-      .catch((e) => active && setLoadError(e instanceof Error ? e.message : 'Could not load the horse records.'));
-    return () => { active = false; };
+      .then((h) => { if (mounted.current) setHorses(h); })
+      .catch((e) => { if (mounted.current) setLoadError(e instanceof Error ? e.message : 'Could not load the horse records.'); });
   }, [contactId]);
+  useEffect(load, [load]);
 
   async function sendTask(horseId: string) {
     setTaskSent((p) => ({ ...p, [horseId]: 'sending' }));
@@ -568,237 +622,5 @@ export function AttachOfferingPanel({ contactId, onAttached }: { contactId: stri
         <button type="button" onClick={() => setOpen(false)} className="text-xs text-muted px-2">Cancel</button>
       </div>
     </div>
-  );
-}
-
-export function PaperworkEditor({ contactId }: { contactId: string }) {
-  const [defaults, setDefaults] = useState<CategoryDocDefault[]>([]);
-  const [allTemplates, setAllTemplates] = useState<{ template_key: string; title: string }[]>([]);
-  const [checked, setChecked] = useState<Set<string>>(new Set());
-  // CLOSEOUT §1.6: skip state per assigned key — a skipped requirement stays
-  // on the record (who/when/why) but stops blocking and is never asked.
-  const [skipInfo, setSkipInfo] = useState<Map<string, RequiredDocumentState>>(new Map());
-  const [saved, setSaved] = useState(true);
-  /* OFFERINGDOCS §11 — ticking a box was SILENT. set_contact_required_documents
-     writes an audit row and nothing else, so a person could owe four documents
-     and have no way to discover it. This is the act that tells them. */
-  const [disposition, setDisposition] = useState<DocumentDisposition>('WHEN_READY');
-  const [sending, setSending] = useState(false);
-  const [sentNote, setSentNote] = useState<string | null>(null);
-  // NOSTRIP: this editor's save can now be REFUSED — executed paperwork is
-  // evidence and is never removed. A refusal that lands in an empty catch is
-  // indistinguishable from a save, so it is shown.
-  const [error, setError] = useState<string | null>(null);
-
-  const loadState = useCallback(() => {
-    getContactRequiredDocumentsState(contactId).then((rows) => {
-      setChecked(new Set(rows.map((r) => r.template_key)));
-      setSkipInfo(new Map(rows.map((r) => [r.template_key, r])));
-    }).catch(() => {});
-  }, [contactId]);
-
-  useEffect(() => {
-    categoryDocumentDefaults().then(setDefaults).catch(() => setDefaults([]));
-    onboardingTemplateOptions().then(setAllTemplates).catch(() => setAllTemplates([]));
-    loadState();
-  }, [contactId, loadState]);
-
-  async function skip(key: string) {
-    // D19: a value-moving action states itself and captures a reason.
-    // NOSTRIP §2: the reason is REQUIRED, not optional — the database refuses a
-    // blank one, so asking again here beats bouncing off the RPC.
-    const reason = window.prompt(
-      'Skip this document? It will stop blocking their access and the contract '
-      + 'lock gate, but is NOT signed and stays on the record as skipped.\n\nReason (required):');
-    if (reason === null) return;
-    if (!reason.trim()) { setError('A reason is required to skip a required document.'); return; }
-    setError(null);
-    try { await skipRequiredDocument(contactId, key, reason.trim()); loadState(); }
-    catch (e) { setError(toErrorMessage(e, 'Could not skip that document.')); }
-  }
-
-  async function unskip(key: string) {
-    setError(null);
-    try { await unskipRequiredDocument(contactId, key); loadState(); }
-    catch (e) { setError(toErrorMessage(e, 'Could not restore that document.')); }
-  }
-
-  // ⚠️ PARTYROLE §4c — the list is EVERY onboarding document, and the categories
-  // are a note on the row rather than the source of the row. Built from the
-  // defaults alone it showed 7 of the 9 and silently withheld two from staff; on
-  // a contact with no category — a Lessor, a Seller — the whole editor was the
-  // union of nothing, so the one surface that can apply a document to a
-  // counterparty offered none. `set_contact_required_documents` REPLACES the set,
-  // so this control already moves in both directions; what it lacked was reach.
-  const templates = (() => {
-    const cats = new Map<string, string[]>();
-    for (const d of defaults) cats.set(d.template_key, [...(cats.get(d.template_key) ?? []), d.category]);
-    const m = new Map<string, { title: string; categories: string[] }>();
-    for (const t of allTemplates) {
-      m.set(t.template_key, { title: t.title, categories: cats.get(t.template_key) ?? [] });
-    }
-    // A key already assigned to this contact stays visible even if it is not in
-    // the onboarding class — never hide paperwork somebody actually owes.
-    for (const d of defaults) {
-      if (!m.has(d.template_key)) m.set(d.template_key, { title: d.title, categories: cats.get(d.template_key) ?? [] });
-    }
-    return Array.from(m.entries())
-      .map(([key, v]) => ({ key, ...v }))
-      .sort((a, b) => a.title.localeCompare(b.title));
-  })();
-
-  async function toggle(key: string) {
-    const next = new Set(checked);
-    if (next.has(key)) next.delete(key); else next.add(key);
-    setChecked(next); setSaved(false); setError(null);
-    try {
-      await setContactRequiredDocuments(contactId, Array.from(next));
-      setSaved(true);
-      loadState();
-    } catch (e) {
-      // NOSTRIP §1 — the likeliest refusal is "that one is signed". Put the
-      // checkbox back where the record actually is rather than leaving the
-      // screen showing a removal that never happened.
-      setError(toErrorMessage(e, 'Could not save the paperwork.'));
-      setSaved(true);
-      loadState();
-    }
-  }
-
-  /** The assigned, unsigned, unskipped set — what asking them is actually about. */
-  const outstanding = Array.from(checked).filter((k) => {
-    const st = skipInfo.get(k);
-    return !st?.satisfied && !st?.skipped_at;
-  });
-
-  async function askThem() {
-    setSending(true); setError(null); setSentNote(null);
-    try {
-      const r = await requestDocumentsFromContact(contactId, outstanding, disposition);
-      const n = `${r.count} document${r.count === 1 ? '' : 's'}`;
-      // ⚠️ NEVER REPORT AN EMAIL THAT DID NOT GO. The requirement and the
-      // notification are committed before the mailer runs, so "asked" and
-      // "emailed" are separate facts and this says which is which.
-      setSentNote(
-        !r.has_account
-          ? `Set on their record. They have no login yet, so nothing was sent — `
-            + `${r.count === 1 ? 'it' : 'they'} will be waiting when they activate.`
-          : r.emailed
-            ? `Asked for ${n}. Email sent to ${r.email}, and it's on their dashboard — `
-              + `they'll see ${r.count === 1 ? 'it' : 'them'} at every sign-in until signed.`
-            : `Asked for ${n} — it's on their dashboard, but the email did NOT send`
-              + `${r.emailError ? `: ${r.emailError}` : '.'}`);
-      loadState();
-    } catch (e) {
-      setError(toErrorMessage(e, 'Could not ask them for those documents.'));
-    } finally { setSending(false); }
-  }
-
-  return (
-    <section className="bg-white border border-green-800/10 rounded-xl p-5 mt-4">
-      <div className="flex items-center justify-between mb-1">
-        <h3 className="font-serif text-green-800 text-lg">First-login paperwork</h3>
-        <span className={`text-xs ${saved ? 'text-green-700' : 'text-gold-800'}`}>{saved ? 'Saved' : 'Saving…'}</span>
-      </div>
-      <p className="text-sm text-muted mb-3">
-        What they'll be asked to review and sign when they activate. The invitation email lists exactly this.
-        {' '}Signed paperwork stays on the record — it is the evidence they were asked and agreed.
-      </p>
-      {error && <p className="form-error mb-3" role="alert">{error}</p>}
-
-      {/* ⚠️ ASKING IS ITS OWN ACT, AND IT SAYS WHEN (OFFERINGDOCS §10/§11).
-          Owner: "if i want to send them docs to sign i can select them from a
-          list by checking them off... and they get an email notification, a
-          dashboard notification, and on their login the docs are shown to them."
-          The list is the checkboxes below — this is the part that was missing.
-          `disposition` is the three-way decision, and it now lives on the
-          ASSIGNMENT rather than on the template, so the same document can be
-          demanded of one person and merely asked of another. */}
-      {outstanding.length > 0 && (
-        <div className="rounded-lg border border-gold-600/40 bg-gold-50/50 p-3 mb-3">
-          <p className="text-[13px] text-green-900 mb-2">
-            <strong className="font-medium">{outstanding.length} outstanding.</strong>{' '}
-            When do they need to sign?
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <select className="form-input w-auto text-sm" value={disposition}
-              aria-label="When this paperwork is due"
-              onChange={(e) => setDisposition(e.target.value as DocumentDisposition)}>
-              {(['WHEN_READY', 'AT_LOGIN', 'WITH_CONTRACT'] as DocumentDisposition[]).map((d) => (
-                <option key={d} value={d}>{DISPOSITION_LABEL[d]}</option>
-              ))}
-            </select>
-            <button type="button" className="btn-primary text-xs py-1.5 px-3"
-              disabled={sending} onClick={() => void askThem()}>
-              {sending ? 'Asking…' : 'Ask them to sign'}
-            </button>
-          </div>
-          <p className="text-[11.5px] text-muted mt-1.5">
-            {disposition === 'AT_LOGIN'
-              ? 'They can’t use the app until these are signed.'
-              : disposition === 'WITH_CONTRACT'
-                ? 'Held back until their contract executes, then signed with it.'
-                : 'Shown at every sign-in until signed — they can leave it for later.'}
-          </p>
-          {sentNote && <p className="text-[12.5px] text-green-800 mt-2">{sentNote}</p>}
-        </div>
-      )}
-
-      <div className="grid sm:grid-cols-2 gap-2.5">
-        {templates.map((t) => (
-          <label key={t.key}
-            className={`flex items-start gap-2.5 px-4 py-3 rounded-lg border cursor-pointer ${
-              checked.has(t.key) ? 'border-green-700 bg-green-50' : 'border-green-800/15 hover:bg-green-50/50'
-            }`}>
-            {/* NOSTRIP §1 — an EXECUTED requirement is never removed by any path.
-                The database refuses it; the box must not invite the attempt. */}
-            <input type="checkbox" className="accent-green-700 w-[18px] h-[18px] mt-0.5"
-              checked={checked.has(t.key)}
-              disabled={skipInfo.get(t.key)?.satisfied === true}
-              onChange={() => void toggle(t.key)} />
-            <span className="min-w-0 flex-1">
-              <span className={`block text-[14px] leading-snug ${checked.has(t.key) ? 'text-green-900 font-medium' : 'text-secondary'}`}>{t.title}</span>
-              <span className="block text-[11.5px] text-muted mt-0.5">
-                {t.categories.length > 0 ? `Suggested for ${t.categories.join(', ')}` : 'Not suggested by any category — apply when the situation calls for it'}
-              </span>
-              {/* CLOSEOUT §1.6: skip / restore on an assigned, unsigned requirement.
-                  Skipping is not signing — the row says so, with who and why. */}
-              {(() => {
-                const s = skipInfo.get(t.key);
-                if (!s) return null;
-                if (s.skipped_at) {
-                  return (
-                    <span className="block text-[11.5px] text-gold-800 mt-1">
-                      Skipped {new Date(s.skipped_at).toLocaleDateString()}
-                      {s.skipped_by_name ? ` by ${s.skipped_by_name}` : ''}
-                      {s.skip_reason ? ` — ${s.skip_reason}` : ''} · not signed, no longer blocking{' '}
-                      <button type="button" className="underline underline-offset-2 hover:text-green-700"
-                        onClick={(e) => { e.preventDefault(); void unskip(t.key); }}>
-                        Restore
-                      </button>
-                    </span>
-                  );
-                }
-                if (!s.satisfied) {
-                  return (
-                    <span className="block text-[11.5px] mt-1">
-                      <button type="button" className="text-muted underline underline-offset-2 hover:text-green-700"
-                        onClick={(e) => { e.preventDefault(); void skip(t.key); }}>
-                        Skip — stop this from blocking, without signing it
-                      </button>
-                    </span>
-                  );
-                }
-                return (
-                  <span className="block text-[11.5px] text-green-700 mt-1">
-                    Signed — kept as evidence, and cannot be removed or skipped
-                  </span>
-                );
-              })()}
-            </span>
-          </label>
-        ))}
-      </div>
-    </section>
   );
 }

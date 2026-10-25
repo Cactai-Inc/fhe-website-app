@@ -2728,9 +2728,18 @@ export interface ContactDossier {
     dependants: { contact_id: string; name: string; date_of_birth: string | null }[];
   };
   horses: { horse_id: string; name: string; relation: 'owner' | 'lessee' }[];
+  /** Each contract-party membership, linkable to its source document (item 2a). */
+  contract_roles: {
+    document_id: string; document_code: string | null; document_title: string | null;
+    party_role: string; status: string; current_status: string | null;
+    effective_date: string | null;
+  }[];
   documents: {
     document_id: string; code: string | null; title: string | null;
     status: string; current_status: string | null; generated_at: string;
+    /** The date the document is in force on (item 2b / item 4) — shown instead
+     *  of generated_at once a document is executed. */
+    effective_date: string | null;
   }[];
   orders: {
     purchase_id: string; code: string | null; status: string;

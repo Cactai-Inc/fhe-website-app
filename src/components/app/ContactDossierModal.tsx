@@ -11,7 +11,7 @@ import { useAutoSave, useFieldNormalizer } from '../../lib/formState';
 import { normalizeKindForField } from '../../lib/normalize';
 import type { LookupCode } from '../../lib/ops/types';
 import {
-  AssignDocumentsModal, ClientHorseRecordsCard, AttachOfferingPanel, PaperworkEditor,
+  AssignDocumentsModal, ClientHorseRecordsCard, AttachOfferingPanel,
 } from './ClientRecordActions';
 import {
   TAG_LABEL, TAG_REASON,
@@ -493,9 +493,25 @@ export function PersonRecord({
                     {d.horses.length === 0 ? <Empty>None.</Empty>
                       : d.horses.map((h) => <Row key={h.horse_id} main={h.name} badge={h.relation} />)}
                   </Section>
+                  {/* ⚠️ FIX ROUND 2a — CONTRACT ROLES ARE READ-ONLY AND LINK TO THE
+                      SOURCE. The role is derived from a document party row, not set
+                      here, so this lists each role beside the contract it comes from
+                      and links to that document; there is nothing to edit. */}
                   <Section title="Contract roles">
-                    {d.standing.party_roles.length === 0 ? <Empty>Not a party to any contract.</Empty>
-                      : <p className="text-sm text-green-900">{d.standing.party_roles.join(', ')}</p>}
+                    {d.contract_roles.length === 0 ? <Empty>Not a party to any contract.</Empty>
+                      : d.contract_roles.map((r) => (
+                        <Link key={`${r.document_id}-${r.party_role}`}
+                          to={`/app/ops/documents/${r.document_id}`}
+                          className="flex items-baseline gap-2 border-b border-green-800/[0.06] pb-1.5 hover:bg-green-50/40 -mx-1 px-1 rounded focus-ring">
+                          <span className="text-sm text-green-900 min-w-0 flex-1">
+                            {r.document_title ?? r.document_code ?? 'Document'}
+                          </span>
+                          <span className="text-[11px] text-muted shrink-0">{roleLabel(r.party_role)}</span>
+                          <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-cream-100 text-secondary border border-green-800/10 shrink-0">
+                            {r.current_status === 'superseded' ? 'superseded' : r.status.toLowerCase()}
+                          </span>
+                        </Link>
+                      ))}
                   </Section>
                 </div>
               )}
@@ -509,27 +525,35 @@ export function PersonRecord({
                   read off the CONTACT and work at every stage. */}
               {tab === 'account' && (
                 <div className="flex flex-col gap-5">
-                  {!archived && (
-                    <div className="flex flex-wrap items-center gap-3">
-                      <button type="button" className="btn-secondary text-sm"
-                        onClick={() => setAssigning(true)}>
-                        Assign a document or contract
-                      </button>
-                      {/* Carried across from the retired `PendingClientView`'s
-                          "Associated items" header, which was the only place on a
-                          person's record that could start a contract for them. */}
-                      <Link to="/app/ops/contracts/new"
-                        className="text-sm text-green-800 underline hover:text-green-900 focus-ring">
-                        New contract
-                      </Link>
-                    </div>
-                  )}
+                  {/* ⚠️ FIX ROUND 2b/2c — THE DOCUMENTS SECTION OWNS ITS OWN ACTIONS.
+                      Assign and New contract fold in here (2c), beside the list they
+                      act on, rather than sitting in a free-floating action row above
+                      it. Each row OPENS the document (2b), and an executed document
+                      shows the date it is in force on — its effective date — not the
+                      day it was drafted (item 4 / A3). */}
                   <Section title="Documents">
+                    {!archived && (
+                      <div className="flex flex-wrap items-center gap-3 mb-1">
+                        <button type="button" className="btn-secondary text-sm"
+                          onClick={() => setAssigning(true)}>
+                          New document
+                        </button>
+                        <Link to="/app/ops/contracts/new"
+                          className="text-sm text-green-800 underline hover:text-green-900 focus-ring">
+                          New contract
+                        </Link>
+                      </div>
+                    )}
                     {d.documents.length === 0 ? <Empty>None.</Empty>
                       : d.documents.map((x) => (
-                        <Row key={x.document_id} main={x.title ?? x.code ?? 'Document'}
-                          sub={new Date(x.generated_at).toLocaleDateString()}
-                          badge={x.current_status === 'superseded' ? 'superseded' : x.status} />
+                        <Link key={x.document_id} to={`/app/ops/documents/${x.document_id}`}
+                          className="flex items-baseline gap-2 border-b border-green-800/[0.06] pb-1.5 hover:bg-green-50/40 -mx-1 px-1 rounded focus-ring">
+                          <span className="text-sm text-green-900 min-w-0 flex-1">{x.title ?? x.code ?? 'Document'}</span>
+                          <span className="text-[11px] text-muted shrink-0">{documentDateLabel(x)}</span>
+                          <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-cream-100 text-secondary border border-green-800/10 shrink-0">
+                            {x.current_status === 'superseded' ? 'superseded' : x.status.toLowerCase()}
+                          </span>
+                        </Link>
                       ))}
                   </Section>
                   {/* Horse records sit beside the document list because the
@@ -650,8 +674,6 @@ export function PersonRecord({
                   </div>
                 </div>
               )}
-
-              {tab === 'account' && <PaperworkEditor contactId={contactId} />}
 
               {/* ⚠️ TASK-FIX2 §3 — THE ACCOUNT TAB IS NOW STAGE-DEPENDENT CONTENT,
                   NOT A STAGE-DEPENDENT SURFACE. It used to fork on `d.account` into
@@ -1303,6 +1325,27 @@ function Row({ main, sub, badge }: { main: string; sub?: string; badge?: string 
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className="text-sm text-muted">{children}</p>;
+}
+
+/** A contract party role, in words. Falls back to the raw role for anything the
+ *  map does not name, so a new role never renders blank. */
+const ROLE_LABELS: Record<string, string> = {
+  CLIENT: 'Client', PARTICIPANT: 'Participant',
+  LESSOR: 'Lessor', LESSEE: 'Lessee', OWNER: 'Owner',
+  BUYER: 'Buyer', SELLER: 'Seller', GUARDIAN: 'Guardian',
+};
+function roleLabel(role: string): string {
+  return ROLE_LABELS[role] ?? role.charAt(0) + role.slice(1).toLowerCase();
+}
+
+/** The date shown on a document row (item 2b / item 4). An executed document shows
+ *  the date it is in force on — its effective date; anything not yet executed shows
+ *  when it was drafted, because that is the only date it has. */
+function documentDateLabel(d: ContactDossier['documents'][number]): string {
+  if (d.status === 'EXECUTED' && d.effective_date) {
+    return `In force ${new Date(d.effective_date).toLocaleDateString()}`;
+  }
+  return `Drafted ${new Date(d.generated_at).toLocaleDateString()}`;
 }
 
 /**
