@@ -202,19 +202,23 @@ export function AssignDocumentsModal({
  *  (existing notifications machinery → their dashboard). */
 export function ClientHorseRecordsCard({ contactId }: { contactId: string }) {
   const [horses, setHorses] = useState<HorseIntakeRecord[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [taskSent, setTaskSent] = useState<Record<string, 'sending' | 'sent' | 'error'>>({});
   /** STABILIZE ITEM 3 — adding a horse FOR a client, from the client's own record. */
   const [adding, setAdding] = useState(false);
 
   const load = useCallback(() => {
-    contactHorseRecords(contactId).then(setHorses).catch(() => setHorses([]));
+    setLoadError(null);
+    contactHorseRecords(contactId).then(setHorses)
+      .catch((e) => setLoadError(e instanceof Error ? e.message : 'Could not load the horse records.'));
   }, [contactId]);
 
   useEffect(() => {
     let active = true;
+    setLoadError(null);
     contactHorseRecords(contactId)
       .then((h) => active && setHorses(h))
-      .catch(() => active && setHorses([]));
+      .catch((e) => active && setLoadError(e instanceof Error ? e.message : 'Could not load the horse records.'));
     return () => { active = false; };
   }, [contactId]);
 
@@ -246,6 +250,14 @@ export function ClientHorseRecordsCard({ contactId }: { contactId: string }) {
    * Horse Records page opens, with `ownerContactId` preset to this client —
    * the one `create_horse_record` intake path, which already honours
    * owner_contact_id for staff. */
+  if (loadError) {
+    return (
+      <div className="mb-4 rounded-lg border border-red-300 bg-red-50 p-4">
+        <p className="text-[11px] tracking-wide uppercase text-secondary/70 mb-1">Horse records</p>
+        <p className="text-sm text-red-700">{loadError}</p>
+      </div>
+    );
+  }
   if (horses === null) return null;
   return (
     <div className="mb-4 rounded-lg border border-green-800/10 bg-white p-4">

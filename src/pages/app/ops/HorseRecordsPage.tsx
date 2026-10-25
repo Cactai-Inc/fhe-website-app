@@ -166,10 +166,6 @@ function EditableRecord({
         {field('height', 'Height')}
         {field('current_location', 'Location')}
         {field('fair_market_value', 'Fair market value')}
-        {field('vet_name', 'Vet')}
-        {field('vet_phone', 'Vet phone')}
-        {field('farrier_name', 'Farrier')}
-        {field('farrier_phone', 'Farrier phone')}
         <div>
           <p className="text-[10.5px] tracking-wide uppercase text-muted font-semibold mb-0.5">Microchip</p>
           <p className="text-sm text-green-900">{r.microchip_id ?? '—'}</p>

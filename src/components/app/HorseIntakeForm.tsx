@@ -707,7 +707,7 @@ export function HorseIntakeForm({
         }
         if (medRows.length) { setMeds(medRows.filter((m) => m.kind !== 'SUPPLEMENT')); setSupplements(medRows.filter((m) => m.kind === 'SUPPLEMENT')); }
         if (Array.isArray(raw.vaccinations)) { const vacc = (raw.vaccinations as HorseVaccination[]).filter((x) => x && typeof x === 'object'); setVaccinations(vacc); lastSavedVaccRef.current = JSON.stringify(vacc); }
-      } catch { /* form stays blank */ }
+      } catch (e) { if (active) setErr(errorText(e, 'Could not load the horse record.')); }
       finally { if (active) setLoadingRecord(false); }
     })();
     return () => { active = false; };
@@ -849,6 +849,7 @@ export function HorseIntakeForm({
     );
   }
   if (loadingRecord) return <p className="text-sm text-muted py-4">Loading the horse record…</p>;
+  if (horseId && err && !f.nickname) return <p className="form-error text-sm text-red-700 py-4" role="alert">{err}</p>;
 
   const leased = f.is_leased === 'yes';
 

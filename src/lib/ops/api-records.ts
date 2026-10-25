@@ -126,19 +126,17 @@ export async function getRecordHorse(id: string): Promise<HorseRecord | null> {
   return (data as HorseRecord | null) ?? null;
 }
 
-/** Patch ONLY the vet/farrier care-team columns on a horse. */
+/** Upsert the primary vet/farrier provider rows in horse_relationships (the one
+ *  source; the old vet and farrier columns on horses were removed in the overhaul). */
 export async function updateHorseCareTeam(
   id: string,
   patch: CareTeamInput,
 ): Promise<HorseRecord> {
-  const { data, error } = await supabase
-    .from('horses')
-    .update(patch)
-    .eq('id', id)
-    .select('*')
-    .single();
+  const { error } = await supabase.rpc('update_horse_care_team', { p_horse_id: id, p: patch });
   if (error) throw error;
-  return data as HorseRecord;
+  const horse = await getRecordHorse(id);
+  if (!horse) throw new Error('horse not found after care-team update');
+  return horse;
 }
 
 // ─── horse_relationships — ownership/rights ledger (Stage 1i survivor) ───────

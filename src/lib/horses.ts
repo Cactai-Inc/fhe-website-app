@@ -522,10 +522,6 @@ export interface StaffHorseRecord {
   height: string | null;
   current_location: string | null;
   fair_market_value: number | null;
-  vet_name: string | null;
-  vet_phone: string | null;
-  farrier_name: string | null;
-  farrier_phone: string | null;
 }
 
 export async function staffHorseRecords(): Promise<StaffHorseRecord[]> {
@@ -649,14 +645,10 @@ export function horseRecordCompleteness(rec: Record<string, unknown>): HorseReco
 export const HORSE_INTAKE_COLUMNS =
   'id, nickname, registered_name, registration_number, registration_org, microchip_id, '
   + 'passport_number, passport_country, breed, color, markings, sex, date_of_birth, height, '
-  + 'fair_market_value, current_location, current_location_id, home_location_id, '
-  + 'vet_name, vet_phone, vet_business_name, vet_address_line1, vet_city, vet_state, vet_postal, '
-  + 'farrier_name, farrier_phone, medical_history, behavioral_history, known_conditions, '
-  + 'euthanasia_authorization, training_history, competition_history, '
-  + 'home_keeping_spots, current_keeping_spots, vaccinations, '
-  + 'home_trainer, home_care_giver, home_groom, home_other_person, '
-  + 'current_trainer, current_care_giver, current_groom, current_other_person, '
-  + 'lessee_name_text, lease_start, lease_end, current_owner_contact_id';
+  + 'fair_market_value, current_location, euthanasia_authorization, vaccinations, '
+  + 'medical_history_list, behavioral_history_list, known_conditions_list, '
+  + 'training_history_list, competition_history_list, injuries_to_horse, injuries_to_humans, '
+  + 'pending_fields, lessee_name_text, lease_start, lease_end, current_owner_contact_id';
 
 export type HorseIntakeRecord = Record<string, unknown> & { id: string };
 
