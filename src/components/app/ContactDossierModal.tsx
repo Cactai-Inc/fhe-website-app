@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   contactDossier, updateContactRecord, setContactType,
-  listLookupOptionsAll, addLookupValue,
-  CONTACT_TYPE_LABEL, type ContactDossier, type ContactType,
+  listLookupOptionsAll, addLookupValue, contactActivityStream,
+  CONTACT_TYPE_LABEL, type ContactDossier, type ContactType, type ContactActivityEntry,
 } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 import { toErrorMessage } from '../../lib/ops/errors';
@@ -830,16 +830,12 @@ export function PersonRecord({
 
               {tab === 'activity' && (
                 <div className="flex flex-col gap-5">
-                  {d.posts && (
-                    <Section title="Posts">
-                      {d.posts.length === 0 ? <Empty>None.</Empty>
-                        : d.posts.map((pp) => (
-                          <Row key={pp.id} main={pp.body || `(${pp.post_type})`}
-                            sub={new Date(pp.created_at).toLocaleDateString()}
-                            badge={pp.pulled_down ? 'pulled' : pp.published ? 'live' : 'draft'} />
-                        ))}
-                    </Section>
-                  )}
+                  {/* ⚠️ FIX ROUND 2e — ACTIVITY IS ONE DATED STREAM. Document,
+                      invitation, booking, order, payment, post and evaluation events
+                      in one chronology, newest first, each linking to its source.
+                      Posts are folded in here rather than kept as a separate list.
+                      Notifications stay their own list below (owner ruling). */}
+                  <ContactActivityStreamSection contactId={contactId} />
                   <Section title="Notifications">
                     {d.notifications.length === 0 ? <Empty>None.</Empty>
                       : d.notifications.map((n) => (
@@ -1297,6 +1293,64 @@ function CancelOrderControl({ order, onCancelled }: {
       </div>
       {err && <p role="alert" className="form-error text-xs">{err}</p>}
     </div>
+  );
+}
+
+/**
+ * ⚠️ FIX ROUND 2e — THE ACTIVITY STREAM. One dated chronology of what happened to
+ * this person, newest first, each entry linking to its source where a source
+ * surface exists. Reads the single `contact_activity_stream` RPC — document,
+ * invitation, booking, order, payment, post and evaluation events in one list.
+ * Document entries link to the staff document viewer; the others have no per-id
+ * viewer route, so they render as dated rows without a link rather than pointing
+ * at a page that does not exist.
+ */
+function ContactActivityStreamSection({ contactId }: { contactId: string }) {
+  const [rows, setRows] = useState<ContactActivityEntry[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    contactActivityStream(contactId)
+      .then((r) => { if (alive) setRows(r); })
+      .catch((e) => { if (alive) setErr(toErrorMessage(e, 'Could not load activity.')); });
+    return () => { alive = false; };
+  }, [contactId]);
+
+  const hrefFor = (r: ContactActivityEntry): string | null =>
+    r.source_type === 'document' ? `/app/ops/documents/${r.source_id}` : null;
+
+  return (
+    <Section title="Activity">
+      {err ? <p role="alert" className="form-error text-sm">{err}</p>
+        : rows === null ? <Empty>Loading…</Empty>
+        : rows.length === 0 ? <Empty>Nothing recorded yet.</Empty>
+        : rows.map((r, i) => {
+          const when = new Date(r.occurred_at).toLocaleDateString();
+          const href = hrefFor(r);
+          const body = (
+            <>
+              <span className="text-sm text-green-900 min-w-0 flex-1">
+                {r.detail ?? r.title}
+                {r.detail && r.title && r.title !== r.detail && (
+                  <span className="text-muted"> · {r.title}</span>
+                )}
+              </span>
+              <span className="text-[11px] text-muted shrink-0">{when}</span>
+            </>
+          );
+          return href ? (
+            <Link key={`${r.source_type}-${r.source_id}-${i}`} to={href}
+              className="flex items-baseline gap-2 border-b border-green-800/[0.06] pb-1.5 hover:bg-green-50/40 -mx-1 px-1 rounded focus-ring">
+              {body}
+            </Link>
+          ) : (
+            <div key={`${r.source_type}-${r.source_id}-${i}`}
+              className="flex items-baseline gap-2 border-b border-green-800/[0.06] pb-1.5">
+              {body}
+            </div>
+          );
+        })}
+    </Section>
   );
 }
 

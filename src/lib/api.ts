@@ -2767,13 +2767,31 @@ export interface ContactDossier {
     }[];
   }[];
   notifications: { id: string; kind: string; title: string; created_at: string }[];
-  posts: {
-    id: string; post_type: string; body: string | null;
-    published: boolean; pulled_down: boolean; created_at: string;
-  }[] | null;
-  activity: {
-    id: string; action: string; table_name: string | null; occurred_at: string;
-  }[] | null;
+}
+
+/** One entry in the client-record Activity stream (fix round 2e): a dated event
+ *  linking to its source. `source_type` + `source_id` build the link. */
+export interface ContactActivityEntry {
+  occurred_at: string;
+  kind: string;
+  title: string;
+  detail: string | null;
+  source_type: 'document' | 'invitation' | 'booking' | 'order' | 'post' | 'evaluation';
+  source_id: string;
+}
+
+/** The client record's Activity: one dated stream, newest first, built from
+ *  document / invitation / booking / order / payment / post / evaluation events.
+ *  Notifications are NOT here (they are their own list); audit_logs are not here
+ *  (the full audit trail is its own page). */
+export async function contactActivityStream(
+  contactId: string, limit = 100,
+): Promise<ContactActivityEntry[]> {
+  const { data, error } = await supabase.rpc('contact_activity_stream', {
+    p_contact_id: contactId, p_limit: limit,
+  });
+  if (error) throw error;
+  return (data ?? []) as ContactActivityEntry[];
 }
 
 export async function contactDossier(contactId: string): Promise<ContactDossier> {
