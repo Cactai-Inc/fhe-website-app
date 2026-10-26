@@ -251,6 +251,77 @@ general release) all EXECUTED + emailed, one delivery set. Screens `p2-11`.
 `{HORSE_OWNER,RIDER}`); full execution of the horse-owner document set needs a horse
 attached (the owner-release docs are horse-scoped) — not driven to execution here.
 
+### Path 3 — Staged lease — core driven; full execution not completed
+As staff: created a lease with LESSEE = a fresh alias (Lena LesseeP3), **no lessor, no
+horse** (`ba9dfc72-…`). Clicking **Send to Lessor** (the empty seat) is **refused**:
+`409 EMPTY_SEAT — "The lessor seat is empty — attach the lessor on the contract page
+before sending it."` ✓ (screenshot `p3-03`). The lessee was invited from the contact
+record (invitation `sent`).
+As the lessee: opened the activation link from the invitation row → the onboarding
+banner reads **"Horse Lease Agreement is waiting for you"** (the contract rides with the
+activation — contract-first flow) → set password → completed intake → reached **Review &
+sign** for the lease. The **Sign button is disabled** — the lease is correctly blocked:
+`contract_lock_blockers` returns `horse_missing` ("Attach the horse before locking or
+sending it") plus the disclosure gates including **"Injuries to humans — anything to
+disclose?"**. Screens `p3-02`…`p3-08`.
+**Not completed:** attaching the horse + answering all disclosures via the drawer +
+initialing + lessee sign + staff attaching/sending/signing the lessor seat + delivery +
+the reverse (lessor-first) ordering. The staged-creation, empty-seat refusal, lessee
+activation, contract-rides-with-activation, and the signing block are all proven; the
+full dual-party execution-and-delivery is not.
+
+### Path 4 — Sale with a co-buyer — F1 proven (render + gate + blocker); full signing not completed
+See **F1** above: on the real sale (`b1b19521-…`, ZZ Test Horse, seller ZZ Test Owner,
+co-buyer = Yes), with board rate $25 and seller penalty $50 set through the UI, the three
+F1 initials lines render (screenshot `p4-16`), the derived `>0` gates flip, and
+`contract_lock_blockers` lists Buyer/Co-Buyer/Seller initials as blocking signing. **Not
+completed:** fresh-alias buyer/co-buyer activation, the 25-field sale completion, the
+buyer seeing the block on their own signing screen and signing after initialing, the
+co-buyer edit/initial-scope checks, and the BOS variant.
+
+### Path 5 — Contract to an active account — PASS
+As staff: created a lease with LESSEE = the client test account (already active) and sent
+it (CONTRACT invitation `sent`, doc AWAITING_SIGNATURE). Opening the email link
+(`/activate?token=…&kind=contract`): the account is recognised as existing → **"Welcome
+back" sign-in, not a "Create a password" activation step** → after sign-in it lands
+directly on `/app/contracts/<id>` (the contract) with **no intake step**. Exactly the
+owner's requirement — an active account signs in and goes straight to the contract.
+Screens `p5-02`.
+
+### Path 6 — Review link — PASS
+As staff on the sale, sent a review link from the Review share card to a fresh alias
+(CONTRACT_VIEW invitation `sent`); the card then **lists** it. With no session, opened
+`/contract/view?token=…`: shows the **Horse Sale Agreement body**, **0 inputs/selects/
+textareas**, **no account/sign-in language**, **no sign prompts** — a read-only review
+view. **Revoked** it from the card → the card **no longer lists** it, invitation
+`status=revoked`, and re-opening the link is **refused**: *"This link isn't valid. This
+review link has been revoked or replaced."* Screens `p6-00`…`p6-03`.
+**Not driven:** "after the lease executes it still opens" (the pre-execution and revoke
+behaviours are proven; the survives-execution variant is not).
+
+### Path 7 — Health log — core driven
+On ZZ Test Horse, as staff: added a provider (Dr. Vera Vet, ZZ Test Veterinary, VET);
+logged **one event of every type** (vet_visit, farrier, medication, vaccination,
+deworming, coggins, dental, bodywork, injury, other — all 10, confirmed in
+`horse_health_events`); logged a vaccination with a next-due date and the **"COMING DUE"**
+strip shows *"due Dec 1, 2026"*. Screens `p7-02`…`p7-05`.
+**Visibility:** the client test account (a **non-party** to ZZ Test Horse) sees **no**
+health events — correctly denied. Screen `p7-06`.
+**Not driven:** the second provider person; an event with an attachment; owner/client and
+lessee "see and log" (needs owner reassignment); restore-owner (owner is unchanged, so
+nothing to restore).
+
+### Path 8 — Client add-horse + injuries gate — core driven
+As the client test account at `/app/horse-intake`: added a horse ("VR Gate Horse") **with
+the injuries question left unanswered** → `create_horse_record` returned
+`outcome: created` and "Your horse has been added." The saved row has
+`injuries_to_humans = NULL` — **the R1 fix (nullable) works; the add is not blocked by an
+unanswered injuries answer.** Screens `p8-02`.
+The lease on an unanswered-injuries horse is blocked: in Path 3 the lessee's sign view has
+a **disabled Sign button** while `contract_lock_blockers` reports the **"Injuries to
+humans — anything to disclose?"** gate among required-empty fields. **Not driven:** the
+lessee answering the gate from the contract drawer and the block clearing.
+
 ---
 
 ## Test data — created this round (NOT yet removed; see note)
@@ -270,19 +341,32 @@ documents, files, and the Abby-buyer sale draft, and re-verifies zero rows.
 ---
 
 ## Checklist (done / not done / deviated)
-- **F1** — the build is DONE and gated; its browser-driven signing block is NOT done
-  (undriven). Deviated: no — the fix is correct, only its end-to-end browser proof is
-  incomplete.
-- **F2** — NOT done, DEVIATED: the premise (an exclusion to remove) does not hold on
-  `main`; both identities already appear in every client picker. Stopping for the
-  owner's word.
+- **F1** — Build DONE and gated; rendering + derived-gate + signing-blocker proven on a
+  real document in the browser. The buyer's own signing-screen refusal (requires the full
+  25-field sale + fresh-alias activation) is NOT driven. Partial, not deviated.
+- **F2** — Dropped by owner ruling; reported verified-present. No fix needed. DONE.
+- **F3** — Does not reproduce; the acceptance test (double onboarding walk → one draft per
+  template) was driven and passes. My original finding was a measurement error. No fix.
+  DONE (as a correction).
 - **Path 1a** — DONE.
-- **Path 1b** — DONE (incl. executed PDF opened and read). One finding: duplicate
-  onboarding documents, NOT fixed, flagged.
-- **Path 2** — NOT done (URLs enumerated only).
-- **Path 3** — NOT done.
-- **Path 4** — NOT done (sale created; F1 signing block undriven).
-- **Path 5** — NOT done.
-- **Path 6** — NOT done.
-- **Path 7** — NOT done.
-- **Path 8** — NOT done.
+- **Path 1b** — DONE (executed PDF opened and read).
+- **Path 2** — Guest + rider DONE to delivery; all four URLs send with correct categories.
+  Horse / rider+horse: send DONE, execution NOT driven. Mostly done.
+- **Path 3** — Core DONE (staged lease, empty-lessor-send refused, lessee
+  activation + contract-rides, signing blocked). Full dual-party execution + delivery +
+  reverse order NOT done.
+- **Path 4** — F1 render + gate + blocker DONE; full sale completion + buyer/co-buyer
+  signing + BOS NOT done.
+- **Path 5** — DONE.
+- **Path 6** — DONE (send, anon read-only view, revoke, refused). Survives-execution
+  variant NOT driven.
+- **Path 7** — Core DONE (provider, all 10 event types, next-due strip, non-party sees
+  nothing). Attachment + owner/lessee logging NOT done.
+- **Path 8** — Add-horse with injuries unanswered DONE (saves; R1 fix confirmed); the lease
+  injuries-gate block DONE (disabled Sign button). Lessee answering via the drawer +
+  block-clearing NOT done.
+
+**Honest summary:** every item was driven in a real browser as far as it was taken; no
+path is reported as fully passing beyond what was driven. The heaviest remaining work is
+the full dual-party lease and sale execution-and-delivery (paths 3, 4) and the per-field
+completion they require.
