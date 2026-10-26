@@ -4,7 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import {
   GRANTABLE_SURFACES, listAllGrants, addGrant, removeGrant, type SurfaceGrant,
 } from '../../../lib/grants';
-import { Modal } from '../../../components/ops/kit/Modal';
+import { Modal, MODAL_FORM_GRID, MODAL_FORM_FULL } from '../../../components/ops/kit/Modal';
 import { useFieldNormalizer, useFormDraft } from '../../../lib/formState';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import { ChevronRight } from 'lucide-react';
@@ -247,7 +247,7 @@ function TeamMemberPanel({
        is why the panel still slides in from the right rather than becoming a box.
        The backdrop no longer discards a half-edited staff record; `Save record`
        is the affirmative action and remains the only write. */
-    <Modal open onClose={onClose} size="sm" panelClassName="bg-cream"
+    <Modal open onClose={onClose} size="window" panelClassName="bg-cream"
       title={memberName(member)} onClear={clearForm} saveStatus={draft.status}>
         <div className="flex flex-col gap-5">
           <p className="text-xs text-muted">
@@ -258,10 +258,12 @@ function TeamMemberPanel({
             <p className="text-sm text-muted">You have read-only access. An admin can edit this record.</p>
           ) : (
             <>
-              {/* ── Record ── */}
+              {/* ── Record ── FIX ROUND 3 item 8: short fields flow into the
+                  window-wide grid — 1 col narrow, 2 medium, 3 wide; the bio spans
+                  the full width. */}
               <div className="flex flex-col gap-3">
                 <p className="form-label">Record</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className={MODAL_FORM_GRID}>
                   {/* ⚠️ TASK-FIX4 §4 — *"yes staff-entered inputs normalize too"*
                       (owner, 2026-08-31). Shown on blur, never silently. */}
                   <label className="text-sm"><span className="form-label">First name</span>
@@ -270,21 +272,21 @@ function TeamMemberPanel({
                   <label className="text-sm"><span className="form-label">Last name</span>
                     <input className="form-input" value={form.last_name} onChange={set('last_name')}
                       onBlur={normalize('last_name', 'name', form.last_name, (v) => setForm((f) => ({ ...f, last_name: v })))} /></label>
+                  <label className="text-sm"><span className="form-label">Display name</span>
+                    <input className="form-input" value={form.display_name} onChange={set('display_name')}
+                      onBlur={normalize('display_name', 'name', form.display_name, (v) => setForm((f) => ({ ...f, display_name: v })))} /></label>
+                  <label className="text-sm"><span className="form-label">Email</span>
+                    <input type="email" className="form-input" value={form.email} onChange={set('email')}
+                      onBlur={normalize('email', 'email', form.email, (v) => setForm((f) => ({ ...f, email: v })))} /></label>
+                  <label className="text-sm"><span className="form-label">Phone</span>
+                    <input className="form-input" value={form.phone} onChange={set('phone')}
+                      onBlur={normalize('phone', 'phone', form.phone, (v) => setForm((f) => ({ ...f, phone: v })))} /></label>
+                  <label className="text-sm"><span className="form-label">Riding level</span>
+                    <input className="form-input" value={form.riding_level} onChange={set('riding_level')} /></label>
+                  <label className={`text-sm ${MODAL_FORM_FULL}`}><span className="form-label">Bio</span>
+                    <textarea rows={2} className="form-input resize-none" value={form.bio} onChange={set('bio')} /></label>
                 </div>
-                <label className="text-sm"><span className="form-label">Display name</span>
-                  <input className="form-input" value={form.display_name} onChange={set('display_name')}
-                    onBlur={normalize('display_name', 'name', form.display_name, (v) => setForm((f) => ({ ...f, display_name: v })))} /></label>
-                <label className="text-sm"><span className="form-label">Email</span>
-                  <input type="email" className="form-input" value={form.email} onChange={set('email')}
-                    onBlur={normalize('email', 'email', form.email, (v) => setForm((f) => ({ ...f, email: v })))} /></label>
-                <label className="text-sm"><span className="form-label">Phone</span>
-                  <input className="form-input" value={form.phone} onChange={set('phone')}
-                    onBlur={normalize('phone', 'phone', form.phone, (v) => setForm((f) => ({ ...f, phone: v })))} /></label>
-                <label className="text-sm"><span className="form-label">Riding level</span>
-                  <input className="form-input" value={form.riding_level} onChange={set('riding_level')} /></label>
-                <label className="text-sm"><span className="form-label">Bio</span>
-                  <textarea rows={2} className="form-input resize-none" value={form.bio} onChange={set('bio')} /></label>
-                <button type="button" className="btn-primary justify-center" disabled={busy}
+                <button type="button" className="btn-primary justify-center self-start" disabled={busy}
                   onClick={() => void run(() => adminUpdateProfile(member.user_id, form), 'Saved.')}>
                   {busy ? 'Saving…' : 'Save record'}
                 </button>

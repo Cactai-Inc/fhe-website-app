@@ -403,7 +403,7 @@ export default function HorseRecordsPage({
 
       {/* ⚠️ TASK-FIX4 §3 — converged; see StableSection for the same intake form. */}
       {adding && (
-        <Modal open onClose={() => setAdding(false)} title="Add a horse" size="lg" panelClassName="bg-cream">
+        <Modal open onClose={() => setAdding(false)} title="Add a horse" size="window" panelClassName="bg-cream">
           <HorseIntakeForm submitLabel="Create record" ownerContactId={companyId ?? undefined}
             onDone={() => { setAdding(false); load(); }} />
         </Modal>

@@ -56,7 +56,7 @@ export function HorseRecordPanel({
     // Narrow: the shared modal, sized to the window (item 3 modal-width — scoped to
     // this feature's own modals; the app-wide sweep is a filed follow-up).
     return (
-      <Modal open onClose={onClose} title="Horse record" size="full" bare>
+      <Modal open onClose={onClose} title="Horse record" size="window" bare>
         <div className="px-5 sm:px-6 py-5">
           <HorseRecord horseId={horseId} inPanel onContractRefetch={onContractRefetch} />
         </div>

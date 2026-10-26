@@ -568,7 +568,7 @@ export function CalendarItemPanel({
     /* `lg` (max-w-2xl) gives desktop a wide, centered panel; the mobile
        full-width base still applies, so this reads full-screen on a phone and a
        comfortable centered dialog on desktop. */
-    <Modal open onClose={handleClose} size="lg" panelClassName="bg-cream"
+    <Modal open onClose={handleClose} size="window" panelClassName="bg-cream"
       title={mode === 'view' ? 'Booking' : `${editing ? 'Edit' : 'New'} calendar item`}
       onClear={mode === 'edit' ? clearForm : undefined}
       saveStatus={mode === 'edit' ? draft.status : undefined} error={error}>

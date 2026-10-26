@@ -962,7 +962,7 @@ function AddElementModal({
      ContractPage's `.flow-green` root and would stay gold without this. The
      scope class rides on the dialog panel itself. */
   return createPortal((
-    <Modal open onClose={onClose} size="xl" title="Add to this contract" error={err}
+    <Modal open onClose={onClose} size="window" title="Add to this contract" error={err}
       panelClassName="flow-green"
       footer={
         <>

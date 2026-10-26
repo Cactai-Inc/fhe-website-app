@@ -169,7 +169,7 @@ export function TaskModal({
   }
 
   return (
-    <Modal open onClose={onClose} size="lg" panelClassName="bg-cream" error={err}
+    <Modal open onClose={onClose} size="window" panelClassName="bg-cream" error={err}
       title={editing ? 'Task' : 'New task'}>
       <div className="flex flex-col gap-4">
         <label className="text-sm">

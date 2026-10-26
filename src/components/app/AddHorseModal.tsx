@@ -44,7 +44,7 @@ export function AddHorseModal({
   // form's three-column grid shows with the least scrolling, rather than a narrow
   // fixed column. (The app-wide modal-width sweep is a filed follow-up.)
   return (
-    <Modal open={open} onClose={onClose} title={title} size="full">
+    <Modal open={open} onClose={onClose} title={title} size="window">
       <HorseIntakeForm
         submitLabel="Save horse"
         createEarly

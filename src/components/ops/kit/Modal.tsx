@@ -79,7 +79,7 @@ import { AutoSaveIndicator } from './AutoSaveIndicator';
 const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
-export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full' | 'window';
 
 export interface ModalProps {
   open: boolean;
@@ -115,7 +115,26 @@ const SIZE: Record<ModalSize, string> = {
   lg: 'sm:max-w-2xl',
   xl: 'sm:max-w-3xl',
   full: 'sm:max-w-5xl',
+  // ⚠️ FIX ROUND 3, item 8 — a FORM modal sizes to the WINDOW, not a fixed width.
+  // The panel is already w-full and the overlay carries the standard 16px gutter
+  // (p-4), so this just lifts the width cap to the 2xl breakpoint (1536px): a form
+  // modal fills a large window with the gutter and never exceeds a readable width.
+  window: 'max-w-[min(100%,theme(screens.2xl))]',
 };
+
+/**
+ * ⚠️ FIX ROUND 3, item 8 — the shared FORM-MODAL grid. A form laid out inside a
+ * window-sized modal uses this so the fields flow responsively: one column on a
+ * phone, two on a tablet, three on a wide screen. Where the fields are SHORT
+ * (small inputs — codes, quantities, toggles), pass `short` for a fourth column on
+ * the widest screens. Full-width rows inside drop `MODAL_FORM_GRID` and use
+ * `MODAL_FORM_FULL` to span every column.
+ */
+export const MODAL_FORM_GRID =
+  'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4';
+export const MODAL_FORM_GRID_SHORT =
+  'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-x-5 gap-y-4';
+export const MODAL_FORM_FULL = 'sm:col-span-2 lg:col-span-3 2xl:col-span-4';
 
 export function Modal({
   open,

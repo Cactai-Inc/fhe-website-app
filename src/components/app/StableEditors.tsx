@@ -30,7 +30,7 @@ function Shell({ title, onClose, onClear, saveStatus, children }: {
   children: React.ReactNode;
 }) {
   return (
-    <Modal open onClose={onClose} title={title} size="sm"
+    <Modal open onClose={onClose} title={title} size="window"
       onClear={onClear} saveStatus={saveStatus} panelClassName="bg-cream">
       {children}
     </Modal>

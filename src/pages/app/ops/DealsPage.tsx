@@ -143,7 +143,7 @@ function CreateDealModal({ onClose, onCreated }: {
   return (
     /* ⚠️ TASK-FIX4 §3 — converged. `Create deal` is the affirmative action and the
        only thing that writes; the backdrop no longer closes over a filled form. */
-    <Modal open onClose={onClose} title="New deal" size="md"
+    <Modal open onClose={onClose} title="New deal" size="window"
       onClear={clearForm} saveStatus={draft.status} error={err}
       footer={
         <button type="button" onClick={() => void create()} disabled={!ready || busy}
