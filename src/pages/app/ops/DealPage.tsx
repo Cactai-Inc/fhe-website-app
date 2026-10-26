@@ -6,11 +6,12 @@ import { useDocumentTitle } from '../../../lib/hooks';
 import { Modal } from '../../../components/ops/kit/Modal';
 import { toErrorMessage } from '../../../lib/ops/errors';
 import {
-  dealDetail, dealDocumentStatus, addDealDocument, dealRecordExport, dealActivity,
+  dealDetail, dealDocumentStatus, addDealDocument, attachHorseToDeal, dealRecordExport, dealActivity,
   updateDeal, voidDeal, dealLabel,
   DEAL_TYPE_LABEL, ROLE_LABEL,
   type DealDetail, type DealDocumentStatus, type DealActivityEntry,
 } from '../../../lib/deals';
+import { staffHorseRecords, type StaffHorseRecord } from '../../../lib/horses';
 import { DealBadgePill } from './DealsPage';
 import { BackControl } from '../../../components/app/BackControl';
 
@@ -31,6 +32,98 @@ function fmtWhen(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
     month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
   });
+}
+
+/** F6: the deal's horse card. Mirrors the contract page's HorseGate rule — it
+ *  offers ONLY the owner-seat (seller/lessor) contact's horses, nothing when that
+ *  seat is empty, and attaching is an explicit pick that attaches the horse to
+ *  every document on the deal that has none. */
+function DealHorseCard({ deal, canEdit, onAttached }: {
+  deal: DealDetail; canEdit: boolean; onAttached: () => void;
+}) {
+  const [horses, setHorses] = useState<StaffHorseRecord[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const ownerContactId = deal.owner_seat?.contact_id ?? null;
+  const ownerRoleLabel = deal.owner_seat?.party_role
+    ? (ROLE_LABEL[deal.owner_seat.party_role] ?? deal.owner_seat.party_role)
+    : (deal.deal_type === 'SALE' ? 'Seller' : 'Lessor');
+  // Any document on the deal still missing a horse — what the attach fills.
+  const docsNeedingHorse = deal.documents.filter((d) => !d.horse_id).length;
+
+  useEffect(() => {
+    if (!canEdit) { setHorses([]); return; }
+    staffHorseRecords().then(setHorses).catch(() => setHorses([]));
+  }, [canEdit, ownerContactId]);
+
+  async function attach(horseId: string) {
+    setBusy(horseId); setErr(null);
+    try { await attachHorseToDeal(deal.id, horseId); onAttached(); }
+    catch (e) { setErr(toErrorMessage(e, 'Could not attach that horse.')); setBusy(null); }
+  }
+
+  // The horse already on the deal — shown, with the option to change it only while
+  // documents still need one (an attached document keeps its horse).
+  if (deal.horse && docsNeedingHorse === 0) {
+    return (
+      <p className="text-[12px] text-muted mt-2">
+        Horse:{' '}
+        <Link to={`/app/horses/${deal.horse.id}`} className="underline hover:text-green-800">
+          {deal.horse.name}
+        </Link>
+      </p>
+    );
+  }
+
+  // F6: only the owner-seat's horses are offered; nothing when the seat is empty.
+  const offered = (horses ?? []).filter((h) =>
+    ownerContactId != null && h.owner_contact_id === ownerContactId);
+  const ownerSeatEmpty = ownerContactId == null;
+
+  if (!canEdit) return null;
+
+  return (
+    <div className="mt-3 bg-green-50 border border-green-500/30 rounded-lg p-4">
+      <p className="text-sm font-medium text-green-900 mb-1">Horse</p>
+      <p className="text-[12px] text-green-900/75 mb-3">
+        A deal needs no horse to exist — the horse is a signing blocker on each document.
+        Attach one here and it fills every document on the deal that has none.
+      </p>
+      {err && <p role="alert" className="form-error mb-2">{err}</p>}
+      {ownerSeatEmpty ? (
+        <p className="text-sm text-green-900/75">
+          Name the {ownerRoleLabel.toLowerCase()} first — the horse is picked from the {ownerRoleLabel.toLowerCase()}&apos;s records.
+        </p>
+      ) : horses === null ? (
+        <p className="text-sm text-muted">Loading horses…</p>
+      ) : offered.length === 0 ? (
+        <p className="text-sm text-green-900/75">
+          The {ownerRoleLabel.toLowerCase()} has no horse records yet.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2 max-w-md">
+          {offered.map((h) => (
+            <button key={h.id} type="button" disabled={!!busy} onClick={() => void attach(h.id)}
+              className="flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-2.5 text-left hover:border-green-800/30 focus-ring disabled:opacity-50">
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-green-900 truncate">
+                  {h.nickname?.trim() || h.registered_name?.trim() || 'Horse'}
+                </span>
+                <span className="block text-xs text-muted truncate">
+                  {[h.breed, h.sex, h.color].map((v) => (v ?? '').trim())
+                    .filter((v) => v && v.toUpperCase() !== 'N/A').join(' · ') || 'Horse record'}
+                </span>
+              </span>
+              <span className="text-xs text-green-800 font-medium shrink-0">
+                {busy === h.id ? 'Attaching…' : 'Use this horse →'}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** The deal record: produced, not authored. Download / email / print live here. */
@@ -207,14 +300,7 @@ export default function DealPage() {
             </div>
           ))}
         </div>
-        {deal.horse && (
-          <p className="text-[12px] text-muted mt-2">
-            Horse:{' '}
-            <Link to={`/app/horses/${deal.horse.id}`} className="underline hover:text-green-800">
-              {deal.horse.name}
-            </Link>
-          </p>
-        )}
+        <DealHorseCard deal={deal} canEdit={canAdd} onAttached={() => void load()} />
       </section>
 
       {/* the documents — the substance of the deal */}
