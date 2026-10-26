@@ -40,8 +40,11 @@ export function AddHorseModal({
   ownerContactId?: string;
   title?: string;
 }) {
+  // Part 2 item 3 — size to the window (the widest shared size) so the intake
+  // form's three-column grid shows with the least scrolling, rather than a narrow
+  // fixed column. (The app-wide modal-width sweep is a filed follow-up.)
   return (
-    <Modal open={open} onClose={onClose} title={title} size="lg">
+    <Modal open={open} onClose={onClose} title={title} size="full">
       <HorseIntakeForm
         submitLabel="Save horse"
         createEarly

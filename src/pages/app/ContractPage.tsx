@@ -50,6 +50,7 @@ import { ContractChangeHistory } from '../../components/app/ContractChangeHistor
 import { VoidContractModal, VoidedKeepOrRemove } from '../../components/app/VoidContractModal';
 import { PartiesHorseCard } from '../../components/app/PartiesHorseCard';
 import { AddHorseModal } from '../../components/app/AddHorseModal';
+import { HorseRecordPanel } from '../../components/app/HorseRecordPanel';
 import { ClauseDocument } from '../../components/app/ClauseDocument';
 import { SendCopiesMenu } from '../../components/app/SendCopiesMenu';
 import { SignedVersionNote } from '../../components/ops/documents/SignedVersionNote';
@@ -565,6 +566,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      is, we mark the page stale and reload the moment focus leaves. Losing
      someone's half-typed sentence to a background refresh would be a far worse
      bug than a one-keystroke delay in seeing their edit. */
+  // The "Edit on horse record" control on a HORSE-importing section opens the
+  // record in a drawer/modal in place (item 3), rather than navigating away.
+  const [recordOpen, setRecordOpen] = useState(false);
   const [remoteStale, setRemoteStale] = useState(false);
   useEffect(() => {
     if (!id) return;
@@ -2201,6 +2205,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           horseId={doc?.horse_id ?? null}
           isOwnerSide={isOwnerSide}
           hasPartyRole={myRoles.length > 0}
+          canEditHorseRecord={horseIsMine}
+          onEditHorseRecord={() => setRecordOpen(true)}
           pendingCompositions={redline?.pending_compositions ?? []}
           onChanged={() => void load({ blank: false })}
           onRevise={(sectionKey) => setReviseRequest((cur) => ({ sectionKey, nonce: (cur?.nonce ?? 0) + 1 }))}
@@ -2689,6 +2695,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           state={nameState}
           onConfirmed={() => { setNameOpen(false); reloadName(); }}
           onDismiss={() => setNameOpen(false)}
+        />
+      )}
+
+      {recordOpen && doc?.horse_id && (
+        <HorseRecordPanel
+          horseId={doc.horse_id}
+          onClose={() => setRecordOpen(false)}
+          onContractRefetch={() => void load({ blank: false })}
         />
       )}
 
