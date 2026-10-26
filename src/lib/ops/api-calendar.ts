@@ -99,6 +99,12 @@ export interface CalendarLocation {
   id: string;
   name: string;
   address: string | null;
+  /** Structured parts (my_locations), so a known pick stores a real structured
+   *  address rather than cramming the whole thing into one line. */
+  address_line1?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postal?: string | null;
   is_offsite: boolean;
   is_default: boolean;
   is_mine?: boolean;
