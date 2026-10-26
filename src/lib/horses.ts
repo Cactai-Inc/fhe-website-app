@@ -430,6 +430,21 @@ export async function updateHorseRecord(horseId: string, patch: Record<string, u
   if (error) throw new DbError(error, 'Saving the horse record');
 }
 
+/** Whether the current viewer may edit this horse's RECORD — the same rule
+ *  update_horse_record / set_horse_medications enforce: the horse's current owner
+ *  or lessee. Staff is decided client-side (useAuth.isStaff) by the caller; this is
+ *  the non-staff half. Used to decide whether the "Edit on horse record" control on
+ *  a contract shows as a control or as plain text. Any read failure → false (the
+ *  line prints without a control), never a thrown error. */
+export async function viewerOwnsHorseRecord(horseId: string): Promise<boolean> {
+  const [{ data: me }, { data: h }] = await Promise.all([
+    supabase.rpc('current_contact_id'),
+    supabase.from('horses').select('current_owner_contact_id, lessee_contact_id').eq('id', horseId).maybeSingle(),
+  ]);
+  if (!me || !h) return false;
+  return me === h.current_owner_contact_id || me === h.lessee_contact_id;
+}
+
 /** A repeatable medication or supplement entry. The IMPORTED set (printed on a
  *  contract) is name, purpose, dosage, frequency, cost_per_dose, rx_required. The
  *  remaining care/purchasing fields (instructions, cost, order_units, days_supply,
