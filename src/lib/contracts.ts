@@ -590,6 +590,27 @@ export async function invitedAccountState(token: string): Promise<InvitedAccount
   return (data ?? { found: false }) as InvitedAccountState;
 }
 
+/** Contract-first STEP 2 — the anonymous read-only view of a contract, keyed by a
+ *  CONTRACT_VIEW token. Returns only what the instrument prints: the rendered body,
+ *  the title, the parties' display names, and the HORSE.<SECTION> disclosure
+ *  structured values the boxed component renders. No field graph, no account state,
+ *  no off-instrument PII. `executed` is true once the governing document has
+ *  executed — the link is dead for everyone, and no body is returned. */
+export interface ContractViewByToken {
+  found: boolean;
+  executed?: boolean;
+  document_id?: string;
+  title?: string | null;
+  body?: string | null;
+  parties?: { role: string; name: string }[];
+  disclosure_fields?: { field_key: string; structured: unknown }[];
+}
+export async function contractViewByToken(token: string): Promise<ContractViewByToken> {
+  const { data, error } = await supabase.rpc('contract_view_by_token', { p_token: token });
+  if (error) throw error;
+  return (data ?? { found: false }) as ContractViewByToken;
+}
+
 /** TASK-ROLEBUNDLE — what each party on this contract owes BY VIRTUE OF THE ROLE
  *  THEY HOLD ON IT (D31's "one known event": the event is this contract, the role
  *  decides the bundle).
