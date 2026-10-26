@@ -18,7 +18,6 @@ import {
   pollDeliveryConfirmed,
   fetchOfferings,
   createDraftOrder,
-  holdMyDocumentDelivery,
   type OnboardingProfileInput,
   type OnboardingPurchase,
   type OnboardingState,
@@ -616,18 +615,12 @@ export default function Onboarding() {
   const [signing, setSigning] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
 
-  /* CR-98 step 8 — DECLARE THE RUN BEFORE THE FIRST SIGNATURE.
-     The one email the owner asked for carries the documents AND the order AND
-     the booking request, and the last two do not exist until three steps after
-     the last signature. Holding the set is what lets one email say all of it.
-     ⚠️ Self-serve only: the provisioned door still ends at payment and has
-     nothing to add to the email, so its delivery is left exactly as it is.
-     ⚠️ Best-effort — a failure here just means the documents mail on their own,
-     which is today's behaviour, so it must never block signing. */
-  useEffect(() => {
-    if (step !== 'sign' || !selfServe) return;
-    void holdMyDocumentDelivery().catch(() => { /* mail on its own; nothing lost */ });
-  }, [step, selfServe]);
+  /* CR-98 step 8 was "declare the run before the first signature" — a timed hold
+     that kept this person's onboarding documents together so ONE email could carry
+     them all. The delivery-set marker (contract-first STEP 6) replaces it: every
+     document generate_my_onboarding_documents produces in one run already carries
+     the one delivery_set_id, so the set is grouped at generation, not by a timed
+     hold opened here. The hold call is gone — nothing to declare. */
 
   // Step 3 — payment (sign-before-pay). The client pays their spine purchase
   // (surfaced by my_onboarding_state) directly — no engagement bridge.
