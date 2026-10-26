@@ -13,6 +13,7 @@ import { ProviderEditor } from './ProviderEditor';
 import { LesseeEntryEditor } from './LesseeEntryEditor';
 import { DisclosureEntryBoxes } from './DisclosureEntryBoxes';
 import { HorseIntakeForm } from './HorseIntakeForm';
+import { HealthLog } from './HealthLog';
 import { buildRecordEntries } from '../../lib/disclosureMarker';
 import { horseDeals, DEAL_TYPE_LABEL, type DealRow } from '../../lib/deals';
 import { usePropertyTerm } from '../../contexts/BrandProvider';
@@ -482,6 +483,11 @@ export function HorseRecord({ horseId, inPanel = false, onContractRefetch }: Hor
                   )}
                 </Card>
               )}
+
+              {/* HEALTH LOG (fix round 3, item 6) — below the disclosure sections,
+                  visible to staff, the owner, and an active lessee; editable by the
+                  same. Nothing in it feeds any contract or disclosure. */}
+              <HealthLog horseId={horseId} />
             </div>
           )}
 
