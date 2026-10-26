@@ -1,0 +1,15 @@
+import { newBrowser, newCtx, loginEmailPassword, shot, BASE } from '/private/tmp/claude-504/-Users-Cactai/7d466399-a5d3-4532-8719-eeb55a81f620/scratchpad/driver.mjs';
+import fs from 'fs';
+const env = JSON.parse(fs.readFileSync('/tmp/testenv.json','utf8'));
+const LESSEE_CONTACT='12202136-9010-43f5-bb7c-fa6e4836de89';
+const b = await newBrowser(); const ctx = await newCtx(b); const p = await ctx.newPage();
+await loginEmailPassword(p, env.FHE_TEST_STAFF_EMAIL, env.FHE_TEST_STAFF_PASSWORD);
+await p.goto(`${BASE}/app/records/clients?open=${LESSEE_CONTACT}`,{waitUntil:'domcontentloaded'}); await p.waitForTimeout(5000);
+const sendBtn = p.getByRole('button',{name:/send invitation|send the invitation|invite/i}).first();
+console.log('send-invite button count:', await sendBtn.count());
+await sendBtn.click();
+await p.waitForTimeout(5000);
+const body = await p.evaluate(()=>document.body.innerText);
+console.log('post-send shows sent/invited:', /sent|invited|invitation/i.test(body));
+await shot(p,'s2-p3a-04-lessee-invited');
+await b.close();
