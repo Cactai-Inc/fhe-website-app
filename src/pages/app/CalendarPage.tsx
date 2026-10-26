@@ -69,17 +69,25 @@ import { FeeChooser } from '../../components/app/FeeChooser';
 
 type ViewMode = 'week' | 'month' | 'day';
 
-const DAY_MS = 86_400_000;
-
 function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
+/* Step by calendar date in local time, never by a fixed 24h in milliseconds.
+   A day is not always 86_400_000ms: the DST fall-back day (e.g. Sun Nov 1 2026)
+   is 25 hours and the spring-forward day (Sun Mar 8 2026) is 23. Adding 24h×n
+   across a transition lands off midnight, so day numbers duplicate or skip —
+   the fall-back week showed Nov 1 twice and dropped Nov 7. setDate() advances
+   the calendar day and lets the Date normalise the wall-clock, which is correct
+   in every zone and across every transition. */
 function startOfWeek(d: Date): Date {
   const s = startOfDay(d);
-  return new Date(s.getTime() - s.getDay() * DAY_MS); // Sunday-start
+  s.setDate(s.getDate() - s.getDay()); // Sunday-start
+  return s;
 }
 function addDays(d: Date, n: number): Date {
-  return new Date(d.getTime() + n * DAY_MS);
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
 }
 function sameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
