@@ -1031,6 +1031,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
   const noHorseAttached = !doc?.horse_id;
   const showHorseGate = editablePhase && horseIsMine && horseFields.length > 0
     && noHorseAttached && !horseConfirmed;
+  // F5 (2026-10-26): the gate REPLACES the body only for a counterparty bringing
+  // their own horse — they pick the horse before anything else is theirs to do.
+  // For STAFF authoring, the gate is a BANNER: every non-HORSE deal term is
+  // editable while no horse is attached, and only the HORSE fields wait for it
+  // (they render pending until the horse fills them). So staff can stage the full
+  // terms before a horse exists, which is exactly what staging is for.
+  const horseGateBlocksBody = showHorseGate && !isStaff;
 
   async function act(fn: () => Promise<unknown>, okMsg?: string) {
     setError(null); setNote(null);
@@ -2280,7 +2287,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           selection is unmade, then the preview's job is done). Scoped by `myRoles`
           so a party's own fields are theirs and others' are read context. There is
           no separate "answers" surface. */}
-      {state !== 'executed' && !readOnlyDoc && !showHorseGate && structure && (
+      {state !== 'executed' && !readOnlyDoc && !horseGateBlocksBody && structure && (
         <ClauseDocument
           sections={structure.sections}
           fields={detail.fields}
@@ -2318,7 +2325,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       {/* Field sections (legacy flat grouping) — hidden until a horse is chosen when
           the gate applies, hidden for a review-only party, and skipped entirely for
           clause-model documents (rendered above). */}
-      {state !== 'executed' && !showHorseGate && !readOnlyDoc && !structure && sections.map(([section, fields]) => {
+      {state !== 'executed' && !horseGateBlocksBody && !readOnlyDoc && !structure && sections.map(([section, fields]) => {
         const anyEditable = fields.some((f) => f.can_edit);
         // counterparty intake: show only sections with something for them (or filled)
         if (!isOwnerSide && !anyEditable && !fields.some((f) => f.value)) return null;
@@ -2385,7 +2392,7 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           appear while the read-only merged frame (below) or the executed frame is
           showing the same text. This REPLACES the old collapsible "Review the
           document text" block that used to sit further down the page. */}
-      {state !== 'executed' && !showHorseGate && !readOnlyDoc && !structure && (
+      {state !== 'executed' && !horseGateBlocksBody && !readOnlyDoc && !structure && (
         <FlatDocument body={doc.merged_body} title={doc.title} disclosureEntries={disclosureEntries} />
       )}
 
