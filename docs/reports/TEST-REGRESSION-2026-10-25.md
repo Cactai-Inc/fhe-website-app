@@ -217,8 +217,23 @@ by `rider`; the horse-add half is blocked by the same DEFECT R1, so `rider+horse
 complete its horse step either. Not separately re-driven — it is the union of two paths
 already exercised, and would fail at the identical point.
 
-### Kiosk path
-(populated below)
+### Kiosk path — the standalone anonymous kiosk NO LONGER EXISTS (retired; the `/sign` flow IS the kiosk path)
+The separate "release kiosk" (anonymous iPad signing at `/release`,
+`/release/:key`, `/docs/release-participant`) was **retired 2026-09-01
+(TASK-SIGNFLOW-D)** by owner ruling: *"we dont have a situation where a person
+without an account signs documents on an iPad… the /sign/ flow should be the single
+pathway."* Signing now happens only inside an account, reached through `/sign/*` →
+`/app/onboarding` — the same kiosk-style point-of-visit flow proven above.
+
+Verified this is real, not just a stale comment:
+- No `/release` or `/docs/release-participant` routes remain in `App.tsx` (grep count 0).
+- `anon` AND `authenticated` have **no EXECUTE** on `sign_release` and
+  `sign_general_release` (checked via `has_function_privilege`). The anon kiosk grant
+  is revoked; account-side signing goes through `record_signature`/`signMyDocument`.
+
+So "the kiosk path" and "the four sign URLs" are one unified path post-SIGNFLOW-D, and
+it is PASS (rider) / blocked-at-horse-add (horse) exactly as recorded above. There is no
+additional anonymous-kiosk surface left to exercise.
 
 ## Item 4 — Delivery
 
@@ -238,6 +253,108 @@ post-execution. Party copy renders a STRIPPED body (acknowledgment block removed
 company copy keeps the full body; disclosure entries are passed to the PDF renderer for
 boxing. PDF verification from stored copy below.
 ## Item 5 — Contract role bundle
+
+V3 lease created through the staff UI (`/app/ops/contracts/new` → Horse lease):
+LESSOR = ZZ Test Owner (the horse's current owner), LESSEE = ZZ Test Lessee
+(the client test account, given a name — see item 6b), horse = ZZ Test Horse. RPC
+`start_lease_contract_v2` → doc `d3ef7755…`, template HORSE_LEASE_V3, contract
+`ab226787…`. Parties seeded correctly (LESSEE order 1, LESSOR order 2, both signers);
+status `AWAITING_SIGNATURE`; body length 22,094; **body carries `[[DISCLOSURE:…]]`
+markers** (the clause path via `horse_section_text_block` — the marker-bearing document
+item 4's box test needs).
+
+Role-bundle generation happens at SEND (`send_contract_to_party` →
+`ensure_contract_role_documents`). Per the live `contract_role_documents` table
+(item 1): the **LESSEE bundle is entirely deactivated** (DEALAUTO ruling — lessee
+paperwork is onboarding's job, not owed again), and the **LESSOR bundle is HORSE_EMERGENCY_VET
++ RELEASE_HORSE_CARE** (active). So a V3 lease generates a role bundle only for the
+LESSOR side, of exactly those two horse-token flat documents. (Full sign-through-execution
+of this lease was gated on clearing the 18 required fields — see item 6a; the bundle-
+generation path itself is `ensure_contract_role_documents`, keyed by role, idempotent
+per party.) **Document rows at creation: 1** (the lease itself). The role bundle rows
+materialize on send, one per active role-doc per party, which the generator dedups by
+`(document, role, template)`.
+
 ## Item 6 — Two findings from the bundle round
+
+### 6a — does `record_signature` refuse a signature while `contract_lock_blockers` is non-empty?
+
+**Nuanced, and it surfaces a real hole.** Two signing entry points exist:
+
+- **`lock_and_sign_contract(doc, role, typed_name, esign, title)`** — the LEASE/clause
+  path (ContractPage → `lockAndSign`, src/lib/contracts.ts:529). It **DOES** gate:
+  `v_blockers := contract_lock_blockers(...); IF jsonb_array_length(v_blockers) > 0 THEN
+  RAISE 'cannot sign: …'`. **PROVEN** — as the lessee on the lease above (blockers
+  non-empty) it raised `cannot sign: Required field(s) still empty: Lessee initials, …,
+  Term type, Lease type, …, Mortality insurance`. The list **includes blank required
+  SELECTORS with their pending placeholders** (Lease type, Term type, Mortality
+  insurance) — exactly the case item 6a names.
+- **`record_signature(doc, role, typed_name, …, esign)`** — the ONBOARDING/flat path
+  (SigningPanel → `recordSignature`; `signMyDocument`). It enforces signer-role + exact
+  typed-name match but **does NOT consult `contract_lock_blockers`** (no reference in the
+  live body). **PROVEN** — calling it as the lessee on the SAME blocked lease **recorded
+  the signature and returned `AWAITING_SIGNATURE`** (rolled back). It did not refuse.
+
+**So `record_signature` does NOT refuse on non-empty blockers; `lock_and_sign_contract`
+does.** For flat onboarding docs this is harmless (no required-field blockers — item 3
+signed four through `record_signature` fine). It is a hole only if a clause document with
+required fields is signed through `record_signature` rather than `lock_and_sign_contract`.
+
+**Bundle-round observation ("a lease described as editable with unfilled fields signed
+through execution") — HOLE or nothing-required?** A **hole in the lower primitive, masked
+in practice by UI routing**: the lease screen routes through the gated
+`lock_and_sign_contract`, so a human cannot execute a lease with unfilled required fields
+*through that screen*. But `record_signature` is directly reachable and would seal a
+blocked clause document. Whether the bundle-round lease was (a) signed via the ungated
+path or (b) a lease with all-optional fields is indistinguishable from the signature alone
+— which is itself the finding: **the completeness gate lives in one of the two signing
+functions, not in the shared primitive.**
+
+#### FINDING 6a-1 (reported, UNBUILT) — completeness gate not in the primitive
+`record_signature` should refuse (or its callers guarantee) a signature when
+`contract_lock_blockers` is non-empty — the same guard `lock_and_sign_contract` already
+applies. **Proposed fix:** after the signer/name checks in `record_signature`, add a
+scoped guard on the required_fields/open-change blockers (NOT the `horse_missing`
+blocker — flat onboarding docs must still sign). Not one line, and it edits a shared,
+heavily-used DB object owned by other threads (D35) → reported only.
+
+### 6b — invitation name storage; would a real client sign as their email?
+
+**CONFIRMED gap, which also blocks the party picker.** The staff + client test accounts
+(provisioned via `admin-send-invitation`/`register-invited`) carry
+`contacts.first_name = '<their own email>'`, `last_name = NULL`. Consequences:
+- their signature printed-name resolves to the email;
+- they are **excluded from the contract party picker** — `contract_party_options()`
+  requires `nullif(trim(first||' '||last),'') IS NOT NULL` and `<> 'Unnamed Contact'`; an
+  email-as-first-name technically passes nullif but reads as the email (I had to set a
+  real name on the client test account — "ZZ Test Lessee" — before it appeared in the
+  lessee picker for item 5).
+
+**Where the name is stored / is a real client affected:** `admin-send-invitation` carries
+`first_name`/`last_name` on the **invitations** row (both columns exist); at activation,
+redemption (`redeem_invitation`/`promote_contact_to_account`) applies them to the contact.
+**A real client invited with a name typed into the invitation form IS given that name.**
+The self-serve `/sign/*` funnels provision NAMELESS by design (SIGNDOOR) and collect the
+name on the first post-auth page — item 3 proved this works ("Zelda Testrider" landed on
+the contact at the details step before any signing). **So a real client is NOT asked to
+sign as their email**, provided either the staff invitation carried a name or the onboarding
+details step ran (both of which are the designed paths). The test accounts show
+email-as-first-name because their provisioning set first_name to the email and never a
+real name — **a test-data artifact, not the normal invited-client path.**
+**Not a single one-line fix** (spans invitation storage → redemption copy → the D22 §0
+name-completeness blocker that is "not enforced today"), so reported, not fixed. The one
+isolated, concrete issue is test-account hygiene (email-as-first-name on the two test
+contacts).
+
+### 6c — release on own account; manual no-doc invite owes nothing
+- **Liability release renders + signs on a real client's own account:** PASS (item 3 —
+  the rider opened RELEASE_PARTICIPANT + HUMAN_EMERGENCY_MEDICAL on their own account,
+  full body via `BodyWithSignatures`, signed to EXECUTED).
+- **Manual invite with no document → dashboard owing nothing:** the mechanism is the live
+  ruled design — an invite with no categories/template_keys calls nothing that writes
+  `contact_required_documents`, so the account reaches `/app/dashboard` (proven reachable
+  by the rider) with an empty pending set (D31/D32 null-tag state). Reported PASS-by-
+  mechanism; a bare no-doc invite was not independently UI-driven end to end within budget.
+
 ## Item 7 — Database test suite
 ## Item 8 — Report + checklist
