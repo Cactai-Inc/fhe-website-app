@@ -403,4 +403,202 @@ contacts).
   mechanism; a bare no-doc invite was not independently UI-driven end to end within budget.
 
 ## Item 7 — Database test suite
+
+### Snapshot regenerated per the documented procedure
+Regenerated `test/db/fixtures/schema_snapshot.sql` from production using the exact
+read-only recipe in the file's own header: `pg_dump --schema-only --schema=public
+--no-owner --no-privileges --no-tablespaces` + `pg_dump --data-only --column-inserts
+--disable-triggers` scoped to the 14 allowlisted tables (organizations, service_types,
+contract_templates/section/clause/field_defs, template_tokens, modules, tiers,
+tier_modules, horse_breeds, horse_colors, org_modules, template_variants); then stripped
+pg_dump 18's `\restrict`/`\unrestrict` meta-commands and commented out `CREATE SCHEMA
+public;`, concatenated under the header (date line updated to 2026-10-25). New size ~4.12 MB
+(was 3.12 MB — the schema has grown).
+
+### PII + drift guard: PASS
+- **Drift guard** (`snapshotDataTargets` / `SNAPSHOT_DATA_TABLES`): the only INSERT targets
+  in the new file are exactly the 14 allowlisted tables — nothing new. The harness loads it
+  without tripping the guard.
+- **PII guard:** zero rows for `business_config`, `contacts`, `profiles`, `signatures`,
+  `config_values`; exactly 1 `organizations` row (id/name/slug/status + weather coords, no
+  personal text); **zero email addresses** anywhere in the data section.
+
+### Full suite result — and the headline: the suite is already deeply red on main
+`npm run test:db`: **214 failed | 425 passed | 271 skipped (910)**, 67 test files failing.
+
+**This is NOT caused by the regeneration.** Running the SAME suite against the OLD
+(committed) snapshot gives **205 failed | 573 passed | 132 skipped** — the suite is already
+broadly broken on `main`. 56 of the 66 failing files fail identically on both snapshots.
+Do not read "214 failing" as a regression introduced here.
+
+Classification (no tests were edited to pass):
+
+**A. Pre-existing stale tests (~56 files, the large majority) — NOT a regression.**
+The dominant pattern is tests written against an earlier data/schema state:
+- **Retired-table references** — `relation "engagements"/"engagement_parties"/
+  "engagement_status"/"orders"/"offering_tiers"/"memberships" does not exist`. These tables
+  were removed in the ground-up refactor (D30). The tests still set up fixtures against the
+  old vocabulary. Example: all 6 `generate_document.test.ts` failures are this —
+  `error: relation "engagement_parties" does not exist` in the test's own setup, NOT a fault
+  in `generate_document` (which item 2 proved renders correctly on live prod).
+- **Hardcoded count/data-shape assertions that drifted** — "expected 6 to be 5", "expected 3
+  to be 0", "expected -1 to be >= 0", "orphan tokens in COMPANY_POLICIES.md: expected
+  ['{{SIG.CLIENT.DATE}}', …] to deeply equal []" (the templates evolved; `{{SIG.*}}` are now
+  legitimate signature tokens the test's registry predates). 106 AssertionErrors, almost all
+  this category, present on BOTH snapshots.
+- **Migration-order assertions** — the smoke test's "first migration is
+  create_bookings_and_inquiries" fails because that file was archived (D30); first file is now
+  `load_contract_bodies`. Snapshot-independent.
+
+**B. Harness gap — PGlite default-argument overload resolution (10 regen-introduced files).**
+The files that newly fail on the regenerated snapshot fail with `function X is not unique`
+for functions carrying several DEFAULT parameters — `grant_lesson_credit` (7 args, 5
+defaults), `_provision_purchase_for_offerings`, `mark_purchase_paid`, `create_search_
+engagement`, `book_open_slot`, `_generate_plan_month`. In PROD each has exactly ONE overload
+(verified via `pg_proc`), and these calls resolve fine on real Postgres; PGlite's older
+overload resolver treats a partial-positional call against a defaults-bearing function with
+`unknown`-typed literals as ambiguous. `grant_lesson_credit` is absent from the OLD snapshot
+entirely (a function added since the last snapshot), which is why its tests newly fail. **This
+is a harness/PGlite limitation, not a prod defect and not a stale test** — the SQL is valid on
+the real database. (The item specifically names "the emulated auth.users lacking
+last_sign_in_at" as the kind of harness gap to expect; this is the same class, a different
+instance.)
+
+**C. Real regressions surfaced by the suite: none newly confirmed here beyond the two
+independent findings.** The suite's red state predates this pass; the one concrete,
+independently-reproduced production defect is DEFECT R1 (item 3, client horse-add — caught by
+driving the real flow, not by this suite, which does not cover it). The item-6a
+`record_signature` gap (6a-1) is likewise a direct finding, not a test failure.
+
+Full per-test enumeration (file > test name) saved to
+`docs/reports/TEST-REGRESSION-2026-10-25-dbfailures.txt` (241 lines incl. BEFORE/AFTER retry
+variants). Nothing was edited to make a test pass.
+
+### Decision on the regenerated snapshot — preserved as an artifact, NOT swapped into the fixture
+The regenerated snapshot is the correct, current, PII-clean capture of prod. But swapping it
+into `test/db/fixtures/schema_snapshot.sql` and merging it would (a) change the committed test
+baseline for every other thread mid-build, and (b) **raise** the failing count 205→214 by
+exposing 10 more PGlite-ambiguity files — into a suite that is already red. So I have:
+- **restored the committed fixture** (`test/db/fixtures/schema_snapshot.sql` is byte-identical
+  to main — clean git diff), and
+- **preserved the regeneration** as `docs/reports/schema_snapshot.regenerated-2026-10-25.sql`
+  for ORCH/owner to adopt deliberately.
+Adopting it (and whether to fix the PGlite overload gap + triage the ~205 pre-existing stale
+tests) is an owner/ORCH call, flagged in the checklist. The regeneration, its guards, and the
+suite run are all done and reported as the item required.
+
 ## Item 8 — Report + checklist
+
+### Per-template result (the flat templates this pass covers)
+| template | exercised | result |
+|---|---|---|
+| HORSE_EMERGENCY_VET | rendered against ZZ horse, populated + empty; generated in the `horse` onboarding bundle; is the LESSOR role-bundle doc in item 5 | PASS render; horse-add CREATE blocked by R1 |
+| RELEASE_HORSE_CARE | rendered populated + empty; LESSOR role-bundle doc (item 5) | PASS render |
+| HORSE_TRANSACTION_REP | rendered populated + empty | PASS render |
+| COMPANY_POLICIES | generated + signed + executed + delivered + PDF verified (rider onboarding) | PASS |
+| FACILITY_RULES | generated + signed + executed + delivered + PDF verified | PASS |
+| HUMAN_EMERGENCY_MEDICAL | generated + signed + executed + delivered + PDF verified | PASS |
+| RELEASE_PARTICIPANT | generated + signed + executed + delivered + PDF verified | PASS |
+| RELEASE_GENERAL, EVALUATION_LIABILITY_WAIVER, FACILITY_LICENSE, HORSE_SEARCH_RETAINER, INDEPENDENT_CONTRACTOR, MINOR_RIDER, RELEASE_JUMPER_ADDENDUM | inventoried (item 1); not individually driven — they share the same flat `generate_document` engine proven above, and most have zero live documents | engine PASS by shared path; not individually driven |
+
+### Per-flow result
+| flow | result |
+|---|---|
+| `/sign/rider` → activate → details → 4 docs → sign → execute → deliver | PASS (end to end) |
+| `/sign/horse` → activate → details → horse-add | activation/details PASS; **horse-add FAIL (DEFECT R1)** |
+| `/sign/guest`, `/sign/rider+horse` | same engine; guest = subset of rider (no horse), rider+horse = rider+horse union (blocked at horse-add by R1); not separately driven |
+| Kiosk | the standalone anonymous kiosk is RETIRED (SIGNFLOW-D); the `/sign` flow IS the kiosk path — covered above |
+| Delivery (one email per signer, after all executed, PDFs match, disclosure boxes, no marker text) | PASS |
+| V3 lease create + role-bundle generation (once per party, no dupes, sequenced, held) | PASS (generation proven; not driven to execution — lessor has no account) |
+| Flat-template rendering against current sources (providers, location, pending, disclosure) | PASS |
+
+### Defects found (file/function · reproduction · proposed fix, UNBUILT)
+1. **DEFECT R1 — client horse-add completely broken (real regression).**
+   `create_horse_record(jsonb)` inserts `nullif(btrim(coalesce(p->>'injuries_to_humans','')),'')`
+   → NULL into `horses.injuries_to_humans`, which the overhaul's
+   `20261021T1300_disc_21_injuries_humans_and_warranties.sql` made `text NOT NULL` with no
+   default. **Repro:** onboarding horse step → save a horse without injuries text → `create_horse_record`
+   HTTP 400 `null value in column "injuries_to_humans" … violates not-null constraint (23502)`
+   (reproduced at the DB level, rolled back). **Blast radius:** every horse create via this RPC
+   without injuries text — client onboarding AND staff "add a horse". **Fix (one line):** in
+   `create_horse_record`, change that insert expression to `btrim(coalesce(p->>'injuries_to_humans',''))`
+   (write `''` not NULL); or `ALTER TABLE horses ALTER COLUMN injuries_to_humans SET DEFAULT ''`.
+   Not applied — shared DB object, D35.
+2. **FINDING 6a-1 — the completeness gate is not in `record_signature`.**
+   `record_signature` records a signature on a document with non-empty `contract_lock_blockers`
+   (proven: it sealed a blocked lease, returning AWAITING_SIGNATURE), while
+   `lock_and_sign_contract` correctly refuses. **Fix:** add the same scoped blocker guard
+   (required_fields/open-change, not `horse_missing`) to `record_signature`, or have its
+   onboarding/flat callers assert it. Reported; shared object, not one line.
+3. **FINDING 6b-1 — invitation→contact name propagation / test-account hygiene.**
+   The two test accounts carry email-as-first-name, so signatures/pickers resolve to the email
+   and they are filtered oddly by `contract_party_options`. The invited-client path (name on the
+   invitation → applied at redemption) and self-serve onboarding (name at the details step) both
+   give a real client a name, so a real client is not asked to sign as their email. The concrete,
+   isolated issue is test-data hygiene (fix the two test contacts' names). The deeper D22 §0
+   name-completeness blocker remains "not enforced today" — reported, spans several sites.
+4. **F2-1 / F2-2 (intended, not defects):** flat templates do not print "To be provided" for an
+   empty pending field and show SEX raw-uppercase; the overhaul deliberately left the flat path's
+   display behavior unchanged (only re-pointed data sources). Reported for the record; a
+   one-function follow-up if the owner wants flat forms to match the clause path.
+5. **Observation — test/db suite is already red on `main`** (205/910 failing on the committed
+   snapshot; 214 on the regenerated one). Dominant cause: stale tests referencing retired tables
+   (`engagements`, `orders`, …) and drifted hardcoded counts; plus a PGlite default-argument
+   overload-resolution harness gap on the regenerated snapshot. No test was edited. Not a
+   regression from this pass. Needs a dedicated test-triage task.
+6. **Observation — `set_contract_field` does not validate select values** against the field's
+   option list (it stored `LESSEE` for a field whose options were `LESSOR_ALL`/`LESSEE_AT_FAULT`).
+   Minor; noted in passing during item 5/6a.
+
+### Test data removed · test horse restored — CONFIRMED
+- Both provisioned onboarding accounts (`admin+fhe-reg-rider-…`, `admin+fhe-reg-horse-…`) and
+  everything they created (documents, signatures, deliveries, esign_consents, invitations,
+  signup_attempts, profiles, members, groups, clients, auth.users, contacts) — **fully purged**
+  (verified 0 rows under `admin+fhe-reg-%` in contacts/auth.users/invitations/requests; 0 orphan
+  signatures/deliveries).
+- Three test V3 leases created during item 5 (and their role-bundle docs + all dependents) —
+  **deleted**; 0 docs on ZZ Test Horse.
+- **ZZ Test Horse restored** to its pre-test empty state (registered_name/breed/color NULL,
+  microchip `ZZTEST000000001`, 0 relationships/locations/medications, empty disclosure lists).
+- Client test account name **restored** to its original (email-as-first-name, NULL last).
+- ZZ Test Owner (a shared contact, used as lessor) untouched. Staff test account untouched.
+- Worktree: Playwright devDeps (package.json/package-lock.json) and the `__regression__/`
+  harness are NOT committed and will be reverted/left untracked before merge (test tooling only).
+
+### Checklist (1–8)
+1. **Inventory — DONE.** 14 active non-contract templates inventoried (key, title, kind, flat vs
+   clause, render fn, HORSE/party tokens, assigning flow, doc counts). All flat, all render via
+   `generate_document`. Legacy HORSE_LEASE_V2 (1 executed doc) flagged.
+2. **Flat template rendering — DONE.** All three HORSE-token flat templates rendered against ZZ
+   horse populated + empty; every HORSE token resolves to the current source; nothing empty/stale;
+   production confirmed already running the overhaul. Two intended display divergences reported
+   (F2-1/F2-2).
+3. **Onboarding and kiosk — DONE (rider) / DEVIATED (horse) / N/A (kiosk).** Rider path driven end
+   to end through the production UI (activation → details → 4 docs generated/presented/signed/
+   executed). Staff designation pickers confirmed ABSENT for the client. Horse-add BLOCKED by
+   DEFECT R1 (reported, not a test miss). Kiosk: the standalone anonymous kiosk is retired; the
+   `/sign` flow is the kiosk path and was driven.
+4. **Delivery — DONE.** One combined email per signer, fired only after all executed (timestamps
+   proven); each attached PDF opens and matches the executed body (pdftotext, 0 misses). Disclosure
+   markers: PDF draws boxes from structured entries, zero `[[DISCLOSURE]]` marker text anywhere;
+   email body carries no inline marker text (content in the PDF).
+5. **Contract role bundle — DONE (generation) / DEVIATED (execution).** V3 lease created on ZZ
+   horse; `ensure_contract_role_documents` generated the LESSOR bundle (HORSE_EMERGENCY_VET seq 2,
+   RELEASE_HORSE_CARE seq 3) once per party, idempotent (2nd call → generated:[]), sequenced behind
+   the lease, held AWAITING_SIGNATURE. LESSEE bundle correctly empty (deactivated). Not driven to
+   full execution: the LESSOR (ZZ Test Owner) is a bare contact with no login, so delivery-on-full-
+   execution (identical to item-4's proven mechanism) was not re-driven. Document rows created: 3.
+6. **Two findings from the bundle round — DONE.** 6a: `lock_and_sign_contract` refuses while
+   blockers non-empty (incl. blank required selectors) and accepts once cleared — proven both ways;
+   the HOLE is that `record_signature` does NOT gate (6a-1). 6b: name-storage traced — invited/
+   onboarded clients do get a name; test accounts carry email-as-first-name (hygiene). 6c: release
+   on own account signs (PASS); no-doc invite owes nothing (PASS by mechanism).
+7. **Database test suite — DONE.** Snapshot regenerated per the documented read-only pg_dump; PII +
+   drift guard PASS; full suite run (214 failed / 425 passed / 271 skipped). Every failure
+   classified: ~205 pre-existing stale tests (retired tables, drifted counts — identical on the
+   committed snapshot), 10 regen-introduced PGlite default-arg overload-ambiguity (harness gap, SQL
+   valid on real Postgres). No tests edited. The regenerated snapshot is PRESERVED as an artifact,
+   NOT swapped into the committed fixture (swapping it raises red for every thread; adoption is an
+   ORCH/owner call). Full enumeration in the `-dbfailures.txt` companion.
+8. **Report — DONE.** This document, with per-template/per-flow pass/fail, the defect list with
+   repro + proposed unbuilt fixes, cleanup confirmation, and this checklist.

@@ -1,0 +1,241 @@
+test/db/audit_logs.test.ts > migration applies additively > lands after the documents/signatures migration
+test/db/audit_logs.test.ts > the trigger captures row changes > captures a DELETE on a deletable business table
+test/db/auth_contact_backbone.test.ts > contact-at-signup > is migration 9 and applies after the identity backbone
+test/db/business_config.test.ts > RLS — admin only, and changes are audited > hides config from plain users and blocks their writes; admin can set values
+test/db/business_config.test.ts > migration applies additively > lands after the audit_logs migration
+test/db/business_config.test.ts > singleton; identity seeded, commercial blanks unset > refuses a second row
+test/db/business_config.test.ts > singleton; identity seeded, commercial blanks unset > ships exactly one row: name + pricing seeded (migrations 20/21), protection window still blank
+test/db/business_identity.test.ts > business identity seed > generate_document resolves the ORG.* identity from the seed
+test/db/business_identity.test.ts > business identity seed > seeds ORG.LEGAL_IDENTITY so party blocks identify the sole proprietorship
+test/db/business_identity.test.ts > business identity seed > seeds the sole-prop identity: Charles Zigmund signs for the DBA (Contracts Legal Pass)
+test/db/careplans_days_are_the_frequency.test.ts > BEFORE — what the shipped (CREDITALIGN) bodies do > there is no plural day set: the generator filters ONE weekday
+test/db/careplans_days_are_the_frequency.test.ts > THE MECHANISM — bookings are the entitlement, a credit is the residue > a cancellation returns ONE credit — into the plan's own row, expiring at month end
+test/db/careplans_days_are_the_frequency.test.ts > THE MECHANISM — bookings are the entitlement, a credit is the residue > a provisioned month holds N bookings and ZERO spendable credits
+test/db/careplans_days_are_the_frequency.test.ts > THE MECHANISM — bookings are the entitlement, a credit is the residue > a second generate run writes nothing and spends nothing
+test/db/careplans_days_are_the_frequency.test.ts > THE MECHANISM — bookings are the entitlement, a credit is the residue > and the client is stopped at ONE more than the month holds
+test/db/careplans_days_are_the_frequency.test.ts > THE MECHANISM — bookings are the entitlement, a credit is the residue > the month is spendable on days the chosen pattern never contained
+test/db/careplans_days_are_the_frequency.test.ts > the migrations apply, and replay > applies cleanly, twice
+test/db/company_party_and_org_tokens.test.ts
+test/db/contract_bodies.test.ts > tokenized contract bodies > COMPANY_POLICIES > uses only tokens that exist in the dictionary
+test/db/contract_bodies.test.ts > tokenized contract bodies > EVALUATION_LIABILITY_WAIVER > uses only tokens that exist in the dictionary
+test/db/contract_bodies.test.ts > tokenized contract bodies > FACILITY_RULES > uses only tokens that exist in the dictionary
+test/db/contract_bodies.test.ts > tokenized contract bodies > HORSE_EMERGENCY_VET > uses only tokens that exist in the dictionary
+test/db/contract_bodies.test.ts > tokenized contract bodies > HORSE_LEASE > only uses recognized party namespaces
+test/db/contract_bodies.test.ts > tokenized contract bodies > HORSE_LEASE > uses only tokens that exist in the dictionary
+test/db/contract_bodies.test.ts > tokenized contract bodies > HORSE_SEARCH_RETAINER > uses only tokens that exist in the dictionary
+test/db/contract_bodies.test.ts > tokenized contract bodies > HORSE_TRANSACTION_REP > uses only tokens that exist in the dictionary
+test/db/contract_bodies.test.ts > tokenized contract bodies > HUMAN_EMERGENCY_MEDICAL > uses only tokens that exist in the dictionary
+test/db/contract_bodies.test.ts > tokenized contract bodies > RELEASE_GENERAL > uses only tokens that exist in the dictionary
+test/db/contract_bodies.test.ts > tokenized contract bodies > RELEASE_HORSE_CARE > uses only tokens that exist in the dictionary
+test/db/contract_bodies.test.ts > tokenized contract bodies > RELEASE_JUMPER_ADDENDUM > uses only tokens that exist in the dictionary
+test/db/contract_bodies.test.ts > tokenized contract bodies > RELEASE_PARTICIPANT > uses only tokens that exist in the dictionary
+test/db/contract_bodies_loaded.test.ts > bodies loaded > the 18 source-backed templates have a body; those without a source are NULL
+test/db/contract_bodies_loaded.test.ts > per-template tokens derived > derived tokens are faithful both ways for every loaded body
+test/db/contract_bodies_loaded.test.ts > per-template tokens derived > records each contract’s concrete party tokens linked to its template
+test/db/contract_modules.test.ts > HORSE_REPRESENTATION is retired > generate_document rejects it as inactive
+test/db/contract_modules.test.ts > HORSE_REPRESENTATION is retired > the lease direction of the finder covers the folded-in representation bundle
+test/db/contract_modules.test.ts > HORSE_SEARCH_RETAINER — directional merges from the current stage > explicit no-result AND no-consummation terms are present (owner body §3)
+test/db/contract_modules.test.ts > HORSE_SEARCH_RETAINER — directional merges from the current stage > find a buyer (owner/SELL) renders the right terminology
+test/db/contract_modules.test.ts > HORSE_SEARCH_RETAINER — directional merges from the current stage > find a horse to buy (buyer/BUY) renders the right terminology
+test/db/contract_modules.test.ts > HORSE_SEARCH_RETAINER — directional merges from the current stage > find a horse to lease (lessee/LEASE_IN) renders the right terminology
+test/db/contract_modules.test.ts > HORSE_SEARCH_RETAINER — directional merges from the current stage > find a lessee (owner/LEASE_OUT) renders the right terminology
+test/db/contract_modules.test.ts > HORSE_SEARCH_RETAINER — directional merges from the current stage > the four directions produce four DIFFERENT documents from the one template
+test/db/contract_modules.test.ts > create_purchase_engagement — records the buyer/BUY TRANSACTION_REP stage > the RPC opens the stage and HORSE_TRANSACTION_REP merges purchase-side terms
+test/db/contract_modules.test.ts > module separability > an evaluation generates standalone too (singular engagement shape)
+test/db/contract_modules.test.ts > module separability > the search document generates with NO transactions row and no other module document
+test/db/contract_modules.test.ts > staged revenue chain — fee tokens live in their own modules > evaluation module: the per-horse evaluation fee resolves
+test/db/contract_modules.test.ts > staged revenue chain — fee tokens live in their own modules > file-level placement: each module fee token appears ONLY in its module body
+test/db/contract_modules.test.ts > staged revenue chain — fee tokens live in their own modules > search module: flat retainer AND contingent success/acquisition fee resolve
+test/db/contract_modules.test.ts > staged revenue chain — fee tokens live in their own modules > transaction-rep module: the representation fee resolves, side-scoped
+test/db/contract_templates_tokens.test.ts > RLS — templates read-active, admin-write > lets anyone read active templates but blocks non-admin writes; admin sees inactive
+test/db/contract_templates_tokens.test.ts > contract_templates — the 24 canonical contracts > bilateral templates name COMPANY plus a counterparty; the CLIENT-signer docs are unilateral
+test/db/contract_templates_tokens.test.ts > contract_templates — the 24 canonical contracts > seeds exactly the 24 canonical rows; all active except the retired HORSE_REPRESENTATION + RELEASE_HORSE_EXERCISE
+test/db/contract_templates_tokens.test.ts > migration applies additively > lands after the engagements/horses backbone
+test/db/contract_templates_tokens.test.ts > template_tokens — the dictionary in the database > contains the canonical tokens from each namespace (matches the .md)
+test/db/contract_templates_tokens.test.ts > template_tokens — the dictionary in the database > party-scoped tokens live under PARTY or a concrete party namespace; signatures are signature-kind
+test/db/contract_templates_tokens.test.ts > template_tokens — the dictionary in the database > seeds the global dictionary with well-formed, correctly-classed tokens
+test/db/contract_workflow.test.ts
+test/db/contractsend_field_roundtrip.test.ts
+test/db/cr119_cobuyer_election_exit.test.ts
+test/db/creditalign_recurring_entitlement_and_swap.test.ts > BEFORE — the bug, on the shipped bodies > a recurring SKU mints nothing at all, both segments
+test/db/creditalign_recurring_entitlement_and_swap.test.ts > BEFORE — the bug, on the shipped bodies > there is no way to swap a booking to a different purchased item
+test/db/creditalign_recurring_entitlement_and_swap.test.ts > TEST 1 — every SKU mints what the catalog says, lessons AND horse care > recurring HORSE CARE mints exactly like the lesson one — 1x and 2x
+test/db/creditalign_recurring_entitlement_and_swap.test.ts > TEST 1 — every SKU mints what the catalog says, lessons AND horse care > recurring rider 1x → weekly_frequency × weekday occurrences left this month
+test/db/creditalign_recurring_entitlement_and_swap.test.ts > TEST 1 — every SKU mints what the catalog says, lessons AND horse care > recurring rider 2x → double the 1x count
+test/db/creditalign_recurring_entitlement_and_swap.test.ts > TEST 1 — every SKU mints what the catalog says, lessons AND horse care > session packs are unchanged — CREDITFIX's table still holds
+test/db/creditalign_recurring_entitlement_and_swap.test.ts > TEST 2 — a month expires and does not carry over > an allotment carries period_start = month start and expires_at = next month
+test/db/creditalign_recurring_entitlement_and_swap.test.ts > TEST 3 — generate_monthly_lessons and the entitlement do not double-spend > a second run writes nothing new and spends nothing
+test/db/creditalign_recurring_entitlement_and_swap.test.ts > TEST 3 — generate_monthly_lessons and the entitlement do not double-spend > every generated session spends exactly one allotment credit, and it stops when they run out
+test/db/creditalign_recurring_entitlement_and_swap.test.ts > TEST 7 — the month roll, and stopping a plan without a developer > an UNPAID plan does not roll
+test/db/creditalign_recurring_entitlement_and_swap.test.ts > TEST 7 — the month roll, and stopping a plan without a developer > mints next month for a PAID plan, once, however often it runs
+test/db/creditalign_recurring_entitlement_and_swap.test.ts > TEST 7 — the month roll, and stopping a plan without a developer > set_recurring_plan_end stops the roll — and never claws back the month already bought
+test/db/creditalign_recurring_entitlement_and_swap.test.ts > TEST 8 — the plan view reads the ledger, both segments > my_monthly_plan returns every current-month plan and its numbers ARE the credit row
+test/db/creditfix_mint_from_unit_count.test.ts > AFTER the migration — the mint table the task brief specifies > mints unit_count x quantity, gated on segment <> horse — not service_type
+test/db/creditfix_mint_from_unit_count.test.ts > BEFORE the migration — the bug, reproduced on the shipped body > mints the exact wrong table from the FLOWTRACE report
+test/db/creditfix_mint_from_unit_count.test.ts > BEFORE the migration — the bug, reproduced on the shipped body > the shipped function still keys the mint on a name regex
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > mode 1 — HAND-WRITE
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > mode 2 — COMP, and the loss it generates
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > mode 3 — BILL, and asking for the money
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > the gate — no reason, no grant (D19.2) > refuses a SKU that carries no credit units rather than granting nothing
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > the gate — no reason, no grant (D19.2) > refuses a blank reason
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > the gate — no reason, no grant (D19.2) > refuses a non-staff caller
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > the gate — no reason, no grant (D19.2) > refuses a recurring SKU by name — a standing slot is not a credit balance (D23)
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > the gate — no reason, no grant (D19.2) > refuses an unknown mode
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > the ledger says where each credit came from (§4) > hides a revoked grant, and explains a spent one instead of offering a dead button
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > the ledger says where each credit came from (§4) > labels purchase / handwrite / comp / bill differently, with the reason
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > the undo (D19.4) > REFUSES once a credit has been spent — the lesson happened
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > the undo (D19.4) > a reversed comp stops counting as a loss
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > the undo (D19.4) > refuses twice, refuses without a reason, and refuses a non-grant order
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > the undo (D19.4) > reverses a hand-written grant, and the recorded payment with it
+test/db/creditgrant_handwrite_comp_and_bill.test.ts > the undo (D19.4) > takes back the entitlement and voids the order and its lines
+test/db/crm_identity.test.ts > RLS — contact is the backbone, scoped to its owner > lets a client update only their own contact, and hides soft-deleted rows from them
+test/db/crm_identity.test.ts > migration applies additively > lands cleanly as an additive migration after the seven
+test/db/crm_identity.test.ts > migration applies additively > left the existing tables intact (orders/profiles still present)
+test/db/crm_identity.test.ts > offerings reconciliation > maps the key slugs to the right service type
+test/db/crm_identity.test.ts > service catalog (13 canonical types) > seeds exactly the 13 finalized service types, all active
+test/db/crm_identity.test.ts > service catalog (13 canonical types) > seeds the 9-state engagement lifecycle
+test/db/documents_signatures_deliveries.test.ts > RLS — owner-scoped, client self-sign > a client reads only their own documents and may sign as themselves; strangers cannot
+test/db/documents_signatures_deliveries.test.ts > documents & signatures are never hard-deletable > blocks DELETE even for an admin
+test/db/documents_signatures_deliveries.test.ts > documents > assigns DOC- identifiers and defaults to DRAFT
+test/db/documents_signatures_deliveries.test.ts > documents > rejects an unknown status (FK to the lookup)
+test/db/documents_signatures_deliveries.test.ts > migration applies additively > lands after the contract templates migration
+test/db/documents_signatures_deliveries.test.ts > migration applies additively > seeds the document status lifecycle
+test/db/documents_signatures_deliveries.test.ts > signatures seal on signing > an unsigned (draft) signature can still be edited
+test/db/documents_signatures_deliveries.test.ts > signatures seal on signing > blocks substantive edits once signed_at is set, but allows archival
+test/db/e2e_consumption.test.ts
+test/db/e2e_contract.test.ts
+test/db/e2e_provision.test.ts > chain 1 — config_required_missing lists the go-live gaps > lists exactly the unset required keys (CONTACT.EMAIL / CONTACT.PHONE)
+test/db/e2e_provision.test.ts > chain 1 — the new ADMIN logs in gated + isolated from tenant #1 > ISOLATION the other way: tenant #1 keeps its own entitlements/config untouched
+test/db/engagements_horses_backbone.test.ts > RLS — client sees own engagements and their horses only > owns by contact OR by an owned engagement; strangers are hidden; anon sees none
+test/db/engagements_horses_backbone.test.ts > horses are never hard-deletable (append-only / archival) > blocks DELETE even for an admin, but allows soft-delete that hides the row from clients
+test/db/engagements_horses_backbone.test.ts > human identifiers > assigns ENG-YYYY-NNNNNN codes (year-stamped) per the merge dictionary
+test/db/engagements_horses_backbone.test.ts > human identifiers > assigns HOR- codes sequentially
+test/db/engagements_horses_backbone.test.ts > integrity constraints > FK-constrains breed/color to the lookups
+test/db/engagements_horses_backbone.test.ts > migration applies additively > created the new tables alongside the existing ones
+test/db/engagements_horses_backbone.test.ts > migration applies additively > lands after the identity (8) and auth (9) backbones
+test/db/entitlements.test.ts > SUPER_ADMIN is NOT silently granted every module > has_module() keys off org_modules for the super admin's own org, not the role
+test/db/entitlements.test.ts > has_module() — the RLS predicate > is false for a module the current org does not have
+test/db/entitlements.test.ts > require_module() — the RPC guard > raises with insufficient_privilege when the module is OFF
+test/db/entitlements.test.ts > tier expansion → FHE org_modules > FHE (tenant #1) is seeded exactly {mod.lessons, mod.brokerage, mod.horserecords}
+test/db/errsweep_repro.test.ts > the confirmed case: redeeming an already-redeemed contract invitation > genuinely raises on the second redemption — this is what RegisterComplete.tsx must surface
+test/db/errsweep_repro.test.ts > the confirmed case: redeeming an already-redeemed contract invitation > toErrorMessage surfaces that exact text from the plain-object shape supabase-js hands the catch block
+test/db/esign_hardening.test.ts
+test/db/form_definitions.test.ts > form_definitions seed > loads 15 client intake + 12 company engagement forms
+test/db/form_definitions.test.ts > parse fidelity (spot checks) > captures the purchase intake discipline checkboxes
+test/db/form_definitions.test.ts > token migration (company forms) > engagement-id system fields use the namespaced {{ENG.ID}} token
+test/db/generate_document.test.ts > generate_document — guards > rejects a template with no loaded body
+test/db/generate_document.test.ts > generate_document — guards > rejects an unknown engagement
+test/db/generate_document.test.ts > generate_document — guards > rejects an unknown template
+test/db/generate_document.test.ts > generate_document — merge > blanks tokens whose source is not modeled yet (no orphan {{…}} except SIG)
+test/db/generate_document.test.ts > generate_document — merge > persists a DRAFT documents row carrying the merged body
+test/db/generate_document.test.ts > generate_document — merge > resolves party, horse, and config tokens; leaves signatures live
+test/db/generate_document_org_fix.test.ts
+test/db/harness.smoke.test.ts > migrations > discovers the seven deployed migrations in order
+test/db/intake_submissions.test.ts
+test/db/leadclean_open_queue.test.ts > TASK-LEADCLEAN — the contact_id backfill > does not touch the reserved control row
+test/db/leadclean_open_queue.test.ts > TASK-LEADCLEAN — the contact_id backfill > refuses the ambiguous row rather than guessing a person
+test/db/lesson_sessions.test.ts
+test/db/lessonform_one_form_per_booking.test.ts > BEFORE the migrations — the central gap, on the shipped schema > no instance/response table exists: a form can be defined and never filled in
+test/db/lessonform_one_form_per_booking.test.ts > BEFORE the migrations — the central gap, on the shipped schema > set_booking_log writes bookings.activity_log directly — nothing behind it
+test/db/liability_releases.test.ts
+test/db/membership_self_heal.test.ts
+test/db/minor_onboarding.test.ts
+test/db/mod_barnops.test.ts
+test/db/mod_boarding.test.ts
+test/db/mod_employees.test.ts > module ON — org B ADMIN has full RCUD on scheduling > org B ADMIN reads staff via profiles and org_id defaults on scheduling inserts
+test/db/mod_employees.test.ts > module_gate — a mod.employees-OFF org (FHE) sees/writes NOTHING in scheduling > has_module(mod.employees) is false for org A, true for org B
+test/db/mod_employees.test.ts > module_gate — a mod.employees-OFF org (FHE) sees/writes NOTHING in scheduling > org A ADMIN (module off) cannot INSERT into shifts / time_entries
+test/db/mod_employees.test.ts > soft-delete coverage > hard DELETE is revoked on the scheduling tables (soft-delete only)
+test/db/mod_horserecords.test.ts
+test/db/mod_lessons.test.ts
+test/db/my_modules.test.ts > my_modules() — the Layer-C nav/route gating seam > FHE resolves lessons+brokerage and HIDES boarding/barnops/employees (manual acceptance)
+test/db/my_modules.test.ts > my_modules() — the Layer-C nav/route gating seam > a plain USER member (not staff) resolves their own tenant module set
+test/db/my_modules.test.ts > my_modules() — the Layer-C nav/route gating seam > an outsider (no org) gets an empty set, not an error
+test/db/new_storage_buckets.test.ts > buckets > creates the three new private buckets
+test/db/new_storage_buckets.test.ts > horse-health owner read > a client who owns the horse reads its horse-health objects within its org
+test/db/new_storage_buckets.test.ts > org-prefix isolation (org_id is the leading path segment) > a malformed leading path segment yields no access (try_cast_uuid NULL)
+test/db/new_storage_buckets.test.ts > org-prefix isolation (org_id is the leading path segment) > an orgA admin can write and read under its own org prefix
+test/db/new_storage_buckets.test.ts > org-prefix isolation (org_id is the leading path segment) > an orgA brand-assets object is invisible and unwritable to an orgB user
+test/db/new_storage_buckets.test.ts > staff vs admin write layering > staff may write inventory-docs/horse-health under own org, not brand-assets
+test/db/notifications.test.ts
+test/db/organizations.test.ts > organizations foundation > a member sees their org; an outsider with no membership sees none
+test/db/paylock_finalize_payment_buyer_keys.test.ts > BEFORE the migration — the bug, reproduced on the snapshot body > and the order is left with no memo and no match key
+test/db/paylock_finalize_payment_buyer_keys.test.ts > BEFORE the migration — the bug, reproduced on the snapshot body > the shipped function keys on buyer_user_id alone
+test/db/paylock_finalize_payment_buyer_keys.test.ts > BEFORE the migration — the bug, reproduced on the snapshot body > …but the RPC raises "purchase not found" for that same buyer
+test/db/platform_catalog_org_scope.test.ts > U4 class-A boundary: default / cross-tenant reject / hide > availability_slots: defaults org_id to caller, rejects cross-tenant, hides other tenant
+test/db/platform_catalog_org_scope.test.ts > U4 class-A boundary: default / cross-tenant reject / hide > memberships: defaults org_id to caller, rejects cross-tenant, hides other tenant
+test/db/platform_catalog_org_scope.test.ts > U4 class-A commerce: orders/order_items default + isolate > orders defaults org_id and hides across tenants; order_items too
+test/db/platform_catalog_org_scope.test.ts > U4 §8.6 anon-read catalog: addressed-tenant scoping
+test/db/platform_catalog_org_scope.test.ts > U4 §8.6 class-B intake: raw anon insert is org-null + invisible > a real anon (no host) inserts a request that lands org_id NULL and no tenant admin can see it
+test/db/pricing.test.ts > commission token resolution > renders {{TXN.COMMISSION_RATE}} as 15% in the finder retainer contract
+test/db/pricing.test.ts > pricing seed > records 15% / $500 commission and $250/$150 lease fees
+test/db/products_billing.test.ts > billable_lines: SETTLED lines are append-only (seal)
+test/db/products_billing.test.ts > products: default org_id, cross-tenant enforcement, module gate > a product with a module_key is HIDDEN when that module is OFF for the tenant
+test/db/products_billing.test.ts > products: default org_id, cross-tenant enforcement, module gate > an ADMIN cannot INSERT a product for a module the tenant does NOT have (gate WITH CHECK)
+test/db/provision_tenant.test.ts > a SUPER_ADMIN provisions a second tenant (tier.boarding) > does NOT disturb FHE (tenant #1) entitlements — still lesson_brokerage
+test/db/public_intake.test.ts > form_definitions — anon reads only active CLIENT forms > a COMPANY form really exists (the anon filter is doing work)
+test/db/public_intake.test.ts > form_definitions — anon reads only active CLIENT forms > anon sees the CLIENT intake set and none of the COMPANY forms
+test/db/public_intake.test.ts > intake_submissions — the anon submit seam > addressed-org arm: an anon submission for org B lands in org B; org A staff never see it
+test/db/public_intake.test.ts > intake_submissions — the anon submit seam > anon cannot READ or UPDATE the queue (write-only from the public side)
+test/db/public_intake.test.ts > intake_submissions — the anon submit seam > anon submits a CLIENT form; it lands NEW in the seed tenant and staff read it back
+test/db/purchase_broker_contracts.test.ts
+test/db/purchase_flow.test.ts
+test/db/redeem_invitation.test.ts > redeem_invitation > grants an active membership and consumes the token
+test/db/redeem_invitation.test.ts > redeem_invitation > reactivates a paused membership
+test/db/redeem_invitation.test.ts > redeem_invitation > rejects re-redemption, wrong-email users, and anon
+test/db/release_kiosk.test.ts > cross-tenant isolation > a second org's kiosk documents never land in org A
+test/db/release_kiosk.test.ts > release_preview — all four releases + the rules gate document > merges trade name + date, hides signatures, carries the owner content decisions
+test/db/release_kiosk.test.ts > sign_release — adult path > executes on the single CLIENT signature; minor CUT section stripped whole
+test/db/release_kiosk.test.ts > sign_release — minor path > guardian signs as CLIENT; minor is a non-signing PARTICIPANT; MINOR section kept with name + DOB
+test/db/release_kiosk.test.ts > sign_release — rules gate > rejects without the rules acknowledgment; records it when given
+test/db/request_inbox.test.ts
+test/db/reviewq_pending_and_company_queue.test.ts > BEFORE the migration — the bug, reproduced on the shipped body > book_open_slot still writes status='scheduled' literally
+test/db/reviewq_pending_and_company_queue.test.ts > BEFORE the migration — the bug, reproduced on the shipped body > delete_calendar_item still hard-DELETEs with no history check
+test/db/reviewq_pending_and_company_queue.test.ts > R1 — book_open_slot lands pending, not scheduled > claiming an open slot debits the credit but leaves the booking PENDING
+test/db/reviewq_pending_and_company_queue.test.ts > R1 — book_open_slot lands pending, not scheduled > inserts exactly one companion booking_change_requests row (request_kind='new')
+test/db/reviewq_pending_and_company_queue.test.ts > R1 — book_open_slot lands pending, not scheduled > shows up in the staff queue (open_change_requests) and nowhere else new
+test/db/reviewq_pending_and_company_queue.test.ts > R1 — display buckets: pending is its own bucket, not folded into scheduled > my_lesson_sessions reports a pending lesson as PENDING, not a raw/unbucketed value
+test/db/reviewq_pending_and_company_queue.test.ts > R2/R4 — propose another time: round-trips through booking_change_requests, no new table > client accepts a staff-proposed counter-time: booking shifts and confirms
+test/db/reviewq_pending_and_company_queue.test.ts > R2/R4 — propose another time: round-trips through booking_change_requests, no new table > client declines a staff-proposed counter-time: round-trips to a fresh pending row, booking stays pending
+test/db/reviewq_pending_and_company_queue.test.ts > R2/test#3 — confirm: staff decides, client notified, companion row closes > confirm -> scheduled, notification row proves it (fire-and-forget lesson)
+test/db/reviewq_pending_and_company_queue.test.ts > R3/test#4 — decline: terminal status, row survives, credit refunded, reason recorded > decline mints a change_credit refund and records the reason on the row
+test/db/reviewq_pending_and_company_queue.test.ts > R3/test#6 — delete_calendar_item can no longer destroy a booking with history > retires (never deletes) a pending booking that already carries a client + a credit
+test/db/rider_onboarding.test.ts
+test/db/rls_meta_coverage.test.ts > second-tenant isolation + module gate end-to-end (tier.boarding) > BRAND: generate_document renders the boarding tenant's OWN {{ORG.*}} identity, never another tenant's
+test/db/rls_meta_coverage.test.ts > second-tenant isolation + module gate end-to-end (tier.boarding) > MODULE GATE: the boarding tenant is DENIED the brokerage tables (invisible AND unwritable)
+test/db/rls_meta_coverage.test.ts > second-tenant isolation + module gate end-to-end (tier.boarding) > RPC GATE: the boarding tenant is DENIED the brokerage engagement-creation RPCs
+test/db/rls_meta_coverage.test.ts > §4.3(a) every org_id table has a RESTRICTIVE <t>_org_boundary > enumerates the org_id tables and their boundary policies from the catalog
+test/db/rls_meta_coverage.test.ts > §4.3(b) every module-owned table has a RESTRICTIVE <t>_module_gate > each module table carries a policy named <t>_module_gate that is RESTRICTIVE
+test/db/rls_meta_coverage.test.ts > §4.3(e) every new business table has an audit trigger firing audit_row_change() > each of the 22 business tables carries exactly one audit_row_change() trigger
+test/db/sale_golden_render.test.ts > HORSE_SALE_V2 — golden branch fixtures > fixture A (co-buyer YES, JTWROS) composes every elected branch
+test/db/sale_golden_render.test.ts > HORSE_SALE_V2 — golden branch fixtures > unset gates render pending placeholders (blocks-signing surface)
+test/db/sign_general_release.test.ts > second-org isolation > a release for org B (explicit p_org) lands entirely in org B and EXECUTES (no signatory)
+test/db/sign_general_release.test.ts > second-org isolation > org A staff see NONE of org B's release; org B staff see all of it
+test/db/sign_general_release.test.ts > second-org isolation > org A's visitor contact never leaks into org B's email match (per-org find-or-create)
+test/db/sign_general_release.test.ts > visitor flow end-to-end (tenant #1, anon caller) > EXECUTES immediately on the single visitor signature (unilateral, owner 2026-07-02)
+test/db/sign_general_release.test.ts > visitor flow end-to-end (tenant #1, anon caller) > a repeat visitor with the same email reuses the same contact
+test/db/sign_general_release.test.ts > visitor flow end-to-end (tenant #1, anon caller) > records a SEALED CLIENT signature (typed_name immutable once signed)
+test/db/sign_general_release.test.ts > visitor flow end-to-end (tenant #1, anon caller) > signs as anon: real contact, client, NON-SERVICE engagement, merged document
+test/db/slotreach_standing_slot_reach.test.ts > §5 — reschedule and cancel each fire a notification > a STAFF reschedule tells the client — WALK2 G-3, first half
+test/db/slotreach_standing_slot_reach.test.ts > §5 — reschedule and cancel each fire a notification > an edit that does NOT move the session says nothing — a note is not news
+test/db/storage_buckets.test.ts > RLS — path-prefix ownership > lets a client upload to their own profile path, but not elsewhere
+test/db/storage_buckets.test.ts > RLS — path-prefix ownership > scopes reads to owned engagements/horses/self; admin all; anon none
+test/db/storage_buckets.test.ts > buckets > creates the eight launch buckets (profile-images public-read as of 20260702080000)
+test/db/value_registry.test.ts > config_keys + go-live completeness check > a required config_keys entry left UNSET is detectable per tenant
+test/db/value_registry.test.ts > config_keys + go-live completeness check > seeds the global key whitelist with expected_type + required flags
+test/db/value_registry.test.ts > config_value() — typed + EAV resolution, current_org()-scoped > is scoped to current_org(): org A resolves only its own values (never org B's)
+test/db/value_registry.test.ts > config_value() — typed + EAV resolution, current_org()-scoped > resolves the EAV config_values field (BRAND.NAME / CONTACT.EMAIL) for the caller tenant
+test/db/value_registry.test.ts > config_value() — typed + EAV resolution, current_org()-scoped > resolves the TYPED business_config field (ORG.LEGAL_NAME) for the caller tenant
+test/db/value_registry.test.ts > config_values — UNIQUE(org, namespace, key) > allows the same (namespace,key) in a DIFFERENT org (unique is per-org)
+test/db/value_registry.test.ts > config_values — org boundary (seam 1) + default org_id > org A cannot SEE org B rows
+test/db/value_registry.test.ts > generate_document — {{ORG.*}} / {{FHE.*}} CONTACT wiring (U3 half) > resolves CONTACT phone/email per tenant — the arm generate_document reads
+test/db/value_registry.test.ts > org_public_config(slug) — anon-safe public exposure > returns brand + public contact for the ADDRESSED tenant, as anon
+test/db/wallreturn_wall_state.test.ts > my_wall_state() — the exact signal AppLayout/Onboarding gate on > PARTIAL COMPLETION: signing the first of two does not release the wall
+test/db/wallreturn_wall_state.test.ts > my_wall_state() — the exact signal AppLayout/Onboarding gate on > signing the LAST gating document clears the wall
+test/db/wallreturn_wall_state.test.ts > my_wall_state() — the exact signal AppLayout/Onboarding gate on > walls the member once required wall-gating documents exist
+test/db/zelleclose_paid_notify_spine.test.ts > AFTER the migration — one spine > a booking created already-paid now notifies staff, same as mark_purchase_paid
+test/db/zelleclose_paid_notify_spine.test.ts > AFTER the migration — one spine > an already-paid purchase is a no-op (unchanged short-circuit)
+test/db/zelleclose_paid_notify_spine.test.ts > AFTER the migration — one spine > mark_purchase_paid keeps notifying (unchanged, still routed through the shared helper)
+test/db/zelleclose_paid_notify_spine.test.ts > BEFORE the migration — the silent writer, reproduced > a booking created already-paid does NOT notify staff
+test/db/zelleclose_paid_notify_spine.test.ts > BEFORE the migration — the silent writer, reproduced > control: mark_purchase_paid DOES notify staff (the writer that was never silent)
+test/db/zelleclose_payment_notifications_staff_write.test.ts > BEFORE the migration — Dismiss reproduced as unreachable > a staff UPDATE affects 0 rows even though the row is visible and org matches
