@@ -1385,6 +1385,20 @@ export async function getDocument(id: string): Promise<DocumentRow | null> {
   return (data as DocumentRow | null) ?? null;
 }
 
+/** ⚠️ FIX ROUND item 4 — STAFF CORRECTION of a document's effective date (the
+ *  date it is in force on). States itself, requires a reason, and is recorded
+ *  with the actor + timestamp (D19) via set_document_effective_date, which writes
+ *  the date and a reasoned audit row. */
+export async function setDocumentEffectiveDate(
+  documentId: string, effectiveDate: string, reason: string,
+): Promise<{ document_id: string; effective_date: string; previous: string | null }> {
+  const { data, error } = await supabase.rpc('set_document_effective_date', {
+    p_document_id: documentId, p_effective_date: effectiveDate, p_reason: reason,
+  });
+  if (error) throw error;
+  return data as { document_id: string; effective_date: string; previous: string | null };
+}
+
 /** Every non-deleted document, newest first (the staff queue).
  *
  *  The `engagementId` filter was removed 2026-07-30: it filtered on
@@ -1415,7 +1429,7 @@ export async function listDocuments(): Promise<DocumentQueueRow[]> {
   const { data, error } = await supabase
     .from('documents')
     .select(`
-      id, display_code, title, status, generated_at, sent_at, voided_at, signed_template_version,
+      id, display_code, title, status, generated_at, effective_date, sent_at, voided_at, signed_template_version,
       contact_id, horse_id, contract_id, template_id,
       archived_at, terminated_at, current_status,
       contact:contacts!documents_contact_id_fkey(first_name, last_name),

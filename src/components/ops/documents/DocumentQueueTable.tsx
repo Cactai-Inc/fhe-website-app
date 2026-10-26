@@ -168,8 +168,12 @@ const COLUMN_DEFS: Column<DocumentQueueRow>[] = [
   },
   {
     key: 'dateSigned',
-    header: 'Date Signed',
-    render: (row) => <span>{formatDate(deriveDateSigned(row.signatures))}</span>,
+    header: 'Effective Date',
+    /* ⚠️ FIX ROUND item 4 — the executed date is the canonical effective_date (one
+       source), not a value re-derived from the signatures each render. Falls back
+       to the signing date only when effective_date is absent (older executions),
+       so nothing regresses. */
+    render: (row) => <span>{formatDate(row.effective_date ?? deriveDateSigned(row.signatures))}</span>,
   },
   {
     key: 'dateSent',

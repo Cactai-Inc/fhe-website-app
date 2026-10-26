@@ -1,7 +1,8 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { getDocument, listSignatures } from '../../../lib/api';
+import { getDocument, listSignatures, setDocumentEffectiveDate } from '../../../lib/api';
+import { toErrorMessage } from '../../../lib/ops/errors';
 import type { DocumentRow, Signature } from '../../../lib/ops/types';
 import { DataTable, EmptyState, StatusBadge, useAsync } from '../../../lib/ops';
 import type { Column } from '../../../lib/ops';
@@ -92,6 +93,66 @@ function printDocument() {
   cleanup();
 }
 
+/** ⚠️ FIX ROUND item 4 — the effective-date correction control. Collapsed to a
+ *  "Correct" link until opened; then a date + a REQUIRED reason, and on save it
+ *  calls set_document_effective_date (which writes the date and a reasoned audit
+ *  row) and reloads the viewer. D19: nothing moves without a reason on record. */
+function EffectiveDateCorrection({
+  documentId, current, onDone,
+}: {
+  documentId: string; current: string | null; onDone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState(current ?? '');
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save() {
+    if (!date || !reason.trim()) { setErr('A date and a reason are both required.'); return; }
+    setBusy(true); setErr(null);
+    try {
+      await setDocumentEffectiveDate(documentId, date, reason.trim());
+      setOpen(false); setReason('');
+      onDone();
+    } catch (e) {
+      setErr(toErrorMessage(e, 'Could not update the effective date.'));
+    } finally { setBusy(false); }
+  }
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => { setDate(current ?? ''); setOpen(true); }}
+        className="text-xs text-green-800 underline underline-offset-2 focus-ring self-center">
+        Correct
+      </button>
+    );
+  }
+  return (
+    <div className="basis-full border border-green-800/15 bg-cream-100/50 p-3 mt-1 flex flex-col gap-2 text-sm">
+      <p className="text-green-900">Correct the effective date. The change is recorded with your name and the reason.</p>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex flex-col">
+          <span className="form-label mb-0.5">Effective date</span>
+          <input type="date" className="form-input py-1" value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
+        <label className="flex-1 min-w-[12rem] flex flex-col">
+          <span className="form-label mb-0.5">Reason (required)</span>
+          <input className="form-input py-1" value={reason} onChange={(e) => setReason(e.target.value)}
+            placeholder="Why the date is changing" />
+        </label>
+      </div>
+      {err && <p role="alert" className="form-error text-xs">{err}</p>}
+      <div className="flex gap-2">
+        <button type="button" className="btn-primary text-xs py-1 px-3" disabled={busy} onClick={() => void save()}>
+          {busy ? 'Saving…' : 'Save correction'}
+        </button>
+        <button type="button" className="text-xs text-muted px-2" onClick={() => { setOpen(false); setErr(null); }}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
 export default function DocumentViewerPage() {
   const { id } = useParams<{ id: string }>();
   const { data, error, isPending, isError, run } = useAsync(loadDocumentView);
@@ -170,6 +231,13 @@ export default function DocumentViewerPage() {
             <dt className="form-label mb-0">Effective date</dt>
             <dd>{formatDate(document.effective_date)}</dd>
           </div>
+          {/* ⚠️ FIX ROUND item 4 — correct the effective date. Only on an executed
+              document (before that, the date follows signing); staff-gated at the
+              RPC. States itself + requires a reason + is audited. */}
+          {isExecuted && (
+            <EffectiveDateCorrection documentId={document.id}
+              current={document.effective_date} onDone={load} />
+          )}
           {document.display_code && (
             <div className="flex gap-2">
               <dt className="form-label mb-0">Reference</dt>

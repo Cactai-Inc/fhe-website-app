@@ -250,6 +250,9 @@ export interface DocumentQueueRow {
   title: string | null;
   status: string;
   generated_at: string;
+  /** The date the document is in force on (fix round item 4). Shown as the
+   *  executed-document date instead of generated_at / a re-derived signing date. */
+  effective_date: string | null;
   sent_at: string | null;
   voided_at: string | null;
   signed_template_version: number | null;
