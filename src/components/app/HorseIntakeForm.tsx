@@ -256,6 +256,10 @@ function LocationPicker({
             <div><L>ZIP</L><input className={input} inputMode="numeric" value={v.postal ?? ''} placeholder="92109" onChange={(e) => setAddr({ postal: e.target.value })} onBlur={onBlurNorm('postal', 'postal')} /></div>
           </div>
           <KeepingSpotsBlock spots={v.keeping_spots ?? []} onChange={(keeping_spots) => set({ keeping_spots })} />
+          {/* item 5a — free-text sub-location (barn / stall / paddock area), for
+              when there is no formal keeping spot to pick. */}
+          <div className="sm:col-span-2"><L>Sub-location</L>
+            <input className={input} value={v.sub_location ?? ''} placeholder="e.g. Paddock 3, back pasture" onChange={(e) => set({ sub_location: e.target.value })} /></div>
           <div className="sm:col-span-2"><L>Notes</L>
             <textarea rows={2} className={`${input} resize-y`} value={v.notes ?? ''} placeholder="information that would help in finding this location" onChange={(e) => set({ notes: e.target.value })} /></div>
         </div>
@@ -701,7 +705,8 @@ export function HorseIntakeForm({
         if (cur?.name) {
           const lv: HorseLocationDetail = {
             name: cur.name, address_line1: cur.address_line1 ?? '', city: cur.city ?? '',
-            state: cur.state ?? '', postal: cur.postal ?? '', keeping_spots: cur.keeping_spots ?? [], notes: cur.notes ?? '',
+            state: cur.state ?? '', postal: cur.postal ?? '', sub_location: cur.sub_location ?? '',
+            keeping_spots: cur.keeping_spots ?? [], notes: cur.notes ?? '',
           };
           setLoc(lv);
           lastSavedLocRef.current = JSON.stringify(lv);

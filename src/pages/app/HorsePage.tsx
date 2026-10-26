@@ -92,7 +92,12 @@ function RecordDisclosure({ label, section, items }: { label: string; section: s
 function composeLocation(loc: HorsePageDetail['record']['current_location']) {
   if (!loc?.name) return null;
   const addr = [loc.address_line1, loc.city, [loc.state, loc.postal].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-  const spots = (loc.keeping_spots ?? []).map((s) => `${s.term} ${s.value}`.trim()).filter(Boolean).join(' · ');
+  // The structured keeping spots, plus the free-text sub-location (item 5a) —
+  // both describe where on the property the horse is kept.
+  const spots = [
+    ...(loc.keeping_spots ?? []).map((s) => `${s.term} ${s.value}`.trim()),
+    loc.sub_location ?? '',
+  ].filter(Boolean).join(' · ');
   return [loc.name, addr, spots].filter(Boolean).join(' — ');
 }
 
@@ -277,6 +282,11 @@ export default function HorsePage() {
                 <Detail label="Currently at" value={composeLocation(r.current_location)} />
                 {r.current_location?.notes && <Detail label="Finding it" value={r.current_location.notes} />}
                 <Detail label="Owner" value={r.owner_name} />
+                {/* item 5a — the owner's contact, on the card beside their name. */}
+                {(r.owner_email || r.owner_phone) && (
+                  <Detail label="Owner contact"
+                    value={[r.owner_phone, r.owner_email].filter(Boolean).join(' · ')} />
+                )}
                 {r.lessee_name && (
                   detail.viewer_is_lessee
                     ? <Detail label="Your lease" value={`You lease this horse${r.lease_end ? ` through ${fmtDate(r.lease_end)}` : ' — evergreen (until terminated)'}`} />

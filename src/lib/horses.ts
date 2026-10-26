@@ -140,6 +140,8 @@ export interface HorseLocationDetail {
   city?: string;
   state?: string;
   postal?: string;
+  /** Free-text sub-location (barn / stall / paddock area) — item 5a. */
+  sub_location?: string | null;
   keeping_spots?: KeepingSpot[];
   notes?: string;
 }
@@ -351,13 +353,14 @@ export interface HorsePageDetail {
     date_of_birth: string | null; height: string | null;
     registration_number: string | null; registration_org: string | null; microchip_id: string | null;
     passport_number: string | null; passport_country: string | null; fair_market_value: number | null;
-    current_location: { name?: string; address_line1?: string; city?: string; state?: string; postal?: string; keeping_spots?: KeepingSpot[]; notes?: string; start_on?: string } | null;
+    current_location: { name?: string; address_line1?: string; city?: string; state?: string; postal?: string; sub_location?: string | null; keeping_spots?: KeepingSpot[]; notes?: string; start_on?: string } | null;
     medical_history_list: MedicalEntry[]; behavioral_history_list: BehaviorEntry[];
     known_conditions_list: ConditionEntry[]; training_history_list: NarrativeEntry[];
     competition_history_list: NarrativeEntry[]; injuries_to_humans: string | null;
     injuries_to_horse: HorseInjuryEntry[];
     pending_fields: string[]; euthanasia_authorization: string | null;
-    owner_name: string | null; lessee_name: string | null; lease_start: string | null; lease_end: string | null;
+    owner_name: string | null; owner_email: string | null; owner_phone: string | null;
+    lessee_name: string | null; lease_start: string | null; lease_end: string | null;
   };
   /** Current active care providers + emergency contacts. */
   providers: HorseProvider[];
