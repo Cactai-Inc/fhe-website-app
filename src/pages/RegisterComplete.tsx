@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { validateInvitation, redeemInvitation, myOnboardingState } from '../lib/api';
+import { validateInvitation, redeemInvitation, myOnboardingState, myDocuments } from '../lib/api';
 import { redeemContractInvitation } from '../lib/contracts';
 import { useDocumentTitle } from '../lib/hooks';
 import { useAuth } from '../contexts/AuthContext';
@@ -100,10 +100,21 @@ export default function RegisterComplete() {
           if (carried) {
             dest = `/app/contracts/${carried}/start`;
           } else {
-            // paperwork assigned → straight into the document flow
+            // CONTRACT FIRST, ALWAYS (owner 2026-10-26): an account-page invite
+            // carries no document_id, but a party who owes a contract must review
+            // and sign it BEFORE any onboarding paperwork. Resolve their own
+            // unsigned contract from my_documents() and route into its intake→
+            // contract gate; only with no contract do we fall to onboarding. Mirrors
+            // the same fix in Register.tsx (the password path).
             try {
-              const state = await myOnboardingState();
-              if (state?.needed) dest = '/app/onboarding';
+              const docs = await myDocuments();
+              const contract = docs.find((d) => d.is_contract && d.document_id && !d.signed_at);
+              if (contract?.document_id) {
+                dest = `/app/contracts/${contract.document_id}/start`;
+              } else {
+                const state = await myOnboardingState();
+                if (state?.needed) dest = '/app/onboarding';
+              }
             } catch { /* dashboard fallback */ }
           }
         }
