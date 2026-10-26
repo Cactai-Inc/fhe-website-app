@@ -40,7 +40,7 @@ function recoveryHtml(link: string, brand: string, footer: string | null): strin
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
 
-  let body: { email?: string; contactId?: string };
+  let body: { email?: string; contactId?: string; classify?: boolean };
   try {
     body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) ?? {};
   } catch {
@@ -97,6 +97,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { data: full } = await db.auth.admin.getUserById(userRow.user_id);
       const providers = (full?.user?.identities ?? []).map((i) => i.provider);
       googleOnly = providers.length > 0 && providers.every((p) => p === 'google');
+    }
+
+    // ⚠️ FIX ROUND 2d — CLASSIFY FOR THE LOGIN FORM. After a failed password
+    // sign-in, the login form asks which of two cases it is: the email matches an
+    // account (→ offer a reset) or it does not (→ the account-recovery path). It
+    // sends nothing; it only reports {exists, googleOnly}. A Google account never
+    // reaches a password failure (it signs in through Google), so googleOnly is
+    // reported for completeness but the login form only acts on `exists`.
+    if (body.classify) {
+      return res.status(200).json({ ok: true, exists: hasAccount, googleOnly });
     }
 
     let emailed = false;

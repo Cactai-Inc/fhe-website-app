@@ -2,10 +2,21 @@ import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useDocumentTitle } from '../lib/hooks';
-import { needsMfaChallenge, submitMfaChallenge } from '../lib/auth';
+import { needsMfaChallenge, submitMfaChallenge, classifyLoginEmail, sendPasswordReset } from '../lib/auth';
 import { AuthLayout, AuthCard } from '../components/auth/AuthLayout';
 import { AuthField, AuthError, SubmitButton } from '../components/auth/AuthControls';
 import { GoogleButton } from '../components/auth/GoogleButton';
+
+/* ⚠️ FIX ROUND 2d — WHAT A FAILED PASSWORD LOGIN OFFERS NEXT.
+   Reset is not an openly-browsed link; it appears only here, in response to a
+   wrong password on an email that actually matches an account. The two cases:
+     - 'reset'    → the email matches an account, the password was wrong → offer
+                    to email a reset link.
+     - 'recover'  → the email matches no account (they are unsure which email they
+                    used) → send them to us to recover the account; never an
+                    automated reset, and we do not say "no account" as a bare fact.
+   A Google account never reaches here — it signs in through Google. */
+type LoginHelp = null | 'reset' | 'recover';
 
 export default function Login() {
   useDocumentTitle('Sign In');
@@ -25,18 +36,55 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  /* ⚠️ FIX ROUND 2d — what a failed sign-in offers next, decided only on submit.
+     `help` drives the affordance shown beside the error; `resetNote` reports the
+     outcome of sending a reset. */
+  const [help, setHelp] = useState<LoginHelp>(null);
+  const [resetNote, setResetNote] = useState<string | null>(null);
+  const [resetBusy, setResetBusy] = useState(false);
+  /* ⚠️ FIX ROUND 2d — show the reset / recover affordance only after 3 failed
+     attempts (owner, 2026-10-25). One or two failures are an ordinary typo; the
+     plain "incorrect" error is enough. The count is per-email, so switching the
+     email starts it over, and classification only runs once the threshold is hit
+     — so we never probe account existence on an incidental mistype. */
+  const FAIL_THRESHOLD = 3;
+  const [failEmail, setFailEmail] = useState('');
+  const [failCount, setFailCount] = useState(0);
 
   async function handleCredentials(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    const { error } = await signInWithPassword(email.trim(), password);
+    setHelp(null);
+    setResetNote(null);
+    const attemptEmail = email.trim();
+    const { error } = await signInWithPassword(attemptEmail, password);
     if (error) {
+      // Count failures per email; a different email restarts the count.
+      const n = (attemptEmail === failEmail ? failCount : 0) + 1;
+      setFailEmail(attemptEmail);
+      setFailCount(n);
+      if (n < FAIL_THRESHOLD) {
+        setSubmitting(false);
+        setError('Incorrect email or password.');
+        return;
+      }
+      // At the threshold, classify ONCE: does the email match an account? If it
+      // does, the password was wrong → offer a reset. If it does not, route them
+      // to account recovery — we never state "no account" as a bare fact.
+      const { exists } = await classifyLoginEmail(attemptEmail);
       setSubmitting(false);
-      setError(error);
+      if (exists) {
+        setError('That password still doesn’t match. You can reset it below.');
+        setHelp('reset');
+      } else {
+        setError('We couldn’t sign you in with that email.');
+        setHelp('recover');
+      }
       return;
     }
-    // Password accepted — is a second factor required?
+    // Password accepted — clear the failure count and check for a second factor.
+    setFailCount(0);
     const mfa = await needsMfaChallenge();
     setSubmitting(false);
     if (mfa.required && mfa.factorId) {
@@ -45,6 +93,16 @@ export default function Login() {
       return;
     }
     navigate(from, { replace: true });
+  }
+
+  async function handleSendReset() {
+    setResetBusy(true);
+    setResetNote(null);
+    await sendPasswordReset(email.trim());
+    setResetBusy(false);
+    // Reset send is neutral by contract; report only that it was sent.
+    setResetNote('If that email has a password, a reset link is on its way. Open the newest email.');
+    setHelp(null);
   }
 
   async function handleMfa(e: React.FormEvent) {
@@ -117,6 +175,35 @@ export default function Login() {
       <AuthCard onSubmit={handleCredentials}>
         <AuthError>{error}</AuthError>
 
+        {/* ⚠️ FIX ROUND 2d — THE HELP BOX, shown only after the 3rd failed attempt.
+            Reset is never an openly-browsed link; it appears here, in response to a
+            real wrong-password streak on an email that matches an account. A
+            non-matching email instead routes to account recovery (a person helps),
+            never an automated reset. */}
+        {help === 'reset' && (
+          <div className="bg-cream-100 border border-green-800/15 px-4 py-3 mb-5 text-sm">
+            <p className="text-green-900 mb-2">Reset your password and we’ll email you a link to set a new one.</p>
+            <button type="button" onClick={() => void handleSendReset()} disabled={resetBusy}
+              className="btn-primary justify-center text-sm disabled:opacity-60">
+              {resetBusy ? 'Sending…' : 'Email me a reset link'}
+            </button>
+          </div>
+        )}
+        {help === 'recover' && (
+          <div className="bg-cream-100 border border-green-800/15 px-4 py-3 mb-5 text-sm">
+            <p className="text-green-900 mb-2">
+              Can’t get in? If you’re not sure which email is on your account, we’ll help you recover it.
+            </p>
+            <Link to="/recover-account" state={{ email: email.trim() }}
+              className="text-green-800 underline underline-offset-2 focus-ring">
+              Recover your account
+            </Link>
+          </div>
+        )}
+        {resetNote && (
+          <div className="bg-green-50 border border-green-800/15 text-green-800 text-sm px-4 py-3 mb-5">{resetNote}</div>
+        )}
+
         {!passwordMode ? (
           /* Google-first: the primary affordance, with email/password one tap away. */
           <>
@@ -129,13 +216,6 @@ export default function Login() {
               >
                 Sign in with email and password
               </button>
-            </p>
-            {/* ⚠️ FIX ROUND 2d — Forgot password is reachable from the login page
-                itself, not only after opting into the email/password form. */}
-            <p className="text-center text-sm text-muted mt-2">
-              <Link to="/forgot-password" className="text-green-800 underline underline-offset-2 focus-ring">
-                Forgot password?
-              </Link>
             </p>
           </>
         ) : (
@@ -152,12 +232,7 @@ export default function Login() {
               placeholder="your@email.com"
             />
             <div className="mb-6">
-              <div className="flex items-center justify-between">
-                <label className="form-label" htmlFor="password">Password</label>
-                <Link to="/forgot-password" className="text-xs text-green-800 underline underline-offset-2 focus-ring">
-                  Forgot password?
-                </Link>
-              </div>
+              <label className="form-label" htmlFor="password">Password</label>
               <input
                 id="password"
                 type="password"

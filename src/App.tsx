@@ -42,6 +42,7 @@ import Register from './pages/Register';
 import RegisterComplete from './pages/RegisterComplete';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import RecoverAccount from './pages/RecoverAccount';
 import Account, { ACCOUNT_PAGE_RETIRED } from './pages/Account';
 import OrderDetail from './pages/OrderDetail';
 // Member app
@@ -226,6 +227,7 @@ export function AppRoutes() {
               <Route path="/register/complete" element={<RedirectWithQuery to="/activate/complete" />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/recover-account" element={<RecoverAccount />} />
 
               {/* Signed-in but outside the member app */}
               {/* TASK-PAGEMERGE: retired — its one real capability (2FA) is now

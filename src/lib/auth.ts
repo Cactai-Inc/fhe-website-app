@@ -145,6 +145,26 @@ export async function sendPasswordReset(email: string): Promise<Result> {
   }
 }
 
+/** ⚠️ FIX ROUND 2d — classify a failed login. After a wrong password, the login
+ *  form asks whether the email matches an account at all: if it does, offer a
+ *  reset; if it does not, send them to account recovery (never an automated
+ *  reset). Returns {exists} — defaults to exists:true on any error so a transient
+ *  fault never routes a real user to the wrong path. */
+export async function classifyLoginEmail(email: string): Promise<{ exists: boolean }> {
+  try {
+    const res = await fetch('/api/account-reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, classify: true }),
+    });
+    if (!res.ok) return { exists: true };
+    const data = (await res.json().catch(() => null)) as { exists?: boolean } | null;
+    return { exists: data?.exists !== false };
+  } catch {
+    return { exists: true };
+  }
+}
+
 /** Set a new password for the recovery session created by the reset link. */
 export async function updatePassword(password: string): Promise<Result> {
   const { error } = await supabase.auth.updateUser({ password });
