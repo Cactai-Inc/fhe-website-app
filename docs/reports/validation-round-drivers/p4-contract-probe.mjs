@@ -1,0 +1,13 @@
+import { newBrowser, newCtx, loginEmailPassword, shot, BASE } from '/private/tmp/claude-504/-Users-Cactai/7d466399-a5d3-4532-8719-eeb55a81f620/scratchpad/driver.mjs';
+import fs from 'fs';
+const env = JSON.parse(fs.readFileSync('/tmp/testenv.json','utf8'));
+const id = fs.readFileSync('/tmp/p4_doc_id.txt','utf8').trim();
+const b = await newBrowser(); const ctx = await newCtx(b); const p = await ctx.newPage();
+await loginEmailPassword(p, env.FHE_TEST_STAFF_EMAIL, env.FHE_TEST_STAFF_PASSWORD);
+await p.goto(`${BASE}/app/contracts/${id}`, { waitUntil:'domcontentloaded' });
+await p.waitForTimeout(5000);
+console.log('H:', JSON.stringify((await p.locator('h1,h2,h3').allTextContents()).slice(0,10)));
+const body = await p.evaluate(()=>document.body.innerText);
+console.log('mentions board/seller/co-buyer/horse/sign:', JSON.stringify(body.split('\n').filter(l=>/board rate|co.?buyer|seller|attach|add.*horse|delivery|penalty|sign|initials|blocker|complete/i.test(l)).slice(0,15)));
+await shot(p,'p4-03-contract-page');
+await b.close();

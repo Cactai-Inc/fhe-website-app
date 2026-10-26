@@ -1,0 +1,13 @@
+import { newBrowser, newCtx, loginEmailPassword, shot } from './driver.mjs';
+import fs from 'fs';
+const env = JSON.parse(fs.readFileSync('/tmp/testenv.json','utf8'));
+const b = await newBrowser();
+const ctx = await newCtx(b);
+const p = await ctx.newPage();
+await loginEmailPassword(p, env.FHE_TEST_STAFF_EMAIL, env.FHE_TEST_STAFF_PASSWORD);
+console.log('AFTER LOGIN URL:', p.url());
+console.log('TITLE:', await p.title());
+const h = await p.locator('h1, h2').allTextContents();
+console.log('HEADINGS:', JSON.stringify(h.slice(0,6)));
+await shot(p, '00-staff-login-landing');
+await b.close();
