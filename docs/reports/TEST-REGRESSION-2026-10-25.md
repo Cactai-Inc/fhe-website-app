@@ -80,6 +80,64 @@ document attached — not in the active inventory but a real row that any "remov
 definition" step must account for.
 
 ## Item 2 — Flat template rendering
+
+**PASS.** Rendered all three HORSE-token flat templates (HORSE_EMERGENCY_VET,
+RELEASE_HORSE_CARE, HORSE_TRANSACTION_REP) through `generate_document` against ZZ Test
+Horse in two states, each in a transaction rolled back so no test document persisted.
+
+**Production is already running the overhaul.** Confirmed: live `generate_document`
+reads `horse_provider_value(v_horse.id, …)` (not the old `v_horse.vet_name`); the
+removed columns (`vet_name`, `vet_phone`, `farrier_name`, `home_location_id`,
+`current_location_id`, `known_conditions`) are already dropped from `horses`. The
+overhaul's `20261016T1400_hr_overhaul_3c_generate_document.sql` is therefore live. That
+migration **re-points the data sources only** — it deliberately leaves the flat path's
+SEX (raw), pending (no "To be provided"), and conditions (`horse_list_prose`) behavior
+unchanged. So the behaviors below are **intended**, not regressions.
+
+**Populated render** (providers VET+FARRIER via `horse_relationships`, location via
+`horse_locations`, pending_fields `["registration_number","microchip_id"]`,
+`known_conditions_list` 2 entries, `medical_history_list` 1 entry, a MEDICATION row) —
+every HORSE token resolved to the CURRENT source:
+
+- Breed `Hanoverian`, Color `Bay` (display names from `horse_breeds`/`horse_colors`) ✓
+- Fair Market Value `$42,500.00` (`fmt_money`) ✓
+- Current Location `ZZ Test Barn, 200 Pasture Ln, Aiken, SC 29803` (from `horse_locations`) ✓
+- Veterinarian `Dr. Jane Vetson`, phone `(555) 111-2222`; Farrier `Bob Shoesmith`,
+  `(555) 333-4444` (from `horse_relationships`) ✓
+- Medication prose from `horse_medications` ✓; Known Conditions prose from
+  `known_conditions_list` ✓
+- REGISTRATION_NUMBER (pending **and filled**) → prints `REG-ZZ-12345` ✓
+- No unreplaced non-signature tokens; no stale value; no removed-column value; nothing
+  empty that should be filled.
+
+**Empty render** (ZZ horse with everything blank, `pending_fields=[]`): every HORSE
+token prints blank cleanly; no crash, no leftover `{{HORSE.*}}`. Microchip (the one set
+value, `ZZTEST000000001`) printed; all else blank.
+
+`{{SIG.CLIENT.NAME}}` / `{{SIG.CLIENT.DATE}}` remain in the body in BOTH states —
+correct: `generate_document` skips `kind='signature'` tokens; they are resolved at sign
+time by the PDF/signature layer (item 4).
+
+### Findings (item 2) — both INTENDED, reported for the record, not defects
+
+- **F2-1 (intended): flat templates do NOT print "To be provided" for an empty pending
+  field.** With `microchip_id` in `pending_fields` but cleared, `HORSE_EMERGENCY_VET`
+  rendered `Microchip: ` (blank), not `To be provided`. The "To be provided" logic lives
+  only in `horse_field_token_value` (clause path, added by
+  `20261016T2300_hr_overhaul_8_to_be_provided.sql`); the overhaul's 3c migration did not
+  add it to `generate_document`. If the owner expects the gap to show on flat forms too,
+  this is a one-function follow-up (mirror the pending array + "To be provided" guard
+  into generate_document's HORSE branch); reported as design, unbuilt.
+- **F2-2 (intended): flat templates print SEX raw-uppercase (`MARE`), not normalized
+  (`Mare`).** `generate_document` HORSE.SEX returns `v_horse.sex` verbatim;
+  `horse_field_token_value` normalizes. Cosmetic; same decision as F2-1. Note the record
+  overhaul standardized HORSE.* token VALUES to display labels (`Mare`) per prior memory,
+  so the clause side is the intended-forward form — flat forms lag. Reported, unbuilt.
+
+Neither is a break: both render correctly, nothing is lost, and both predate nothing —
+they are the overhaul's own deliberate scope line (data sources re-pointed, display
+behavior left as-was on flat).
+
 ## Item 3 — Onboarding and kiosk
 ## Item 4 — Delivery
 ## Item 5 — Contract role bundle
