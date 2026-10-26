@@ -1,0 +1,15 @@
+import { newBrowser, newCtx, loginEmailPassword, shot, BASE } from '/private/tmp/claude-504/-Users-Cactai/7d466399-a5d3-4532-8719-eeb55a81f620/scratchpad/driver.mjs';
+import fs from 'fs';
+const env = JSON.parse(fs.readFileSync('/tmp/testenv.json','utf8'));
+const HORSE='2d07a570-d79c-4cc7-b292-a42c83c2d62c';
+const b = await newBrowser(); const ctx = await newCtx(b); const p = await ctx.newPage();
+await loginEmailPassword(p, env.FHE_TEST_STAFF_EMAIL, env.FHE_TEST_STAFF_PASSWORD);
+await p.goto(`${BASE}/app/horses/${HORSE}`,{waitUntil:'domcontentloaded'}); await p.waitForTimeout(5000);
+await p.getByRole('button',{name:/Add provider/i}).first().click().catch(()=>{});
+await p.waitForTimeout(2000);
+const inputs = await p.$$eval('input,select,textarea', els=>els.map(e=>({tag:e.tagName,type:e.type,ph:e.placeholder,aria:e.getAttribute('aria-label'),label:(e.labels&&e.labels[0]?.textContent||'').trim()})).filter(x=>x.ph||x.aria||x.label));
+console.log('provider form fields:', JSON.stringify(inputs).slice(0,900));
+const btns = await p.$$eval('button', els=>els.map(e=>e.textContent?.trim()).filter(Boolean));
+console.log('btns:', JSON.stringify(btns.filter(t=>/provider|person|add|save/i.test(t))));
+await shot(p,'p7-01-provider-form');
+await b.close();
