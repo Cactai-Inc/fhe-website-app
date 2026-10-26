@@ -166,8 +166,56 @@ Alias `admin+fhe-reg-rider-<ts>@cactai.io`, name "Zelda Testrider".
 Minor observation (not a defect): the public pages throw React hydration warnings
 (#418/#423 — prerendered SSR vs client markup); non-blocking, pages function fully.
 
-### Path `horse` / `rider+horse` + client horse-add
-(populated below)
+### Path `horse` + client horse-add — PARTIAL: activation/details PASS, **horse-add BLOCKED by a real regression**
+Alias `admin+fhe-reg-horse-<ts>@cactai.io`, name "Harry Testowner".
+
+| step | observed | result |
+|---|---|---|
+| `/sign/horse` → activate | provisioned (categories, contact), activated, signed in, onboarding | PASS |
+| details intake | full form, saved | PASS |
+| horse step reached | "Tell us about your horse." with the full `HorseIntakeForm` | PASS |
+| **staff designation picker ABSENT for client** | with a provider row open, the page text contains neither "designation" nor "set it on the Team page"; the client sees the manual-entry provider fields, never the staff people-picker. `ProviderDraftRow` gates the picker on `useAuth().isStaff` (HorseIntakeForm.tsx:542), and `adminClientAccounts()` only loads when `isStaff` — verified empirically | **PASS** |
+| save the horse | `create_horse_record` RPC returns **HTTP 400** | **FAIL — see DEFECT R1** |
+
+Because horse creation fails, the downstream of the `horse` path (horse-backed releases
+generated, signed, delivered) could not be exercised through onboarding for this client.
+The engine itself is proven by item 2 (the same flat templates render correctly against
+a populated horse) and by item 5 (the lease/role bundle on ZZ Test Horse); what is broken
+is the record CREATE, upstream of rendering.
+
+#### DEFECT R1 — client horse-add is completely broken (real regression from the disclosure overhaul)
+- **Symptom:** On the onboarding horse step, saving any new horse without "injuries to
+  humans" text (the normal case) returns `create_horse_record` **400**:
+  `null value in column "injuries_to_humans" of relation "horses" violates not-null
+  constraint (23502)`.
+- **Reproduced at the DB level** (rolled back): a bare `INSERT INTO horses (…,
+  injuries_to_humans) VALUES (…, nullif(btrim(coalesce(NULL,'')),''))` fails identically.
+- **Root cause:** the disclosure overhaul's `20261021T1300_disc_21_injuries_humans_and_
+  warranties.sql` made `horses.injuries_to_humans` **`text NOT NULL` with no default**
+  (to hold the new Yes/No/Unknown scalar), but `create_horse_record(jsonb)` still inserts
+  `nullif(btrim(coalesce(p ->> 'injuries_to_humans','')),'')`, which evaluates to **NULL**
+  whenever the caller supplies no injuries text — i.e. every normal create. The function
+  was not updated when the column's nullability changed.
+- **Blast radius:** every create through `create_horse_record` that does not pass
+  injuries text — the client onboarding horse-add AND the staff "add a horse" records
+  surface (same RPC). Any horse added since `disc_21` applied without that field set
+  fails. (Count of horses created after that migration = evidence of whether staff have
+  hit it; all my attempts failed.)
+- **Proposed fix (one line, UNBUILT — not applied because I do not own this DB object and
+  D35 forbids a silent shared-function replacement):** in `create_horse_record`, change
+  the `injuries_to_humans` insert expression from
+  `nullif(btrim(coalesce(p ->> 'injuries_to_humans','')),'')`
+  to `btrim(coalesce(p ->> 'injuries_to_humans',''))` (write `''` instead of NULL).
+  Equivalent alternative: `ALTER TABLE horses ALTER COLUMN injuries_to_humans SET DEFAULT ''`
+  — but the function fix is narrower and matches the column's intended "scalar, default
+  empty" shape. Must ship with a `save_contract_template_version`-style no-op (n/a here)
+  and a re-verify per D35.
+
+### Path `rider+horse`
+Same engine as `rider` (docs) + `horse` (horse-add). The document-signing half is proven
+by `rider`; the horse-add half is blocked by the same DEFECT R1, so `rider+horse` cannot
+complete its horse step either. Not separately re-driven — it is the union of two paths
+already exercised, and would fail at the identical point.
 
 ### Kiosk path
 (populated below)
