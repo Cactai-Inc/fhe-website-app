@@ -354,3 +354,89 @@ inline-field-by-placeholder selector.
 path is reported as fully passing beyond what was driven. The heaviest remaining work is
 the full dual-party lease and sale execution-and-delivery (paths 3, 4) and the per-field
 completion they require.
+
+---
+
+# Session 2 (2026-10-26) — signing validation, F4, and a workflow wall
+
+Resumed on `fix/validation` (pulled `main`). Goal: drive a lease and a sale, both
+parties, through delivery, in the real browser.
+
+## F4 — Horse gate offers only the owner seat's horses — DONE, proven in the browser
+**Fix:** the "Which horse is this contract for?" card (`HorseGate` in
+`src/pages/app/ContractPage.tsx`) offered EVERY horse in the caller's stable, so staff
+authoring a lease could attach a horse owned by no party (last round it attached the
+real horse *Sundance*). Rewrote it to mirror the `PartiesHorseCard` rule (owner,
+2026-08-25): for STAFF the only horses offered are those owned by the owner-side seat's
+contact (Lessor/Seller), sourced from `staffHorseRecords()`; with the owner seat EMPTY
+no horse is offered ("Attach the lessor first"); nothing is preselected; attach stays an
+explicit click. Counterparty's own-stable path unchanged. **Code only** (a control-logic
+fix — no migration). Gates all 0; merged to main (`3a0a9280`) and deployed before
+driving.
+
+**Proof (driven on the staged lease, deployed app):**
+- With **no lessor**: the card offers **0** "Use this horse" buttons and shows
+  *"Attach the lessor first…"* (`s2-f4-01-no-lessor-no-horse`).
+- With **ZZ Test Owner as lessor**: the card offers **exactly ZZ Test Horse and nothing
+  else** (count 1, name "ZZ Test Horse") (`s2-f4-02-lessor-offers-zz-only`). ZZ Test
+  Owner owns exactly one horse, so "and nothing else" is a real check.
+- The attach then wrote `p_horse_id=2d07a570-…` (ZZ Test Horse) and the document's
+  `horse_id` read back as ZZ Test Horse before proceeding (the required read-back guard).
+
+## Path 3 (first ordering) — driven to a WALL; STOPPED for a ruling
+Driven, in the browser, all passing up to the wall:
+- Staff created a lease with a fresh-alias lessee (Lila LesseeP3A), **no lessor, no
+  horse**; **Send to the empty lessor seat is refused** — `409 EMPTY_SEAT`
+  (`s2-p3a-03`). Lessee invitation sent from the contact record (`sent`).
+- Lessee opened the link, activated, completed intake, landed with *"Horse Lease
+  Agreement is waiting for you"* (`s2-p3a-05`).
+- Staff attached ZZ Test Owner as lessor (F4 part 2), attached ZZ Test Horse through the
+  fixed card (verified id), and **entered every staff-owned field through the page** —
+  lease type/term/start/end/fee/purpose, every disclosure gate (answered
+  injuries-to-humans **Yes** so the lessee has an acknowledgment to initial), permitted
+  activities, rider aids, eval/vet choices, registered name (set on ZZ Test Horse's
+  record so it propagates). Field blockers → **0**.
+- Lessee **initialed** the injuries acknowledgment (`ACK.INJURIES_TO_HUMANS = LL`), via
+  the inline control — the reliable driver is `pressSequentially` + `Enter`
+  (`keyboard.type`/native-setter did not commit this control). The lessee's **Sign
+  control is disabled while blockers remain** and the lessee's review approval was
+  recorded.
+
+**THE WALL (deviation — stop and wait).** The lease is **complete (0 field blockers)**
+but **cannot be locked for signing or executed**, because the Lessor is **ZZ Test Owner,
+an accountless individual** (0 profiles, `is_company=false`):
+- `approve_contract_review` locks only when **every non-staff signing party has approved**
+  — and a party with **no account can never record an approval** (the pending-set join
+  goes through `profiles`), so the accountless Lessor keeps the document in `in_review`
+  forever. The lessee's approval returns *"Awaiting review approval from: Lessor."*
+- Staff **cannot sign the Lessor seat**: `record_signature`'s only "staff signs for
+  someone else" branch is **COMPANY-side** (`cc.is_company`), and `company_signable_roles`
+  in `contract_document_detail` is likewise company-only. ZZ Test Owner is an individual.
+- Staff **cannot send to the Lessor** either: "Send to Lessor" / "Send to both" return
+  `409 NO_ACCOUNT` ("invite them to set one up first").
+
+So the path's step **"sign the lessor seat as staff"** requires a capability that does
+not exist today: **signing (or locking) on behalf of an accountless individual
+counterparty.** That is a signing-semantics / legal-attestation design decision, not a
+control bug to patch unilaterally, so I am stopping for a ruling. **Two ways forward,
+owner's call:**
+- **(A)** Give ZZ Test Owner a real test account (like the client test account) so it
+  approves and signs itself through the normal flow — least invasive, matches how a real
+  lessor works. Path 3/4 then drive to the real end with no code change.
+- **(B)** Build "staff signs/locks on behalf of an accountless individual counterparty"
+  — a real feature extending the COMPANY co-sign path to non-company faceless parties,
+  with the attestation wording that implies. Larger, and it changes who may bind an
+  individual.
+
+Everything up to the wall is proven; the remaining lease/sale signing + delivery depends
+on this ruling because the same wall blocks Path 3 (both orderings) and Path 4 (ZZ Test
+Owner is the Seller there too).
+
+## Test data (this session) — left in place pending the ruling
+- Alias lessee **Lila LesseeP3A** (`admin+vr2-…-p3a-lessee@cactai.io`, account active),
+  staged lease `b0fddc0d-…` (LESSEE Lila, LESSOR ZZ Test Owner, horse ZZ Test Horse).
+- ⚠️ **Fixture mutated, must be restored:** ZZ Test Horse's `registered_name` was set to
+  "ZZ Test Registered" (was empty) so the lease's `HORSE.REGISTERED_NAME` could fill.
+  Restore to empty at cleanup.
+- No real client, no real client's horse touched; Sundance untouched; Audrey Dropsy
+  untouched.
