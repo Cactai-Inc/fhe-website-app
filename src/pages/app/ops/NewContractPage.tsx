@@ -254,7 +254,9 @@ export default function NewContractPage() {
     }
     // The horse is either picked/added above (both write a real `horses` row
     // through the one intake path) or deliberately left to a party to fill in.
-    const chosenHorse = (type === 'purchase' || type === 'bill_of_sale' || horseMode === 'pick') ? horseId : undefined;
+    // '' when no horse is picked — normalise to undefined so the RPC gets a NULL
+    // horse (staging allows no horse), never an empty-string uuid.
+    const chosenHorse = ((type === 'purchase' || type === 'bill_of_sale' || horseMode === 'pick') ? horseId : undefined) || undefined;
 
     // Before generating, warn about identity fields this contract will print as
     // "To be provided" — empty or marked add-later. The author may proceed.
@@ -270,13 +272,16 @@ export default function NewContractPage() {
     }
     setBusy(true);
     try {
+      // STAGING (item 4): the counterparty (partyB) and the horse may be empty.
+      // Pass undefined, never the empty string — the RPCs accept a NULL counterparty
+      // and NULL horse, but '' is not a valid uuid.
       const result = type === 'lease'
-        ? await startLeaseContract(partyA, partyB, chosenHorse, leaseTemplateKey || undefined)
+        ? await startLeaseContract(partyA, partyB || undefined, chosenHorse, leaseTemplateKey || undefined)
         : type === 'bill_of_sale'
           // partyA = Buyer, partyB = Seller (roles order in TYPES).
           ? await startBillOfSaleStandalone({ buyerContactId: partyA, sellerContactId: partyB || null, horseId: chosenHorse || null })
           // CR-126 B2: price + deposit are filled in the contract body, not here.
-          : await startSaleContract(partyA, partyB, chosenHorse);
+          : await startSaleContract(partyA, partyB || undefined, chosenHorse);
       const docId = result.document_id;
       // Started from a purchase context (?purchase=<id>) → record the traceable
       // purchase↔contract link. Best-effort: never blocks contract creation.
