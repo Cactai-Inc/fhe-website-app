@@ -1,29 +1,16 @@
-/* POST /api/contract-invite — issue + email a contract-counterparty invitation
- * (Update A, spec G). Staff-only (Bearer token). Body: { documentId, partyRole,
- * email? }.
+/* POST /api/contract-invite — issue + email a contract-counterparty invitation.
+ * Staff-only (Bearer token). Body: { documentId, partyRole, email? }.
  *
- * ⚠️ CONTRACT-FIRST STEP 1 — A NO-ACCOUNT PARTY IS SENT A VIEW LINK, NOT AN
- * ACTIVATION LINK.
- *
- * Owner redesign (2026-10-19, contract-view flow): *"the email carries a link to
- * view the contract, not an activation link."* A party with no active account can
- * READ the contract first — no account needed — and activation is offered from the
- * view itself, on demand (STEP 3/4). So this endpoint branches on the one fact that
- * decides it:
+ * This is the PARTY-INVITE path: a party who has an account is invited to review
+ * and sign. Fix round 3, item 4/5:
  *
  *   HAS AN ACCOUNT  → invite_contract_counterparty + CONTRACT_INVITE, unchanged.
- *                     An active account holder is sent to the contract as today.
- *   HAS NO ACCOUNT  → issue_contract_view_token: a CONTRACT_VIEW token keyed to the
- *                     document, and ONE email — the CONTRACT_VIEW_INVITE template —
- *                     carrying /contract/view?token=…. The view token is distinct
- *                     from the activation/claim token and stays valid until the
- *                     governing document executes.
- *
- * ⚠️ WHY THIS REPLACES THE OLD "ONE ACTIVATION EMAIL CARRYING THE CONTRACT" BRANCH.
- * The P1 ITEM 1 design sent a no-account party an ACTIVATION invite that named the
- * contract. The contract-first redesign supersedes it: the person reads BEFORE they
- * decide to activate. invite_contract_party_account is NOT removed — the view's
- * "Do it now" step (api/contract-view-activate.ts) still mints it on demand.
+ *   NO PARTY / NO ACCOUNT → REFUSED. A seat with no contact, or a party who has no
+ *                     account, cannot be invited to sign from here — invite the
+ *                     person first (give them an account), then send. Sharing a
+ *                     read-only copy for REVIEW is a different tool
+ *                     (/api/contract-review-link) and is staff-initiated, not an
+ *                     invite path. The old no-account "view link" branch is gone.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
@@ -73,7 +60,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .eq('party_role', partyRole.toUpperCase())
       .maybeSingle();
     if (!party?.contact_id) {
-      return res.status(404).json({ error: `no ${partyRole} party on this contract` });
+      // Fix round 3, item 4: a contract cannot be sent to an empty seat.
+      return res.status(409).json({
+        code: 'EMPTY_SEAT',
+        error: `The ${partyRole.toLowerCase()} seat is empty — attach the ${partyRole.toLowerCase()} on the contract page before sending it.`,
+      });
     }
 
     // SENDGUARD §1: never send a signing invitation to someone who already signed.
@@ -105,7 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!email) return res.status(200).json({ ok: true, emailed: false, reason: 'no email on file for this party' });
     }
 
-    // ── P1 ITEM 1: DOES THIS PERSON HAVE AN ACCOUNT? ─────────────────────
+    // ── DOES THIS PERSON HAVE AN ACCOUNT? ────────────────────────────────
     //
     // `profiles` IS the account (CLAUDE.md: profiles ↔ auth.users, the 1:1
     // bridge). Two ways to be linked to one: the contact is the profile's
@@ -119,43 +110,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const hasAccount = Boolean(byContact || byEmail);
 
     if (!hasAccount) {
-      // STEP 1 — a VIEW link, not an activation link. Mint a CONTRACT_VIEW token
-      // keyed to the document (reused if one is live), and email the
-      // CONTRACT_VIEW_INVITE template pointing at /contract/view. The token stays
-      // valid until the governing document executes — enforced by the view
-      // function, not by invitation status.
-      const { data: viewTok, error: viewErr } = await db.rpc('issue_contract_view_token', {
-        p_document_id: documentId, p_contact_id: party.contact_id, p_email: email,
-      });
-      if (viewErr) return res.status(400).json({ error: viewErr.message });
-      const issued = viewTok as { invitation_id: string; token: string };
-      const origin = req.headers.origin || `https://${req.headers.host}`;
-      const viewUrl = `${origin}/contract/view?token=${issued.token}`;
-
-      let identity = { fromName: 'French Heritage Equestrian', fromEmail: '', footer: '' as string | null };
-      try { identity = await resolveTenantEmailIdentity(db, doc.org_id); } catch { /* fall back */ }
-
-      const rendered = await renderEmailTemplate(db, 'CONTRACT_VIEW_INVITE', {
-        'ORG.BRAND_NAME': identity.fromName,
-        'ORG.FOOTER': identity.footer,
-        'DOC.HAS_TITLE': doc.title != null ? '1' : '',
-        'DOC.TITLE': doc.title ?? '',
-        'MSG.LINK': viewUrl,
-        'MSG.RECIPIENT_EMAIL': email,
-      });
-      if (!rendered) {
-        return res.status(200).json({ ok: true, emailed: false, viewLink: true, reason: 'the CONTRACT_VIEW_INVITE email template is missing or deactivated' });
-      }
-      const sent = await sendViaProvider({
-        to: email,
-        fromName: identity.fromName,
-        fromEmail: identity.fromEmail,
-        subject: rendered.subject,
-        html: rendered.html,
-      });
-      return res.status(200).json({
-        ok: true, emailed: sent.ok, viewLink: true,
-        ...(sent.ok ? {} : { reason: 'email provider not configured or send failed' }),
+      // Fix round 3, item 4/5: sending to a seat with no account is REFUSED —
+      // invite the person first. The old no-account "view link" branch is gone;
+      // sharing a read-only copy for review is /api/contract-review-link.
+      return res.status(409).json({
+        code: 'NO_ACCOUNT',
+        error: `This ${partyRole.toLowerCase()} has no account yet. Invite them to set one up first, then send the contract. (To share a read-only copy for review, use “Share for review”.)`,
       });
     }
 

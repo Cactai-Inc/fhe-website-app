@@ -228,13 +228,17 @@ export default function NewContractPage() {
     staffHorseRecords().then(setHorses).catch(() => {});
   }
 
-  const ready = !!partyA && !!partyB && (type === 'purchase' || type === 'bill_of_sale'
-    ? !!horseId
-    : horseMode === 'pick' ? !!horseId : !!horseParty);
+  /* STAGING (fix round 3, item 4). A contract can be created with the counterparty
+     seat empty and with no horse — nothing but the primary party is needed for the
+     document to exist. Staff attach the counterparty and the horse on the contract
+     page afterward, and the horse is a SIGNING blocker, not a creation blocker. So
+     the only requirement to Get started is the primary party (the lessee / buyer);
+     partyB and the horse are optional here. */
+  const ready = !!partyA;
 
   async function create() {
     setErr(null);
-    if (!ready) { setErr('Select both parties and the horse source first.'); return; }
+    if (!ready) { setErr(`Choose the ${roleLabel(roleA).toLowerCase()} to get started — the ${roleLabel(roleB).toLowerCase()} and horse can be added later.`); return; }
     /* REFUSE BEFORE WRITING, NOT AFTER. `set_party_controls` rejects a document
        where neither party may edit deal terms — but it can only do that once the
        document EXISTS, and this page used to discover it on the second of two
@@ -530,8 +534,10 @@ export default function NewContractPage() {
         Get started
       </button>
       <p className="text-[11px] text-muted mt-2">
-        Add the parties and the horse above, then Get started — the full contract
-        opens for you to fill.
+        Choose the {roleLabel(roleA).toLowerCase()}, then Get started — the full
+        contract opens for you to fill. The {roleLabel(roleB).toLowerCase()} and the
+        horse can be attached later on the contract page; the horse is only needed
+        before signing.
       </p>
 
       {/* ONE modal for both contract types. When the horse-owning party is already

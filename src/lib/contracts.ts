@@ -594,8 +594,9 @@ export async function invitedAccountState(token: string): Promise<InvitedAccount
  *  CONTRACT_VIEW token. Returns only what the instrument prints: the rendered body,
  *  the title, the parties' display names, and the HORSE.<SECTION> disclosure
  *  structured values the boxed component renders. No field graph, no account state,
- *  no off-instrument PII. `executed` is true once the governing document has
- *  executed — the link is dead for everyone, and no body is returned. */
+ *  no off-instrument PII. It is a SHARE-FOR-REVIEW tool (fix round 3, item 5): the
+ *  link stays valid until a staff member revokes it, is NOT killed by execution,
+ *  and carries no account language. `executed` is informational only. */
 export interface ContractViewByToken {
   found: boolean;
   executed?: boolean;
@@ -609,6 +610,43 @@ export async function contractViewByToken(token: string): Promise<ContractViewBy
   const { data, error } = await supabase.rpc('contract_view_by_token', { p_token: token });
   if (error) throw error;
   return (data ?? { found: false }) as ContractViewByToken;
+}
+
+/** The active review links for a contract (fix round 3, item 5) — who it was sent
+ *  to and when, for the staff-only "share for review" panel on the contract page. */
+export interface ContractViewLink {
+  invitation_id: string;
+  email: string;
+  sent_at: string;
+  token: string;
+}
+export async function contractViewTokens(documentId: string): Promise<ContractViewLink[]> {
+  const { data, error } = await supabase.rpc('contract_view_tokens', { p_document_id: documentId });
+  if (error) throw error;
+  return (data ?? []) as ContractViewLink[];
+}
+/** Send a read-only review link for this contract to ANY email (party or not).
+ *  Staff only; goes through /api/contract-review-link, which issues the token and
+ *  mails the CONTRACT_VIEW_INVITE share template. */
+export async function sendContractReviewLink(
+  documentId: string, email: string,
+): Promise<{ emailed: boolean; reason?: string }> {
+  const { data: sess } = await supabase.auth.getSession();
+  const bearer = sess?.session?.access_token;
+  if (!bearer) throw new Error('You need to be signed in.');
+  const res = await fetch('/api/contract-review-link', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
+    body: JSON.stringify({ documentId, email }),
+  });
+  const json = (await res.json().catch(() => ({}))) as { error?: string; emailed?: boolean; reason?: string };
+  if (!res.ok) throw new Error(json.error || 'Could not send the review link.');
+  return { emailed: json.emailed !== false, reason: json.reason };
+}
+/** Revoke one review link. After this the link opens for nobody. */
+export async function revokeContractViewToken(invitationId: string): Promise<void> {
+  const { error } = await supabase.rpc('revoke_contract_view_token', { p_invitation_id: invitationId });
+  if (error) throw error;
 }
 
 /** TASK-ROLEBUNDLE — what each party on this contract owes BY VIRTUE OF THE ROLE
@@ -936,6 +974,10 @@ export interface PartySummary {
 }
 export interface PartiesHorseSummary {
   parties: PartySummary[];
+  /** The signing seats this contract kind expects (lease: LESSOR/LESSEE; sale/BOS:
+   *  SELLER/BUYER). An expected role with no party row is a STAGED empty seat the
+   *  card renders with an attach affordance (fix round 3, item 4). */
+  expected_roles?: string[];
   horse_id: string | null;
   horse_name: string | null;
   /** ['horse'] if no horse attached, ['identity'] if attached but unnamed, else [] */

@@ -49,6 +49,7 @@ import { ContractChangeRequests } from '../../components/app/ContractChangeReque
 import { ContractChangeHistory } from '../../components/app/ContractChangeHistory';
 import { VoidContractModal, VoidedKeepOrRemove } from '../../components/app/VoidContractModal';
 import { PartiesHorseCard } from '../../components/app/PartiesHorseCard';
+import { ReviewShareCard } from '../../components/app/ReviewShareCard';
 import { AddHorseModal } from '../../components/app/AddHorseModal';
 import { HorseRecordPanel } from '../../components/app/HorseRecordPanel';
 import { ClauseDocument } from '../../components/app/ClauseDocument';
@@ -2114,6 +2115,13 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
             </>
           ) : undefined}
         />
+      )}
+
+      {/* Share for review — staff only. Send a read-only review link to any email
+          and manage the active links (fix round 3, item 5). Not shown on a void
+          document — there is nothing to review. */}
+      {id && !embedded && isStaff && !isVoid && (
+        <ReviewShareCard documentId={id} />
       )}
 
       {/* Horse gate — pick/add the horse before the rest of the contract */}

@@ -108,6 +108,21 @@ export function PartiesHorseCard({
   const ownerParty = summary.parties.find((p) => p.party_role === 'LESSOR' || p.party_role === 'SELLER');
   const ownerRole = ownerParty?.party_role;
 
+  // STAGING (fix round 3, item 4): render an empty seat for every role this
+  // contract kind expects that has no party row yet, so staff can attach a
+  // counterparty that was left empty at creation. A placeholder carries no
+  // contact_id; the edit affordance (reassign / add-by-email) creates the seat.
+  const presentRoles = new Set(summary.parties.map((p) => p.party_role));
+  const placeholderSeats: PartySummary[] = (summary.expected_roles ?? [])
+    .filter((r) => !presentRoles.has(r))
+    .map((r) => ({
+      party_role: r, contact_id: null, name: null, email: null, phone: null,
+      address: null, address_line1: null, address_line2: null, city: null,
+      state: null, postal_code: null, first_name: null, last_name: null,
+      awaiting_details: false, missing: ['name', 'email', 'phone', 'address'],
+    } as PartySummary));
+  const allSeats: PartySummary[] = [...summary.parties, ...placeholderSeats];
+
   /* ⚠️ ONLY THIS OWNER'S HORSES (owner, 2026-08-25): "the list contains options it
      shouldnt, Secret and Tiz are shown as selectable options after i changed lessor
      to Pamela and it should only show her horse, Sundance."
@@ -185,8 +200,9 @@ export function PartiesHorseCard({
 
       <dl className="grid sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
         {/* Owner-first ordering: Lessor / Seller before Lessee / Buyer, then the
-            horse block below. (The summary comes back alphabetically by role.) */}
-        {[...summary.parties]
+            horse block below. Empty expected seats (fix round 3, item 4) render
+            too, so staff can attach a counterparty left empty at creation. */}
+        {[...allSeats]
           .sort((a, b) => roleRank(a.party_role) - roleRank(b.party_role))
           .map((p) => (
           <div key={p.party_role}>
@@ -220,6 +236,24 @@ export function PartiesHorseCard({
                   They fill in their own name, phone and address when they claim the contract.
                 </p>
               </>
+            ) : !p.contact_id ? (
+              /* STAGING: an empty seat left at creation (fix round 3, item 4). Not a
+                 defect — the counterparty is attached here when known. */
+              <dd className="mt-0.5">
+                {canEdit ? (
+                  <button type="button" onClick={() => setEditing(true)}
+                    className="inline-flex items-center gap-1.5 text-gold-ink hover:underline w-fit font-medium">
+                    <Plus size={12} /> Attach the {roleLabel(p.party_role).toLowerCase()}
+                  </button>
+                ) : (
+                  <span className="text-muted italic inline-flex items-center gap-1.5">
+                    <User size={12} /> Not attached yet
+                  </span>
+                )}
+                <span className="block text-[11px] text-muted mt-0.5">
+                  The contract can’t be sent to this seat until it’s attached.
+                </span>
+              </dd>
             ) : (
               <dd className="mt-0.5">
                 {p.name
