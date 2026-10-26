@@ -1,0 +1,13 @@
+import { newBrowser, newCtx, shot, BASE } from '/private/tmp/claude-504/-Users-Cactai/7d466399-a5d3-4532-8719-eeb55a81f620/scratchpad/driver.mjs';
+import fs from 'fs';
+const token = fs.readFileSync('/tmp/token_owner.txt','utf8').trim();
+const pw = fs.readFileSync('/tmp/pw_owner.txt','utf8').trim();
+const b = await newBrowser(); const ctx = await newCtx(b); const p = await ctx.newPage();
+await p.goto(`${BASE}/activate?token=${token}`,{waitUntil:'domcontentloaded'}); await p.waitForTimeout(3500);
+console.log('activate H:', JSON.stringify((await p.locator('h1,h2,h3').allTextContents()).slice(0,3)));
+await p.getByLabel('Create a password').fill(pw); await p.getByLabel('Re-enter your password').fill(pw);
+await p.getByRole('button',{name:/^Continue$/}).click(); await p.waitForTimeout(7000);
+console.log('after activate URL:', p.url());
+console.log('H:', JSON.stringify((await p.locator('h1,h2,h3').allTextContents()).slice(0,5)));
+await shot(p,'s2-owner-01-activated');
+await b.close();
