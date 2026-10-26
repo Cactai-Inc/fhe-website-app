@@ -34,7 +34,7 @@ import {
 } from '../../lib/contracts';
 import { myWallState, myNameConfirmationState, startBillOfSale, setDocumentCoBuyer, type NameConfirmationState } from '../../lib/api';
 import { ReviewChangesModal } from '../../components/app/ReviewChangesModal';
-import { contractPartyOptions, viewerOwnsHorseRecord, type PartyOption } from '../../lib/horses';
+import { contractPartyOptions, viewerOwnsHorseRecord, staffHorseRecords, type PartyOption, type StaffHorseRecord } from '../../lib/horses';
 import { ContractSubheader, SUBHEADER_BTN, type DrawerSpec, type ToolbarAction } from '../../components/app/ContractSubheader';
 import { ContractNotes } from '../../components/app/ContractNotes';
 import { subscribeToContract, useContractPresence } from '../../lib/contractRealtime';
@@ -114,12 +114,30 @@ const INLINE_BODY_PREVIEW_RETIRED = true;
  */
 
 
+/** A horse offered in the gate — the shape both sources (stable / staff records)
+ *  reduce to. `ownerContactId` lets staff narrow the list to the owner seat. */
+interface GateHorse { id: string; name: string; subtitle: string; ownerContactId: string | null }
+
 /** "Which horse is this contract for?" gate. Shown before the rest of the contract
  *  when the horse section is the caller's to fill but no horse is chosen yet. Lets
- *  them pick one of their horse records or add a new one (via intake), then attaches
- *  it — filling the HORSE.* fields from the record. */
-function HorseGate({ documentId, onAttached }: { documentId: string; onAttached: () => void }) {
-  const [horses, setHorses] = useState<StableHorse[] | null>(null);
+ *  them pick one horse record or add a new one (via intake), then attaches it —
+ *  filling the HORSE.* fields from the record.
+ *
+ *  F4 (2026-10-26): the card used to offer EVERY horse in the caller's stable,
+ *  regardless of who the parties are — so staff authoring a lease could attach a
+ *  horse that belongs to no party on the instrument. It now mirrors the
+ *  PartiesHorseCard rule (owner, 2026-08-25): for STAFF the only horses offered are
+ *  those owned by the owner-side seat's contact (Lessor / Seller), and when that
+ *  seat is EMPTY no horse is offered — attach the owner first. A horse is never
+ *  preselected, and the attach is an explicit click. The counterparty's own
+ *  horse-bring path is unchanged (their own stable). */
+function HorseGate({
+  documentId, onAttached, isStaff, ownerContactId, ownerRoleLabel,
+}: {
+  documentId: string; onAttached: () => void;
+  isStaff: boolean; ownerContactId: string | null; ownerRoleLabel: string;
+}) {
+  const [horses, setHorses] = useState<GateHorse[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   // TASK-PAMELA §B: adding a horse from inside a contract is a MODAL, not a
@@ -129,14 +147,38 @@ function HorseGate({ documentId, onAttached }: { documentId: string; onAttached:
   const [intakeOpen, setIntakeOpen] = useState(false);
 
   useEffect(() => {
-    listStableHorses().then(setHorses).catch(() => setHorses([]));
-  }, []);
+    const subtitle = (parts: (string | null)[]) =>
+      parts.map((v) => (v ?? '').trim()).filter((v) => v && v.toUpperCase() !== 'N/A').join(' · ') || 'Horse record';
+    if (isStaff) {
+      // F4: staff see only the owner seat's horses — re-loads when the seat changes.
+      staffHorseRecords()
+        .then((rows: StaffHorseRecord[]) => setHorses(rows.map((h) => ({
+          id: h.id,
+          name: (h.nickname?.trim() || h.registered_name?.trim() || 'Horse'),
+          subtitle: subtitle([h.breed, h.sex, h.color]),
+          ownerContactId: h.owner_contact_id,
+        }))))
+        .catch(() => setHorses([]));
+    } else {
+      listStableHorses()
+        .then((rows: StableHorse[]) => setHorses(rows.map((h) => ({
+          id: h.id, name: h.name, subtitle: subtitle([h.breed, h.sex, h.color]), ownerContactId: null,
+        }))))
+        .catch(() => setHorses([]));
+    }
+  }, [isStaff, ownerContactId]);
 
   async function attach(horseId: string) {
     setBusy(horseId); setErr(null);
     try { await attachHorseToDocument(documentId, horseId); onAttached(); }
     catch (e) { setErr(errMessage(e, 'Could not attach that horse.')); setBusy(null); }
   }
+
+  // F4: for staff, the suggestions are ONLY the owner seat's horses; with no owner
+  // seat, nothing is offered. The counterparty's own stable is shown whole.
+  const offered = (horses ?? []).filter((h) =>
+    !isStaff || (ownerContactId != null && h.ownerContactId === ownerContactId));
+  const ownerSeatEmpty = isStaff && ownerContactId == null;
 
   return (
     <section className="bg-green-50 border border-green-500/40 rounded-xl p-6 mb-5">
@@ -146,18 +188,27 @@ function HorseGate({ documentId, onAttached }: { documentId: string; onAttached:
         horse isn't listed, add it — it becomes a record on your account.
       </p>
       {err && <p role="alert" className="form-error mb-3">{err}</p>}
-      {horses === null ? (
-        <p className="text-sm text-muted">Loading your horses…</p>
+      {ownerSeatEmpty ? (
+        <p className="text-sm text-green-900/75">
+          Attach the {ownerRoleLabel.toLowerCase()} first — the horse is picked from the {ownerRoleLabel.toLowerCase()}'s records.
+        </p>
+      ) : horses === null ? (
+        <p className="text-sm text-muted">Loading horses…</p>
       ) : (
         <div className="flex flex-col gap-2 max-w-xl">
-          {horses.map((h) => (
+          {offered.length === 0 && (
+            <p className="text-sm text-green-900/75">
+              {isStaff
+                ? `The ${ownerRoleLabel.toLowerCase()} has no horse records yet — add one below.`
+                : 'You have no horse records yet — add one below.'}
+            </p>
+          )}
+          {offered.map((h) => (
             <button key={h.id} type="button" disabled={!!busy} onClick={() => void attach(h.id)}
               className="flex items-center justify-between gap-3 bg-white border border-green-800/10 rounded-lg px-4 py-3 text-left hover:border-green-800/30 focus-ring disabled:opacity-50">
               <span className="min-w-0">
                 <span className="block text-sm font-medium text-green-900 truncate">{h.name}</span>
-                <span className="block text-xs text-muted truncate">
-                  {[h.breed, h.sex, h.color].filter(Boolean).join(' · ') || 'Horse record'}
-                </span>
+                <span className="block text-xs text-muted truncate">{h.subtitle}</span>
               </span>
               <span className="text-xs text-green-800 font-medium shrink-0">
                 {busy === h.id ? 'Attaching…' : 'Use this horse →'}
@@ -2125,9 +2176,18 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
       )}
 
       {/* Horse gate — pick/add the horse before the rest of the contract */}
-      {showHorseGate && id && (
-        <HorseGate documentId={id} onAttached={() => { void load({ blank: false }); }} />
-      )}
+      {showHorseGate && id && (() => {
+        // F4: the owner-side seat (Lessor on a lease, Seller on a sale) is the horse
+        // filter for staff. Empty seat → no horse offered.
+        const ownerSeat = partiesSummary?.parties.find(
+          (p) => p.party_role === 'LESSOR' || p.party_role === 'SELLER');
+        const ownerRoleLabel = ownerSeat?.party_role === 'SELLER' ? 'Seller' : 'Lessor';
+        return (
+          <HorseGate documentId={id} onAttached={() => { void load({ blank: false }); }}
+            isStaff={isStaff} ownerContactId={ownerSeat?.contact_id ?? null}
+            ownerRoleLabel={ownerRoleLabel} />
+        );
+      })()}
 
       {/* ⚠️ THE HORSE-CONFIRMATION CONTROL WAS REMOVED HERE (owner, 2026-08-25).
           "i have no way to know if its accurate, the data comes from the horse record
