@@ -528,3 +528,43 @@ lessee initialed (`SL`), blockers 0. Both approved review → **LOCKED**; **ZZ T
 `effective_date = 2026-10-26` (the lessee's later signature). One EMAIL delivery per
 signer with a PDF each; both contact records EXECUTED with the right roles; the horse
 record carries the lessee relationship. Screens `s2-p3s-*`.
+
+## F7 — Emergency contacts: per-contact groups + the rider rule — DONE, proven
+**Read-only report (before any change), first-login intake:**
+- It asks for Contact 1 (name, relationship, phone — all `required` via HTML5) and
+  Contact 2 (optional). So it required ONE and offered a second.
+- Each contact was already its own 3-column row (not interleaved), but under a single
+  "Emergency contacts" heading — no per-contact heading.
+- It accepted the person's own name or phone — there was NO own-contact validation
+  anywhere (client `saveDetails` or server `update_my_onboarding_profile`).
+- The staff contact dossier (`ContactDossierModal`) DID flatten both contacts into one
+  shared two-column grid (the repeated-group defect).
+
+**Applied (owner rulings 2026-10-26):** a shared `EmergencyContactsFields` component —
+each contact its own group with a heading ("Contact 1" / "Contact 2") and three columns
+(name, relationship, phone), never interleaved. Used by the intake and the contact
+dossier. Rules: one contact required at all times; a second otherwise optional. The
+person on the record MAY list themselves — the emergency is about the horse — EXCEPT a
+**rider**: an emergency about the rider can't be reported to the rider, so a rider needs
+at least one contact who is someone else. A rider who lists themselves as Contact 1
+(valid for horse-care / vet-auth) must then give a complete, different Contact 2 (in
+case they are hurt riding); a Contact 2 that is the rider is always refused. For a minor
+rider the at-risk person is the minor, so the guardian is a valid Contact 1.
+
+**Proof (live):**
+- Horse-owner (`/sign/horse`, non-rider): self as Contact 1 **allowed**, no refusal,
+  Contact 2 not required, save proceeded. Screen `s2-f7-05`.
+- Rider (`/sign/rider`): self as Contact 1 → hint shown, Contact 2 becomes required,
+  **save blocked**; self as Contact 2 → **refused**; a someone-else Contact 2 → **save
+  proceeds**. Screens `s2-f7-06`…`08`.
+
+## Read-only report — Abby Beers' horses
+Abby Beers is contact `95ee8afc-…` (abbyrothwell@hotmail.com). **She owns zero horses**
+— none active, none soft-deleted, none text-referenced (no `owner_name_text` /
+`lessee_name_text` / nickname / registered_name mentions Abby, Beers, or Rothwell).
+There are **no ownerless horses at all** (`current_owner_contact_id IS NULL`): 0, whether
+live or soft-deleted. Of the 6 horses total, the only Abby-named owner is **Abby LITTLE**
+(a different person) — her soft-deleted "Tiz" (deleted 2026-09-12) and active "Lightning"
+are correctly hers. `horse_locations` rows exist for Lightning, Secret, Sundance (each
+with an empty `sub_location`); none relate to Abby Beers. **Conclusion: no horse, in any
+state, is Abby Beers'.**
