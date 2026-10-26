@@ -17,42 +17,16 @@ Node scripts in the session scratchpad. Screenshots in
 
 ---
 
-## The two blockers that gate the rest, stated up front
-
-### B1 — Email receipt cannot be independently confirmed in this session
-Emails are sent for real via Google Workspace SMTP (`api/_lib/email.ts`) to
-`admin+<alias>@cactai.io`. **The Gmail inbox for that address is not readable
-here** — the Gmail MCP connector requires an OAuth authorization that cannot be
-completed in a non-interactive session.
-
-The prompt's own method covers this: *"read from the invitations or delivery rows
-only to find the message, never to skip it."* Every link below was reconstructed
-from the **exact** send-time artifact — `registerUrl` returned by
-`/api/admin-send-invitation` and the `invitations.token` row, which
-`api/_lib/invitationEmail.ts` composes as `${origin}/activate?token=${token}` —
-i.e. byte-identical to the link the email carries — and then **driven in the
-browser**. Delivery emails were confirmed from `document_deliveries`
-(`channel='EMAIL'`, `copy_url` set) and `documents.executed_email_sent_at`, and the
-stored document was then opened and read in the app. **What was not done: opening
-the actual message in the `admin@cactai.io` inbox.** If the owner requires inbox
-receipt itself, the Gmail connector must be authorized first.
-
-### B2 — F2's premise does not hold on `main` (deviation)
-F2 says the test client account and Abby Little "appear in every staff picker that
-lists clients" as a **fix to build**, and asks to "report what excluded them." On
-current `main`, **nothing excludes them** — both already appear in every client
-picker. There is no exclusion rule to remove and therefore no fix to build without
-inventing a change the code does not need (which the clean-code rule forbids). This
-is a deviation from the prompt's premise and is the item this round stops on.
-Full evidence under **F2** below.
-
-A third, smaller impediment surfaced while driving: the staff **contract-builder and
-Parties-&-Horse controls are React controlled components that headless Playwright
-drives unreliably** (the buyer-only "Get started" create works; attaching seller/
-horse via the on-page pickers did not register in React state across several
-approaches). Paths 3/4/5 depend on driving exactly those controls through many
-steps. This is noted as a test-drivability finding, not a product defect proven
-against a user.
+## Method note — email proof (per owner ruling)
+Owner ruling: do not use Gmail; take each link from the invitation/delivery row and
+record the row's `sent` status as the proof. Every path below does exactly that — the
+link is the `registerUrl`/`invitations.token` artifact (byte-identical to the email's
+`${origin}/activate?token=${token}` per `api/_lib/invitationEmail.ts`), driven in the
+browser, and each invitation row's `status` is `sent`. Delivery emails are confirmed
+from `document_deliveries` (`channel='EMAIL'`, `copy_url` set, grouped by one
+`delivery_set_id`) plus `documents.executed_email_sent_at`; `deliver-documents.ts`
+sends one email per signer with all PDFs. Stored documents were opened and read in the
+app (path 1b).
 
 ---
 
@@ -324,19 +298,29 @@ lessee answering the gate from the contract drawer and the block clearing.
 
 ---
 
-## Test data — created this round (NOT yet removed; see note)
-- Contacts/accounts: `admin+vr-…-p1a@cactai.io` (Vera Round1A, active member),
-  `admin+vr-…-p1b@cactai.io` (Wes Round1B, active member, 1 executed release + 2
-  orphan draft releases + 1 delivery).
-- Sale document `b1b19521-…` (buyer Abby Little, no seller/horse attached).
-- No fresh aliases beyond the two above; **no real client, no real client's horse,
-  Audrey Dropsy untouched.** ZZ Test Horse's owner is unchanged (ZZ Test Owner,
-  `7cef640f-…`) — the sale draft did not reassign it.
+## Test data — created and REMOVED, verified
+Created this round: 8 alias contacts (`admin+vr-…@cactai.io`; 6 with accounts — paths
+1a, 1b, 2 guest/rider, F3, path 3 lessee), 1 test horse (VR Gate Horse), 3 test
+contracts (sale `b1b19521`, leases `dae82adc` + `ba9dfc72`), plus their documents,
+signatures, deliveries, invitations, and the providers + health events logged on ZZ
+Test Horse.
 
-**Cleanup is deferred pending the owner's ruling on whether to continue** (removing
-the aliases now would discard the only driven evidence if the round resumes). When
-authorized, removal covers the two alias accounts + their contacts, invitations,
-documents, files, and the Abby-buyer sale draft, and re-verifies zero rows.
+**All removed and verified zero:** 0 alias contacts / auth users / profiles /
+invitations; 0 VR Gate Horse; 0 test contracts; 0 health events and 0 test providers
+on ZZ Test Horse. **ZZ Test Horse restored** — owner = ZZ Test Owner (`7cef640f-…`),
+unchanged. **Sundance** (a real horse the path-3 horse-card picker defaulted to, and
+which I caught and reassigned off the test lease) has **0** test-document references and
+its own record was never modified. **Audrey Dropsy untouched; no real client, no real
+client's horse altered.** The only permanent change kept is the F1 template work (6
+initials fields on SALE_V3 + BILL_OF_SALE), confirmed intact.
+
+⚠️ **Finding (test-drivability): the contract-page horse picker is a "Use this horse →"
+card list that defaults to the first suggested horse, not a labelled select.** Driving
+it blindly attached the wrong (real) horse to the test lease; it must be selected by its
+specific card. Reported per the owner's "if a control is not a select, report what it
+is" instruction. Other controlled selects/inputs were driven fine with the native
+value-setter + input/change dispatch (`setReactSelect`/`setReactInput`) and the
+inline-field-by-placeholder selector.
 
 ---
 
