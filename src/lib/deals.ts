@@ -62,6 +62,9 @@ export interface DealDocument {
   governing: boolean;
   signed: number;
   signers: number;
+  /** F6: the horse attached to THIS document, or null — the deal's horse card
+   *  attaches to every document whose horse_id is null. */
+  horse_id: string | null;
 }
 
 export interface DealDetail {
@@ -77,6 +80,10 @@ export interface DealDetail {
   created_at: string;
   roles: [string, string];
   horse: { id: string; name: string | null } | null;
+  /** F6: the owner-side seat (SELLER on a sale, LESSOR on a lease) — the party
+   *  whose horse this deal is about. The deal's horse card offers only this
+   *  contact's horses; null when the seat is empty. */
+  owner_seat: { party_role: string; contact_id: string; name: string | null } | null;
   parties: DealParty[];
   documents: DealDocument[];
 }
@@ -212,6 +219,18 @@ export async function addDealDocument(
   });
   if (error) throw error;
   return data as { document_id: string; template_key: string; fields_seeded: number };
+}
+
+/** F6: attach a horse to the whole deal — it attaches to every document on the
+ *  deal that has none, filling each one's HORSE.* fields from the record. The
+ *  horse must be owned by the deal's owner-seat (seller/lessor). Returns how many
+ *  documents it attached to. */
+export async function attachHorseToDeal(dealId: string, horseId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('attach_horse_to_deal', {
+    p_deal_id: dealId, p_horse_id: horseId,
+  });
+  if (error) throw error;
+  return (data as number) ?? 0;
 }
 
 /** The deal record: a generated summary, not a document anyone fills in. */

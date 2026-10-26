@@ -440,3 +440,58 @@ Owner is the Seller there too).
   Restore to empty at cleanup.
 - No real client, no real client's horse touched; Sundance untouched; Audrey Dropsy
   untouched.
+
+---
+
+# Session 3 (2026-10-26) — ruling A applied; F5; paths driven through execution
+
+Owner ruling A: ZZ Test Owner gets a real permanent fixture account; staff never sign an
+individual's seat (correct, kept). F5 added. Paths 3/3c/4 driven to the real end.
+
+## Fixture — ZZ Test Owner account provisioned (permanent)
+Set the ZZ Test Owner contact's email to `admin+fhe-owner-test@cactai.io`, sent it an
+account invitation from its contact record, **activated it in the browser** (password
+set), completed intake. It is now a real active account (auth user + profile role=USER +
+member active) linked to the ZZ Test Owner contact (`7cef640f-…`). Credentials recorded
+in `.env.test` (both the worktree's and the canonical checkout's):
+`FHE_TEST_OWNER_EMAIL / _PASSWORD / _CONTACT_ID`. Kept permanently. Screens
+`s2-owner-00`…`02`.
+
+## F5 — staff enter every non-HORSE deal term on a staged contract — DONE, proven
+**Fix** (`src/pages/app/ContractPage.tsx`): the HorseGate used to replace the whole
+contract body whenever no horse was attached, so staff could enter no terms at staging.
+Now `horseGateBlocksBody = showHorseGate && !isStaff` — the gate replaces the body only
+for a counterparty bringing their own horse; for STAFF it is a banner and the full field
+editor renders. The HORSE.* fields already exist (empty) on a staged document and render
+pending until the horse fills them. Code only; gates all 0; merged to main (`2029bb93`),
+deployed before driving.
+**Proof (live, staged lease with NO horse):** the HorseGate shows as a banner, the
+deal-term fields are visible, and staff **entered through the page**
+LEASE_PURPOSE=RECREATIONAL, LEASE_TYPE=PARTIAL, LEASE_TERM_TYPE=FIXED,
+LEASE_START=2026-12-01, LEASE_END=2027-12-01 — all persisted while `documents.horse_id`
+was still empty. Screens `s2-f5-01`, `s2-f5-02`.
+
+## Path 3 (first ordering, lessee signs first) — PASS end-to-end
+Staged lease (fresh-alias lessee Lena LesseeFirst, no lessor/horse) → F5 terms entered
+before the horse → **empty-lessor send refused** (409 EMPTY_SEAT) → lessee invited,
+activated, intake, landed "Horse Lease Agreement is waiting for you" → staff attached ZZ
+Test Owner (F4 part 2) and **ZZ Test Horse** (offered as the only option, id read back
+and verified `2d07a570-…` before the click) → staff entered every remaining lessor/deal
+field + disclosure gates (injuries-to-humans = Yes so the lessee initials) → lessee
+**initialed** (`ACK.INJURIES_TO_HUMANS = LL`) → field blockers **0**.
+Then: lessee **approved** review ("Awaiting review approval from: Lessor") → **ZZ Test
+Owner approved** → document **LOCKED** (ruling A works: the real lessor account locks it;
+no staff-signs-individual) → **lessee signed** (Lena LesseeFirst, 07:32:11) → **lessor
+signed its own seat** (ZZ Test Owner, 07:32:56, last — correct first ordering) →
+**EXECUTED**, `effective_date = 2026-10-26` (the later signature's date),
+`executed_email_sent_at` set.
+**Delivery & record confirmations (all pass):** one EMAIL delivery **per signer** (Lena,
+ZZ Test Owner), **each with a PDF** (`copy_url`). The lessee opened the executed document
+("You've signed this document — Signed · 10/26/2026") and it reads correctly — *"made
+effective as of October 26, 2026 by and between ZZ Test Owner … ('Lessor') and Lena
+LesseeFirst … ('Lessee')"* — with the disclosure acknowledgment (injuries initial "LL")
+present and **no marker text** (`{{…}}` / `[pending]`). Both contact records show the
+lease **EXECUTED** with the right roles; the **horse record shows the lessee
+relationship** (`lessee_contact_id` = Lena); the execution snapshot
+(`contract_execution_audit.merged_body`, 24 560 chars) carries the disclosure content.
+Screens `s2-p3f-*`.
