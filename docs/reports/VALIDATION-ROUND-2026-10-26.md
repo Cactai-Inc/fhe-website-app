@@ -495,3 +495,36 @@ lease **EXECUTED** with the right roles; the **horse record shows the lessee
 relationship** (`lessee_contact_id` = Lena); the execution snapshot
 (`contract_execution_audit.merged_body`, 24 560 chars) carries the disclosure content.
 Screens `s2-p3f-*`.
+
+## F6 — the deal page attaches a horse to the whole deal — DONE, proven
+Two bugs, both fixed:
+1. **No attach control.** The deal page only displayed `deal.horse`; a deal whose
+   seller/lessor owned a horse showed no horse to attach because there was no card at
+   all. Added `DealHorseCard` (mirrors the contract HorseGate rule): offers only the
+   owner-seat (seller/lessor) contact's horses, nothing when the seat is empty, explicit
+   pick. `attach_horse_to_deal` (migration `vr_20261026T1800`) attaches to every document
+   on the deal that has none; `deal_detail` now returns per-document `horse_id` and the
+   `owner_seat`.
+2. **Adding a second document crashed.** `add_deal_document` read
+   `v_ctr contracts%ROWTYPE` then used `v_ctr.horse_id`, but `contracts` has no horse_id
+   column (the horse is on the document). Every add raised `42703 record "v_ctr" has no
+   field "horse_id"`, so a deal could not add a bill of sale or any second document.
+   Fixed to resolve the horse via `contract_horse_id(contract_id)` (migration
+   `vr_20261026T1830`).
+**Proof (live):** a **sale deal** (seller ZZ Test Owner, buyer a fresh alias, no horse)
+— added the Bill of Sale (alongside the auto-created Sale Agreement), the horse card
+offered **only ZZ Test Horse**, attaching filled **both** documents with it, and the
+newly-added BOS **inherited the deal's horse**. A **lease deal** (lessor ZZ Test Owner,
+fresh lessee, no horse) — the lease document was present, the card offered only ZZ Test
+Horse, attaching filled it. All three document kinds (sale agreement, bill of sale,
+lease) exercised. Screens `s2-f6-*`. Merged main `eae8f2cf` (card + part-1 migration);
+part-2 (`add_deal_document`) is a DB-only fix applied to prod and committed.
+
+## Path 3 (second ordering, lessor signs first) — PASS end-to-end
+Fresh-alias lessee Sam LesseeSecond; staged lease, lessee invited/activated, ZZ Test
+Owner attached as lessor, ZZ Test Horse attached (id verified), every field entered,
+lessee initialed (`SL`), blockers 0. Both approved review → **LOCKED**; **ZZ Test Owner
+(lessor) signed FIRST** (08:02:35), **Sam (lessee) signed LAST** (08:03:20) → **EXECUTED**,
+`effective_date = 2026-10-26` (the lessee's later signature). One EMAIL delivery per
+signer with a PDF each; both contact records EXECUTED with the right roles; the horse
+record carries the lessee relationship. Screens `s2-p3s-*`.
