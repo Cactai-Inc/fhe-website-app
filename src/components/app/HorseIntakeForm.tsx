@@ -35,11 +35,20 @@ const input = 'w-full px-3 py-2 rounded-lg border border-green-800/15 text-sm te
 const NA = 'N/A';
 const filled = (v?: string) => !!v && v.trim() !== '';
 
+/** A stable comparison string for the medication set, in the order it is persisted
+ *  (medications then supplements, named rows only). Autosave diffs against this so
+ *  leaving a field that didn't change a medication does not re-run the replace-all. */
+function medsSnapshot(items: HorseMedication[]): string {
+  return JSON.stringify(items.filter((m) => filled(m.name)));
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
       <p className="text-[10px] tracking-widest uppercase text-gold-800 font-semibold mt-4 mb-2 first:mt-0">{title}</p>
-      <div className="grid sm:grid-cols-2 gap-3">{children}</div>
+      {/* Three columns on a wide viewport so the form shows with the least scrolling
+          (Part 2 item 3); span fields still take the full row via sm:col-span-2. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{children}</div>
     </div>
   );
 }
@@ -71,7 +80,7 @@ function Field({
   const na = value === NA;
   const disabled = na || !!pending;
   return (
-    <div className={span ? 'sm:col-span-2' : ''}>
+    <div className={span ? 'sm:col-span-2 lg:col-span-3' : ''}>
       <div className="flex items-center justify-between mb-1 gap-2">
         <label className="block text-[11px] tracking-wide uppercase text-muted font-semibold">{label}</label>
         <div className="flex items-center gap-2">
@@ -147,7 +156,7 @@ function SelectOrOther({
   const cls = `${input}${invalid ? ' border-red-400' : ''}`;
   const selectValue = otherOpen || isOther ? OTHER : (isKnown ? value : '');
   return (
-    <div className={span ? 'sm:col-span-2' : ''}>
+    <div className={span ? 'sm:col-span-2 lg:col-span-3' : ''}>
       <L>{label}</L>
       <select className={cls} value={selectValue}
         onChange={(e) => {
@@ -319,7 +328,7 @@ function MedicationBlock({ v, kind, onChange, onRemove }: { v: HorseMedication; 
 function RepeatableMeds({ kind, items, onChange }: { kind: 'MEDICATION' | 'SUPPLEMENT'; items: HorseMedication[]; onChange: (i: HorseMedication[]) => void }) {
   const noun = kind === 'SUPPLEMENT' ? 'supplement' : 'medication';
   return (
-    <div className="sm:col-span-2 flex flex-col gap-2">
+    <div className="sm:col-span-2 lg:col-span-3 flex flex-col gap-2">
       {items.map((it, i) => (<MedicationBlock key={i} v={it} kind={kind} onChange={(nv) => onChange(items.map((x, j) => (j === i ? nv : x)))} onRemove={() => onChange(items.filter((_, j) => j !== i))} />))}
       <button type="button" onClick={() => onChange([...items, { kind }])} className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add {noun}</button>
     </div>
@@ -371,7 +380,7 @@ function VaccinationBlock({ v, onChange, onRemove }: { v: HorseVaccination; onCh
 
 function RepeatableVaccinations({ items, onChange }: { items: HorseVaccination[]; onChange: (i: HorseVaccination[]) => void }) {
   return (
-    <div className="sm:col-span-2 flex flex-col gap-2">
+    <div className="sm:col-span-2 lg:col-span-3 flex flex-col gap-2">
       {items.map((it, i) => (<VaccinationBlock key={i} v={it} onChange={(nv) => onChange(items.map((x, j) => (j === i ? nv : x)))} onRemove={() => onChange(items.filter((_, j) => j !== i))} />))}
       <button type="button" onClick={() => onChange([...items, {}])} className="self-start text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add vaccination</button>
     </div>
@@ -396,7 +405,7 @@ function StructuredList({ noun, selfSection, fields, items, onChange }: {
   const setMany = (i: number, patch: NarrativeEntry) => onChange(items.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const val = (it: NarrativeEntry, k: string) => (it[k] == null ? '' : String(it[k]));
   return (
-    <div className="sm:col-span-2 flex flex-col gap-2">
+    <div className="sm:col-span-2 lg:col-span-3 flex flex-col gap-2">
       {items.map((it, i) => (
         <div key={i} className="rounded-lg border border-green-800/15 p-3">
           <div className="flex items-center justify-between mb-2">
@@ -569,7 +578,7 @@ function ProviderDraftRow({ v, isStaff, onChange, onRemove }: {
 
 function ProviderDraftList({ isStaff, items, onChange }: { isStaff: boolean; items: ProviderDraft[]; onChange: (i: ProviderDraft[]) => void }) {
   return (
-    <div className="sm:col-span-2 flex flex-col gap-2">
+    <div className="sm:col-span-2 lg:col-span-3 flex flex-col gap-2">
       {items.map((it, i) => (
         <ProviderDraftRow key={i} v={it} isStaff={isStaff}
           onChange={(nv) => onChange(items.map((x, j) => (j === i ? nv : x)))}
@@ -585,7 +594,7 @@ const PATCHABLE_KEYS: (keyof HorseIntakePayload)[] = [
   'registered_name', 'nickname', 'breed', 'color', 'markings', 'sex',
   'date_of_birth', 'height', 'registration_number', 'registration_org',
   'microchip_id', 'passport_number', 'passport_country', 'fair_market_value',
-  'euthanasia_authorization',
+  'euthanasia_authorization', 'injuries_to_humans',
 ];
 const LIST_KEYS: (keyof HorseIntakePayload)[] = [
   'pending_fields', 'medical_history_list', 'behavioral_history_list', 'known_conditions_list',
@@ -595,7 +604,7 @@ const LIST_KEYS: (keyof HorseIntakePayload)[] = [
 const TYPED_KEYS = new Set<keyof HorseIntakePayload>(['date_of_birth', 'fair_market_value', 'sex', 'euthanasia_authorization', 'breed', 'color']);
 
 export function HorseIntakeForm({
-  onDone, submitLabel = 'Add horse', ownerContactId, horseId, prefill,
+  onDone, submitLabel = 'Add horse', ownerContactId, horseId, prefill, hideSubmit, onAutosaved,
 }: {
   onDone: (horseId: string, ownerContactId?: string) => void;
   submitLabel?: string;
@@ -604,6 +613,12 @@ export function HorseIntakeForm({
   prefill?: Partial<HorseIntakePayload>;
   /** Accepted for call-site compatibility; the form always creates on a nickname. */
   createEarly?: boolean;
+  /** Hide the submit button — the record editor autosaves and has no save button
+   *  (Part 2 item 2). Only meaningful in edit mode (horseId set). */
+  hideSubmit?: boolean;
+  /** Called after each autosave lands, so a host can refetch (e.g. the open
+   *  contract when the record is edited from its drawer/modal — item 4a). */
+  onAutosaved?: () => void;
 }) {
   const { isStaff } = useAuth();
   const [f, setF] = useState<HorseIntakePayload>(() => (horseId ? { is_leased: 'no' } : { is_leased: 'no', ...(prefill ?? {}) }));
@@ -617,6 +632,7 @@ export function HorseIntakeForm({
   const lastSavedRef = useRef<HorseIntakePayload>({});
   const lastSavedLocRef = useRef<string>(JSON.stringify({}));
   const lastSavedVaccRef = useRef<string>(JSON.stringify([]));
+  const lastSavedMedsRef = useRef<string>(JSON.stringify([]));
   const savingRef = useRef(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveErr, setSaveErr] = useState<string | null>(null);
@@ -711,7 +727,12 @@ export function HorseIntakeForm({
           setLoc(lv);
           lastSavedLocRef.current = JSON.stringify(lv);
         }
-        if (medRows.length) { setMeds(medRows.filter((m) => m.kind !== 'SUPPLEMENT')); setSupplements(medRows.filter((m) => m.kind === 'SUPPLEMENT')); }
+        if (medRows.length) {
+          const loadedMeds = medRows.filter((m) => m.kind !== 'SUPPLEMENT');
+          const loadedSupps = medRows.filter((m) => m.kind === 'SUPPLEMENT');
+          setMeds(loadedMeds); setSupplements(loadedSupps);
+          lastSavedMedsRef.current = medsSnapshot([...loadedMeds, ...loadedSupps]);
+        }
         if (Array.isArray(raw.vaccinations)) { const vacc = (raw.vaccinations as HorseVaccination[]).filter((x) => x && typeof x === 'object'); setVaccinations(vacc); lastSavedVaccRef.current = JSON.stringify(vacc); }
       } catch (e) { if (active) setErr(errorText(e, 'Could not load the horse record.')); }
       finally { if (active) setLoadingRecord(false); }
@@ -738,7 +759,13 @@ export function HorseIntakeForm({
     const vaccSnapshot = JSON.stringify(cleanVacc);
     const vaccChanged = vaccSnapshot !== lastSavedVaccRef.current;
     const locChanged = locSnapshot !== lastSavedLocRef.current && filled(loc.name);
-    if (Object.keys(patch).length === 0 && !locChanged && !vaccChanged) return;
+    // medications + supplements save through set_horse_medications (replace-all);
+    // leaving any medication field saves the whole set. The DB function is one
+    // multi-row insert now, so this is two document syncs regardless of count.
+    const medItems = [...meds, ...supplements].filter((m) => filled(m.name));
+    const medsSnap = medsSnapshot(medItems);
+    const medsChanged = medsSnap !== lastSavedMedsRef.current;
+    if (Object.keys(patch).length === 0 && !locChanged && !vaccChanged && !medsChanged) return;
     savingRef.current = true; setSaveState('saving');
     try {
       if (Object.keys(patch).length) await updateHorseRecord(id, patch);
@@ -747,8 +774,13 @@ export function HorseIntakeForm({
         lastSavedLocRef.current = locSnapshot;
         if (vaccChanged) lastSavedVaccRef.current = vaccSnapshot;
       }
+      if (medsChanged) {
+        await setHorseMedications(id, medItems);
+        lastSavedMedsRef.current = medsSnap;
+      }
       lastSavedRef.current = { ...f };
       setSaveErr(null); setSaveState('saved');
+      onAutosaved?.();
     } catch (e) { setSaveErr(errorText(e, 'Could not save your last change.')); setSaveState('error'); }
     finally { savingRef.current = false; }
   }
@@ -819,7 +851,7 @@ export function HorseIntakeForm({
           try { await setHorseLocations(hid, loc, cleanVacc, updateKnown); lastSavedLocRef.current = JSON.stringify(loc); lastSavedVaccRef.current = JSON.stringify(cleanVacc); } catch { /* record saved */ }
         }
         const items = [...meds, ...supplements].filter((m) => filled(m.name));
-        if (items.length) { try { await setHorseMedications(hid, items); } catch { /* record saved */ } }
+        if (items.length) { try { await setHorseMedications(hid, items); lastSavedMedsRef.current = medsSnapshot(items); } catch { /* record saved */ } }
         await persistProviders(hid);
       };
       const editingId = recordIdRef.current;
@@ -861,7 +893,7 @@ export function HorseIntakeForm({
 
   return (
     <div ref={formRef} className="flex flex-col gap-1" onBlur={() => void autosave()}>
-      {isStaff && (
+      {isStaff && !horseId && (
         <div className="rounded-lg border border-gold-500/40 bg-gold-50 p-3 mb-2">
           <label className="block text-[11px] tracking-wide uppercase text-gold-900 font-semibold mb-1">Assign this horse to an account *</label>
           <select className={`${input} bg-white${showError && !assignTo ? ' border-red-400' : ''}`} value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
@@ -891,14 +923,14 @@ export function HorseIntakeForm({
             <SelectOrOther label="Passport country" value={f.passport_country} onChange={set('passport_country')} options={toOpts(passportCountryOpts)} lookupKey="horse_passport_country" onOptionAdded={(o) => setPassportCountryOpts((prev) => addOpt(prev, o))} placeholder="Country" />
           </>
         ) : (
-          <div className="sm:col-span-2">
+          <div className="sm:col-span-2 lg:col-span-3">
             <button type="button" onClick={() => setShowPassport(true)} className="text-xs text-gold-800 border border-dashed border-gold-400 rounded-lg px-3 py-1.5 hover:bg-gold-50 focus-ring">＋ Add passport</button>
           </div>
         )}
       </Section>
 
       <Section title="Registration">
-        <p className="text-[11px] text-muted sm:col-span-2 -mb-1">Only for a registered horse. Leave blank if the horse is not registered.</p>
+        <p className="text-[11px] text-muted sm:col-span-2 lg:col-span-3 -mb-1">Only for a registered horse. Leave blank if the horse is not registered.</p>
         <Field label="Registered name" value={f.registered_name} onChange={set('registered_name')} placeholder="As written on the registration certificate" />
         <SelectOrOther label="Registration organization" value={f.registration_org} onChange={set('registration_org')} options={toOpts(regOrgOpts)} lookupKey="horse_registration_org" onOptionAdded={(o) => setRegOrgOpts((prev) => addOpt(prev, o))} placeholder="Registry name" />
         <Field label="Registration number" value={f.registration_number} onChange={set('registration_number')}
@@ -920,19 +952,19 @@ export function HorseIntakeForm({
       </Section>
 
       <Section title="Location">
-        <div className="sm:col-span-2">
+        <div className="sm:col-span-2 lg:col-span-3">
           <LocationPicker v={loc} onChange={setLoc} nameOptions={locationNameOpts} onEditedKnown={setLocEditedKnown} />
           {locEditedKnown && <p className="text-[10px] text-gold-800 mt-1">You edited a saved location — on save you’ll be asked whether to update it everywhere.</p>}
         </div>
       </Section>
 
       <Section title="Lease">
-        <label className="sm:col-span-2 flex items-center gap-2 text-[13px] text-green-900 cursor-pointer select-none">
+        <label className="sm:col-span-2 lg:col-span-3 flex items-center gap-2 text-[13px] text-green-900 cursor-pointer select-none">
           <input type="checkbox" checked={leased} onChange={(e) => setF((p) => ({ ...p, is_leased: e.target.checked ? 'yes' : 'no' }))} />
           This horse is currently leased
         </label>
         {leased && (
-          <div className="sm:col-span-2 grid sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2 lg:col-span-3 grid sm:grid-cols-2 gap-3">
             <div><L>Lessee name</L><input className={input} value={f.lessee_name_text ?? ''} placeholder="Full name" onChange={(e) => set('lessee_name_text')(e.target.value)} /></div>
             <div><L>Lessee email</L><input type="email" className={input} value={f.lessee_email ?? ''} placeholder="name@example.com" onChange={(e) => set('lessee_email')(e.target.value)} /></div>
             <div><L>Lease start</L><input type="date" className={input} value={f.lease_start ?? ''} onChange={(e) => set('lease_start')(e.target.value)} /></div>
@@ -941,12 +973,12 @@ export function HorseIntakeForm({
         )}
       </Section>
 
-      <Section title="History"><div className="sm:col-span-2 grid gap-3">
+      <Section title="History"><div className="sm:col-span-2 lg:col-span-3 grid gap-3">
         <div><L>Training history</L><StructuredList noun="training entry" selfSection="" fields={[{ k: 'entry', label: 'Detail', kind: 'text', placeholder: 'e.g. started under saddle 2021; schooling 1.10m' }]} items={f.training_history_list ?? []} onChange={setList('training_history_list')} /></div>
         <div><L>Competition history</L><StructuredList noun="competition entry" selfSection="" fields={[{ k: 'entry', label: 'Detail', kind: 'text', placeholder: 'e.g. 2023 regional championship, 2nd' }]} items={f.competition_history_list ?? []} onChange={setList('competition_history_list')} /></div>
       </div></Section>
 
-      <Section title="Health &amp; disclosures"><div className="sm:col-span-2 grid gap-4">
+      <Section title="Health &amp; disclosures"><div className="sm:col-span-2 lg:col-span-3 grid gap-4">
         <div><L>Known conditions (ongoing or episodic health/soundness, not behavioral)</L>
           <p className="text-[10px] text-muted mb-1">e.g. allergies, certain feed not tolerated, prone to colic from temperature changes.</p>
           <StructuredList noun="condition" selfSection="Known conditions" items={f.known_conditions_list ?? []} onChange={setList('known_conditions_list')} fields={[
@@ -980,7 +1012,7 @@ export function HorseIntakeForm({
           <div className="flex gap-1.5">
             {([['YES', 'Yes'], ['NO', 'No'], ['UNKNOWN', 'Unknown']] as const).map(([v, lbl]) => (
               <button key={v} type="button"
-                onClick={() => setF((p) => ({ ...p, injuries_to_humans: v }))}
+                onClick={() => { setF((p) => ({ ...p, injuries_to_humans: v })); setTimeout(() => void autosave(), 0); }}
                 className={`text-sm rounded-lg px-4 py-1.5 border focus-ring ${
                   f.injuries_to_humans === v ? 'bg-green-800 text-white border-green-800' : 'border-green-800/15 text-secondary hover:bg-green-50'}`}>
                 {lbl}
@@ -990,12 +1022,12 @@ export function HorseIntakeForm({
       </div></Section>
 
       <Section title="Care providers">
-        <p className="sm:col-span-2 text-[11px] text-muted -mt-1">
+        <p className="sm:col-span-2 lg:col-span-3 text-[11px] text-muted -mt-1">
           Vet, farrier, trainer, groom, care giver, an emergency backup contact, or anyone else.
           {recordIdRef.current ? ' More can be added, changed, or ended on the horse’s record.' : ''}
         </p>
         {recordIdRef.current ? (
-          <p className="sm:col-span-2 text-[11px] text-muted">Providers already on this record are managed from the record’s Current providers section.</p>
+          <p className="sm:col-span-2 lg:col-span-3 text-[11px] text-muted">Providers already on this record are managed from the record’s Current providers section.</p>
         ) : (
           <ProviderDraftList isStaff={isStaff} items={providers} onChange={setProviders} />
         )}
@@ -1011,9 +1043,11 @@ export function HorseIntakeForm({
           {saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Progress saved.' : `${saveErr ?? 'Could not save your last change.'} It will retry when you leave the next field.`}
         </p>
       )}
-      <button type="button" onClick={submit} disabled={busy} className="w-full mt-3 py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center justify-center gap-2 disabled:opacity-60">
-        {busy && <Loader2 size={16} className="animate-spin" />} {submitLabel}
-      </button>
+      {!hideSubmit && (
+        <button type="button" onClick={submit} disabled={busy} className="w-full mt-3 py-2.5 rounded-lg bg-green-800 text-white text-sm font-medium hover:bg-green-700 focus-ring inline-flex items-center justify-center gap-2 disabled:opacity-60">
+          {busy && <Loader2 size={16} className="animate-spin" />} {submitLabel}
+        </button>
+      )}
     </div>
   );
 }

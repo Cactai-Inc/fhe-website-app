@@ -1,0 +1,41 @@
+Contract-first STEP 7 — verification output (psql -f docs/reports/CONTRACT-FIRST-verify.sql).
+Live run against prod, 2026-10-25, as the test actors on ZZ Test Horse 2d07a570.
+Whole run is one rolled-back transaction: RLS/SECURITY DEFINER fire for real,
+no email leaves (pg_net enqueue discarded on rollback), no test data persists.
+All assertions green. Legend: T1/T2 view link + anon read-only view;
+T3 active-account party; T4/T5 delivery set (nothing until complete, then the whole set);
+T6 kiosk/non-contract onboarding set delivers as one complete set.
+----------------------------------------------------------------------
+=== SETUP ===
+=== TEST 1+2: VIEW link + anon read-only view (before/after execution) ===
+ T1 kind=CONTRACT_VIEW
+ T2 found=true
+ T2 executed=false
+ T2 hasBody=true
+ T2 parties=2
+ T2 noLeak=true
+ T2 refusedAfterExec=true
+ T2 noBodyAfterExec=true
+ROLLBACK
+=== TEST 3: active-account party ===
+ T3 clientState=active
+ T3 lesseeActivated=true
+=== TEST 4+5: delivery set ===
+ T4 bundle generated=true
+ T4 setMembers=3
+ T4 setComplete_before=false
+ T4 govHeld_before=true
+ T4 setComplete_afterGov=false
+ T4 govHeld_afterGov=true
+ T4 govMailed=false
+ T4 govDeliveryHeld=true
+ T5 setComplete_all=true
+ T5 wholeSetDelivers=3
+=== TEST 6: kiosk / non-contract onboarding set ===
+ T6 nonContract=true
+ T6 incomplete=false
+ T6 held=true
+ T6 completeWhenAllSigned=true
+ROLLBACK
+=== ROLLBACK (no email sent, no test data persisted) ===
+ROLLBACK

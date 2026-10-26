@@ -15,6 +15,14 @@ import { supabase } from './supabase';
  * Mechanism: Supabase postgres_changes, the same one the community chat already
  * uses (subscribeToChannel in ./community.ts). RLS is evaluated per subscriber,
  * so a party receives events only for documents they are a party to.
+ *
+ * ⚠️ THE REALTIME SOCKET MUST CARRY THE SESSION TOKEN, or RLS filters EVERY event
+ * on an access-controlled table (contract_fields, documents) to nothing and the
+ * subscription delivers silence. supabase-js does not reliably propagate the token
+ * to a channel opened before — or independently of — its own auth-state plumbing,
+ * so we set it explicitly from the current session right before subscribing. This
+ * was proven against the live backend: the identical subscription received every
+ * contract_fields event WITH setAuth and zero WITHOUT it.
  */
 
 /** Which surface changed. The page maps this onto what to reload. */
@@ -37,32 +45,49 @@ export function subscribeToContract(
   documentId: string,
   onEvent: (e: ContractEvent) => void,
 ): () => void {
-  const channel = supabase
-    .channel(`contract-${documentId}`)
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'contract_notes', filter: `document_id=eq.${documentId}` },
-      () => onEvent('notes'))
-    // note messages carry note_id, not document_id, so they cannot be filtered
-    // server-side by document. The subscription is per-document anyway and the
-    // caller refetches, so an occasional extra refetch is harmless.
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'contract_note_messages' },
-      () => onEvent('notes'))
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'contract_change_requests', filter: `document_id=eq.${documentId}` },
-      () => onEvent('requests'))
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'contract_change_log', filter: `document_id=eq.${documentId}` },
-      () => onEvent('history'))
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'contract_fields', filter: `document_id=eq.${documentId}` },
-      () => onEvent('fields'))
-    .on('postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'documents', filter: `id=eq.${documentId}` },
-      () => onEvent('document'))
-    .subscribe();
+  let channel: ReturnType<typeof supabase.channel> | null = null;
+  let cancelled = false;
 
-  return () => { void supabase.removeChannel(channel); };
+  const open = () => {
+    if (cancelled) return;
+    channel = supabase
+      .channel(`contract-${documentId}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'contract_notes', filter: `document_id=eq.${documentId}` },
+        () => onEvent('notes'))
+      // note messages carry note_id, not document_id, so they cannot be filtered
+      // server-side by document. The subscription is per-document anyway and the
+      // caller refetches, so an occasional extra refetch is harmless.
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'contract_note_messages' },
+        () => onEvent('notes'))
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'contract_change_requests', filter: `document_id=eq.${documentId}` },
+        () => onEvent('requests'))
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'contract_change_log', filter: `document_id=eq.${documentId}` },
+        () => onEvent('history'))
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'contract_fields', filter: `document_id=eq.${documentId}` },
+        () => onEvent('fields'))
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'documents', filter: `id=eq.${documentId}` },
+        () => onEvent('document'))
+      .subscribe();
+  };
+
+  // ⚠️ Auth the socket FIRST, then open the channel — the join must carry the
+  // token or the server never binds the RLS-filtered tables for this subscriber.
+  // getSession/setAuth are async, so the channel opens inside the resolution.
+  supabase.auth.getSession()
+    .then(({ data }) => { const t = data.session?.access_token; if (t) supabase.realtime.setAuth(t); })
+    .catch(() => { /* no session — the channel still opens with anon visibility */ })
+    .finally(open);
+
+  return () => {
+    cancelled = true;
+    if (channel) void supabase.removeChannel(channel);
+  };
 }
 
 export interface ContractViewer {

@@ -34,7 +34,7 @@ import {
 } from '../../lib/contracts';
 import { myWallState, myNameConfirmationState, startBillOfSale, setDocumentCoBuyer, type NameConfirmationState } from '../../lib/api';
 import { ReviewChangesModal } from '../../components/app/ReviewChangesModal';
-import { contractPartyOptions, type PartyOption } from '../../lib/horses';
+import { contractPartyOptions, viewerOwnsHorseRecord, type PartyOption } from '../../lib/horses';
 import { ContractSubheader, SUBHEADER_BTN, type DrawerSpec, type ToolbarAction } from '../../components/app/ContractSubheader';
 import { ContractNotes } from '../../components/app/ContractNotes';
 import { subscribeToContract, useContractPresence } from '../../lib/contractRealtime';
@@ -50,6 +50,7 @@ import { ContractChangeHistory } from '../../components/app/ContractChangeHistor
 import { VoidContractModal, VoidedKeepOrRemove } from '../../components/app/VoidContractModal';
 import { PartiesHorseCard } from '../../components/app/PartiesHorseCard';
 import { AddHorseModal } from '../../components/app/AddHorseModal';
+import { HorseRecordPanel } from '../../components/app/HorseRecordPanel';
 import { ClauseDocument } from '../../components/app/ClauseDocument';
 import { SendCopiesMenu } from '../../components/app/SendCopiesMenu';
 import { SignedVersionNote } from '../../components/ops/documents/SignedVersionNote';
@@ -565,6 +566,9 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
      is, we mark the page stale and reload the moment focus leaves. Losing
      someone's half-typed sentence to a background refresh would be a far worse
      bug than a one-keystroke delay in seeing their edit. */
+  // The "Edit on horse record" control on a HORSE-importing section opens the
+  // record in a drawer/modal in place (item 3), rather than navigating away.
+  const [recordOpen, setRecordOpen] = useState(false);
   const [remoteStale, setRemoteStale] = useState(false);
   useEffect(() => {
     if (!id) return;
@@ -954,6 +958,21 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
     [detail?.fields],
   );
   const horseIsMine = horseFields.some((f) => f.can_edit) || isOwnerSide;
+
+  // Who may EDIT the horse record from the contract (Part 2 item 3): staff, or the
+  // horse's current owner/lessee — the same rule the record's own writers enforce.
+  // This is NOT horseIsMine: a contract party can fill the contract's horse FIELDS
+  // without owning the horse RECORD, so the control shows to them as plain text.
+  const [canEditHorseRecord, setCanEditHorseRecord] = useState(false);
+  useEffect(() => {
+    const hid = doc?.horse_id;
+    if (!hid) { setCanEditHorseRecord(false); return; }
+    if (isStaff) { setCanEditHorseRecord(true); return; }
+    let active = true;
+    viewerOwnsHorseRecord(hid).then((ok) => { if (active) setCanEditHorseRecord(ok); }).catch(() => { if (active) setCanEditHorseRecord(false); });
+    return () => { active = false; };
+  }, [doc?.horse_id, isStaff]);
+
   // Gate ONLY when there is genuinely no horse attached to the document — NOT when
   // horse fields happen to be blank. A document with a horse_id always shows its
   // sections (fields are editable inline whether filled or not).
@@ -2201,6 +2220,8 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           horseId={doc?.horse_id ?? null}
           isOwnerSide={isOwnerSide}
           hasPartyRole={myRoles.length > 0}
+          canEditHorseRecord={canEditHorseRecord}
+          onEditHorseRecord={() => setRecordOpen(true)}
           pendingCompositions={redline?.pending_compositions ?? []}
           onChanged={() => void load({ blank: false })}
           onRevise={(sectionKey) => setReviseRequest((cur) => ({ sectionKey, nonce: (cur?.nonce ?? 0) + 1 }))}
@@ -2689,6 +2710,14 @@ export default function ContractPage({ documentId, embedded }: { documentId?: st
           state={nameState}
           onConfirmed={() => { setNameOpen(false); reloadName(); }}
           onDismiss={() => setNameOpen(false)}
+        />
+      )}
+
+      {recordOpen && doc?.horse_id && (
+        <HorseRecordPanel
+          horseId={doc.horse_id}
+          onClose={() => setRecordOpen(false)}
+          onContractRefetch={() => void load({ blank: false })}
         />
       )}
 

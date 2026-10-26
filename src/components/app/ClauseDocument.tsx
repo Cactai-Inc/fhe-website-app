@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import { Pencil, Trash2, Info, ExternalLink } from 'lucide-react';
+import { Pencil, Trash2, Info, PencilLine } from 'lucide-react';
 import { toErrorMessage } from '../../lib/ops/errors';
 import {
   clauseConditionMet, removeContractComposition, resolvePendingComposition,
@@ -1026,14 +1025,21 @@ function AuthorItemControls({
 
 export function ClauseDocument({
   sections, fields, cb: cbIn, documentId, horseId, isOwnerSide = false, hasPartyRole = false,
+  canEditHorseRecord = false, onEditHorseRecord,
   pendingCompositions = [], onChanged, onRevise,
 }: {
   sections: SectionDef[];
   fields: ContractField[];
   cb: FieldCallbacks;
   documentId: string;
-  /** The attached horse, for the "Edit on horse record" link on importing sections. */
+  /** The attached horse, for the "Edit on horse record" control on importing sections. */
   horseId?: string | null;
+  /** The viewer may edit this horse's record (staff, or the horse's current owner).
+   *  When true the importing-section line carries a control that opens the record
+   *  in place; otherwise it prints the line with no control. */
+  canEditHorseRecord?: boolean;
+  /** Open the horse record in place (a drawer on wide, a modal on narrow). */
+  onEditHorseRecord?: () => void;
   /** Staff/company authoring. */
   isOwnerSide?: boolean;
   /** The viewer is one of the document's own parties (not staff, not a
@@ -1380,17 +1386,22 @@ export function ClauseDocument({
                 </span>
               )}
             </h2>
-            {/* Part 1.6: a section that IMPORTS from the horse record carries one
-                static edit-mode line saying changes/additions are made on the record,
-                with a link that opens it. Shown only while editing, only when a horse
-                is attached, and only on sections that actually pull HORSE.* content. */}
+            {/* Part 1.6 / Part 2 item 3: a section that IMPORTS from the horse
+                record carries one static edit-mode line saying changes/additions
+                are made on the record. Staff and the horse's current owner get a
+                control that opens the record IN PLACE (a drawer on a wide viewport,
+                a modal on a narrow one) — no navigation away; any other viewer sees
+                the line with no control. Shown only while editing, only when a horse
+                is attached, and only on sections that pull HORSE.* content. */}
             {cb.editable && horseId && clausesToShow.some((c) => /\{\{HORSE\./.test(c.body ?? '')) && (
               <p className="-mt-1 mb-3 text-[12px] text-secondary flex items-center gap-1.5">
                 Changes and additions are made on the horse record.
-                <Link to={`/app/horses/${horseId}`} target="_blank" rel="noopener"
-                  className="inline-flex items-center gap-1 text-green-800 underline underline-offset-2 hover:text-green-700 focus-ring">
-                  Edit on horse record <ExternalLink size={12} aria-hidden="true" />
-                </Link>
+                {canEditHorseRecord && onEditHorseRecord && (
+                  <button type="button" onClick={onEditHorseRecord}
+                    className="inline-flex items-center gap-1 text-green-800 underline underline-offset-2 hover:text-green-700 focus-ring">
+                    Edit on horse record <PencilLine size={12} aria-hidden="true" />
+                  </button>
+                )}
               </p>
             )}
             <div className="flex flex-col gap-4">
