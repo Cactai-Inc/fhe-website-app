@@ -447,13 +447,23 @@ function LocationField({
   const s = value ?? {};
   const hasContent = !!(s.name || s.line1 || s.city || s.state || s.postal);
   // Manual mode once there is typed content that doesn't match a known pick, or
-  // when the person chooses it explicitly.
+  // when the person chooses it explicitly. Initialised from content alone (known
+  // locations load async); reconciled below once they arrive, so a saved KNOWN
+  // location reopens showing its selection, not "Enter an address manually".
   const [manual, setManual] = useState(hasContent);
+  const [manualTouched, setManualTouched] = useState(false);
   const set = (patch: Partial<FieldStructured>) => onSave({ ...s, ...patch });
 
   useEffect(() => {
     fetchLocations().then(setKnown).catch(() => setKnown([]));
   }, []);
+  // Once known locations load, if the saved value's name matches one of them and
+  // the user has not explicitly chosen manual, drop out of the manual default so
+  // the dropdown shows the known selection (the reopen-shows-manual bug).
+  useEffect(() => {
+    if (manualTouched) return;
+    if (s.name && known.some((k) => k.name === s.name)) setManual(false);
+  }, [known, s.name, manualTouched]);
   // A known location whose name matches the current value (so the dropdown shows
   // the right selection after a save/reload).
   const matched = known.find((k) => k.name === s.name && !manual);
@@ -484,8 +494,8 @@ function LocationField({
       <select className={inputCls} disabled={disabled}
         value={manual ? MANUAL_LOCATION : (matched?.id ?? '')}
         onChange={(e) => {
-          if (e.target.value === MANUAL_LOCATION) { setManual(true); return; }
-          setManual(false);
+          if (e.target.value === MANUAL_LOCATION) { setManual(true); setManualTouched(true); return; }
+          setManual(false); setManualTouched(true);
           const loc = known.find((k) => k.id === e.target.value);
           if (loc) {
             // Store the STRUCTURED address from the known location (my_locations now
