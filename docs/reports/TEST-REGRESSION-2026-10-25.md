@@ -139,7 +139,56 @@ they are the overhaul's own deliberate scope line (data sources re-pointed, disp
 behavior left as-was on flat).
 
 ## Item 3 — Onboarding and kiosk
+
+Driven through the **production** UI with Playwright + Chromium (per owner ruling:
+full UI drive, test accounts/aliases + ZZ horse only, every created row removed after).
+Email provider IS configured on prod, so each send dispatched a real email to my own
+`admin+…@cactai.io` alias (harmless, my inbox). Fresh client aliases provisioned per
+path. Activation link obtained by reading the minted `invitations.token` from the DB
+(email no-op not needed — prod sends — but reading the token is the deterministic
+harness path and avoids waiting on a mailbox).
+
+### Path `rider` — PASS end to end
+Alias `admin+fhe-reg-rider-<ts>@cactai.io`, name "Zelda Testrider".
+
+| step | observed | result |
+|---|---|---|
+| `/sign/rider` funnel | email-only form (SIGNDOOR), send-state screen "activation email is on its way" | PASS |
+| provision | `invitations` row minted: status=sent, kind=COMMUNITY, categories={RIDER}, token present; nameless contact created (first/last blank — SIGNDOOR design) | PASS |
+| `/activate?token=…` | token validated, `#password`/`#password2` set, `/api/register-invited` created account, signed in, redirected to `/app/onboarding` | PASS |
+| activation proof | `auth.users.last_sign_in_at` set, invitation `redeemed`, profile linked to contact | PASS |
+| details intake | full "Your details" form (name, phone, DOB, address, emergency contact, riding background), "Me" (not minor) | PASS |
+| doc generation | SAVE & CONTINUE ran `update_my_onboarding_profile` → generated the 4 RIDER docs via `generate_document`: COMPANY_POLICIES, FACILITY_RULES, HUMAN_EMERGENCY_MEDICAL, RELEASE_PARTICIPANT (matches sign_path `rider` + category Rider) | PASS |
+| present + sign | each doc: full body via `BodyWithSignatures`, e-sign consent checkbox (required), type-to-sign `#ob-typed-name` enforcing EXACT printed-name match ("Zelda Testrider") | PASS |
+| execute | all 4 → status EXECUTED, 1 signature each (typed_name "Zelda Testrider"), `executed_email_sent_at` stamped | PASS |
+| advance | wizard moved to shop step ("Your first lesson") — correct CR-98 self-serve order details→sign→shop | PASS |
+
+Minor observation (not a defect): the public pages throw React hydration warnings
+(#418/#423 — prerendered SSR vs client markup); non-blocking, pages function fully.
+
+### Path `horse` / `rider+horse` + client horse-add
+(populated below)
+
+### Kiosk path
+(populated below)
+
 ## Item 4 — Delivery
+
+**Architecture (established from `api/deliver-documents.ts` + `api/_lib/delivery.ts`):**
+an **execution DB trigger holds the onboarding set and sends ONE combined email per
+signer when the last signature lands**, each document attached as its own PDF — NOT one
+email per document. `document_deliveries` rows are the per-document LEDGER of that one
+send (one row per doc per recipient), plus a company-inbox mirror copy per doc
+(`is_mirror=true`). Onboarding.tsx no longer posts delivery itself (that was a second
+sender racing the trigger); it only polls the ledger to report truthfully.
+
+### Rider set (item 3) — delivery observed
+4 `document_deliveries` EMAIL rows to the signer (ceef5895) + 4 company-mirror rows,
+all `delivered_at` within one ~5s window AFTER all 4 executed, each with a `copy_url`
+(`/portal/documents/<id>`). One signer ⇒ one combined email (4 ledger rows), fired only
+post-execution. Party copy renders a STRIPPED body (acknowledgment block removed);
+company copy keeps the full body; disclosure entries are passed to the PDF renderer for
+boxing. PDF verification from stored copy below.
 ## Item 5 — Contract role bundle
 ## Item 6 — Two findings from the bundle round
 ## Item 7 — Database test suite
