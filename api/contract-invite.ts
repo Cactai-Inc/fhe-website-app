@@ -2,33 +2,33 @@
  * (Update A, spec G). Staff-only (Bearer token). Body: { documentId, partyRole,
  * email? }.
  *
- * ⚠️ P1 ITEM 1 — TWO EMAILS BECAME ONE, DECIDED BY WHETHER THEY HAVE AN ACCOUNT.
+ * ⚠️ CONTRACT-FIRST STEP 1 — A NO-ACCOUNT PARTY IS SENT A VIEW LINK, NOT AN
+ * ACTIVATION LINK.
  *
- * Owner, 2026-08-25: *"the only option is for me to send the contract to her and
- * send the invitation to activate her account, i dont want to send her two emails
- * since that is confusing."*
- *
- * The reason there were two is structural, not cosmetic: `redeem_contract_invitation`
- * requires an already signed-in user whose email matches, so the CONTRACT link
- * assumes the account exists. A unified send must therefore CLAIM THE ACCOUNT FIRST
- * and route to the document second. So this endpoint now branches on the one fact
- * that decides it:
+ * Owner redesign (2026-10-19, contract-view flow): *"the email carries a link to
+ * view the contract, not an activation link."* A party with no active account can
+ * READ the contract first — no account needed — and activation is offered from the
+ * view itself, on demand (STEP 3/4). So this endpoint branches on the one fact that
+ * decides it:
  *
  *   HAS AN ACCOUNT  → invite_contract_counterparty + CONTRACT_INVITE, unchanged.
- *                     This is a real case and that path serves it well.
- *   HAS NO ACCOUNT  → invite_contract_party_account: their ACCOUNT invitation
- *                     (kind COMMUNITY), reused if one already exists, with
- *                     `document_id` stamped on it — and ONE email, the INVITATION
- *                     template, which now names both the claim and the contract.
+ *                     An active account holder is sent to the contract as today.
+ *   HAS NO ACCOUNT  → issue_contract_view_token: a CONTRACT_VIEW token keyed to the
+ *                     document, and ONE email — the CONTRACT_VIEW_INVITE template —
+ *                     carrying /contract/view?token=…. The view token is distinct
+ *                     from the activation/claim token and stays valid until the
+ *                     governing document executes.
  *
- * Neither `redeem_contract_invitation` nor the CONTRACT kind is removed; they
- * simply stop being used for people who have no account.
+ * ⚠️ WHY THIS REPLACES THE OLD "ONE ACTIVATION EMAIL CARRYING THE CONTRACT" BRANCH.
+ * The P1 ITEM 1 design sent a no-account party an ACTIVATION invite that named the
+ * contract. The contract-first redesign supersedes it: the person reads BEFORE they
+ * decide to activate. invite_contract_party_account is NOT removed — the view's
+ * "Do it now" step (api/contract-view-activate.ts) still mints it on demand.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseAdmin } from './_lib/supabaseAdmin.js';
 import { resolveTenantEmailIdentity, sendViaProvider } from './_lib/email.js';
 import { renderEmailTemplate } from './_lib/emailTemplates.js';
-import { sendInvitationEmail, recordInvitationDelivery, type ChecklistRow } from './_lib/invitationEmail.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });
@@ -119,42 +119,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const hasAccount = Boolean(byContact || byEmail);
 
     if (!hasAccount) {
-      // ONE invitation, carrying the contract. The RPC reuses a live or SAVED
-      // (draft) account invitation rather than minting a second one, so the link
-      // staff already saved is the link the client receives and nothing is
-      // superseded — see PAMELA §A.
-      const { data: acct, error: acctErr } = await db.rpc('invite_contract_party_account', {
+      // STEP 1 — a VIEW link, not an activation link. Mint a CONTRACT_VIEW token
+      // keyed to the document (reused if one is live), and email the
+      // CONTRACT_VIEW_INVITE template pointing at /contract/view. The token stays
+      // valid until the governing document executes — enforced by the view
+      // function, not by invitation status.
+      const { data: viewTok, error: viewErr } = await db.rpc('issue_contract_view_token', {
         p_document_id: documentId, p_contact_id: party.contact_id, p_email: email,
       });
-      if (acctErr) {
-        return /already signed/i.test(acctErr.message)
-          ? res.status(409).json({ code: 'ALREADY_SIGNED', error: acctErr.message })
-          : res.status(400).json({ error: acctErr.message });
-      }
-      const issued = acct as { invitation_id: string; token: string; expires_at: string };
+      if (viewErr) return res.status(400).json({ error: viewErr.message });
+      const issued = viewTok as { invitation_id: string; token: string };
       const origin = req.headers.origin || `https://${req.headers.host}`;
-      // NO `&kind=contract`: this is the ACCOUNT claim, and the document it
-      // carries is read off the invitation row, never off the URL.
-      const registerUrl = `${origin}/activate?token=${issued.token}`;
+      const viewUrl = `${origin}/contract/view?token=${issued.token}`;
 
-      // The same paperwork lines the ordinary account invitation carries — a
-      // counterparty who also owes onboarding documents should be told once, in
-      // this one email, rather than discovering them after signing in.
-      let checklist: ChecklistRow[] = [];
-      try {
-        const { data: cl } = await db.rpc('contact_checklist', { p_contact_id: party.contact_id });
-        checklist = (cl as ChecklistRow[]) ?? [];
-      } catch { /* the invite still goes out */ }
+      let identity = { fromName: 'French Heritage Equestrian', fromEmail: '', footer: '' as string | null };
+      try { identity = await resolveTenantEmailIdentity(db, doc.org_id); } catch { /* fall back */ }
 
-      const sent = await sendInvitationEmail(db, {
-        orgId: doc.org_id, to: email, registerUrl,
-        contractTitle: doc.title ?? null,
-        expiresAt: issued.expires_at, checklist,
+      const rendered = await renderEmailTemplate(db, 'CONTRACT_VIEW_INVITE', {
+        'ORG.BRAND_NAME': identity.fromName,
+        'ORG.FOOTER': identity.footer,
+        'DOC.HAS_TITLE': doc.title != null ? '1' : '',
+        'DOC.TITLE': doc.title ?? '',
+        'MSG.LINK': viewUrl,
+        'MSG.RECIPIENT_EMAIL': email,
       });
-      await recordInvitationDelivery(db, issued.invitation_id, sent);
+      if (!rendered) {
+        return res.status(200).json({ ok: true, emailed: false, viewLink: true, reason: 'the CONTRACT_VIEW_INVITE email template is missing or deactivated' });
+      }
+      const sent = await sendViaProvider({
+        to: email,
+        fromName: identity.fromName,
+        fromEmail: identity.fromEmail,
+        subject: rendered.subject,
+        html: rendered.html,
+      });
       return res.status(200).json({
-        ok: true, emailed: sent.ok, accountClaim: true,
-        ...(sent.ok ? {} : { reason: sent.error }),
+        ok: true, emailed: sent.ok, viewLink: true,
+        ...(sent.ok ? {} : { reason: 'email provider not configured or send failed' }),
       });
     }
 

@@ -40,6 +40,7 @@ import NotFound from './pages/NotFound';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import RegisterComplete from './pages/RegisterComplete';
+import ContractView from './pages/ContractView';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import RecoverAccount from './pages/RecoverAccount';
@@ -165,6 +166,10 @@ export function AppRoutes() {
             {/* Account activation lives in APP chrome, not the website (owner). */}
             <Route path="/activate" element={<ActivateShell><Register /></ActivateShell>} />
             <Route path="/activate/complete" element={<ActivateShell><RegisterComplete /></ActivateShell>} />
+            {/* Contract-first STEP 2 — the anonymous read-only contract view. Its own
+                page with its own activation modal; it wears the same pre-auth APP
+                chrome activation does, not the marketing Layout. */}
+            <Route path="/contract/view" element={<ContractView />} />
 
             {/* Public marketing + inquiry (marketing chrome) */}
             <Route element={<Layout />}>
