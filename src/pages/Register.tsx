@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import {
-  validateInvitation, redeemInvitation, myOnboardingState,
+  validateInvitation, redeemInvitation, myOnboardingState, myDocuments,
   invitationReplacementNotice, requestInvitationResend,
   type RetiredLinkNotice,
 } from '../lib/api';
@@ -47,6 +47,19 @@ export default function Register() {
     }
     await redeemInvitation(token);
     if (carriedDocumentId) return `/app/contracts/${carriedDocumentId}/start`;
+    // CONTRACT FIRST, ALWAYS (owner 2026-10-26): the account-page invite does not
+    // carry a document_id, but a party who owes a contract must see and sign it
+    // BEFORE any onboarding paperwork — the contract leads, the documents follow it
+    // and are bundled into one email on final signature. So after the claim, resolve
+    // this person's own unsigned contract from my_documents() and route into its
+    // intake→contract gate (/start). Only if they have no contract to review do we
+    // fall through to the onboarding wall. Repairs invites already sent without a
+    // document_id, and every account-page invite going forward.
+    try {
+      const docs = await myDocuments();
+      const contract = docs.find((d) => d.is_contract && d.document_id && !d.signed_at);
+      if (contract?.document_id) return `/app/contracts/${contract.document_id}/start`;
+    } catch { /* fall through to the onboarding check */ }
     // paperwork assigned → straight into the document flow
     try {
       const state = await myOnboardingState();
