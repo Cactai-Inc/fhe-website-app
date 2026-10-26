@@ -568,3 +568,21 @@ live or soft-deleted. Of the 6 horses total, the only Abby-named owner is **Abby
 are correctly hers. `horse_locations` rows exist for Lightning, Secret, Sundance (each
 with an empty `sub_location`); none relate to Abby Beers. **Conclusion: no horse, in any
 state, is Abby Beers'.**
+
+## Path 3c — lease with the FHE company as lessor (staff countersign) — PASS end-to-end
+ZZ Test Horse's owner was temporarily set to the FHE company contact
+(`352c3898-…`) so the company could be the lessor and own the horse. Staff created a
+lease with LESSOR = French Heritage Equestrian (the company), LESSEE = a fresh alias
+(Cora LesseeP3C); the F4 horse card offered ZZ Test Horse (now the company's) and it was
+attached (id verified). All fields entered; because the lessor is an ENTITY the company
+needs a signing individual — staff filled `LESSOR.ENTITY_SIGNER_NAME` = "Claire Signer"
+/ `_TITLE` = "Owner" (the company-side blocker that does not exist for an individual
+lessor). Cora initialed (`CL`); blockers 0. Cora approved → the document **LOCKED** (the
+company role is auto-excluded from the pending-approvals set, so only the account-holding
+lessee needs to approve). Cora (lessee) signed; then **staff countersigned the company
+seat** via "Sign for French Heritage Equestrian as Lessor" — recorded as "Claire Signer"
+— and the document **EXECUTED** (effective 2026-10-26). One EMAIL delivery per party with
+a PDF (French Heritage Equestrian + Cora); both contact records EXECUTED with the right
+roles. ZZ Test Horse's owner was **restored to ZZ Test Owner** afterward. This is the
+one legitimate "staff sign for someone else" case — the company — and it drives through
+delivery. Screens `s2-p3c-*`.
