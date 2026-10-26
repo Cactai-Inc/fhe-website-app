@@ -549,6 +549,19 @@ export default function Onboarding() {
   const isForChild = asksMinor && signingFor === 'child';
   const minorNamesFilled = minorFirst.trim() !== '' && minorLast.trim() !== '';
   const minorDobValid = minorDob.trim() !== '' && isUnder18(minorDob);
+  /* F7: one emergency contact is required at all times; a second is always optional.
+     The person on the record may list themselves — EXCEPT a RIDER, because an
+     emergency would be about them and cannot be reported to them. So when this
+     onboarding is for a rider we pass the AT-RISK person: the account holder for an
+     adult rider, the MINOR for a minor rider (then the guardian, the account holder,
+     is a valid Contact 1). A non-rider party gets no at-risk person and may list
+     themselves. */
+  const isRiderOnboarding = categories.includes('RIDER')
+    || isForChild || signPath === 'rider' || signPath === 'rider+horse';
+  const riderAtRisk = !isRiderOnboarding ? null
+    : isForChild
+      ? { name: `${minorFirst} ${minorLast}`.trim(), phone: '' }
+      : { name: `${firstName} ${lastName}`.trim(), phone: form.phone };
 
   // Step "horse" — the member's EXISTING horses (a re-invited owner already has
   // records): offer them for selection instead of forcing re-entry. Selecting
@@ -1047,9 +1060,9 @@ export default function Onboarding() {
       return;
     }
 
-    // F7: Contact 1 is required, and an emergency contact must be someone else —
-    // a name or phone matching the person's own is refused.
-    const ecError = emergencyContactsError(form, { name: `${firstName} ${lastName}`.trim(), phone: form.phone });
+    // F7: one emergency contact is required (a second is optional). The person may
+    // list themselves unless they are the rider — an emergency would be about them.
+    const ecError = emergencyContactsError(form, { atRisk: riderAtRisk });
     if (ecError) { setSaveError(ecError); return; }
 
     setSaving(true);
@@ -1666,7 +1679,10 @@ export default function Onboarding() {
             <EmergencyContactsFields
               values={form}
               onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
-              self={{ name: `${firstName} ${lastName}`.trim(), phone: form.phone }} />
+              atRisk={riderAtRisk}
+              hint={riderAtRisk
+                ? 'A rider’s emergency contact must be someone else — an emergency would be about the rider. A second is optional.'
+                : 'You may list yourself as the contact; a second is optional.'} />
           </div>
 
           <h3 className="form-label mb-3">Riding background</h3>

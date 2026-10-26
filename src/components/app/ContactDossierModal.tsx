@@ -456,10 +456,6 @@ export function PersonRecord({
                         emergency_contact_2_phone: val('emergency_contact_2_phone'),
                       }}
                       onChange={(k, v) => set(k)(v)}
-                      self={{
-                        name: `${val('first_name')} ${val('last_name')}`.trim(),
-                        phone: val('phone'),
-                      }}
                       disabled={archived} />
                   ) : (
                     <div key={g.title}>
