@@ -17,9 +17,10 @@ import {
   createHorseParty,
   updateHorseParty,
   archiveHorseParty,
+  restoreHorseParty,
   getRecordHorse,
   listRecordContacts,
-  HORSE_PARTY_ROLES,
+  OWNERSHIP_PARTY_ROLES,
   type HorseParty,
   type HorsePartyInput,
   type HorsePartyRole,
@@ -154,7 +155,9 @@ function PartyForm({
             value={draft.role}
             onChange={(e) => set('role', e.target.value as HorsePartyRole)}
           >
-            {HORSE_PARTY_ROLES.map((r) => (
+            {/* item 6c — ownership is owner + lessee only; care roles belong to
+                Current providers, not the parties ledger. */}
+            {OWNERSHIP_PARTY_ROLES.map((r) => (
               <option key={r} value={r}>
                 {r}
               </option>
@@ -163,21 +166,24 @@ function PartyForm({
         )}
       </FormField>
 
-      <FormField label="Share %" hint="Ownership/lease share, e.g. 50. Leave blank for none.">
-        {({ id, describedBy }) => (
-          <input
-            id={id}
-            aria-describedby={describedBy}
-            type="number"
-            min="0"
-            max="100"
-            step="0.001"
-            className="form-input"
-            value={draft.share_pct}
-            onChange={(e) => set('share_pct', e.target.value)}
-          />
-        )}
-      </FormField>
+      {/* item 6c — share % is an ownership concept; shown for owner only. */}
+      {draft.role === 'owner' && (
+        <FormField label="Share %" hint="Ownership share, e.g. 50. Leave blank for none.">
+          {({ id, describedBy }) => (
+            <input
+              id={id}
+              aria-describedby={describedBy}
+              type="number"
+              min="0"
+              max="100"
+              step="0.001"
+              className="form-input"
+              value={draft.share_pct}
+              onChange={(e) => set('share_pct', e.target.value)}
+            />
+          )}
+        </FormField>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <FormField label="Effective from">
@@ -253,7 +259,7 @@ export function HorsePartiesPage() {
     useCallback(async () => {
       const [h, p, c] = await Promise.all([
         getRecordHorse(horseId),
-        listHorseParties(horseId),
+        listHorseParties(horseId, true), // include ended rows for the history
         listRecordContacts(),
       ]);
       return { h, p, c };
@@ -261,7 +267,7 @@ export function HorsePartiesPage() {
   );
 
   const refreshParties = useCallback(async () => {
-    setParties(await listHorseParties(horseId));
+    setParties(await listHorseParties(horseId, true));
   }, [horseId]);
 
   useEffect(() => {
@@ -297,13 +303,33 @@ export function HorsePartiesPage() {
     }
   };
 
-  const handleArchive = async (party: HorseParty) => {
+  /* ⚠️ FIX ROUND item 6a — ENDING a party, not "archiving" it. The row already
+     ENDS at the DB (active=false, ended_at); this states what ends, confirms, and
+     offers an undo (restoreHorseParty) because an end is reversible. */
+  const handleEnd = async (party: HorseParty) => {
+    const who = contactName(party.contact_id);
+    if (!window.confirm(
+      `End ${who} as ${party.role} of this horse?\n\n`
+      + 'The relationship ends today and moves to the history below. '
+      + 'It is kept, not deleted, and you can undo this.',
+    )) return;
     try {
       await archiveHorseParty(party.id);
       await refreshParties();
-      toast.success('Party archived.');
+      toast.success(`Ended ${who} as ${party.role}. It is in the history below — undo there.`);
     } catch (err) {
-      toast.error(toErrorMessage(err, 'Could not archive party.'));
+      toast.error(toErrorMessage(err, 'Could not end this party.'));
+    }
+  };
+
+  /* Undo an End from the history list (item 6a). */
+  const handleRestore = async (party: HorseParty) => {
+    try {
+      await restoreHorseParty(party.id);
+      await refreshParties();
+      toast.success('Restored.');
+    } catch (err) {
+      toast.error(toErrorMessage(err, 'Could not restore this party.'));
     }
   };
 
@@ -313,12 +339,30 @@ export function HorsePartiesPage() {
   );
 
   const todayIso = new Date().toISOString().slice(0, 10);
+
+  /* ⚠️ FIX ROUND item 6a — Ownership shows owner + lessee ONLY. Care roles
+     (trainer/caretaker/boarder) are not shown here; they live in Current
+     providers. Active rows go in the ledger table; ended rows go in the history
+     with an undo. Care-role rows (active or ended) are simply not surfaced on this
+     page — they are not deleted. */
+  const isOwnership = useCallback(
+    (p: HorseParty) => OWNERSHIP_PARTY_ROLES.includes(p.role), [],
+  );
+  const activeParties = useMemo(
+    () => parties.filter((p) => p.deleted_at === null && isOwnership(p)),
+    [parties, isOwnership],
+  );
+  const endedParties = useMemo(
+    () => parties.filter((p) => p.deleted_at !== null && isOwnership(p)),
+    [parties, isOwnership],
+  );
+
   const badTotals = useMemo(() => {
-    const totals = shareTotalsByRole(parties, todayIso);
+    const totals = shareTotalsByRole(activeParties, todayIso);
     return (Object.entries(totals) as [HorsePartyRole, number][]).filter(
       ([, total]) => total !== 100,
     );
-  }, [parties, todayIso]);
+  }, [activeParties, todayIso]);
 
   const columns: Column<HorseParty>[] = [
     { key: 'contact', header: 'Contact', render: (p) => contactName(p.contact_id) },
@@ -331,6 +375,16 @@ export function HorsePartiesPage() {
     },
     { key: 'from', header: 'From', render: (p) => p.effective_from ?? '—' },
     { key: 'to', header: 'To', render: (p) => p.effective_to ?? '—' },
+    {
+      key: 'source',
+      header: 'Source',
+      // item 6a — the executed document this ownership/lease row came from.
+      render: (p) => (p.source_document_id
+        ? <Link to={`/app/ops/documents/${p.source_document_id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="link-underline text-xs">Document</Link>
+        : '—'),
+    },
     { key: 'notes', header: 'Notes', render: (p) => p.notes ?? '—' },
   ];
 
@@ -351,7 +405,7 @@ export function HorsePartiesPage() {
           <div>
             <h1 className="font-serif text-2xl text-green-900">{horseLabel} — parties</h1>
             <p className="text-sm text-green-800/70">
-              Ownership, lease and care roles for this horse.
+              Ownership and lease for this horse. Care providers live in the health record.
             </p>
           </div>
           <button
@@ -398,17 +452,42 @@ export function HorsePartiesPage() {
 
         <DataTable
           columns={columns}
-          rows={parties}
+          rows={activeParties}
           rowKey={(p) => p.id}
           loading={load.isPending && parties.length === 0}
-          emptyTitle="No parties yet"
-          emptyMessage="Add an owner, lessee or care role for this horse."
+          emptyTitle="No owner or lessee yet"
+          emptyMessage="Add an owner or lessee for this horse."
           onRowClick={(party) => {
             setFormError(null);
             setModal({ mode: 'edit', party });
           }}
-          rowActions={[{ label: 'Archive', onClick: (p) => void handleArchive(p) }]}
+          rowActions={[{ label: 'End', onClick: (p) => void handleEnd(p) }]}
         />
+
+        {/* item 6a — ended ownership/lease rows, kept as history, each undoable. */}
+        {endedParties.length > 0 && (
+          <div className="mt-6">
+            <h2 className="text-sm font-medium text-green-900 mb-2">Ended</h2>
+            <ul className="flex flex-col gap-1.5">
+              {endedParties.map((p) => (
+                <li key={p.id} className="flex items-center justify-between gap-3 border-b border-green-800/[0.06] pb-1.5 text-sm">
+                  <span className="text-green-900">
+                    {contactName(p.contact_id)} — {p.role}
+                    {p.share_pct !== null ? ` · ${p.share_pct}%` : ''}
+                    <span className="text-muted">
+                      {p.effective_from ? ` · from ${p.effective_from}` : ''}
+                      {p.effective_to ? ` to ${p.effective_to}` : ''}
+                    </span>
+                  </span>
+                  <button type="button" onClick={() => void handleRestore(p)}
+                    className="text-xs text-green-800 underline underline-offset-2 focus-ring shrink-0">
+                    Undo
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <Modal
           open={modal.mode !== 'closed'}

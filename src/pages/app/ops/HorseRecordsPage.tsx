@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { fromHere } from '../../../lib/linkOrigin';
-import { PencilLine, FileText, UserRound, Trash2, HeartPulse, Handshake } from 'lucide-react';
+import { PencilLine, FileText, UserRound, Archive, HeartPulse, Handshake } from 'lucide-react';
 import { PageLayout } from '../../../components/app/PageLayout';
 import { useDocumentTitle } from '../../../lib/hooks';
 import { toErrorMessage } from '../../../lib/ops/errors';
@@ -291,13 +291,19 @@ function EditableRecord({
                 Generate availability
               </button>
             )}
+            {/* ⚠️ FIX ROUND item 6d — self-evident name + a confirmation that says
+                what happens. Archiving a horse HIDES it from active lists and
+                pickers and KEEPS the record (D11: nothing is purged, restorable),
+                so it is not a delete and must not read like one. The two-press
+                confirm names the effect; the trash-can icon is gone. */}
             <button type="button" disabled={busy} onClick={() => void archive()}
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs focus-ring ml-auto disabled:opacity-60 ${
                 confirmArchive
-                  ? 'bg-red-600 text-white hover:bg-red-700'
-                  : 'border border-red-300 text-red-700 hover:bg-red-50'
+                  ? 'bg-gold-600 text-white hover:bg-gold-700'
+                  : 'border border-green-800/20 text-green-800 hover:bg-green-50'
               }`}>
-              <Trash2 size={13} /> {confirmArchive ? 'Really archive?' : 'Archive'}
+              <Archive size={13} />
+              {confirmArchive ? 'Archive — hide and keep the record?' : 'Archive this horse'}
             </button>
           </>
         )}

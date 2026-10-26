@@ -31,6 +31,12 @@ export const HORSE_PARTY_ROLES: HorsePartyRole[] = [
   'boarder',
 ];
 
+/** ⚠️ FIX ROUND item 6 — Ownership is owner + lessee ONLY. Care roles (trainer,
+ *  caretaker, boarder) are relationships, not ownership, and belong to Current
+ *  providers, not the parties ledger. The parties page offers and lists only
+ *  these two; existing care-role rows are simply not shown here (not deleted). */
+export const OWNERSHIP_PARTY_ROLES: HorsePartyRole[] = ['owner', 'lessee'];
+
 /** UI view of a horse_relationships row (lowercase role, effective_* naming
  *  kept so the ledger page reads unchanged; mapped from relationship /
  *  term_start / term_end / ended_at). */
@@ -47,6 +53,8 @@ export interface HorseParty {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  /** The executed document this ownership/lease row derives from (item 6a), if any. */
+  source_document_id: string | null;
 }
 
 /** Columns staff writes on a party row (org/id/timestamps are DB-managed). */
@@ -154,6 +162,7 @@ interface HorseRelationshipRow {
   active: boolean;
   created_at: string;
   ended_at: string | null;
+  source_document_id: string | null;
 }
 
 function toHorseParty(r: HorseRelationshipRow): HorseParty {
@@ -170,16 +179,22 @@ function toHorseParty(r: HorseRelationshipRow): HorseParty {
     created_at: r.created_at,
     updated_at: r.created_at,
     deleted_at: r.ended_at,
+    source_document_id: r.source_document_id,
   };
 }
 
-/** Active relationship rows for one horse, oldest term first (RLS-read). */
-export async function listHorseParties(horseId: string): Promise<HorseParty[]> {
-  const { data, error } = await supabase
+/** Relationship rows for one horse, oldest term first (RLS-read). Active only by
+ *  default; `includeEnded` also returns ended rows so the parties page can show an
+ *  ownership history with an undo (fix round item 6a). */
+export async function listHorseParties(
+  horseId: string, includeEnded = false,
+): Promise<HorseParty[]> {
+  let q = supabase
     .from('horse_relationships')
     .select('*')
-    .eq('horse_id', horseId)
-    .eq('active', true)
+    .eq('horse_id', horseId);
+  if (!includeEnded) q = q.eq('active', true);
+  const { data, error } = await q
     .order('term_start', { ascending: true, nullsFirst: true })
     .order('created_at', { ascending: true });
   if (error) throw error;
@@ -212,6 +227,12 @@ export async function archiveHorseParty(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Undo an End — reactivate an ended relationship (fix round item 6a). */
+export async function restoreHorseParty(id: string): Promise<void> {
+  const { error } = await supabase.rpc('staff_restore_horse_relationship', { p_id: id });
+  if (error) throw error;
+}
+
 // ─── horse_health_events — health log ────────────────────────────────────────
 
 /** Active health events for one horse, newest occurrence first. */
@@ -234,6 +255,32 @@ export async function createHealthEvent(input: HealthEventInput): Promise<HorseH
     .single();
   if (error) throw error;
   return data as HorseHealthEvent;
+}
+
+/** ⚠️ FIX ROUND item 6b — a health event's provider picker lists this horse's
+ *  DESIGNATED providers only (vet / farrier / care-giver / trainer on
+ *  horse_relationships that resolve to a contact), not every contact in the
+ *  tenant. Returns the contact id + a display label. */
+export interface DesignatedProvider { contact_id: string; label: string; role: string }
+export async function listHorseDesignatedProviders(horseId: string): Promise<DesignatedProvider[]> {
+  const { data, error } = await supabase
+    .from('horse_relationships')
+    .select('party_contact_id, relationship, contact:contacts!horse_relationships_party_contact_id_fkey(first_name, last_name, email)')
+    .eq('horse_id', horseId)
+    .eq('active', true)
+    .in('relationship', ['VET', 'FARRIER', 'CARE_GIVER', 'TRAINER'])
+    .not('party_contact_id', 'is', null);
+  if (error) throw error;
+  type Row = { party_contact_id: string; relationship: string;
+    contact: { first_name: string | null; last_name: string | null; email: string | null } | null };
+  return ((data ?? []) as unknown as Row[]).map((r) => {
+    const nm = [r.contact?.first_name, r.contact?.last_name].filter(Boolean).join(' ').trim();
+    return {
+      contact_id: r.party_contact_id,
+      role: r.relationship,
+      label: `${nm || r.contact?.email || r.party_contact_id.slice(0, 8)} (${r.relationship.toLowerCase()})`,
+    };
+  });
 }
 
 // ─── Contacts (party / provider pickers) ─────────────────────────────────────

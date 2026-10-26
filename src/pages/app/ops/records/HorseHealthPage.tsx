@@ -17,9 +17,9 @@ import {
   getRecordHorse,
   listHealthEvents,
   createHealthEvent,
-  updateHorseCareTeam,
+  listHorseDesignatedProviders,
   listRecordContacts,
-  type CareTeamInput,
+  type DesignatedProvider,
   type HealthEventInput,
   type HorseHealthEvent,
   type HorseRecord,
@@ -54,104 +54,6 @@ const HEALTH_EVENT_TYPES = [
   'other',
 ] as const;
 
-type CareDraft = { vet_name: string; vet_phone: string; farrier_name: string; farrier_phone: string };
-
-function CareTeamForm({
-  horse,
-  onSubmit,
-  onCancel,
-  submitting,
-  error,
-}: {
-  horse: HorseRecord;
-  onSubmit: (patch: CareTeamInput) => Promise<void>;
-  onCancel: () => void;
-  submitting: boolean;
-  error: string | null;
-}) {
-  const [draft, setDraft] = useState<CareDraft>({
-    vet_name: horse.vet_name ?? '',
-    vet_phone: horse.vet_phone ?? '',
-    farrier_name: horse.farrier_name ?? '',
-    farrier_phone: horse.farrier_phone ?? '',
-  });
-
-  const set = (key: keyof CareDraft, value: string) => setDraft((d) => ({ ...d, [key]: value }));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await onSubmit({
-      vet_name: draft.vet_name.trim() || null,
-      vet_phone: draft.vet_phone.trim() || null,
-      farrier_name: draft.farrier_name.trim() || null,
-      farrier_phone: draft.farrier_phone.trim() || null,
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit} noValidate>
-      <FormField label="Vet name">
-        {({ id }) => (
-          <input
-            id={id}
-            type="text"
-            className="form-input"
-            value={draft.vet_name}
-            onChange={(e) => set('vet_name', e.target.value)}
-          />
-        )}
-      </FormField>
-      <FormField label="Vet phone">
-        {({ id }) => (
-          <input
-            id={id}
-            type="tel"
-            className="form-input"
-            value={draft.vet_phone}
-            onChange={(e) => set('vet_phone', e.target.value)}
-          />
-        )}
-      </FormField>
-      <FormField label="Farrier name">
-        {({ id }) => (
-          <input
-            id={id}
-            type="text"
-            className="form-input"
-            value={draft.farrier_name}
-            onChange={(e) => set('farrier_name', e.target.value)}
-          />
-        )}
-      </FormField>
-      <FormField label="Farrier phone">
-        {({ id }) => (
-          <input
-            id={id}
-            type="tel"
-            className="form-input"
-            value={draft.farrier_phone}
-            onChange={(e) => set('farrier_phone', e.target.value)}
-          />
-        )}
-      </FormField>
-
-      {error && (
-        <p role="alert" className="form-error mb-3">
-          {error}
-        </p>
-      )}
-
-      <div className="flex justify-end gap-3">
-        <button type="button" className="btn-secondary" onClick={onCancel} disabled={submitting}>
-          Cancel
-        </button>
-        <button type="submit" className="btn-primary" disabled={submitting}>
-          Save care team
-        </button>
-      </div>
-    </form>
-  );
-}
 
 type EventDraft = {
   event_type: string;
@@ -163,14 +65,14 @@ type EventDraft = {
 
 function HealthEventForm({
   horseId,
-  contacts,
+  providers,
   onSubmit,
   onCancel,
   submitting,
   error,
 }: {
   horseId: string;
-  contacts: Contact[];
+  providers: DesignatedProvider[];
   onSubmit: (input: HealthEventInput) => Promise<void>;
   onCancel: () => void;
   submitting: boolean;
@@ -230,7 +132,9 @@ function HealthEventForm({
         )}
       </FormField>
 
-      <FormField label="Provider" hint="Vet/farrier contact, if on file.">
+      {/* item 6b — designated providers only (this horse's vet / farrier /
+          care-giver / trainer on the record), not every contact in the tenant. */}
+      <FormField label="Provider" hint="This horse's designated providers.">
         {({ id, describedBy }) => (
           <select
             id={id}
@@ -239,12 +143,15 @@ function HealthEventForm({
             value={draft.provider_contact_id}
             onChange={(e) => set('provider_contact_id', e.target.value)}
           >
-            <option value="">No provider contact</option>
-            {contacts.map((c) => (
-              <option key={c.id} value={c.id}>
-                {contactName(c)}
+            <option value="">No provider</option>
+            {providers.map((p) => (
+              <option key={p.contact_id} value={p.contact_id}>
+                {p.label}
               </option>
             ))}
+            {providers.length === 0 && (
+              <option value="" disabled>No designated providers on the record yet</option>
+            )}
           </select>
         )}
       </FormField>
@@ -291,7 +198,7 @@ function HealthEventForm({
   );
 }
 
-type ModalState = { mode: 'closed' } | { mode: 'care' } | { mode: 'event' };
+type ModalState = { mode: 'closed' } | { mode: 'event' };
 
 export function HorseHealthPage() {
   const { horseId = '' } = useParams<{ horseId: string }>();
@@ -301,6 +208,7 @@ export function HorseHealthPage() {
   const [horse, setHorse] = useState<HorseRecord | null>(null);
   const [events, setEvents] = useState<HorseHealthEvent[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [providers, setProviders] = useState<DesignatedProvider[]>([]);
   const [modal, setModal] = useState<ModalState>({ mode: 'closed' });
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -308,12 +216,13 @@ export function HorseHealthPage() {
 
   const load = useAsync(
     useCallback(async () => {
-      const [h, ev, c] = await Promise.all([
+      const [h, ev, c, pr] = await Promise.all([
         getRecordHorse(horseId),
         listHealthEvents(horseId),
         listRecordContacts(),
+        listHorseDesignatedProviders(horseId),
       ]);
-      return { h, ev, c };
+      return { h, ev, c, pr };
     }, [horseId]),
   );
 
@@ -321,10 +230,11 @@ export function HorseHealthPage() {
     if (!recordsOn) return;
     load
       .run()
-      .then(({ h, ev, c }) => {
+      .then(({ h, ev, c, pr }) => {
         setHorse(h);
         setEvents(ev);
         setContacts(c);
+        setProviders(pr);
       })
       .catch(() => {
         /* surfaced via load.isError */
@@ -332,20 +242,7 @@ export function HorseHealthPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordsOn, horseId]);
 
-  const saveCare = useAsync(updateHorseCareTeam);
   const saveEvent = useAsync(createHealthEvent);
-
-  const handleCareSubmit = async (patch: CareTeamInput) => {
-    setFormError(null);
-    try {
-      const updated = await saveCare.run(horseId, patch);
-      setHorse(updated);
-      toast.success('Care team updated.');
-      setModal({ mode: 'closed' });
-    } catch (err) {
-      setFormError(toErrorMessage(err, 'Could not save the care team.'));
-    }
-  };
 
   const handleEventSubmit = async (input: HealthEventInput) => {
     setFormError(null);
@@ -389,7 +286,7 @@ export function HorseHealthPage() {
         <div className="mt-4 flex items-center justify-between mb-6">
           <div>
             <h1 className="font-serif text-2xl text-green-900">{horseLabel} — health</h1>
-            <p className="text-sm text-green-800/70">Care team and health event log.</p>
+            <p className="text-sm text-green-800/70">Health event log. Care providers are on the horse&apos;s record.</p>
           </div>
           <button
             type="button"
@@ -421,48 +318,30 @@ export function HorseHealthPage() {
           </p>
         )}
 
-        {/* Care team — the horses vet/farrier columns (migration 20260701000000). */}
-        <section aria-labelledby="care-heading" className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <h2 id="care-heading" className="font-serif text-lg text-green-900">
-              Care team
-            </h2>
-            {horse && (
-              <button
-                type="button"
-                className="link-underline text-sm"
-                onClick={() => {
-                  setFormError(null);
-                  setModal({ mode: 'care' });
-                }}
-              >
-                Edit care team
-              </button>
-            )}
-          </div>
-          {horse ? (
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 rounded border border-green-800/15 bg-white px-5 py-4 text-sm">
-              <dt className="form-label mb-0">Vet</dt>
-              <dd className="text-green-900" data-testid="care-vet">
-                {horse.vet_name ?? '—'}
-                {horse.vet_phone ? ` · ${horse.vet_phone}` : ''}
-              </dd>
-              <dt className="form-label mb-0">Farrier</dt>
-              <dd className="text-green-900" data-testid="care-farrier">
-                {horse.farrier_name ?? '—'}
-                {horse.farrier_phone ? ` · ${horse.farrier_phone}` : ''}
-              </dd>
-            </dl>
-          ) : (
-            !load.isPending &&
-            !load.isError && (
-              <EmptyState
-                title="Horse not found"
-                message="This horse may have been removed or is outside your organization."
-              />
-            )
-          )}
-        </section>
+        {/* ⚠️ FIX ROUND item 6b — the flat Care team block is GONE. Vet/farrier are
+            no longer scalar columns on the horse; care providers live in Current
+            providers on the horse record (horse_relationships). This points there
+            rather than re-rendering a removed source. */}
+        {horse ? (
+          <section className="mb-8">
+            <div className="rounded border border-green-800/15 bg-white px-5 py-4 text-sm flex items-center justify-between gap-3">
+              <p className="text-green-900">
+                Care providers (vet, farrier, and others) live on the horse&apos;s record under
+                <span className="font-medium"> Current providers</span>.
+              </p>
+              <Link to={`/app/horses/${horseId}`} className="link-underline text-sm shrink-0">
+                Open record
+              </Link>
+            </div>
+          </section>
+        ) : (
+          !load.isPending && !load.isError && (
+            <EmptyState
+              title="Horse not found"
+              message="This horse may have been removed or is outside your organization."
+            />
+          )
+        )}
 
         {/* Health log — horse_health_events. */}
         <section aria-labelledby="log-heading">
@@ -482,21 +361,12 @@ export function HorseHealthPage() {
         <Modal
           open={modal.mode !== 'closed'}
           onClose={() => setModal({ mode: 'closed' })}
-          title={modal.mode === 'care' ? 'Edit care team' : 'Log health event'}
+          title="Log health event"
         >
-          {modal.mode === 'care' && horse && (
-            <CareTeamForm
-              horse={horse}
-              onSubmit={handleCareSubmit}
-              onCancel={() => setModal({ mode: 'closed' })}
-              submitting={saveCare.isPending}
-              error={formError}
-            />
-          )}
           {modal.mode === 'event' && (
             <HealthEventForm
               horseId={horseId}
-              contacts={contacts}
+              providers={providers}
               onSubmit={handleEventSubmit}
               onCancel={() => setModal({ mode: 'closed' })}
               submitting={saveEvent.isPending}
