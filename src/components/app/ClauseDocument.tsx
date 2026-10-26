@@ -186,7 +186,7 @@ function clauseHasViewerGate(
   fieldsByClause: Map<string, ContractField[]>,
   cb: FieldCallbacks,
 ): boolean {
-  const triggers = gateTriggerKeys(clause.conditional_on);
+  const triggers = selectorTriggerKeys(clause.conditional_on);
   if (triggers.size === 0) return false;
   return (fieldsByClause.get(clause.clauseKey) ?? []).some(
     (f) => triggers.has(f.field_key) && !f.custom_kind && fieldIsMine(f, cb));
@@ -361,6 +361,32 @@ function gateTriggerKeys(
   const walk = (c: typeof cond) => {
     if (!c) return;
     if (c.field_key) keys.add(c.field_key);
+    c.all?.forEach(walk);
+    c.any?.forEach(walk);
+  };
+  walk(cond);
+  return keys;
+}
+
+/** The SELECTOR triggers of a gate: the fields whose VALUE chooses whether the
+ *  clause applies — equals/contains leaves. A numeric-threshold leaf (gte/lte/gt/lt)
+ *  is excluded: it only REFINES a branch already chosen by a selector (e.g. the
+ *  evaluation-period "Length" ≥ 1 on the FIXED-details clause), it never turns the
+ *  branch on. Using this for the "keep a gated-off clause visible so its own control
+ *  stays operable" decision stops a refinement field (the Length box) from keeping
+ *  its whole clause on screen when the real selector (EVAL_PERIOD_TYPE) points at a
+ *  different branch — the evaluation-period double-print. */
+function selectorTriggerKeys(
+  cond: import('../../lib/contracts').FieldConditional | null | undefined,
+): Set<string> {
+  const keys = new Set<string>();
+  const walk = (c: typeof cond) => {
+    if (!c) return;
+    // A leaf is a selector only when it tests the value (equals / contains), not a
+    // numeric threshold. A gte leaf refines a chosen branch; it does not select one.
+    const isNumericLeaf = c.field_key != null
+      && c.gte !== undefined && c.equals === undefined && c.contains === undefined;
+    if (c.field_key && !isNumericLeaf) keys.add(c.field_key);
     c.all?.forEach(walk);
     c.any?.forEach(walk);
   };
@@ -1446,7 +1472,11 @@ export function ClauseDocument({
                 // (a self-enabling toggle, e.g. "Include 3rd party exercise"). That
                 // control MUST stay clickable when the clause is gated off — freezing
                 // it would make the clause impossible to turn on. Split it out.
-                const triggerKeys = gateTriggerKeys(clause.conditional_on);
+                // SELECTOR triggers only: a numeric-refinement leaf (the evaluation
+                // "Length" ≥ 1) is not a branch selector, so it must NOT keep its
+                // whole clause on screen when the real selector picks another branch
+                // (the evaluation-period double-print — a stray empty Length box).
+                const triggerKeys = selectorTriggerKeys(clause.conditional_on);
                 // Authoring-control fields for this clause not placed by a {{token}}
                 // in its prose — e.g. a yes/no enable gate ("Any exceptions?"), the
                 // lease-type selector, etc. These are the field's DESIGNATED clause
