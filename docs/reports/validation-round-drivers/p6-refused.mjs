@@ -1,0 +1,11 @@
+import { newBrowser, newCtx, shot, BASE } from '/private/tmp/claude-504/-Users-Cactai/7d466399-a5d3-4532-8719-eeb55a81f620/scratchpad/driver.mjs';
+import fs from 'fs';
+const token = fs.readFileSync('/tmp/token_p6.txt','utf8').trim();
+const b = await newBrowser(); const ctx = await newCtx(b); const p = await ctx.newPage();
+await p.goto(`${BASE}/contract/view?token=${token}`,{waitUntil:'domcontentloaded'}); await p.waitForTimeout(4000);
+const body = await p.evaluate(()=>document.body.innerText);
+console.log('shows contract body (should be false now):', /horse sale agreement|buyer shall|purchase price/i.test(body));
+console.log('shows refused/unavailable message:', /no longer|revoked|not available|link.*(expired|invalid|unavailable)|can.t find|not found/i.test(body));
+console.log('snippet:', body.replace(/\n+/g,' | ').slice(0,300));
+await shot(p,'p6-03-revoked-refused');
+await b.close();

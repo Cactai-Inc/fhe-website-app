@@ -1,0 +1,15 @@
+import { newBrowser, newCtx, loginEmailPassword, shot, BASE } from '/private/tmp/claude-504/-Users-Cactai/7d466399-a5d3-4532-8719-eeb55a81f620/scratchpad/driver.mjs';
+import fs from 'fs';
+const env = JSON.parse(fs.readFileSync('/tmp/testenv.json','utf8'));
+const b = await newBrowser(); const ctx = await newCtx(b); const p = await ctx.newPage();
+await loginEmailPassword(p, env.FHE_TEST_STAFF_EMAIL, env.FHE_TEST_STAFF_PASSWORD);
+await p.goto(BASE + '/app/ops/accounts/new', { waitUntil:'domcontentloaded' });
+await p.waitForTimeout(3000);
+console.log('URL:', p.url());
+console.log('H:', JSON.stringify((await p.locator('h1,h2,h3').allTextContents()).slice(0,6)));
+const inputs = await p.$$eval('input,select,textarea', els=>els.map(e=>({tag:e.tagName,type:e.type,name:e.name,id:e.id,ph:e.placeholder,aria:e.getAttribute('aria-label'),label:(e.labels&&e.labels[0]?.textContent||'').trim()})));
+console.log('FIELDS:', JSON.stringify(inputs,null,0).slice(0,1500));
+const btns = await p.$$eval('button', els=>els.map(e=>e.textContent?.trim()).filter(Boolean));
+console.log('BUTTONS:', JSON.stringify(btns));
+await shot(p,'p1a-00-invite-form');
+await b.close();
