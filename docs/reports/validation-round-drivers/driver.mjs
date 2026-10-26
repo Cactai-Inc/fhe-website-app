@@ -30,3 +30,37 @@ export async function shot(page, name) {
   await page.screenshot({ path, fullPage: false });
   return path;
 }
+
+// Robust React-controlled <select> setter (owner ruling): set value via the native
+// HTMLSelectElement setter, then dispatch input+change so React's onChange fires.
+export async function setReactSelect(locator, value) {
+  await locator.evaluate((el, val) => {
+    const proto = window.HTMLSelectElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+    setter.call(el, val);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }, value);
+}
+// Find a select (optionally already visible) that contains an option with this value.
+export async function selectByOptionValue(page, value) {
+  const sels = await page.locator('select').all();
+  for (const s of sels) {
+    const has = await s.locator(`option[value="${value}"]`).count();
+    if (has) { await setReactSelect(s, value); return true; }
+  }
+  return false;
+}
+
+// Robust React-controlled text/number input setter (owner ruling): native value
+// setter + input+change dispatch, then blur to trigger autosave.
+export async function setReactInput(locator, value) {
+  await locator.evaluate((el, val) => {
+    const proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+    setter.call(el, val);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    el.blur();
+  }, value);
+}

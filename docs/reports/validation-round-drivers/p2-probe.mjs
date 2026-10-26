@@ -1,0 +1,11 @@
+import { newBrowser, newCtx, shot, BASE } from '/private/tmp/claude-504/-Users-Cactai/7d466399-a5d3-4532-8719-eeb55a81f620/scratchpad/driver.mjs';
+const b = await newBrowser(); const ctx = await newCtx(b); const p = await ctx.newPage();
+await p.goto(`${BASE}/sign/guest`, { waitUntil:'domcontentloaded' }); await p.waitForTimeout(3000);
+console.log('URL:', p.url());
+console.log('H:', JSON.stringify((await p.locator('h1,h2,h3').allTextContents()).slice(0,6)));
+const inputs = await p.$$eval('input,textarea', els=>els.map(e=>({type:e.type,ph:e.placeholder,label:(e.labels&&e.labels[0]?.textContent||'').trim(),req:e.required})));
+console.log('FIELDS:', JSON.stringify(inputs).slice(0,700));
+const btns = await p.$$eval('button', els=>els.map(e=>e.textContent?.trim()).filter(Boolean));
+console.log('BTNS:', JSON.stringify(btns));
+await shot(p,'p2-00-sign-guest');
+await b.close();

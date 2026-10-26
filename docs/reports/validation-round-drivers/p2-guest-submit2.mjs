@@ -1,0 +1,18 @@
+import { newBrowser, newCtx, shot, BASE } from '/private/tmp/claude-504/-Users-Cactai/7d466399-a5d3-4532-8719-eeb55a81f620/scratchpad/driver.mjs';
+import fs from 'fs';
+const alias = fs.readFileSync('/tmp/alias_p2guest.txt','utf8').trim();
+const b = await newBrowser(); const ctx = await newCtx(b); const p = await ctx.newPage();
+const apis=[]; p.on('response',async r=>{ if(r.url().includes('/api/')){let t='';try{t=await r.text();}catch{} apis.push(r.url().split('/api/')[1].split('?')[0]+':'+r.status()+':'+t.slice(0,120));} });
+await p.goto(`${BASE}/sign/guest`, { waitUntil:'domcontentloaded' }); await p.waitForTimeout(2500);
+await p.getByLabel('Email *',{exact:true}).fill(alias);
+await p.getByLabel('Confirm email *',{exact:true}).fill(alias);
+await p.waitForTimeout(500);
+const cont = p.getByRole('button',{name:/^Continue$/});
+console.log('continue disabled:', await cont.isDisabled());
+await cont.click();
+await p.waitForTimeout(6000);
+console.log('APIs:', JSON.stringify(apis));
+const body = await p.evaluate(()=>document.body.innerText);
+console.log('full-ish state:', body.replace(/\n+/g,' | ').slice(0,400));
+await shot(p,'p2-01-guest-sent');
+await b.close();

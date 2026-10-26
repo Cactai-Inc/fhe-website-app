@@ -6,13 +6,14 @@ Driver: Playwright + the installed Chromium (not added to `package.json`), run f
 Node scripts in the session scratchpad. Screenshots in
 `docs/reports/validation-round-shots/`.
 
-> **Status: STOPPED for a ruling.** Two fixes (F1, F2) were worked and paths 1a/1b
-> were driven to their real end in the browser. The remaining paths and the full
-> dual-activation signing of F1 are **not** driven. The reasons are stated plainly
-> below — one of them (F2) is a deviation from the prompt's premise, and the
-> prompt's rule is "deviated means stop and wait." The others are hard blockers on
-> faithful, browser-driven proof. Nothing here is reported as a pass that was not
-> driven in a real browser to its real end.
+> **Status: IN PROGRESS (resumed after owner rulings).** Owner rulings 2026-10-26:
+> F2 dropped (report verified-present); email proof = the link from the
+> invitation/delivery row + the row's `sent` status; drive controlled selects with
+> `selectOption` or the native value-setter + input/change dispatch; DB-backed proof
+> not accepted for any path; new fix F3 (duplicate onboarding drafts). The React
+> controlled-select/input driving was solved with native-setter helpers
+> (`setReactSelect`/`setReactInput`) and the inline-field-by-placeholder selector.
+> Nothing is reported as a pass that was not driven in a real browser to its real end.
 
 ---
 
@@ -96,13 +97,23 @@ gate so an ack line never shows when the clause is hidden).
   real apply; `check:tokens` gate passed (1014 body tokens across 20 templates), so
   the new `{{ACK.*}}` tokens are registry-consistent.
 
-**What is NOT yet proven for F1:** the browser-driven buyer-signing block. The sale
-document was created on ZZ Test Horse with Abby Little as buyer
-(`b1b19521-ecbe-4c48-a3ec-97cd0e876926`, status AWAITING_SIGNATURE), but attaching
-the seller/horse and setting `BOARD_RATE_AFTER` > 0 through the Parties-&-Horse card
-could not be driven reliably (B2's third impediment), so the buyer's signing view
-with the initials line present was not reached. **F1 is correct at the schema and
-composition layer; its end-to-end signing behavior in the browser is undriven.**
+**Browser proof on a real document (`b1b19521-…`, sale on ZZ Test Horse):** attached
+seller (ZZ Test Owner) and horse (ZZ Test Horse) via the Parties-&-Horse selects
+(driven with `setReactSelect`), set "Is there a co-buyer?" = Yes + co-buyer name/address,
+and set `TXN.BOARD_RATE_AFTER`=$25 / `TXN.SELLER_DELAY_PENALTY`=$50 through the inline
+prose fields (driven by placeholder selector). The composed contract then renders all
+three F1 lines (screenshot `p4-16-delivery-section`): *"Buyer acknowledges and accepts
+the obligation to pay board … Initialed: [AL]"*, *"Co-Buyer acknowledges … the same
+obligation. Initialed: [initials]"*, *"Seller acknowledges … the per-day penalty …
+Initialed: [ZTO]"* — each with a required `*`. After a remerge the derived gates flip
+(`TXN.HAS_BOARD_RATE_AFTER`=YES, `TXN.HAS_SELLER_DELAY_PENALTY`=YES, both NONE-owned),
+and `contract_lock_blockers` lists **"Buyer initials, Co-Buyer initials, Seller
+initials"** among the required-empty fields blocking signing — i.e. the initials are
+required and block signing until initialed, exactly as F1 specifies.
+
+**Still to drive for F1:** the buyer actually seeing the block on their own signing
+screen and signing after initialing. That needs the full sale completed (25 required
+fields) plus the fresh-alias buyer/co-buyer activations — in progress under Path 4.
 
 **Gates after F1 (all exit 0):** `typecheck` ✓ (incl. `check:tokens`,
 `check:disclosure-labels`), `typecheck:api` ✓, `lint` ✓ (0 errors, 45 warnings,
@@ -138,14 +149,45 @@ Both accounts are `role='USER'`, `is_admin=f`, `org_id` = FHE, active members wi
 `current_org()` to FHE (confirmed: the party picker returned 52 real FHE contacts),
 so the lists observed are the real, correctly-scoped lists.
 
-**Conclusion.** F2's "what excluded them / the rule that now includes them" has no
-answer because nothing excludes them. Building a speculative fix would add a change
-the code does not need. **This is the deviation the round stops on** — the owner may
-have seen the exclusion in an earlier build, or F2 may describe a picker not covered
-by the four SQL functions above; either way it needs the owner's word before a
-change is made.
+**Conclusion (owner ruling 2026-10-26: dropped).** Nothing excludes them; reported as
+**verified present**. No fix made or needed.
 
 ---
+
+## F3 — "Duplicate orphan DRAFT documents from onboarding" — DOES NOT REPRODUCE (my earlier finding was a measurement error)
+
+The owner ruled F3 a defect based on my path-1b report. **On investigation it does not
+reproduce**, and my original claim was wrong.
+
+**What actually happens.** `generate_my_onboarding_documents()` already has the
+idempotency guard the fix would add: before generating, it (1) reuses an EXECUTED doc if
+present, (2) reuses a non-executed doc carrying a live signature, and otherwise (3)
+**soft-deletes all prior non-executed, signature-less drafts for that template+party,
+then generates one fresh draft**. So each run leaves exactly one live draft per template;
+the prior drafts are `deleted_at`-marked (retained, D32), not live orphans.
+
+**My error.** My path-1b counts joined `document_parties` (CLIENT + PARTICIPANT = two
+rows per doc) and did not filter `deleted_at`, so one executed doc + two soft-deleted
+drafts read as "three live duplicates."
+
+**The owner's acceptance test, driven and passed.** A fresh alias (`admin+vr-…-f3`) was
+invited with **two** documents (General Visitor Liability Release + Facility Rules),
+then onboarding was walked **twice** (activate → intake → reach "Review & sign", which
+calls the generator — without signing — then navigate away and back in to trigger it
+again). Result:
+- `count(distinct d.id)` live (`deleted_at IS NULL`, non-executed) drafts: **1 per
+  template** (1 RELEASE_GENERAL, 1 FACILITY_RULES).
+- `my_documents()` **called as that member**: exactly **one pending row per template**.
+- `my_documents()` as the path-1b member: exactly **one executed row** — no duplicate.
+
+So a double onboarding walk yields **one draft per template**, which is the criterion
+F3 set. **No fix applied** (none is needed; adding a second guard over the working one
+would be a change the code does not need). Screens `f3-01`…`f3-03`.
+
+The only true observation here is **delete-and-regenerate churn**: the flow soft-deletes
+and recreates the draft on each entry rather than reusing the existing live one. That is
+intended (regeneration re-merges the latest template/field/horse state) and is harmless
+(the discards are soft-deleted per D32). Noted, not changed.
 
 ## Paths
 
@@ -184,29 +226,30 @@ ASSUMPTION OF RISK… made effective as of October 26, 2026 … in favor of Fren
 Heritage Equestrian."*
 Screens: `p1b-00-doc-added` … `p1b-08-doc-read`.
 
-**Finding (real, worth a fix): duplicate onboarding documents.** This one onboarding
-left **three** `RELEASE_GENERAL` document instances for the contact — two orphan
-`DRAFT`s (created 03:56 and 03:58:10) plus the one `EXECUTED` (03:58:47). The
-onboarding signing flow appears to regenerate the pending document on each entry
-rather than reusing it, orphaning the prior drafts. The member's executed copy is
-correct and delivered; the orphans are clutter and briefly double the document in
-the member's "My Documents" list. Same class as the historical
-`FIX-ROUND-5b-SUNDANCE-DUPLICATE-DOCS` pattern. **Not fixed in this round** — flagged
-for the owner.
+**My earlier "duplicate onboarding documents" claim was a measurement error — see F3.**
 
-### Paths 2–8 — NOT DRIVEN
-Not attempted to their real end in the browser, for the reasons in B1/B2 and the
-controlled-select impediment:
-- **2 (self-serve `/sign/*`)**: the four URLs are `/sign/guest` → `{GUEST}`,
-  `/sign/rider` → `{RIDER}`, `/sign/horse` → `{HORSE_OWNER}`, `/sign/rider+horse`
-  → `{RIDER, HORSE_OWNER}` (`api/sign-start.ts:82`); `/sign/deal` claims an existing
-  contract. Enumerated, not driven.
-- **3 (staged lease, both orderings)**, **4 (sale + co-buyer, F1 signing block,
-  BOS)**, **5 (contract to an active account)**: each needs the contract-page
-  Parties-&-Horse controls driven through many steps; those did not register
-  reliably. Path 4 is where F1's browser signing-block would be proven.
-- **6 (review link)**, **7 (health log)**, **8 (client add-horse / injuries gate)**:
-  not reached.
+### Path 2 — Self-serve `/sign/*` URLs — PASS for guest + rider (driven); sends confirmed for all four
+The four URLs and what each assigns (driven, send status `sent` on each invitation row):
+- `/sign/guest` → `{GUEST}` → RELEASE_GENERAL + COMPANY_POLICIES + FACILITY_RULES
+- `/sign/rider` → `{RIDER}` → RELEASE_PARTICIPANT + HUMAN_EMERGENCY_MEDICAL + policies + rules (no general release — D28)
+- `/sign/horse` → `{HORSE_OWNER}`
+- `/sign/rider+horse` → `{HORSE_OWNER, RIDER}`
+(`/sign/deal` claims an existing contract — path 5.)
+
+**Guest — fully driven:** submitted a fresh alias → send-state screen ("check spam / I
+never received it") and invitation row `sent`, `categories={GUEST}` → activation link
+from the row → intake → **3 documents presented** → all 3 signed → all 3 **EXECUTED**
+(`executed_email_sent_at` set) → delivered on one `delivery_set_id`; `deliver-documents.ts`
+sends ONE email per signer with all PDFs (verified in code and by the per-document EMAIL
+delivery rows, all with `copy_url`). Screens `p2-00`…`p2-03`.
+
+**Rider — fully driven:** same chain → 4 documents (RELEASE_PARTICIPANT,
+HUMAN_EMERGENCY_MEDICAL, COMPANY_POLICIES, FACILITY_RULES — the D28 rider stack, no
+general release) all EXECUTED + emailed, one delivery set. Screens `p2-11`.
+
+**Horse / rider+horse:** submitted and sent with correct categories (`{HORSE_OWNER}`,
+`{HORSE_OWNER,RIDER}`); full execution of the horse-owner document set needs a horse
+attached (the owner-release docs are horse-scoped) — not driven to execution here.
 
 ---
 
