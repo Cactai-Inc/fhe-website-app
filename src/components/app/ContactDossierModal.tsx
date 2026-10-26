@@ -7,6 +7,7 @@ import {
 } from '../../lib/api';
 import { supabase } from '../../lib/supabase';
 import { toErrorMessage } from '../../lib/ops/errors';
+import { EmergencyContactsFields } from './EmergencyContactsFields';
 import { useAutoSave, useFieldNormalizer } from '../../lib/formState';
 import { normalizeKindForField } from '../../lib/normalize';
 import type { LookupCode } from '../../lib/ops/types';
@@ -441,7 +442,26 @@ export function PersonRecord({
                     </div>
                   </div>
 
-                  {FIELD_GROUPS.map((g) => (
+                  {FIELD_GROUPS.map((g) => g.title === 'Emergency contacts' ? (
+                    /* F7: each emergency contact is its OWN group — a heading and
+                       three columns (name, relationship, phone) — never interleaved
+                       in the shared two-column grid. */
+                    <EmergencyContactsFields key={g.title}
+                      values={{
+                        emergency_contact_1_name: val('emergency_contact_1_name'),
+                        emergency_contact_1_relationship: val('emergency_contact_1_relationship'),
+                        emergency_contact_1_phone: val('emergency_contact_1_phone'),
+                        emergency_contact_2_name: val('emergency_contact_2_name'),
+                        emergency_contact_2_relationship: val('emergency_contact_2_relationship'),
+                        emergency_contact_2_phone: val('emergency_contact_2_phone'),
+                      }}
+                      onChange={(k, v) => set(k)(v)}
+                      self={{
+                        name: `${val('first_name')} ${val('last_name')}`.trim(),
+                        phone: val('phone'),
+                      }}
+                      disabled={archived} />
+                  ) : (
                     <div key={g.title}>
                       <p className="text-[11px] uppercase tracking-wide text-muted mb-2">{g.title}</p>
                       <div className="grid sm:grid-cols-2 gap-2.5">

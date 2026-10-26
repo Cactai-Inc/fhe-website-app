@@ -39,6 +39,7 @@ import { standingSlotSentence, serviceLabel } from '../../lib/standingSlots';
 import { StandingSlotPicker } from '../../components/app/StandingSlotPicker';
 import { BodyWithSignatures } from '../../components/ops/documents/MergedBodyView';
 import { BackControl } from '../../components/app/BackControl';
+import { EmergencyContactsFields, emergencyContactsError } from '../../components/app/EmergencyContactsFields';
 import { AutoSaveIndicator } from '../../components/ops/kit/AutoSaveIndicator';
 import { useFieldNormalizer, useFormDraft } from '../../lib/formState';
 import { toErrorMessage } from '../../lib/ops/errors';
@@ -1046,6 +1047,11 @@ export default function Onboarding() {
       return;
     }
 
+    // F7: Contact 1 is required, and an emergency contact must be someone else —
+    // a name or phone matching the person's own is refused.
+    const ecError = emergencyContactsError(form, { name: `${firstName} ${lastName}`.trim(), phone: form.phone });
+    if (ecError) { setSaveError(ecError); return; }
+
     setSaving(true);
     setSaveError(null);
     try {
@@ -1656,34 +1662,11 @@ export default function Onboarding() {
             </div>
           </div>
 
-          <h3 className="form-label mb-3">Emergency contacts</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label className="form-label" htmlFor="ob-ec1-name">Contact 1 name</label>
-              <input id="ob-ec1-name" required className="form-input" value={form.emergency_contact_1_name} onChange={upd('emergency_contact_1_name')} />
-            </div>
-            <div>
-              <label className="form-label" htmlFor="ob-ec1-rel">Contact 1 relationship</label>
-              <input id="ob-ec1-rel" required className="form-input" value={form.emergency_contact_1_relationship} onChange={upd('emergency_contact_1_relationship')} />
-            </div>
-            <div>
-              <label className="form-label" htmlFor="ob-ec1-phone">Contact 1 phone</label>
-              <input id="ob-ec1-phone" type="tel" required className="form-input" value={form.emergency_contact_1_phone} onChange={upd('emergency_contact_1_phone')} />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div>
-              <label className="form-label" htmlFor="ob-ec2-name">Contact 2 name (optional)</label>
-              <input id="ob-ec2-name" className="form-input" value={form.emergency_contact_2_name} onChange={upd('emergency_contact_2_name')} />
-            </div>
-            <div>
-              <label className="form-label" htmlFor="ob-ec2-rel">Contact 2 relationship</label>
-              <input id="ob-ec2-rel" className="form-input" value={form.emergency_contact_2_relationship} onChange={upd('emergency_contact_2_relationship')} />
-            </div>
-            <div>
-              <label className="form-label" htmlFor="ob-ec2-phone">Contact 2 phone</label>
-              <input id="ob-ec2-phone" type="tel" className="form-input" value={form.emergency_contact_2_phone} onChange={upd('emergency_contact_2_phone')} />
-            </div>
+          <div className="mb-6">
+            <EmergencyContactsFields
+              values={form}
+              onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
+              self={{ name: `${firstName} ${lastName}`.trim(), phone: form.phone }} />
           </div>
 
           <h3 className="form-label mb-3">Riding background</h3>
