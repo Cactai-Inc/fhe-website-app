@@ -1,0 +1,16 @@
+import { newBrowser, newCtx, loginEmailPassword, shot, BASE } from '/private/tmp/claude-504/-Users-Cactai/7d466399-a5d3-4532-8719-eeb55a81f620/scratchpad/driver.mjs';
+import fs from 'fs';
+const env = JSON.parse(fs.readFileSync('/tmp/testenv.json','utf8'));
+const b = await newBrowser(); const ctx = await newCtx(b); const p = await ctx.newPage();
+await loginEmailPassword(p, env.FHE_TEST_CLIENT_EMAIL, env.FHE_TEST_CLIENT_PASSWORD);
+await p.goto(`${BASE}/app/horse-intake`,{waitUntil:'domcontentloaded'}); await p.waitForTimeout(4000);
+console.log('URL:', p.url());
+console.log('H:', JSON.stringify((await p.locator('h1,h2,h3').allTextContents()).slice(0,6)));
+const inputs = await p.$$eval('input,select,textarea', els=>els.map(e=>({type:e.type,ph:e.placeholder,label:(e.labels&&e.labels[0]?.textContent||'').trim()})).filter(x=>x.ph||x.label));
+console.log('fields:', JSON.stringify(inputs).slice(0,900));
+const body = await p.evaluate(()=>document.body.innerText);
+console.log('has injuries question:', /injur/i.test(body));
+const btns = await p.$$eval('button', els=>els.map(e=>e.textContent?.trim()).filter(Boolean));
+console.log('btns:', JSON.stringify(btns.filter(t=>/save|add|continue|create|done/i.test(t))));
+await shot(p,'p8-01-horse-intake-form');
+await b.close();
