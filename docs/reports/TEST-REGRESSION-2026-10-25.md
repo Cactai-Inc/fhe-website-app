@@ -251,7 +251,36 @@ all `delivered_at` within one ~5s window AFTER all 4 executed, each with a `copy
 (`/portal/documents/<id>`). One signer ⇒ one combined email (4 ledger rows), fired only
 post-execution. Party copy renders a STRIPPED body (acknowledgment block removed);
 company copy keeps the full body; disclosure entries are passed to the PDF renderer for
-boxing. PDF verification from stored copy below.
+boxing.
+
+**Timing proof:** all 4 docs got the SAME `executed_email_sent_at` (20:15:44 — stamped
+together when the last signature landed); deliveries at 20:15:51–52 (one batch, ~7s
+later). Delivery fired only AFTER all executed, one batch per signer.
+
+### PDF verification from stored files (shared module = delivery's renderer)
+Rendered each executed `merged_body` through `shared/documentPdf.ts` `renderDocumentPdf`
+(what `renderPartyCopyPdfBytes` calls), extracted text with `pdftotext`:
+- All 4 PDFs open (2–4 pages) and carry the resolved signature — "Printed Name: Zelda
+  Testrider", "Signature: Zelda Testrider", "Date: October 25, 2026".
+- Body-vs-PDF: 22–25 distinctive body lines per doc checked against the PDF text → **0
+  misses**. The attached PDF matches the executed body. (Signature tokens resolve INTO the
+  stored body at execution; the renderer draws it verbatim.)
+
+### Disclosure markers — boxes drawn, no marker text anywhere (PROVEN via the V3 lease)
+Flat onboarding docs carry no HORSE disclosure tokens, so the marker path is exercised with
+the item-5 lease (body carries `[[DISCLOSURE:BEHAVIORAL_HISTORY]]…Entry 1:…[[/DISCLOSURE]]`).
+Rendered via the shared module WITH the structured disclosure entries
+(`fetchDocumentDisclosureEntries` shape):
+- **ZERO `[[DISCLOSURE]]`/`[[/DISCLOSURE]]` marker-text occurrences** in the PDF (pdftotext
+  grep count 0, both with and without entries) — neither marker leaks.
+- **Boxes drawn:** structured labels ("Description", "Trigger") and values ("Spooks at
+  tarps", "Mild seasonal allergies") appear as box content, from the structured field
+  values — the renderer skips the between-markers text block and draws boxes.
+- **Email body fallback:** the party-copy EMAIL (`DOCUMENT_PARTY_COPY` template) does not
+  inline the body — content rides in the attached PDF; the plain-text surface keeps the
+  readable "Entry N:" block and drops only the two marker lines (shared module). No marker
+  text is visible on any surface. **PASS.**
+
 ## Item 5 — Contract role bundle
 
 V3 lease created through the staff UI (`/app/ops/contracts/new` → Horse lease):
@@ -268,12 +297,29 @@ Role-bundle generation happens at SEND (`send_contract_to_party` →
 (item 1): the **LESSEE bundle is entirely deactivated** (DEALAUTO ruling — lessee
 paperwork is onboarding's job, not owed again), and the **LESSOR bundle is HORSE_EMERGENCY_VET
 + RELEASE_HORSE_CARE** (active). So a V3 lease generates a role bundle only for the
-LESSOR side, of exactly those two horse-token flat documents. (Full sign-through-execution
-of this lease was gated on clearing the 18 required fields — see item 6a; the bundle-
-generation path itself is `ensure_contract_role_documents`, keyed by role, idempotent
-per party.) **Document rows at creation: 1** (the lease itself). The role bundle rows
-materialize on send, one per active role-doc per party, which the generator dedups by
-`(document, role, template)`.
+LESSOR side, of exactly those two horse-token flat documents. **PROVEN by driving `ensure_contract_role_documents(lease_doc)` (the generator
+`send_contract_to_party` calls):**
+- it generated exactly the LESSOR bundle — **HORSE_EMERGENCY_VET (sign_sequence 2)** and
+  **RELEASE_HORSE_CARE (sign_sequence 3)**, both attached to the LESSOR contact (ZZ Test
+  Owner);
+- the LESSEE got **zero** bundle docs (deactivated rows — correct);
+- **once per party, no duplicates:** a second `ensure_…` call returned `generated: []`
+  and the contract still held exactly 3 docs (lease + 2 bundle) — idempotent;
+- **sequenced behind the lease:** bundle `sign_sequence` = 2, 3 vs the lease's 1;
+- **held until all execute / one email:** the bundle docs sit `AWAITING_SIGNATURE`; the
+  delivery trigger holds the whole set and sends one combined email per signer only when
+  the last signature lands — the same mechanism proven in items 3/4.
+
+**Document rows created:** the lease (1) + the LESSOR bundle (2) = **3 total**, listed:
+HORSE_LEASE_V3 (LESSEE-attached), HORSE_EMERGENCY_VET (LESSOR), RELEASE_HORSE_CARE (LESSOR).
+
+**Not driven to EXECUTION:** the LESSOR (ZZ Test Owner) is a bare contact with no auth
+account, so it cannot self-sign and the set cannot reach all-executed (staff correctly
+cannot sign for a non-company party — `record_signature`/`lock_and_sign` both refused the
+staff account signing LESSOR with "not a signer on this document in role LESSOR"). The
+LESSEE signature WAS taken (item 6a acceptance). Delivery-on-full-execution is identical to
+item 4's proven mechanism; it was not re-driven for the lease set because the lessor can't
+sign without provisioning an account for a shared contact (out of scope).
 
 ## Item 6 — Two findings from the bundle round
 
