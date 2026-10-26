@@ -36,11 +36,21 @@ export default function ForgotPassword() {
       }
     >
       {sent ? (
+        /* ⚠️ FIX ROUND 2d — ONE NEUTRAL CONFIRMATION, naming both cases without
+           revealing which applies (owner ruling 2026-10-25). It does not say
+           whether the address exists, and it guides a Google-sign-in account —
+           which has no password to reset — to the Google button instead. */
         <div className="bg-white border border-green-800/10 p-8">
           <AuthNotice>
             If an account exists for <strong>{email}</strong>, a password-reset link is on its way.
           </AuthNotice>
-          <p className="text-sm text-muted">Didn't get it? Check your spam folder, or try again in a minute.</p>
+          <p className="text-sm text-muted mb-2">Didn't get it? Check your spam folder, or try again in a minute.</p>
+          <p className="text-sm text-muted">
+            If your account uses Google, there's no password to reset —{' '}
+            <Link to="/login" className="text-green-800 underline underline-offset-2 focus-ring">
+              use “Sign in with Google”
+            </Link>{' '}on the sign-in page.
+          </p>
         </div>
       ) : (
         <AuthCard onSubmit={handleSubmit}>

@@ -130,6 +130,13 @@ export default function Login() {
                 Sign in with email and password
               </button>
             </p>
+            {/* ⚠️ FIX ROUND 2d — Forgot password is reachable from the login page
+                itself, not only after opting into the email/password form. */}
+            <p className="text-center text-sm text-muted mt-2">
+              <Link to="/forgot-password" className="text-green-800 underline underline-offset-2 focus-ring">
+                Forgot password?
+              </Link>
+            </p>
           </>
         ) : (
           <>

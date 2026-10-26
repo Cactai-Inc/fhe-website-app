@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   adminSendInvitation, adminResendInvitation, adminExpireInvitation,
   adminDeleteInvitation, adminInvitationHistory, inviteLinkState,
+  staffSendAccountReset,
   type InvitationHistoryRow,
 } from '../../lib/admin';
 import { toErrorMessage } from '../../lib/ops/errors';
@@ -41,7 +42,7 @@ import { AgreedLessonSection, type AgreedLesson } from './AgreedLessonPanel';
  * resend-vs-regenerate distinction (owner ruling 2026-08-11, D19).
  */
 export function ClientInvitationSection({
-  contactId, email, firstName, lastName, archived, onChanged,
+  contactId, email, firstName, lastName, archived, activated, onChanged,
 }: {
   contactId: string;
   email: string | null | undefined;
@@ -49,6 +50,10 @@ export function ClientInvitationSection({
   lastName?: string | null;
   /** An archived contact is read-only: every write below refuses at the DB. */
   archived?: boolean;
+  /** ⚠️ FIX ROUND 2d — the account has signed in at least once. Once activated,
+   *  the invitation lifecycle is spent: its controls go inert and password reset
+   *  is the primary act. */
+  activated?: boolean;
   /** Fired after any act that changes the record, so the host can reload. */
   onChanged?: () => void;
 }) {
@@ -61,6 +66,18 @@ export function ClientInvitationSection({
   const [log, setLog] = useState<StatusLogEntry[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** 2d: result of the staff password-reset action (the copyable fallback link +
+   *  whether the email went + whether the account is Google-only). */
+  const [reset, setReset] = useState<{ emailed: boolean; link: string | null; googleOnly: boolean } | null>(null);
+
+  async function sendReset() {
+    setBusy(true); setErr(null); setReset(null);
+    try {
+      const r = await staffSendAccountReset(contactId);
+      setReset({ emailed: r.emailed, link: r.link, googleOnly: r.googleOnly });
+    } catch (e) { setErr(toErrorMessage(e, 'Could not send a password reset.')); }
+    finally { setBusy(false); }
+  }
 
   const loadHistory = useCallback(() => {
     adminInvitationHistory({ contactId, email })
@@ -100,6 +117,69 @@ export function ClientInvitationSection({
       <p className="text-[11.5px] text-muted">
         Restore this account from Records › Archived before provisioning or inviting it.
       </p>
+    );
+  }
+
+  // ── ⚠️ FIX ROUND 2d — ACTIVATED: the invitation lifecycle is spent ─────────
+  //    The person has signed in at least once, so resend / regenerate / expire /
+  //    delete an invitation are all moot and would only mint confusion (or a
+  //    second live link). Those controls are hidden; password reset is the
+  //    primary act — one recovery path, the same the client's own "Forgot
+  //    password" uses. The invitation timeline stays below, link text intact.
+  if (activated) {
+    return (
+      <section className="bg-white border border-gold-600/40 rounded-xl p-4">
+        <h3 className="font-serif text-green-800 text-base">Account access</h3>
+        <p className="text-[12px] text-muted mb-3">
+          They have activated their account and signed in. To help them back in, send
+          a password reset — it emails a link to set a new password, and you can copy
+          the link to read it to them if needed.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" disabled={busy || !email} className="btn-primary text-xs"
+            onClick={() => void sendReset()}>
+            {busy ? 'Sending…' : 'Send password reset'}
+          </button>
+        </div>
+        {!email && (
+          <p className="text-[12px] text-gold-800 mt-3">
+            Add an email address on the Record tab before sending a reset.
+          </p>
+        )}
+        {err && <p role="alert" className="form-error mt-3">{err}</p>}
+        {reset && (
+          <div className="mt-3 rounded-lg border border-green-800/15 bg-green-50/40 p-3">
+            {reset.googleOnly ? (
+              <p className="text-[12.5px] text-green-900">
+                This account signs in with Google — there is no password to reset. Tell
+                them to use “Sign in with Google”.
+              </p>
+            ) : (
+              <>
+                <p className="text-[12.5px] text-green-900">
+                  {reset.emailed
+                    ? `Reset email sent to ${email}.`
+                    : 'The email did NOT send — copy the link below and send it to them yourself.'}
+                </p>
+                {reset.link && (
+                  <p className="text-[11.5px] text-muted break-all mt-1.5">{reset.link}</p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+        {/* The invitation timeline is kept — it is the record of how they got in. */}
+        <div className="mt-4 pt-3 border-t border-gold-600/20">
+          <InvitationHistoryPanel contactId={contactId} email={email}
+            refreshKey={refreshKey} onResent={() => { setRefreshKey((k) => k + 1); onChanged?.(); }} />
+        </div>
+        {log.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-gold-600/20">
+            <p className="text-[11px] uppercase tracking-wide text-green-800/50 mb-2">Invitation timeline</p>
+            <StatusLog entries={log} compact />
+          </div>
+        )}
+      </section>
     );
   }
 

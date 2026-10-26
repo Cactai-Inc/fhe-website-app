@@ -767,6 +767,8 @@ export function PersonRecord({
                     firstName={(c.first_name as string | null) ?? null}
                     lastName={(c.last_name as string | null) ?? null}
                     archived={archived}
+                    /* 2d: activation = the account has signed in at least once. */
+                    activated={Boolean(d.account?.login?.last_sign_in_at)}
                     onChanged={() => { load(); onChanged?.(); }} />
 
                   {/* FILED UNDER — the classification strip lives at the BOTTOM of

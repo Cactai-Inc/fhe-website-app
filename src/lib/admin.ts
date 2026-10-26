@@ -978,6 +978,35 @@ export async function adminResendInvitation(
   };
 }
 
+/** ⚠️ FIX ROUND 2d — STAFF PASSWORD RESET, ONE RECOVERY PATH. Posts to
+ *  /api/account-reset (the same endpoint the client's "Forgot password" uses) with
+ *  the staff bearer, so the client gets the identical recovery email to the same
+ *  /reset-password landing. Returns the copyable fallback link and whether the
+ *  account is Google-only (no password to reset). */
+export async function staffSendAccountReset(
+  contactId: string,
+): Promise<{ emailed: boolean; link: string | null; hasAccount: boolean; googleOnly: boolean }> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
+  const res = await fetch('/api/account-reset', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({ contactId }),
+  });
+  const payload = await res.json().catch(() => null) as
+    { error?: string; emailed?: boolean; link?: string | null; hasAccount?: boolean; googleOnly?: boolean } | null;
+  if (!res.ok) throw new Error(payload?.error || `Could not send a password reset (HTTP ${res.status}).`);
+  return {
+    emailed: payload?.emailed === true,
+    link: payload?.link ?? null,
+    hasAccount: payload?.hasAccount === true,
+    googleOnly: payload?.googleOnly === true,
+  };
+}
+
 /** Kill the invite link now (still shows as expired; resendable). */
 export async function adminExpireInvitation(id: string): Promise<void> {
   const { error } = await supabase.rpc('admin_expire_invitation', { p_id: id });

@@ -124,12 +124,25 @@ export const signInWithApple = (redirectTo = '/account') => signInWithOAuth('app
 
 // ── Password reset ───────────────────────────────────────────────────────────
 
-/** Email the user a recovery link that lands on /reset-password. */
+/** Email the user a recovery link that lands on /reset-password.
+ *
+ * ⚠️ FIX ROUND 2d — ONE RECOVERY PATH. This posts to /api/account-reset, the same
+ * endpoint the staff reset action uses, so staff and client send the identical
+ * recovery email to the same landing. The endpoint answers the same neutral
+ * { ok: true } whether or not the account exists, so a failure here is only a
+ * network/transport fault — never a signal about the address. */
 export async function sendPasswordReset(email: string): Promise<Result> {
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: appUrl('/reset-password'),
-  });
-  return { error: error?.message ?? null };
+  try {
+    const res = await fetch('/api/account-reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) return { error: 'Could not send the reset email. Please try again.' };
+    return { error: null };
+  } catch {
+    return { error: 'Could not reach the server. Please try again.' };
+  }
 }
 
 /** Set a new password for the recovery session created by the reset link. */
