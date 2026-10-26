@@ -80,15 +80,27 @@ function CardRow({ title, children, count, leading }: {
 const CARD =
   'data-atn-card snap-start shrink-0 w-[46%] sm:w-64 rounded-xl border p-3 bg-white text-left';
 
-function AlertCard({ a, onOpen }: { a: DashboardAlert; onOpen: () => void }) {
+function AlertCard({ a, onOpen, onDismiss }: {
+  a: DashboardAlert; onOpen: () => void; onDismiss: () => void;
+}) {
+  // The card body opens the alert's modal; the ✕ in the corner dismisses the alert
+  // outright (owner: "an X in the top right of each alert card deletes the alert"),
+  // the same affordance a NotificationCard carries. A div with an inner button, not a
+  // button-in-button, so the X is its own click target and does not open the modal.
   return (
-    <button type="button" onClick={onOpen}
-      data-atn-card
-      className={`${CARD} ${a.severity === 'priority' ? 'border-red-300' : 'border-gold-400/50'} hover:border-green-600 focus-ring`}>
-      <p className="text-sm font-medium text-green-900 truncate">{a.title}</p>
-      {a.body && <p className="text-[12px] text-secondary mt-0.5 line-clamp-2">{a.body}</p>}
-      <p className="text-[11px] text-muted mt-1.5">{new Date(a.created_at).toLocaleDateString()}</p>
-    </button>
+    <div data-atn-card
+      className={`${CARD} relative ${a.severity === 'priority' ? 'border-red-300' : 'border-gold-400/50'} hover:border-green-600`}>
+      <button type="button" aria-label="Dismiss" onClick={onDismiss}
+        className="absolute top-2 right-2 text-muted hover:text-green-800 focus-ring rounded">
+        <X size={14} />
+      </button>
+      <button type="button" onClick={onOpen}
+        className="block w-full text-left focus-ring rounded">
+        <p className="text-sm font-medium text-green-900 truncate pr-5">{a.title}</p>
+        {a.body && <p className="text-[12px] text-secondary mt-0.5 line-clamp-2">{a.body}</p>}
+        <p className="text-[11px] text-muted mt-1.5">{new Date(a.created_at).toLocaleDateString()}</p>
+      </button>
+    </div>
   );
 }
 
@@ -179,12 +191,21 @@ export function AtnGrid() {
     setNotes((prev) => prev.filter((n) => n.id !== id));
   };
 
+  // The alert card's ✕: dismiss the alert and drop it from the row immediately. Keyed
+  // by source+entity like the modal's Dismiss, which is what dismiss_alert suppresses.
+  const dismissAlertCard = (a: DashboardAlert) => {
+    setAlerts((prev) => prev.filter(
+      (x) => !(x.source === a.source && x.entity_id === a.entity_id)));
+    void dismissAlert({ source: a.source, entityId: a.entity_id }).catch(() => load());
+  };
+
   return (
     <div className="mb-6">
       {alerts.length > 0 && (
         <CardRow title="Alerts" count={alerts.length}>
           {alerts.map((a) => (
-            <AlertCard key={`${a.source}:${a.entity_id ?? a.title}`} a={a} onOpen={() => setOpenAlert(a)} />
+            <AlertCard key={`${a.source}:${a.entity_id ?? a.title}`} a={a}
+              onOpen={() => setOpenAlert(a)} onDismiss={() => dismissAlertCard(a)} />
           ))}
         </CardRow>
       )}
