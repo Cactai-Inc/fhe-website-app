@@ -487,8 +487,18 @@ function LocationField({
           if (e.target.value === MANUAL_LOCATION) { setManual(true); return; }
           setManual(false);
           const loc = known.find((k) => k.id === e.target.value);
-          if (loc) onSave({ name: loc.name, line1: loc.address ?? '' });
-          else onSave({});
+          if (loc) {
+            // Store the STRUCTURED address from the known location (my_locations now
+            // returns the parts), so reopening shows the known pick selected and the
+            // document composes from clean fields — not the whole address crammed into
+            // line1 with city/state/zip empty. Fall back to parsing the combined
+            // `address` only if a legacy row has no structured parts.
+            const hasParts = !!(loc.address_line1 || loc.city || loc.state || loc.postal);
+            onSave(hasParts
+              ? { name: loc.name, line1: loc.address_line1 ?? '', city: loc.city ?? '',
+                  state: loc.state ?? '', postal: loc.postal ?? '' }
+              : { name: loc.name, line1: loc.address ?? '' });
+          } else onSave({});
         }}>
         <option value="">Select a known location…</option>
         {known.map((k) => (
